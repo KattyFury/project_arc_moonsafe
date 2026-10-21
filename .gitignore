@@ -1,0 +1,22 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# deps / build
+node_modules/
+dist/
+.wrangler/
+
+# foundry
+out/
+cache/
+broadcast/
+
+# Arc Studio logs
+console.jsonl
+traces.jsonl
+
+# OS / editor
+.DS_Store
+Thumbs.db
