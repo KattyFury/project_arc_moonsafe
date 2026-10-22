@@ -69,7 +69,7 @@ Khi trạng thái app có profileSaved = true: TUYỆT ĐỐI không hỏi lại
 - Ghi nhận điều người dùng đã làm tốt trước khi góp ý. Không phán xét chi tiêu, không giảng đạo lý.
 - Chỉ tư vấn tham khảo, KHÔNG cam kết sinh lời, luôn nhắc rủi ro khi nói về đầu tư.
 - Số tiền trong trạng thái app đã được app tính sẵn theo tỉ giá thật: trích đúng, KHÔNG tự quy đổi VND↔USDC. Trạng thái app chưa có số USDC tương ứng (floorUsdc, shortfallUsdc… = null) thì chỉ nói bằng đơn vị người dùng đang dùng, TUYỆT ĐỐI không tự đưa ra con số USDC.
-- Sàn quỹ là 3 tháng (thu nhập ổn định) hoặc 6 tháng (không ổn định). Chưa biết độ ổn định thì nói "3–6 tháng chi tiêu" và hỏi thêm, đừng tự chọn.
+- Quỹ dự phòng khởi đầu: có việc làm / thu nhập ổn định = 3 tháng chi tiêu thiết yếu; không ổn định (freelance, tự kinh doanh, thu nhập thất thường) = 6 tháng. Đã biết độ ổn định thì chỉ nói đúng mốc của họ. CHƯA biết mà đã có số chi tiêu thì LUÔN nêu đủ hai trường hợp kèm số tiền (đừng chỉ hỏi suông, đừng gộp thành khoảng "3–6 tháng" hay "30–60 triệu"), rồi hỏi một câu về độ ổn định để chốt. Ví dụ chi tiêu 10 triệu: "Nếu bạn có việc làm ổn định, quỹ khởi đầu là **3 tháng = 30 triệu**. Nếu thu nhập chưa ổn định, nên để **6 tháng = 60 triệu**. Công việc hiện tại của bạn có ổn định không?"
 - Hỏi ngoài phạm vi tài chính cá nhân thì có thể dùng web_search`
 
 const PLAN_PROMPT = `Bạn là bộ điều phối thao tác của app MoonSafe. Đọc tin nhắn MỚI NHẤT của người dùng (tin trước chỉ để hiểu ngữ cảnh) cùng trạng thái app, rồi GỌI tool phù hợp. Bắt buộc gọi ít nhất một tool; không có gì cần làm thì gọi no_action.
@@ -171,6 +171,31 @@ async function webSearch(query: string): Promise<string> {
   }
 }
 
+// Emergency-fund floor worked out here, in the user's own currency, so the model only
+// quotes it (it multiplied and converted wrongly when left to do it).
+function moneyOf(v: unknown, unit: unknown): { amount: number; currency: 'VND' | 'USDC' } | null {
+  if (v && typeof v === 'object' && 'amount' in v) {
+    const o = v as { amount?: unknown; currency?: unknown }
+    return typeof o.amount === 'number' && o.amount > 0 ? { amount: o.amount, currency: o.currency === 'USDC' ? 'USDC' : 'VND' } : null
+  }
+  return typeof v === 'number' && v > 0 ? { amount: v, currency: unit === 'USDC' ? 'USDC' : 'VND' } : null
+}
+
+function floorNote(profile: unknown, update: Record<string, unknown> | null): string {
+  const p = { ...((profile && typeof profile === 'object' ? profile : {}) as Record<string, unknown>), ...(update ?? {}) }
+  const units = (p.units && typeof p.units === 'object' ? p.units : {}) as Record<string, unknown>
+  const exp = moneyOf(p.monthlyExpenses, units.monthlyExpenses)
+  if (!exp) return ''
+  const fmt = (n: number) => exp.currency === 'USDC'
+    ? `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 }).format(n)} USDC`
+    : n >= 1_000_000 ? `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 1 }).format(n / 1_000_000)} triệu` : `${new Intl.NumberFormat('vi-VN').format(n)} ₫`
+  const stable = typeof p.incomeStable === 'boolean' ? p.incomeStable : null
+  if (stable === null) {
+    return `Mốc quỹ dự phòng (app đã tính, trích đúng số này): có việc làm ổn định → 3 tháng = ${fmt(exp.amount * 3)}; thu nhập chưa ổn định → 6 tháng = ${fmt(exp.amount * 6)}. Độ ổn định CHƯA biết: khi nói về quỹ, nêu đủ hai mốc rồi hỏi công việc có ổn định không.`
+  }
+  return `Mốc quỹ dự phòng (app đã tính, trích đúng số này): ${stable ? 'thu nhập ổn định → 3 tháng' : 'thu nhập không ổn định → 6 tháng'} = ${fmt(exp.amount * (stable ? 3 : 6))}.`
+}
+
 export async function onRequestPost(context: { request: Request; env: Env }): Promise<Response> {
   const apiKey = context.env.OPENAI_API_KEY
   if (!apiKey) return json({ error: 'Agent chưa được cấu hình khoá AI' }, 503)
@@ -241,6 +266,8 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       : '') },
     { role: 'system', content: `Thao tác vừa thực hiện: ${done.length ? done.join(' | ') : 'không có thao tác nào.'}` },
   ]
+  const floor = floorNote(appState?.profile, profileUpdate)
+  if (floor) replyMessages.push({ role: 'system', content: floor })
 
   for (let round = 1; round <= 3; round++) {
     const reply = await openai(apiKey, {

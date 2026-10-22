@@ -96,7 +96,12 @@ function WalletList({ active }: { active?: string }) {
   const { setPreferred } = useWalletPref()
   const [copied, setCopied] = useState(false)
 
-  const connected = wallets.filter(w => w.type === 'ethereum')
+  // Some extensions announce one account twice (OKX also answers as "MetaMask" for
+  // compatibility): one row per address, keeping the wallet's own name.
+  const connected = wallets
+    .filter(w => w.type === 'ethereum')
+    .sort((x, y) => Number(x.walletClientType === 'metamask') - Number(y.walletClientType === 'metamask'))
+    .filter((w, i, all) => all.findIndex(o => o.address.toLowerCase() === w.address.toLowerCase()) === i)
   const connectedSet = new Set(connected.map(w => w.address.toLowerCase()))
   const offline = (user?.linkedAccounts ?? [])
     .flatMap(a => (a.type === 'wallet' && a.chainType === 'ethereum' && a.walletClientType !== 'privy' ? [a.address] : []))
