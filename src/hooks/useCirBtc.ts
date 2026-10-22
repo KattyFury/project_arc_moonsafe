@@ -6,9 +6,10 @@ import { useCallback, useEffect, useState } from 'react'
 import { AppKit, type SwapEstimate } from '@circle-fin/app-kit'
 import { createViemAdapterFromProvider } from '@circle-fin/adapter-viem-v2'
 import type { EIP1193Provider } from 'viem'
-import { useAccount, useChainId, usePublicClient, useSwitchChain } from 'wagmi'
+import { useAccount, usePublicClient, useSwitchChain } from 'wagmi'
 import { arcTestnet } from 'viem/chains'
 import type { DcaPlan } from '@/types'
+import { ensureArcChain } from '@/lib/chain'
 
 /** docs.arc.network/arc/references/contract-addresses — testnet cirBTC. */
 export const CIRBTC_ADDRESS = '0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF' as const
@@ -71,7 +72,6 @@ const toAppKitAmount = (u: bigint) => {
 
 export function useCirBtcState(): CirBtcState {
   const { address, connector } = useAccount()
-  const chainId = useChainId()
   const { switchChainAsync } = useSwitchChain()
   const publicClient = usePublicClient({ chainId: arcTestnet.id })
 
@@ -108,10 +108,10 @@ export function useCirBtcState(): CirBtcState {
 
   const getAdapter = useCallback(async () => {
     if (!connector) throw new Error('Ví chưa kết nối')
-    if (chainId !== arcTestnet.id) await switchChainAsync({ chainId: arcTestnet.id })
+    await ensureArcChain(connector, switchChainAsync)
     const provider = await connector.getProvider() as EIP1193Provider
     return await createViemAdapterFromProvider({ provider })
-  }, [connector, chainId, switchChainAsync])
+  }, [connector, switchChainAsync])
 
   const estimate = useCallback(async (amountUsdc6: bigint) => {
     setError(null); setQuote(null); setLastTxHash(null)

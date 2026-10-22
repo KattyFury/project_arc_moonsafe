@@ -10,6 +10,9 @@ const STORAGE_KEY = 'moonsafe_chat_v2'
 const MAX_KEEP = 80
 const MAX_SEND = 30
 
+/** Greeting shown to someone who already saved a declaration (UI only, never sent to the model). */
+export const WELCOME_BACK = 'Chào bạn quay lại! Mình đã có khai báo tài chính của bạn, xem hoặc sửa ở tab **Cân đối**.\n\nBạn muốn hỏi gì về quỹ dự phòng hay đầu tư?'
+
 export const WELCOME: ChatMessage = {
   role: 'assistant',
   content: 'Xin chào! Mình là agent của MoonSafe.\n\n"Nên đầu tư nhưng phải có đường lui." Trước khi đầu tư, mình giúp bạn lập **quỹ dự phòng** bằng USDC.\n\nBắt đầu nhé: **thu nhập hàng tháng** của bạn khoảng bao nhiêu?',
@@ -63,7 +66,8 @@ export function useAgent(hooks: AgentHooks) {
         headers: { 'Content-Type': 'application/json' },
         signal: ctrl.signal,
         body: JSON.stringify({
-          messages: history.slice(-MAX_SEND).map(m => ({ role: m.role, content: m.content })),
+          // The greeting (timestamp 0) is UI-only: sending it made the model re-ask questions already answered.
+          messages: history.filter(m => m.timestamp !== 0).slice(-MAX_SEND).map(m => ({ role: m.role, content: m.content })),
           context: hooksRef.current.getContext(),
         }),
       })

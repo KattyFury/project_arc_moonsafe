@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Loader2, Send } from 'lucide-react'
 import { toast } from 'sonner'
 import { useApp } from '@/state/AppState'
-import { useAgent } from '@/hooks/useAgent'
+import { WELCOME_BACK, useAgent } from '@/hooks/useAgent'
 import { isProfileComplete, normalizeProfile } from '@/hooks/useFinancialProfile'
 import { dcaNextRun } from '@/hooks/useCirBtc'
 import { useNow } from '@/hooks/useNow'
@@ -45,6 +45,9 @@ export function ChatScreen({ declareKey, onError, onOpenInvest }: { declareKey: 
       vaultBalanceUsdc: vault.vaultBalance !== null ? formatUsdc(vault.vaultBalance) : null,
       floorMonths: math.floorMonths,
       floorUsdc: math.floorUsdc !== null ? formatUsdc(math.floorUsdc) : null,
+      shortfallUsdc: math.shortfall !== null ? formatUsdc(math.shortfall) : null,
+      floorReachedPct: math.floorPct !== null ? Math.round(math.floorPct) : null,
+      vaultMonths: math.vaultMonths !== null ? Math.round(math.vaultMonths * 10) / 10 : null,
       investUnlocked: math.investUnlocked,
       dca: cirBtc.dca ? { amountUsdc: formatUsdc(BigInt(cirBtc.dca.amountUsdc)), everyDays: cirBtc.dca.intervalDays } : null,
     }),
@@ -101,7 +104,7 @@ export function ChatScreen({ declareKey, onError, onOpenInvest }: { declareKey: 
                 : msg.error
                   ? { background: 'rgba(224,52,74,0.07)', color: 'var(--danger)', border: '1px solid rgba(224,52,74,0.2)', borderRadius: '18px 18px 18px 4px' }
                   : { background: 'white', color: 'var(--ink)', border: '1px solid var(--border)', borderRadius: '18px 18px 18px 4px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-              {renderContent(msg.content)}
+              {renderContent(msg.timestamp === 0 && profile.complete ? WELCOME_BACK : msg.content)}
             </div>
           </div>
         ))}

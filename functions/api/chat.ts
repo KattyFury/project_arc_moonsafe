@@ -114,16 +114,26 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
     return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400 })
   }
 
-  const { messages, profile } = body
+  const messages = Array.isArray(body.messages) ? body.messages.slice(-30) : []
+  const appState = body.context ?? (body.profile ? { profile: body.profile } : null)
 
-  // Build system message with current profile context
-  let systemContent = SYSTEM_PROMPT
-  if (profile && Object.keys(profile).length > 0) {
-    systemContent += `\n\n## Dữ liệu đã khai báo của người dùng\n${JSON.stringify(profile, null, 2)}\n\nNếu người dùng đã có đủ thông tin, không hỏi lại. Thay vào đó hãy tư vấn dựa trên dữ liệu này.`
+  // Fixed prompt first; the user's current app state goes AFTER the chat history so the
+  // model weighs it over old turns (it kept re-asking income it already had).
+  const allMessages: Message[] = [{ role: 'system', content: SYSTEM_PROMPT }, ...messages]
+  if (appState && Object.keys(appState).length > 0) {
+    const p = (appState.profile ?? null) as Record<string, unknown> | null
+    const known = p ? Object.entries(p).filter(([k, v]) => k !== 'savedAt' && v !== null && v !== undefined).map(([k]) => k) : []
+    allMessages.push({
+      role: 'system',
+      content: `Trạng thái hiện tại của người dùng trong app (dữ liệu thật, mới nhất):\n${JSON.stringify(appState)}\n\n`
+        + 'Các số tiền USDC, số còn thiếu (shortfallUsdc), % đạt sàn và số tháng do app tính sẵn theo tỉ giá thật: trích đúng các số đó, KHÔNG tự quy đổi VND↔USDC hay tự tính lại.\n'
+        + (appState.profileSaved
+          ? 'Người dùng ĐÃ LƯU khai báo. TUYỆT ĐỐI không hỏi lại thu nhập, chi tiêu, nợ, tuổi, độ ổn định thu nhập, và không nhắc bấm "Lưu khai báo". Hướng dẫn bước tiếp theo (nạp quỹ cho đủ sàn, hoặc đầu tư khi đã mở khoá). Người dùng muốn đổi số thì nhắc họ sửa ở tab Cân đối → Sửa khai báo.'
+          : known.length
+            ? `Đã biết: ${known.join(', ')}. Không hỏi lại các trường này; chỉ hỏi trường còn thiếu.`
+            : 'Chưa có khai báo nào.'),
+    })
   }
-
-  const systemMessage: Message = { role: 'system', content: systemContent }
-  const allMessages: Message[] = [systemMessage, ...messages]
 
   // Agentic loop with tool-calling (max 3 rounds)
   let rounds = 0

@@ -4,10 +4,11 @@
 // 6-decimal USDC units and converts at the edge.
 
 import { useCallback, useEffect, useState } from 'react'
-import { useAccount, usePublicClient, useSendTransaction } from 'wagmi'
+import { useAccount, usePublicClient, useSendTransaction, useSwitchChain } from 'wagmi'
 import { encodeFunctionData, zeroAddress } from 'viem'
 import { arcTestnet } from 'viem/chains'
 import { nativeToUsdc6, usdc6ToNative } from '@/lib/format'
+import { ensureArcChain } from '@/lib/chain'
 
 const CHAIN_ID = arcTestnet.id // 5042002
 export const FACTORY_ADDRESS = (import.meta.env.VITE_FACTORY_ADDRESS ?? '') as `0x${string}`
@@ -49,9 +50,10 @@ export interface VaultState {
 }
 
 export function useVaultState(): VaultState {
-  const { address } = useAccount()
+  const { address, connector } = useAccount()
   const publicClient = usePublicClient({ chainId: CHAIN_ID })
   const { sendTransactionAsync } = useSendTransaction()
+  const { switchChainAsync } = useSwitchChain()
 
   const [ready, setReady] = useState(false)
   const [vaultAddress, setVaultAddress] = useState<`0x${string}` | null>(null)
@@ -104,6 +106,7 @@ export function useVaultState(): VaultState {
     if (!publicClient) throw new Error('Chưa kết nối mạng Arc')
     setBusy(true)
     try {
+      await ensureArcChain(connector, switchChainAsync)
       const hash = await sendTransactionAsync({ ...tx, chainId: CHAIN_ID })
       const receipt = await publicClient.waitForTransactionReceipt({ hash })
       if (receipt.status !== 'success') throw new Error('Giao dịch bị từ chối trên chuỗi')
@@ -111,7 +114,7 @@ export function useVaultState(): VaultState {
     } finally {
       setBusy(false)
     }
-  }, [publicClient, sendTransactionAsync, refresh])
+  }, [publicClient, sendTransactionAsync, refresh, connector, switchChainAsync])
 
   const createVault = useCallback(async () => {
     if (!address || !publicClient) throw new Error('Chưa kết nối ví')
