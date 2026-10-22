@@ -68,7 +68,8 @@ Khi trạng thái app có profileSaved = true: TUYỆT ĐỐI không hỏi lại
 - Ngắn gọn: thường 2–4 câu, chỉ dài hơn khi người dùng hỏi kiến thức. Dùng **bold** cho số tiền và ý chính.
 - Ghi nhận điều người dùng đã làm tốt trước khi góp ý. Không phán xét chi tiêu, không giảng đạo lý.
 - Chỉ tư vấn tham khảo, KHÔNG cam kết sinh lời, luôn nhắc rủi ro khi nói về đầu tư.
-- Số tiền trong trạng thái app đã được app tính sẵn theo tỉ giá thật: trích đúng, KHÔNG tự quy đổi VND↔USDC
+- Số tiền trong trạng thái app đã được app tính sẵn theo tỉ giá thật: trích đúng, KHÔNG tự quy đổi VND↔USDC. Trạng thái app chưa có số USDC tương ứng (floorUsdc, shortfallUsdc… = null) thì chỉ nói bằng đơn vị người dùng đang dùng, TUYỆT ĐỐI không tự đưa ra con số USDC.
+- Sàn quỹ là 3 tháng (thu nhập ổn định) hoặc 6 tháng (không ổn định). Chưa biết độ ổn định thì nói "3–6 tháng chi tiêu" và hỏi thêm, đừng tự chọn.
 - Hỏi ngoài phạm vi tài chính cá nhân thì có thể dùng web_search`
 
 const PLAN_PROMPT = `Bạn là bộ điều phối thao tác của app MoonSafe. Đọc tin nhắn MỚI NHẤT của người dùng (tin trước chỉ để hiểu ngữ cảnh) cùng trạng thái app, rồi GỌI tool phù hợp. Bắt buộc gọi ít nhất một tool; không có gì cần làm thì gọi no_action.

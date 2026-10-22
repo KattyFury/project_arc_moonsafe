@@ -8,7 +8,7 @@ Spec gốc: user dán trong chat (SPEC.md, 10 mục, màn 1–10). Cập nhật 
 -1. **Giao diện mới theo Figma + bỏ thẻ khai báo — 2026-10-22.**
    - Thiết kế chuẩn: Figma `WcPHEwY8xh33OvCFrxgLcQ` section 38:191 (mobile 393) / 38:192 (desktop 1440) / 39:193 (nav). Code: `src/components/ui/kit.tsx` (Screen, Grid/Col 12 cột, Btn md/sm, Toggle segmented, Stats, AmountField…), `NavBar.tsx` (mobile chỉ tab; desktop logo + tab + ví). Mọi màn vừa 1 khung 393×852 và 1440×900 (đã đo scrollHeight; Đầu tư đã mở khoá chỉ dư khi hiện thông báo lỗi giá BTC).
    - **Không còn thẻ khai báo.** Agent `update_profile` → `ChatScreen.onProfileDraft` gộp vào profile và lưu luôn (localStorage). Khoá đầu tư giữ nguyên logic, chữ đổi ("Agent chưa biết thu chi của bạn").
-   - System prompt (`functions/api/chat.ts` REPLY_PROMPT) = chuyên gia tư vấn tài chính cá nhân, không ép khai báo. **Chưa test bằng câu hỏi thật sau khi đổi prompt** (luật AGENTS.md Part 3): nhờ user chat thử vài câu, so trước/sau.
+   - System prompt (`functions/api/chat.ts` REPLY_PROMPT) = chuyên gia tư vấn tài chính cá nhân, không ép khai báo. Đã thử 1 câu thật trên live ("Lương 20 triệu, tiêu 12 triệu, không nợ…"): giọng đúng, tự ghi nhận số; lần đầu agent TỰ ĐỔI "36 triệu ≈ 1,8 USDC" (sai) + tự chọn sàn 3 tháng → đã thêm luật cấm tự đưa số USDC khi app chưa tính sẵn và nói "3–6 tháng" khi chưa biết độ ổn định; chạy lại 2 lần đều đúng. Chưa đo chi phí/câu sau khi đổi prompt.
    - Preview thiết kế trên máy: `preview.html` + `src/preview-main.tsx` (ví giả chỉ đọc, đã cho vào `.git/info/exclude`, không commit). Chạy `bunx vite --port 5299` rồi mở `/preview.html?screen=login|app|warn`.
    - `server/index.ts` (server dev cũ) vẫn còn prompt kiểu thẻ khai báo; production dùng `functions/api/chat.ts`.
 
