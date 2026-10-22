@@ -1,27 +1,38 @@
 /**
  * Cloudflare Pages Function — /api/price
- * BTC/USD from CoinGecko's public simple-price endpoint (no key), cached 5 minutes.
- * cirBTC is backed 1:1 by BTC, so this values the user's cirBTC holdings.
+ * BTC/USD for valuing cirBTC (backed 1:1 by BTC), cached 5 minutes.
+ * Sources (public, no key), first that answers wins: Coinbase spot, then CoinGecko.
  */
 
-const UPSTREAM = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd'
+const CACHE_URL = 'https://moonsafe.internal/api/price/btc-usd'
 
-export const onRequestGet: PagesFunction = async ({ request }) => {
+const SOURCES: Array<{ url: string; pick: (d: unknown) => number | undefined }> = [
+  {
+    url: 'https://api.coinbase.com/v2/prices/BTC-USD/spot',
+    pick: d => Number((d as { data?: { amount?: string } }).data?.amount),
+  },
+  {
+    url: 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd',
+    pick: d => (d as { bitcoin?: { usd?: number } }).bitcoin?.usd,
+  },
+]
+
+export const onRequestGet: PagesFunction = async () => {
   const cache = caches.default
-  const cacheKey = new Request(UPSTREAM, request)
+  const cacheKey = new Request(CACHE_URL)
   const hit = await cache.match(cacheKey)
   if (hit) return hit
 
-  try {
-    const r = await fetch(UPSTREAM, { headers: { accept: 'application/json' } })
-    if (!r.ok) return Response.json({ error: `upstream ${r.status}` }, { status: 502 })
-    const data = await r.json() as { bitcoin?: { usd?: number } }
-    const usd = data.bitcoin?.usd
-    if (!usd || usd <= 0) return Response.json({ error: 'no price' }, { status: 502 })
-    const res = Response.json({ btcUsd: usd, fetchedAt: Date.now() }, { headers: { 'Cache-Control': 'public, max-age=300' } })
-    await cache.put(cacheKey, res.clone())
-    return res
-  } catch {
-    return Response.json({ error: 'fetch failed' }, { status: 502 })
+  for (const s of SOURCES) {
+    try {
+      const r = await fetch(s.url, { headers: { accept: 'application/json', 'user-agent': 'MoonSafe/1.0 (+https://moonsafe.app)' } })
+      if (!r.ok) continue
+      const usd = s.pick(await r.json())
+      if (!usd || !Number.isFinite(usd) || usd <= 0) continue
+      const res = Response.json({ btcUsd: usd, fetchedAt: Date.now() }, { headers: { 'Cache-Control': 'public, max-age=300' } })
+      await cache.put(cacheKey, res.clone())
+      return res
+    } catch { /* try next source */ }
   }
+  return Response.json({ error: 'no price source answered' }, { status: 502 })
 }
