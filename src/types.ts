@@ -1,6 +1,14 @@
 // MoonSafe — shared types
 
-/** Self-declared finances. All money in VND. null = not declared yet. */
+export type Currency = 'VND' | 'USDC'
+export type MoneyField = 'monthlyIncome' | 'monthlyExpenses' | 'debtAmount' | 'otherAssets'
+export const MONEY_FIELDS: MoneyField[] = ['monthlyIncome', 'monthlyExpenses', 'debtAmount', 'otherAssets']
+
+/**
+ * Self-declared finances. null = not declared yet.
+ * Each money field is stored in the currency the user typed it in (units[field],
+ * default VND), so a salary paid in USDC stays exact; screens convert for display.
+ */
 export interface FinancialProfile {
   monthlyIncome: number | null
   monthlyExpenses: number | null   // essential spending per month
@@ -8,6 +16,7 @@ export interface FinancialProfile {
   otherAssets: number | null       // gold, property besides home, stocks…
   age: number | null
   incomeStable: boolean | null     // true → floor 3 months, false → 6 months
+  units?: Partial<Record<MoneyField, Currency>>
   savedAt?: number
 }
 

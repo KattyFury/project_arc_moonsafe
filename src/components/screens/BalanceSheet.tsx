@@ -6,12 +6,12 @@ import { DASH, formatNumber, formatPercent } from '@/lib/format'
 import { Btn, GlassCard, Notice, Row, Screen, Title } from '@/components/ui/kit'
 
 export function BalanceSheet({ onDeclare }: { onDeclare: () => void }) {
-  const { profile, vault, cirBtc, fx, math, money, moneyFromVnd, vndToUsdc } = useApp()
+  const { profile, vault, cirBtc, fx, math, money, moneyOfField, fieldUsdc } = useApp()
   const p = profile.complete ? profile.profile : null
 
   const cirValue = cirBtc.balance === 0n ? 0n : cirBtc.valueUsdc6
-  const other = p ? (p.otherAssets === null ? 0n : vndToUsdc(p.otherAssets)) : null
-  const debt = p ? vndToUsdc(p.debtAmount) : null
+  const other = p ? (p.otherAssets === null ? 0n : fieldUsdc(p, 'otherAssets')) : null
+  const debt = p ? fieldUsdc(p, 'debtAmount') : null
   const vb = vault.vaultBalance
   const wb = vault.walletBalance
 
@@ -19,7 +19,10 @@ export function BalanceSheet({ onDeclare }: { onDeclare: () => void }) {
   const netWorth = assets !== null && debt !== null ? assets - debt : null
   const liquidMonths = p && math.monthlyExpUsdc && vb !== null && wb !== null ? Number(vb + wb) / Number(math.monthlyExpUsdc) : null
   const debtRatio = assets !== null && debt !== null ? (assets > 0n ? (Number(debt) / Number(assets)) * 100 : debt > 0n ? null : 0) : null
-  const savingRate = p && p.monthlyIncome ? ((p.monthlyIncome - (p.monthlyExpenses ?? 0)) / p.monthlyIncome) * 100 : null
+  // Income and spending may be in different currencies (salary in USDC, rent in VND).
+  const inc = p ? fieldUsdc(p, 'monthlyIncome') : null
+  const exp = p ? fieldUsdc(p, 'monthlyExpenses') : null
+  const savingRate = inc !== null && exp !== null && inc > 0n ? (Number(inc - exp) / Number(inc)) * 100 : null
 
   const good = 'var(--success)'
   const bad = 'var(--danger)'
@@ -51,7 +54,7 @@ export function BalanceSheet({ onDeclare }: { onDeclare: () => void }) {
         <Row label="Nợ / tài sản" value={p ? withMark(formatPercent(debtRatio), debtRatio === null ? null : debtRatio === 0) : DASH}
           color={debtRatio === null ? undefined : debtRatio === 0 ? good : bad} />
         <Row label="Tỷ lệ tiết kiệm" sub="(Thu nhập − chi tiêu) / thu nhập" value={p ? formatPercent(savingRate) : DASH} />
-        <Row label="Tài sản khác" value={p ? moneyFromVnd(p.otherAssets) : DASH} last />
+        <Row label="Tài sản khác" value={p ? moneyOfField(p, 'otherAssets') : DASH} last />
       </GlassCard>
 
       <GlassCard>

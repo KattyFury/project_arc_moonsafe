@@ -29,9 +29,9 @@ Câu chốt: "Nên đầu tư nhưng phải có đường lui."
 Dẫn người dùng khai báo thông tin tài chính qua hội thoại tự nhiên bằng tiếng Việt. Hỏi từng câu, không hỏi nhiều thứ một lúc. Khi đã đủ thông tin, xuất JSON.
 
 ## Thông tin cần thu thập
-1. Thu nhập hàng tháng (VND)
-2. Chi tiêu thiết yếu hàng tháng (ăn, nhà, đi lại, điện nước — VND)
-3. Nợ bên ngoài: có không, tổng bao nhiêu VND (vay ngân hàng, thẻ tín dụng, trả góp, vay người quen)
+1. Thu nhập hàng tháng (VND hoặc USDC)
+2. Chi tiêu thiết yếu hàng tháng (ăn, nhà, đi lại, điện nước — VND hoặc USDC)
+3. Nợ bên ngoài: có không, tổng bao nhiêu (vay ngân hàng, thẻ tín dụng, trả góp, vay người quen)
 4. Tuổi
 5. Thu nhập có ổn định không? (lương cố định = ổn định; freelance/kinh doanh = không)
 6. Tài sản khác (vàng, BĐS ngoài nhà ở, cổ phiếu — VND, bỏ qua nếu không có)
@@ -45,15 +45,15 @@ Dẫn người dùng khai báo thông tin tài chính qua hội thoại tự nhi
 - Chỉ được đầu tư khi: không có nợ ngoài VÀ quỹ đủ sàn
 
 ## Ghi nhận khai báo
-Mỗi khi người dùng cho thêm số liệu, cuối câu trả lời xuất JSON trong thẻ <profile> với các trường đã biết (đơn vị VND, null nếu chưa biết):
-<profile>{"monthlyIncome":X,"monthlyExpenses":X,"debtAmount":X,"otherAssets":X,"age":X,"incomeStable":true/false}</profile>
-- debtAmount = tổng nợ bên ngoài (VND). Không có nợ → 0. Chưa hỏi → null.
-- Không tự đoán số. Người dùng nói khoảng/ước chừng thì ghi đúng con số họ nói.
-- App hiện số liệu này lên thẻ khai báo để người dùng kiểm tra rồi tự bấm "Lưu khai báo". Đừng nói là đã lưu.
-Khi đủ 5 trường bắt buộc (thu nhập, chi tiêu, nợ, tuổi, độ ổn định), tóm tắt ngắn: sàn quỹ bao nhiêu tháng, bao nhiêu tiền, và nhắc bấm "Lưu khai báo".
+- Số liệu người dùng nói ra được app tự trích bằng tool update_profile trước khi bạn trả lời; kết quả nằm trong ghi chú hệ thống "Vừa điền vào thẻ khai báo". Dựa vào đó xác nhận ngắn và hỏi trường còn thiếu.
+- Tiền: ghi đúng loại tiền người dùng nói. Nói USDC / USD / $ → currency "USDC"; nói đồng / triệu / nghìn / k → currency "VND" (15 triệu = 15000000). Không tự quy đổi giữa hai loại tiền, không tự đoán số.
+- debtAmount: không có nợ → amount 0.
+- Tool chỉ điền vào thẻ khai báo; người dùng tự kiểm tra rồi bấm "Lưu khai báo". Đừng nói "đã lưu" hay "sẽ lưu", hãy nói "mình đã điền vào thẻ khai báo".
+- Trong trạng thái app, profile.units cho biết khoản nào đang tính bằng USDC (không có = VND).
+Khi đủ 5 trường bắt buộc (thu nhập, chi tiêu, nợ, tuổi, độ ổn định), tóm tắt ngắn: sàn quỹ bao nhiêu tháng và nhắc bấm "Lưu khai báo".
 
 ## DCA
-Bản đầu chỉ đầu tư cirBTC theo DCA, người dùng tự duyệt và tự ký từng lần mua. Nếu người dùng muốn dừng DCA, xác nhận ngắn và thêm thẻ <dca action="stop"/> vào cuối câu trả lời.
+Bản đầu chỉ đầu tư cirBTC theo DCA, người dùng tự duyệt và tự ký từng lần mua. Nếu người dùng muốn dừng DCA, gọi tool stop_dca rồi xác nhận ngắn.
 
 ## Phong cách
 - Tiếng Việt, thân thiện, ngắn gọn
@@ -63,9 +63,99 @@ Bản đầu chỉ đầu tư cirBTC theo DCA, người dùng tự duyệt và t
 - Nếu người dùng hỏi ngoài phạm vi tài chính cá nhân, hãy dùng web_search để tìm thông tin hữu ích
 
 ## Tools
+- stop_dca: dừng kế hoạch DCA khi người dùng yêu cầu
 - web_search: tìm thông tin thị trường, lãi suất, tỷ giá, tin tức tài chính mới nhất để trả lời chính xác hơn`
 
+const MONEY = {
+  type: 'object',
+  properties: {
+    amount: { type: 'number', description: 'Số tiền đúng như người dùng nói (15 triệu = 15000000)' },
+    currency: { type: 'string', enum: ['VND', 'USDC'] },
+  },
+  required: ['amount', 'currency'],
+}
+
+const PROFILE_TOOL = {
+    type: 'function',
+    function: {
+      name: 'update_profile',
+      description: 'Điền số liệu tài chính người dùng vừa nói vào thẻ khai báo của app. Chỉ truyền các trường vừa biết.',
+      parameters: {
+        type: 'object',
+        properties: {
+          monthlyIncome: { ...MONEY, description: 'Thu nhập mỗi tháng' },
+          monthlyExpenses: { ...MONEY, description: 'Chi tiêu thiết yếu mỗi tháng' },
+          debtAmount: { ...MONEY, description: 'Tổng nợ bên ngoài; không có nợ thì amount 0' },
+          otherAssets: { ...MONEY, description: 'Tài sản khác (vàng, BĐS ngoài nhà ở, cổ phiếu…)' },
+          age: { type: 'integer' },
+          incomeStable: { type: 'boolean', description: 'Lương cố định = true; freelance / kinh doanh = false' },
+        },
+      },
+    },
+  }
+
+const EXTRACT_PROMPT = `Bạn trích số liệu tài chính từ tin nhắn MỚI NHẤT của người dùng app MoonSafe và gọi update_profile.
+- Chỉ truyền trường người dùng vừa nói rõ trong tin nhắn mới nhất (dùng tin trước đó chỉ để hiểu ngữ cảnh câu trả lời). Không có số liệu mới → gọi update_profile với object rỗng {}.
+- Loại tiền: USDC, USD, $, đô, đô la → "USDC" (800 đô = 800 USDC; 3k USD = 3000 USDC). Đồng, VND, triệu, tr, nghìn, ngàn, k (khi không kèm USD/đô) → "VND" (15 triệu = 15000000, 500k = 500000).
+- Không tự quy đổi giữa hai loại tiền. Không đoán số người dùng chưa nói.
+- debtAmount CHỈ khi người dùng nói rõ về nợ ("không nợ" → {amount: 0, currency: "VND"}). incomeStable CHỈ khi người dùng nói rõ loại công việc hoặc độ ổn định (nhân viên, lương cố định → true; freelance, tự kinh doanh, thất thường → false). Chữ "lương" một mình KHÔNG đủ để suy ra. Không nói tới → không truyền trường đó.
+- Mỗi con số gắn với đúng khoản mà người dùng nói ngay cạnh nó: "nợ", "vay", "trả góp", "thẻ tín dụng" → debtAmount; "lương", "thu nhập", "kiếm được" → monthlyIncome; "chi tiêu", "tiền nhà", "ăn uống", "sinh hoạt" → monthlyExpenses; "vàng", "nhà đất", "cổ phiếu", "tài sản" → otherAssets.
+
+Ví dụ:
+"nợ thẻ tín dụng 20 triệu" → {"debtAmount":{"amount":20000000,"currency":"VND"}}
+"mình là nhân viên văn phòng, nợ thẻ 20 triệu" → {"incomeStable":true,"debtAmount":{"amount":20000000,"currency":"VND"}}
+"lương 2.500 USDC, tiêu khoảng 15 triệu" → {"monthlyIncome":{"amount":2500,"currency":"USDC"},"monthlyExpenses":{"amount":15000000,"currency":"VND"}}
+"có ít vàng tầm 50 triệu" → {"otherAssets":{"amount":50000000,"currency":"VND"}}`
+
+/** Forced tool call: always returns the fields the user just stated (maybe none). */
+async function extractProfile(apiKey: string, messages: Message[]): Promise<{ update: Record<string, unknown> | null; error?: Response }> {
+  const recent = messages.filter(m => m.role === 'user' || m.role === 'assistant').slice(-4)
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      // Money fields must be exact: gpt-4o scored 12/12 on our test set vs 10/12 for the mini models (2026-10-22).
+      model: 'gpt-4o',
+      messages: [{ role: 'system', content: EXTRACT_PROMPT }, ...recent],
+      tools: [PROFILE_TOOL],
+      tool_choice: { type: 'function', function: { name: 'update_profile' } },
+      temperature: 0,
+      max_tokens: 300,
+    }),
+  })
+  if (!res.ok) return { update: null, error: await openAiError(res) }
+  const data = await res.json() as {
+    choices: Array<{ message: { tool_calls?: Array<{ function: { arguments: string } }> } }>
+    usage?: { prompt_tokens?: number; completion_tokens?: number }
+  }
+  if (data.usage) console.log(`extract tokens in=${data.usage.prompt_tokens} out=${data.usage.completion_tokens}`)
+  try {
+    const args = JSON.parse(data.choices[0]?.message.tool_calls?.[0]?.function.arguments ?? '{}') as Record<string, unknown>
+    return { update: Object.keys(args).length ? args : null }
+  } catch {
+    return { update: null }
+  }
+}
+
+/** Map OpenAI failures to a clear message (AGENTS.md Part 3, rule 4: fail loudly). */
+async function openAiError(res: Response): Promise<Response> {
+  const err = await res.text()
+  console.error('OpenAI error:', res.status, err)
+  if (res.status === 401) return json({ error: 'khoá OpenAI không hợp lệ' }, 502)
+  if (res.status === 429 && /insufficient_quota/.test(err)) return json({ error: 'tài khoản OpenAI hết credit' }, 502)
+  if (res.status === 429) return json({ error: 'OpenAI đang giới hạn tốc độ, thử lại sau ít phút' }, 502)
+  return json({ error: `OpenAI lỗi ${res.status}` }, 502)
+}
+
 const TOOLS = [
+  {
+    type: 'function',
+    function: {
+      name: 'stop_dca',
+      description: 'Dừng kế hoạch mua cirBTC định kỳ (DCA) khi người dùng yêu cầu.',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
   {
     type: 'function',
     function: {
@@ -135,7 +225,15 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
     })
   }
 
+  const extracted = await extractProfile(apiKey, messages)
+  if (extracted.error) return extracted.error
+  let profileUpdate: Record<string, unknown> | null = extracted.update
+  if (profileUpdate) {
+    allMessages.push({ role: 'system', content: `Vừa điền vào thẻ khai báo (người dùng sẽ tự kiểm tra và bấm "Lưu khai báo"): ${JSON.stringify(profileUpdate)}` })
+  }
+
   // Agentic loop with tool-calling (max 3 rounds)
+  let dcaStop = false
   let rounds = 0
   const MAX_ROUNDS = 3
 
@@ -158,15 +256,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       }),
     })
 
-    if (!res.ok) {
-      const err = await res.text()
-      console.error('OpenAI error:', res.status, err)
-      // Fail loudly on billing / key problems so the owner can top up (AGENTS.md Part 3, rule 4).
-      if (res.status === 401) return json({ error: 'khoá OpenAI không hợp lệ' }, 502)
-      if (res.status === 429 && /insufficient_quota/.test(err)) return json({ error: 'tài khoản OpenAI hết credit' }, 502)
-      if (res.status === 429) return json({ error: 'OpenAI đang giới hạn tốc độ, thử lại sau ít phút' }, 502)
-      return json({ error: `OpenAI lỗi ${res.status}` }, 502)
-    }
+    if (!res.ok) return openAiError(res)
 
     const completion = await res.json() as {
       choices: Array<{
@@ -189,7 +279,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
     if (!msg.tool_calls || msg.tool_calls.length === 0) {
       const u = (completion as { usage?: { prompt_tokens?: number; completion_tokens?: number } }).usage
       if (u) console.log(`chat tokens in=${u.prompt_tokens} out=${u.completion_tokens} rounds=${rounds}`)
-      return json({ content: msg.content ?? '' })
+      return json({ content: msg.content ?? '', profileUpdate, dcaStop })
     }
 
     // Execute tool calls
@@ -201,7 +291,17 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
 
     for (const toolCall of msg.tool_calls) {
       let toolResult = ''
-      if (toolCall.function.name === 'web_search') {
+      if (toolCall.function.name === 'update_profile') {
+        try {
+          profileUpdate = { ...(profileUpdate ?? {}), ...(JSON.parse(toolCall.function.arguments) as Record<string, unknown>) }
+          toolResult = 'Đã điền vào thẻ khai báo. Người dùng sẽ tự kiểm tra và bấm "Lưu khai báo".'
+        } catch {
+          toolResult = 'Dữ liệu không hợp lệ.'
+        }
+      } else if (toolCall.function.name === 'stop_dca') {
+        dcaStop = true
+        toolResult = 'Đã dừng DCA trong app.'
+      } else if (toolCall.function.name === 'web_search') {
         try {
           const args = JSON.parse(toolCall.function.arguments) as { query: string }
           toolResult = await webSearch(args.query)

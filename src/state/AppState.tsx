@@ -8,6 +8,8 @@ import { useProfileState, type ProfileState } from '@/hooks/useFinancialProfile'
 import { useExchangeRateState, vndToUsdc6, usdc6ToVnd, type FxState } from '@/hooks/useExchangeRate'
 import { useCirBtcState, type CirBtcState } from '@/hooks/useCirBtc'
 import { DASH, formatUsdc, formatVnd } from '@/lib/format'
+import { unitOf } from '@/hooks/useFinancialProfile'
+import type { FinancialProfile, MoneyField } from '@/types'
 
 export type Unit = 'VND' | 'USD'
 const UNIT_KEY = 'moonsafe_unit_v1'
@@ -51,6 +53,10 @@ export interface AppState {
   money: (usdc6: bigint | null | undefined) => string
   /** VND amount in the chosen unit, "–" when unknown. */
   moneyFromVnd: (vnd: number | null | undefined) => string
+  /** A declared money field (typed in VND or USDC) as 6-dec USDC; null if unknown. */
+  fieldUsdc: (p: FinancialProfile | null | undefined, f: MoneyField) => bigint | null
+  /** A declared money field shown in the chosen display unit. */
+  moneyOfField: (p: FinancialProfile | null | undefined, f: MoneyField) => string
   vndToUsdc: (vnd: number | null | undefined) => bigint | null
 }
 
@@ -86,10 +92,22 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     return rate ? formatUsdc(vndToUsdc6(vnd, rate)) : DASH
   }, [unit, rate])
 
+  const fieldUsdc = useCallback((p: FinancialProfile | null | undefined, f: MoneyField): bigint | null => {
+    const v = p?.[f]
+    if (v === null || v === undefined) return null
+    return unitOf(p, f) === 'USDC' ? BigInt(Math.round(v * 1_000_000)) : vndToUsdc(v)
+  }, [vndToUsdc])
+
+  const moneyOfField = useCallback((p: FinancialProfile | null | undefined, f: MoneyField): string => {
+    const v = p?.[f]
+    if (v === null || v === undefined) return DASH
+    return unitOf(p, f) === 'USDC' ? money(BigInt(Math.round(v * 1_000_000))) : moneyFromVnd(v)
+  }, [money, moneyFromVnd])
+
   const math = useMemo<FundMath>(() => {
     const p = profile.profile
     const floorMonths = p?.incomeStable === null || p?.incomeStable === undefined ? null : p.incomeStable ? 3 : 6
-    const monthlyExpUsdc = p?.monthlyExpenses ? vndToUsdc(p.monthlyExpenses) : null
+    const monthlyExpUsdc = p?.monthlyExpenses ? fieldUsdc(p, 'monthlyExpenses') : null
     const floorUsdc = monthlyExpUsdc !== null && floorMonths !== null ? monthlyExpUsdc * BigInt(floorMonths) : null
     const vb = vault.vaultBalance
     const floorPct = floorUsdc && vb !== null ? Math.min(100, Number((vb * 10_000n) / floorUsdc) / 100) : null
@@ -99,9 +117,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     const fundOk = floorUsdc !== null && floorUsdc > 0n && vb !== null && vb >= floorUsdc
     const investUnlocked = profile.complete && noDebt === true && fundOk
     return { floorMonths, monthlyExpUsdc, floorUsdc, floorPct, vaultMonths, shortfall, noDebt, fundOk, investUnlocked }
-  }, [profile.profile, profile.complete, vault.vaultBalance, vndToUsdc])
+  }, [profile.profile, profile.complete, vault.vaultBalance, fieldUsdc])
 
-  const value: AppState = { vault, profile, fx, cirBtc, unit, setUnit, math, money, moneyFromVnd, vndToUsdc }
+  const value: AppState = { vault, profile, fx, cirBtc, unit, setUnit, math, money, moneyFromVnd, vndToUsdc, fieldUsdc, moneyOfField }
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }
 

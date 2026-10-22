@@ -1,29 +1,52 @@
 // Self-declared finances, stored only in this browser (localStorage, try/catch).
 
 import { useCallback, useState } from 'react'
-import { EMPTY_PROFILE, type FinancialProfile } from '@/types'
+import { EMPTY_PROFILE, MONEY_FIELDS, type Currency, type FinancialProfile, type MoneyField } from '@/types'
 
 const STORAGE_KEY = 'moonsafe_profile_v1'
 
 const num = (v: unknown): number | null =>
   typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : null
 
-/** Accepts the current shape and the Arc Studio one (monthlyEssentials / hasExternalDebt). */
+const isCurrency = (c: unknown): c is Currency => c === 'VND' || c === 'USDC'
+
+/** A money value as a plain number (VND) or {amount, currency} (what the agent sends for USDC). */
+function moneyValue(v: unknown): { amount: number | null; currency?: Currency } {
+  if (v && typeof v === 'object' && 'amount' in v) {
+    const o = v as { amount?: unknown; currency?: unknown }
+    const c = typeof o.currency === 'string' ? o.currency.toUpperCase().replace(/^USD$/, 'USDC') : undefined
+    return { amount: num(o.amount), currency: isCurrency(c) ? c : undefined }
+  }
+  return { amount: num(v) }
+}
+
+/**
+ * Accepts the current shape, the agent's shape ({amount, currency} for USDC) and
+ * the Arc Studio one (monthlyEssentials / hasExternalDebt).
+ */
 export function normalizeProfile(raw: Record<string, unknown> | null | undefined): FinancialProfile {
   if (!raw) return { ...EMPTY_PROFILE }
-  let debt = num(raw.debtAmount)
+  const rawUnits = (raw.units && typeof raw.units === 'object' ? raw.units : {}) as Record<string, unknown>
+  const units: Partial<Record<MoneyField, Currency>> = {}
+  const out: Record<MoneyField, number | null> = { monthlyIncome: null, monthlyExpenses: null, debtAmount: null, otherAssets: null }
+  for (const f of MONEY_FIELDS) {
+    const m = moneyValue(f === 'monthlyExpenses' && raw[f] === undefined ? raw.monthlyEssentials : raw[f])
+    out[f] = m.amount
+    const c = m.currency ?? (isCurrency(rawUnits[f]) ? rawUnits[f] : undefined)
+    if (c && c !== 'VND') units[f] = c
+  }
   // Legacy boolean: "no debt" is a real answer (0); "has debt" without an amount stays unknown.
-  if (debt === null && (raw.hasExternalDebt === false || raw.hasDebt === false)) debt = 0
+  if (out.debtAmount === null && (raw.hasExternalDebt === false || raw.hasDebt === false)) out.debtAmount = 0
   return {
-    monthlyIncome: num(raw.monthlyIncome),
-    monthlyExpenses: num(raw.monthlyExpenses) ?? num(raw.monthlyEssentials),
-    debtAmount: debt,
-    otherAssets: num(raw.otherAssets),
+    ...out,
     age: num(raw.age),
     incomeStable: typeof raw.incomeStable === 'boolean' ? raw.incomeStable : null,
+    units,
     savedAt: num(raw.savedAt) ?? undefined,
   }
 }
+
+export const unitOf = (p: FinancialProfile | null | undefined, f: MoneyField): Currency => p?.units?.[f] ?? 'VND'
 
 function read(): FinancialProfile | null {
   try {

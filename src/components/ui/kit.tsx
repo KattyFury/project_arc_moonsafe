@@ -121,6 +121,53 @@ export function VndField({ label, value, onChange }: { label: string; value: num
   )
 }
 
+/**
+ * Money input typed in VND (whole đồng, thousand dots) or USDC (decimals allowed).
+ * Switching the currency clears the number so 30.000.000 ₫ never turns into 30.000.000 USDC.
+ */
+export function MoneyInput({ label, value, currency, onChange }: {
+  label: string
+  value: number | null
+  currency: 'VND' | 'USDC'
+  onChange: (value: number | null, currency: 'VND' | 'USDC') => void
+}) {
+  const [usdcText, setUsdcText] = useState<string | null>(null)
+  const shown = currency === 'VND'
+    ? (value === null ? '' : new Intl.NumberFormat('vi-VN').format(value))
+    : (usdcText ?? (value === null ? '' : String(value).replace('.', ',')))
+
+  const type = (raw: string) => {
+    if (currency === 'VND') { onChange(parseVndInput(raw), 'VND'); return }
+    const t = cleanUsdcInput(raw)
+    setUsdcText(t)
+    onChange(t ? Number(t.replace(',', '.')) : null, 'USDC')
+  }
+  const switchTo = (c: 'VND' | 'USDC') => {
+    if (c === currency) return
+    setUsdcText(null)
+    onChange(null, c)
+  }
+
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-[12px] font-semibold" style={{ color: 'var(--subtle)' }}>{label}</span>
+      <div className="flex items-center gap-1 pl-3 pr-1" style={fieldStyle}>
+        <input inputMode={currency === 'VND' ? 'numeric' : 'decimal'} value={shown} placeholder="0" onChange={e => type(e.target.value)}
+          className="flex-1 min-w-0 bg-transparent outline-none text-[15px] tabular-nums" style={{ color: 'var(--ink)' }} />
+        <div className="flex rounded-lg p-0.5 flex-shrink-0" style={{ background: 'white' }}>
+          {(['VND', 'USDC'] as const).map(c => (
+            <button key={c} type="button" onClick={() => switchTo(c)} aria-pressed={currency === c}
+              className="px-1.5 py-1 rounded-md text-[11px] font-semibold"
+              style={currency === c ? { background: 'var(--accent)', color: 'white' } : { color: 'var(--subtle)' }}>
+              {c === 'VND' ? '₫' : 'USDC'}
+            </button>
+          ))}
+        </div>
+      </div>
+    </label>
+  )
+}
+
 export function NumField({ label, value, onChange }: { label: string; value: number | null; onChange: (v: number | null) => void }) {
   return (
     <label className="flex flex-col gap-1">

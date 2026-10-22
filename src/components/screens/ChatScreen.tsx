@@ -6,12 +6,12 @@ import { Loader2, Send } from 'lucide-react'
 import { toast } from 'sonner'
 import { useApp } from '@/state/AppState'
 import { WELCOME_BACK, useAgent } from '@/hooks/useAgent'
-import { isProfileComplete, normalizeProfile } from '@/hooks/useFinancialProfile'
+import { isProfileComplete, normalizeProfile, unitOf } from '@/hooks/useFinancialProfile'
 import { dcaNextRun } from '@/hooks/useCirBtc'
 import { useNow } from '@/hooks/useNow'
 import { formatUsdc } from '@/lib/format'
-import { EMPTY_PROFILE, type FinancialProfile } from '@/types'
-import { Btn, GlassCard, Notice, NumField, Toggle, VndField } from '@/components/ui/kit'
+import { EMPTY_PROFILE, type Currency, type FinancialProfile, type MoneyField } from '@/types'
+import { Btn, GlassCard, MoneyInput, Notice, NumField, Toggle } from '@/components/ui/kit'
 
 function renderContent(text: string): ReactNode {
   return text.split('\n').map((line, i, arr) => (
@@ -56,7 +56,14 @@ export function ChatScreen({ declareKey, onError, onOpenInvest }: { declareKey: 
       setDraft(prev => {
         const next = { ...prev }
         for (const k of Object.keys(found) as (keyof FinancialProfile)[]) {
-          if (k !== 'savedAt' && found[k] !== null && found[k] !== undefined) (next as Record<string, unknown>)[k] = found[k]
+          if (k !== 'savedAt' && k !== 'units' && found[k] !== null && found[k] !== undefined) {
+            (next as Record<string, unknown>)[k] = found[k]
+            // Keep the currency the agent heard (USDC salary) next to the number.
+            const f = k as MoneyField
+            if (['monthlyIncome', 'monthlyExpenses', 'debtAmount', 'otherAssets'].includes(f)) {
+              next.units = { ...next.units, [f]: unitOf(found, f) }
+            }
+          }
         }
         return next
       })
@@ -153,7 +160,14 @@ export function ChatScreen({ declareKey, onError, onOpenInvest }: { declareKey: 
 function DeclarationCard({ draft, onChange, onSave, onClose, agentFilled }: {
   draft: FinancialProfile; onChange: (p: FinancialProfile) => void; onSave: () => void; onClose?: () => void; agentFilled: boolean
 }) {
+  const { unit } = useApp()
   const set = <K extends keyof FinancialProfile>(k: K, v: FinancialProfile[K]) => onChange({ ...draft, [k]: v })
+  // Empty fields start in the app's display unit; filled ones keep the unit they were typed in.
+  const cur = (f: MoneyField): Currency => draft.units?.[f] ?? (draft[f] === null && unit === 'USD' ? 'USDC' : 'VND')
+  const setMoney = (f: MoneyField, v: number | null, c: Currency) => onChange({ ...draft, [f]: v, units: { ...draft.units, [f]: c } })
+  const moneyField = (f: MoneyField, label: string, onValue?: (v: number | null) => number | null) => (
+    <MoneyInput label={label} value={draft[f]} currency={cur(f)} onChange={(v, c) => setMoney(f, onValue ? onValue(v) : v, c)} />
+  )
   const [debt, setDebt] = useState<'no' | 'yes' | null>(draft.debtAmount === null ? null : draft.debtAmount === 0 ? 'no' : 'yes')
   useEffect(() => {
     if (draft.debtAmount !== null) setDebt(draft.debtAmount === 0 ? 'no' : 'yes')
@@ -167,16 +181,14 @@ function DeclarationCard({ draft, onChange, onSave, onClose, agentFilled }: {
         {onClose && <button onClick={onClose} className="text-[13px] font-semibold" style={{ color: 'var(--accent)' }}>Đóng</button>}
       </div>
       {agentFilled && <p className="text-[12px]" style={{ color: 'var(--accent-dark)' }}>Agent đã điền theo câu trả lời của bạn. Kiểm tra rồi bấm Lưu.</p>}
-      <div className="grid grid-cols-2 gap-2">
-        <VndField label="Thu nhập / tháng" value={draft.monthlyIncome} onChange={v => set('monthlyIncome', v)} />
-        <VndField label="Chi tiêu thiết yếu / tháng" value={draft.monthlyExpenses} onChange={v => set('monthlyExpenses', v)} />
-      </div>
+      {moneyField('monthlyIncome', 'Thu nhập / tháng')}
+      {moneyField('monthlyExpenses', 'Chi tiêu thiết yếu / tháng')}
       <div className="flex flex-col gap-1">
         <span className="text-[12px] font-semibold" style={{ color: 'var(--subtle)' }}>Nợ bên ngoài</span>
         <Toggle value={debt} onChange={v => { setDebt(v); set('debtAmount', v === 'no' ? 0 : null) }}
           options={[{ value: 'no', label: 'Không có nợ' }, { value: 'yes', label: 'Có nợ' }]} />
       </div>
-      {debt === 'yes' && <VndField label="Tổng nợ" value={draft.debtAmount} onChange={v => set('debtAmount', v === 0 ? null : v)} />}
+      {debt === 'yes' && moneyField('debtAmount', 'Tổng nợ', v => (v === 0 ? null : v))}
       <div className="grid grid-cols-2 gap-2">
         <NumField label="Tuổi" value={draft.age} onChange={v => set('age', v)} />
         <div className="flex flex-col gap-1">
@@ -185,7 +197,7 @@ function DeclarationCard({ draft, onChange, onSave, onClose, agentFilled }: {
             options={[{ value: 'y', label: 'Ổn định' }, { value: 'n', label: 'Không' }]} />
         </div>
       </div>
-      <VndField label="Tài sản khác (vàng, BĐS, cổ phiếu…) — không bắt buộc" value={draft.otherAssets} onChange={v => set('otherAssets', v)} />
+      {moneyField('otherAssets', 'Tài sản khác (vàng, BĐS, cổ phiếu…) — không bắt buộc')}
       <Btn disabled={!ok} onClick={onSave}>Lưu khai báo</Btn>
       {!ok && <p className="text-[11px] text-center" style={{ color: 'var(--muted)' }}>Điền đủ thu nhập, chi tiêu, nợ, tuổi và độ ổn định để lưu.</p>}
     </GlassCard>
