@@ -3,6 +3,7 @@
 App quỹ dự phòng web3 trên Arc Testnet. Live: https://moonsafe.app (Cloudflare Pages project `moonsafe`, deploy tay — push GitHub KHÔNG tự deploy).
 
 ## Deploy
+User muốn sửa thẳng trên `main` + deploy production moonsafe.app, KHÔNG tách nhánh/preview riêng (chốt 2026-10-22).
 ```
 bunx vite build
 npx wrangler pages deploy dist --project-name moonsafe --branch main      # production
