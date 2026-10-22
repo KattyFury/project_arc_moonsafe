@@ -18,7 +18,7 @@ export const privyConfig: PrivyClientConfig = {
   appearance: {
     theme: 'light',
     accentColor: '#1E6DF7',
-    logo: undefined,
+    logo: `${window.location.origin}/logo.svg`,
     loginMessage: 'Đăng nhập vào MoonSafe',
     walletChainType: 'ethereum-only',
   },

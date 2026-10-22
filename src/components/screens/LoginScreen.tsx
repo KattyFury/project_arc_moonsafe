@@ -1,4 +1,4 @@
-// Screen 1 — Đăng nhập. Row 1 empty; logo is an empty box until the logo exists.
+// Screen 1 — Đăng nhập. Row 1 empty.
 
 import { useLogin } from '@privy-io/react-auth'
 import { Frame } from '@/components/layout/Frame'
@@ -10,7 +10,7 @@ export function LoginScreen() {
     <Frame>
       <div className="flex-1 flex flex-col items-center justify-center gap-8 text-center py-8">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 rounded-md border-2 border-dashed border-line" aria-label="Logo" />
+          <img src="/logo.svg" alt="MoonSafe" width={64} height={64} />
           <h1 className="text-app-large-title text-ink">MoonSafe</h1>
           <p className="text-app-secondary text-grey max-w-[296px]">“Có đường lui thì mới dám liều.”</p>
         </div>
