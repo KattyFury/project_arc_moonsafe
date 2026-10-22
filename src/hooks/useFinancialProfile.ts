@@ -1,68 +1,65 @@
-import { useState, useCallback } from 'react'
-import type { FinancialProfile } from '@/types'
+// Self-declared finances, stored only in this browser (localStorage, try/catch).
+
+import { useCallback, useState } from 'react'
+import { EMPTY_PROFILE, type FinancialProfile } from '@/types'
 
 const STORAGE_KEY = 'moonsafe_profile_v1'
 
-function readFromStorage(): FinancialProfile | null {
+const num = (v: unknown): number | null =>
+  typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : null
+
+/** Accepts the current shape and the Arc Studio one (monthlyEssentials / hasExternalDebt). */
+export function normalizeProfile(raw: Record<string, unknown> | null | undefined): FinancialProfile {
+  if (!raw) return { ...EMPTY_PROFILE }
+  let debt = num(raw.debtAmount)
+  // Legacy boolean: "no debt" is a real answer (0); "has debt" without an amount stays unknown.
+  if (debt === null && (raw.hasExternalDebt === false || raw.hasDebt === false)) debt = 0
+  return {
+    monthlyIncome: num(raw.monthlyIncome),
+    monthlyExpenses: num(raw.monthlyExpenses) ?? num(raw.monthlyEssentials),
+    debtAmount: debt,
+    otherAssets: num(raw.otherAssets),
+    age: num(raw.age),
+    incomeStable: typeof raw.incomeStable === 'boolean' ? raw.incomeStable : null,
+    savedAt: num(raw.savedAt) ?? undefined,
+  }
+}
+
+function read(): FinancialProfile | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return null
-    return JSON.parse(raw) as FinancialProfile
+    return raw ? normalizeProfile(JSON.parse(raw) as Record<string, unknown>) : null
   } catch {
     return null
   }
 }
 
-function writeToStorage(profile: FinancialProfile): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(profile))
-  } catch {
-    // ignore write errors
-  }
+/** Everything the floor and invest gate need. otherAssets is optional. */
+export function isProfileComplete(p: FinancialProfile | null): p is FinancialProfile {
+  return !!p && p.monthlyIncome !== null && p.monthlyExpenses !== null && p.monthlyExpenses > 0
+    && p.debtAmount !== null && p.age !== null && p.incomeStable !== null
 }
 
-export function useFinancialProfile() {
-  const [profile, setProfileState] = useState<FinancialProfile | null>(readFromStorage)
+export interface ProfileState {
+  profile: FinancialProfile | null
+  complete: boolean
+  saveProfile: (p: FinancialProfile) => void
+  clearProfile: () => void
+}
+
+export function useProfileState(): ProfileState {
+  const [profile, setProfile] = useState<FinancialProfile | null>(read)
 
   const saveProfile = useCallback((p: FinancialProfile) => {
-    const updated = { ...p, savedAt: Date.now() }
-    writeToStorage(updated)
-    setProfileState(updated)
+    const next = { ...p, savedAt: Date.now() }
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch { /* storage blocked */ }
+    setProfile(next)
   }, [])
 
   const clearProfile = useCallback(() => {
-    try { localStorage.removeItem(STORAGE_KEY) } catch { /* ignore */ }
-    setProfileState(null)
+    try { localStorage.removeItem(STORAGE_KEY) } catch { /* storage blocked */ }
+    setProfile(null)
   }, [])
 
-  // Minimum vault floor in USDC (6-decimal integer)
-  // Spec: 3 months essentials if stable income, 6 months if not
-  const floorUsdc = useCallback((p: FinancialProfile | null): number | null => {
-    if (!p || p.monthlyEssentials === null) return null
-    // Convert VND to USD at cached rate — we use profile.monthlyEssentials in VND,
-    // but vault stores USDC. We store/display in USDC units externally.
-    // The hook returns the floor in terms of "months of essentials" value.
-    // Caller must multiply by USDC per month value.
-    return null // caller handles currency conversion
-  }, [])
-
-  const vaultFloorMonths = useCallback((p: FinancialProfile | null): number => {
-    if (!p) return 3
-    return p.incomeStable ? 3 : 6
-  }, [])
-
-  // Max invest ratio by age: Normal = 110 - age, Risky = 120 - age (capped 0–100)
-  const maxInvestRatio = useCallback((age: number) => ({
-    normal: Math.min(100, Math.max(0, 110 - age)) / 100,
-    risky: Math.min(100, Math.max(0, 120 - age)) / 100,
-  }), [])
-
-  const canInvest = useCallback((p: FinancialProfile | null, vaultBalance: bigint, floorUsdcAmount: bigint): boolean => {
-    if (!p) return false
-    if (p.hasExternalDebt || p.hasDebt) return false
-    if (vaultBalance < floorUsdcAmount) return false
-    return true
-  }, [])
-
-  return { profile, saveProfile, clearProfile, vaultFloorMonths, maxInvestRatio, canInvest, floorUsdc }
+  return { profile, complete: isProfileComplete(profile), saveProfile, clearProfile }
 }

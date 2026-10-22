@@ -1,71 +1,71 @@
-import { useState, useEffect, useRef } from 'react'
+// VND per USD from /api/rates (open.er-api.com, cached 24h at the edge).
+// A rate fetched within 24h is reused without a request. If fetching fails we fall
+// back to the last cached rate (marked stale); with no rate at all we return null
+// and the UI shows "–" — never a guessed number.
+
+import { useEffect, useState } from 'react'
 
 const CACHE_KEY = 'moonsafe_fx_v1'
-const CACHE_TTL = 24 * 60 * 60 * 1000 // 24 hours
+const TTL = 24 * 60 * 60 * 1000
 
-interface CachedRate {
-  vndPerUsd: number
-  fetchedAt: number
-}
+interface Cached { vndPerUsd: number; fetchedAt: number }
 
-const FALLBACK_VND_PER_USD = 25000
-
-function readCache(): CachedRate | null {
+function readCache(): Cached | null {
   try {
     const raw = localStorage.getItem(CACHE_KEY)
     if (!raw) return null
-    const parsed = JSON.parse(raw) as CachedRate
-    if (Date.now() - parsed.fetchedAt > CACHE_TTL) return null
-    return parsed
-  } catch {
-    return null
+    const c = JSON.parse(raw) as Cached
+    return c.vndPerUsd > 0 ? c : null
+  } catch { return null }
+}
+
+async function fetchRate(): Promise<number | null> {
+  for (const url of ['/api/rates', 'https://open.er-api.com/v6/latest/USD']) {
+    try {
+      const r = await fetch(url)
+      if (!r.ok) continue
+      const data = await r.json() as { rates?: Record<string, number> }
+      const v = data.rates?.VND
+      if (v && v > 0) return v
+    } catch { /* try next */ }
   }
+  return null
 }
 
-function writeCache(rate: CachedRate) {
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify(rate)) } catch { /* ignore */ }
+export interface FxState {
+  vndPerUsd: number | null
+  fetchedAt: number | null
+  stale: boolean
 }
 
-function getInitialRate(): number {
-  const cached = readCache()
-  return cached?.vndPerUsd ?? FALLBACK_VND_PER_USD
-}
-
-export function useExchangeRate() {
-  const [vndPerUsd, setVndPerUsd] = useState<number>(getInitialRate)
-  const [rateError, setRateError] = useState(false)
-  const fetched = useRef(false)
+export function useExchangeRateState(): FxState {
+  const [state, setState] = useState<FxState>(() => {
+    const c = readCache()
+    return c ? { vndPerUsd: c.vndPerUsd, fetchedAt: c.fetchedAt, stale: Date.now() - c.fetchedAt > TTL } : { vndPerUsd: null, fetchedAt: null, stale: false }
+  })
 
   useEffect(() => {
-    // If cache is still valid, no need to re-fetch
-    if (readCache() || fetched.current) return
-    fetched.current = true
-
-    fetch('https://open.er-api.com/v6/latest/USD')
-      .then(r => r.json())
-      .then((data: { rates?: Record<string, number> }) => {
-        const rate = data?.rates?.VND
-        if (rate && rate > 0) {
-          setVndPerUsd(rate)
-          writeCache({ vndPerUsd: rate, fetchedAt: Date.now() })
-          setRateError(false)
-        } else {
-          setRateError(true)
-        }
-      })
-      .catch(() => setRateError(true))
+    const c = readCache()
+    if (c && Date.now() - c.fetchedAt <= TTL) return
+    let cancelled = false
+    void fetchRate().then(rate => {
+      if (cancelled) return
+      if (rate) {
+        const now = Date.now()
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify({ vndPerUsd: rate, fetchedAt: now })) } catch { /* storage blocked */ }
+        setState({ vndPerUsd: rate, fetchedAt: now, stale: false })
+      } else if (c) {
+        setState({ vndPerUsd: c.vndPerUsd, fetchedAt: c.fetchedAt, stale: true })
+      }
+    })
+    return () => { cancelled = true }
   }, [])
 
-  const vndToUsdc = (vnd: number): bigint => {
-    if (!vndPerUsd) return 0n
-    const usd = vnd / vndPerUsd
-    return BigInt(Math.round(usd * 1_000_000))
-  }
-
-  const usdcToVnd = (usdcUnits: bigint): number => {
-    const usd = Number(usdcUnits) / 1_000_000
-    return usd * vndPerUsd
-  }
-
-  return { vndPerUsd, vndToUsdc, usdcToVnd, rateError }
+  return state
 }
+
+export const vndToUsdc6 = (vnd: number, vndPerUsd: number): bigint =>
+  BigInt(Math.round((vnd / vndPerUsd) * 1_000_000))
+
+export const usdc6ToVnd = (units: bigint, vndPerUsd: number): number =>
+  (Number(units) / 1_000_000) * vndPerUsd

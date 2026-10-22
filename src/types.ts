@@ -1,29 +1,38 @@
 // MoonSafe — shared types
 
+/** Self-declared finances. All money in VND. null = not declared yet. */
 export interface FinancialProfile {
-  monthlyIncome: number | null       // VND
-  monthlyExpenses: number | null     // VND essential expenses (replaces monthlyEssentials)
-  monthlyEssentials?: number | null  // legacy alias kept for compatibility
-  hasExternalDebt: boolean           // renamed from hasDebt
-  hasDebt?: boolean                  // legacy alias
-  debtNote?: string
-  otherAssets: number | null         // USDC
+  monthlyIncome: number | null
+  monthlyExpenses: number | null   // essential spending per month
+  debtAmount: number | null        // external debt declared; 0 = no debt
+  otherAssets: number | null       // gold, property besides home, stocks…
   age: number | null
-  incomeStable: boolean              // true = 3 months floor, false = 6 months
-  savedAt?: number                   // timestamp ms
+  incomeStable: boolean | null     // true → floor 3 months, false → 6 months
+  savedAt?: number
 }
 
-export type ActiveTab = 'fund' | 'invest' | 'balance' | 'settings'
+export const EMPTY_PROFILE: FinancialProfile = {
+  monthlyIncome: null,
+  monthlyExpenses: null,
+  debtAmount: null,
+  otherAssets: null,
+  age: null,
+  incomeStable: null,
+}
+
+export type Panel = 'fund' | 'invest' | 'balance' | 'settings'
 
 export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
   timestamp: number
+  error?: boolean
 }
 
-export interface DCASchedule {
-  enabled: boolean
-  amountUsdc: number      // 6-decimal integer
+/** DCA plan the user approved. Each run is a swap the user signs. */
+export interface DcaPlan {
+  amountUsdc: string      // 6-decimal units, as string (bigint-safe JSON)
   intervalDays: number
+  startedAt: number
   lastRunAt: number | null
 }

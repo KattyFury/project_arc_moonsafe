@@ -1,259 +1,156 @@
+// Vault state — one instance for the whole app (see AppState).
+// On Arc, USDC is the native gas token (18 decimals). The vault holds native USDC,
+// so fees/deposits are msg.value and no approve is needed. The app works in
+// 6-decimal USDC units and converts at the edge.
+
 import { useCallback, useEffect, useState } from 'react'
 import { useAccount, usePublicClient, useSendTransaction } from 'wagmi'
-import { encodeFunctionData, parseUnits, zeroAddress } from 'viem'
+import { encodeFunctionData, zeroAddress } from 'viem'
 import { arcTestnet } from 'viem/chains'
+import { nativeToUsdc6, usdc6ToNative } from '@/lib/format'
 
 const CHAIN_ID = arcTestnet.id // 5042002
-const FACTORY_ADDRESS = (import.meta.env.VITE_FACTORY_ADDRESS ?? '') as `0x${string}`
+export const FACTORY_ADDRESS = (import.meta.env.VITE_FACTORY_ADDRESS ?? '') as `0x${string}`
 
-// On Arc, USDC is the native gas token — fee is sent as msg.value, no approve needed.
-// 1 USDC = 1_000_000 in ERC-20 terms (6 decimals) but native has 18 decimals.
-// Factory fee is stored as native units (1e12 = 1 USDC in native 18-decimal terms).
+/** Kept in the wallet for gas when the user taps "Tối đa" (0,02 USDC). */
+export const GAS_RESERVE_USDC6 = 20_000n
+/** Shown as the gas estimate (~0,01 USDC). */
+export const GAS_ESTIMATE_USDC6 = 10_000n
+
+const POLL_MS = 15_000
+
 export const VAULT_FACTORY_ABI = [
-  {
-    name: 'createVault',
-    type: 'function',
-    stateMutability: 'payable',
-    inputs: [],
-    outputs: [{ name: 'vault', type: 'address' }],
-  },
-  {
-    name: 'getVault',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [{ name: 'owner', type: 'address' }],
-    outputs: [{ name: '', type: 'address' }],
-  },
-  {
-    name: 'hasVault',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [{ name: 'owner', type: 'address' }],
-    outputs: [{ name: '', type: 'bool' }],
-  },
-  {
-    name: 'vaultMeetsMinimum',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [
-      { name: 'owner', type: 'address' },
-      { name: 'minAmount', type: 'uint256' },
-    ],
-    outputs: [{ name: '', type: 'bool' }],
-  },
-  {
-    name: 'fee',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [],
-    outputs: [{ name: '', type: 'uint256' }],
-  },
+  { name: 'createVault', type: 'function', stateMutability: 'payable', inputs: [], outputs: [{ name: 'vault', type: 'address' }] },
+  { name: 'getVault', type: 'function', stateMutability: 'view', inputs: [{ name: 'owner', type: 'address' }], outputs: [{ name: '', type: 'address' }] },
+  { name: 'fee', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ name: '', type: 'uint256' }] },
 ] as const
 
 export const VAULT_PROXY_ABI = [
-  {
-    name: 'deposit',
-    type: 'function',
-    stateMutability: 'payable',
-    inputs: [],
-    outputs: [],
-  },
-  {
-    name: 'withdraw',
-    type: 'function',
-    stateMutability: 'nonpayable',
-    inputs: [
-      { name: 'amount', type: 'uint256' },
-      { name: 'to', type: 'address' },
-    ],
-    outputs: [],
-  },
-  {
-    name: 'getBalance',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [],
-    outputs: [{ name: '', type: 'uint256' }],
-  },
-  {
-    name: 'meetsMinimum',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [{ name: 'minAmount', type: 'uint256' }],
-    outputs: [{ name: '', type: 'bool' }],
-  },
+  { name: 'deposit', type: 'function', stateMutability: 'payable', inputs: [], outputs: [] },
+  { name: 'withdraw', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'amount', type: 'uint256' }, { name: 'to', type: 'address' }], outputs: [] },
+  { name: 'getBalance', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ name: '', type: 'uint256' }] },
 ] as const
 
-// On Arc: 1 USDC displayed = 1_000_000 ERC-20 units = 1_000_000_000_000 native units (1e12)
-// Vault getBalance() returns native units. We display in USDC (6-decimal) by dividing by 1e6.
-// Conversion factor: Arc native USDC has 18 decimals, display/ERC-20 USDC has 6 decimals
-const _NATIVE_PER_USDC = 1_000_000n // kept for reference; actual conversions use 1e12 multiplier
-
-export function nativeToUsdc6(native: bigint): bigint {
-  // Arc native USDC has 6 decimals (same as ERC-20 USDC on Arc)
-  return native
+export interface VaultState {
+  /** true once the first read for the current wallet finished (ok or failed). */
+  ready: boolean
+  vaultAddress: `0x${string}` | null
+  /** null = unknown (RPC failed) → UI shows "–". 6-decimal units. */
+  vaultBalance: bigint | null
+  walletBalance: bigint | null
+  /** Vault opening fee read from the factory, 6-decimal units. */
+  fee: bigint | null
+  readError: boolean
+  busy: boolean
+  createVault: () => Promise<void>
+  deposit: (amount: bigint) => Promise<void>
+  withdraw: (amount: bigint) => Promise<void>
+  refresh: () => Promise<void>
 }
 
-export function usdc6ToNative(usdc6: bigint): bigint {
-  return usdc6
-}
-
-export function useVault() {
+export function useVaultState(): VaultState {
   const { address } = useAccount()
   const publicClient = usePublicClient({ chainId: CHAIN_ID })
   const { sendTransactionAsync } = useSendTransaction()
 
+  const [ready, setReady] = useState(false)
   const [vaultAddress, setVaultAddress] = useState<`0x${string}` | null>(null)
-  const [vaultBalance, setVaultBalance] = useState<bigint>(0n)
-  const [walletBalance, setWalletBalance] = useState<bigint>(0n)
-  const [loading, setLoading] = useState(false)
+  const [vaultBalance, setVaultBalance] = useState<bigint | null>(null)
+  const [walletBalance, setWalletBalance] = useState<bigint | null>(null)
+  const [fee, setFee] = useState<bigint | null>(null)
+  const [readError, setReadError] = useState(false)
+  const [busy, setBusy] = useState(false)
 
-  const refreshBalances = useCallback(async () => {
+  const refresh = useCallback(async () => {
     if (!address || !publicClient) return
     try {
-      const vault = await publicClient.readContract({
-        address: FACTORY_ADDRESS,
-        abi: VAULT_FACTORY_ABI,
-        functionName: 'getVault',
-        args: [address],
-      })
-      const hasV = vault !== zeroAddress
-      setVaultAddress(hasV ? vault : null)
-
-      if (hasV) {
-        const balNative = await publicClient.readContract({
-          address: vault,
-          abi: VAULT_PROXY_ABI,
-          functionName: 'getBalance',
-        })
-        setVaultBalance(balNative / 1_000_000_000_000n) // 18 → 6 decimals
-      } else {
-        setVaultBalance(0n)
+      const [vault, walletNative, feeNative] = await Promise.all([
+        publicClient.readContract({ address: FACTORY_ADDRESS, abi: VAULT_FACTORY_ABI, functionName: 'getVault', args: [address] }),
+        publicClient.getBalance({ address }),
+        publicClient.readContract({ address: FACTORY_ADDRESS, abi: VAULT_FACTORY_ABI, functionName: 'fee' }),
+      ])
+      const has = vault !== zeroAddress
+      let vb: bigint | null = 0n
+      if (has) {
+        const native = await publicClient.readContract({ address: vault, abi: VAULT_PROXY_ABI, functionName: 'getBalance' })
+        vb = nativeToUsdc6(native)
       }
-
-      // Native USDC balance (Arc: native IS USDC, 18 decimals → convert to 6 decimals for display)
-      const wBalNative = await publicClient.getBalance({ address })
-      setWalletBalance(wBalNative / 1_000_000_000_000n) // 18 → 6 decimals
+      setVaultAddress(has ? vault : null)
+      setVaultBalance(has ? vb : null)
+      setWalletBalance(nativeToUsdc6(walletNative))
+      setFee(nativeToUsdc6(feeNative))
+      setReadError(false)
     } catch (e) {
-      console.error('refreshBalances error', e)
+      console.error('vault refresh failed', e)
+      setReadError(true)
+    } finally {
+      setReady(true)
     }
   }, [address, publicClient])
 
-  // oxlint-disable-next-line react/set-state-in-effect
+  // Reset when the wallet changes, then load + poll.
   useEffect(() => {
-    void refreshBalances()
-  }, [refreshBalances])
+    setReady(false)
+    setVaultAddress(null)
+    setVaultBalance(null)
+    setWalletBalance(null)
+    if (!address) return
+    void refresh()
+    const id = setInterval(() => { void refresh() }, POLL_MS)
+    return () => clearInterval(id)
+  }, [address, refresh])
 
-  // Create vault — single tx, fee paid as msg.value (native USDC)
-  const createVault = useCallback(async (): Promise<`0x${string}`> => {
-    if (!address || !publicClient) throw new Error('Not connected')
-    setLoading(true)
+  const send = useCallback(async (tx: { to: `0x${string}`; value?: bigint; data: `0x${string}` }) => {
+    if (!publicClient) throw new Error('Chưa kết nối mạng Arc')
+    setBusy(true)
     try {
-      const fee = await publicClient.readContract({
-        address: FACTORY_ADDRESS,
-        abi: VAULT_FACTORY_ABI,
-        functionName: 'fee',
-      })
-
-      const hash = await sendTransactionAsync({
-        to: FACTORY_ADDRESS,
-        value: fee,
-        data: encodeFunctionData({
-          abi: VAULT_FACTORY_ABI,
-          functionName: 'createVault',
-          args: [],
-        }),
-        chainId: CHAIN_ID,
-      })
-      await publicClient.waitForTransactionReceipt({ hash })
-      await refreshBalances()
-      const vault = await publicClient.readContract({
-        address: FACTORY_ADDRESS,
-        abi: VAULT_FACTORY_ABI,
-        functionName: 'getVault',
-        args: [address],
-      })
-      return vault
+      const hash = await sendTransactionAsync({ ...tx, chainId: CHAIN_ID })
+      const receipt = await publicClient.waitForTransactionReceipt({ hash })
+      if (receipt.status !== 'success') throw new Error('Giao dịch bị từ chối trên chuỗi')
+      await refresh()
     } finally {
-      setLoading(false)
+      setBusy(false)
     }
-  }, [address, publicClient, sendTransactionAsync, refreshBalances])
+  }, [publicClient, sendTransactionAsync, refresh])
 
-  // Deposit native USDC into vault — single tx, amount as msg.value
-  // amount is in 6-decimal USDC units; native requires 18-decimal units
+  const createVault = useCallback(async () => {
+    if (!address || !publicClient) throw new Error('Chưa kết nối ví')
+    // Read the fee right before signing so the value always matches the contract.
+    const feeNative = await publicClient.readContract({ address: FACTORY_ADDRESS, abi: VAULT_FACTORY_ABI, functionName: 'fee' })
+    await send({
+      to: FACTORY_ADDRESS,
+      value: feeNative,
+      data: encodeFunctionData({ abi: VAULT_FACTORY_ABI, functionName: 'createVault', args: [] }),
+    })
+  }, [address, publicClient, send])
+
   const deposit = useCallback(async (amount: bigint) => {
-    if (!address || !vaultAddress || !publicClient) throw new Error('No vault')
-    setLoading(true)
-    try {
-      const hash = await sendTransactionAsync({
-        to: vaultAddress,
-        value: amount * 1_000_000_000_000n, // 6 → 18 decimals
-        data: encodeFunctionData({
-          abi: VAULT_PROXY_ABI,
-          functionName: 'deposit',
-          args: [],
-        }),
-        chainId: CHAIN_ID,
-      })
-      await publicClient.waitForTransactionReceipt({ hash })
-      await refreshBalances()
-    } finally {
-      setLoading(false)
-    }
-  }, [address, vaultAddress, publicClient, sendTransactionAsync, refreshBalances])
+    if (!vaultAddress) throw new Error('Chưa có vault')
+    await send({
+      to: vaultAddress,
+      value: usdc6ToNative(amount),
+      data: encodeFunctionData({ abi: VAULT_PROXY_ABI, functionName: 'deposit', args: [] }),
+    })
+  }, [vaultAddress, send])
 
-  // Withdraw native USDC from vault
-  // amount is in 6-decimal USDC units; contract expects 18-decimal native units
-  const withdraw = useCallback(async (amount: bigint, to: `0x${string}`) => {
-    if (!address || !vaultAddress || !publicClient) throw new Error('No vault')
-    setLoading(true)
-    try {
-      const hash = await sendTransactionAsync({
-        to: vaultAddress,
-        data: encodeFunctionData({
-          abi: VAULT_PROXY_ABI,
-          functionName: 'withdraw',
-          args: [amount * 1_000_000_000_000n, to], // 6 → 18 decimals
-        }),
-        chainId: CHAIN_ID,
-      })
-      await publicClient.waitForTransactionReceipt({ hash })
-      await refreshBalances()
-    } finally {
-      setLoading(false)
-    }
-  }, [address, vaultAddress, publicClient, sendTransactionAsync, refreshBalances])
+  // Withdrawals always go back to the owner's own wallet.
+  const withdraw = useCallback(async (amount: bigint) => {
+    if (!vaultAddress || !address) throw new Error('Chưa có vault')
+    await send({
+      to: vaultAddress,
+      data: encodeFunctionData({ abi: VAULT_PROXY_ABI, functionName: 'withdraw', args: [usdc6ToNative(amount), address] }),
+    })
+  }, [vaultAddress, address, send])
 
-  return {
-    vaultAddress,
-    vaultBalance,
-    walletBalance,
-    walletUsdcBalance: walletBalance, // alias — on Arc, native IS USDC
-    loading,
-    createVault,
-    deposit,
-    withdraw,
-    refreshBalances,
-    factoryAddress: FACTORY_ADDRESS,
-  }
+  return { ready, vaultAddress, vaultBalance, walletBalance, fee, readError, busy, createVault, deposit, withdraw, refresh }
 }
 
-// Format native USDC (6 decimals on Arc) to display string
-// e.g. 116660000n → "116.66", 1234567890000n → "1,234,567.89"
-export function formatUsdc(units: bigint, decimals = 2): string {
-  if (units === 0n) return '0'
-  const divisor = 10 ** 6
-  const whole = Number(units / BigInt(divisor))
-  const frac = Number(units % BigInt(divisor)) / divisor
-  const value = whole + frac
-  return new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  }).format(value)
-}
-
-// Parse display string to USDC units (6 decimals)
-export function parseUsdcInput(val: string): bigint {
-  if (!val || isNaN(Number(val))) return 0n
-  return parseUnits(val, 6)
+/** Short Vietnamese message for wallet / tx errors (user rejection, gas, …). */
+export function txErrorMessage(e: unknown): string {
+  const msg = e instanceof Error ? e.message : String(e)
+  if (/reject|denied|cancel/i.test(msg)) return 'Bạn đã từ chối ký trong ví.'
+  if (/insufficient funds|exceeds balance/i.test(msg)) return 'Ví không đủ USDC để trả số tiền và phí giao dịch.'
+  if (/VaultAlreadyExists/i.test(msg)) return 'Ví này đã có vault.'
+  const first = msg.split('\n')[0] ?? msg
+  return first.length > 160 ? `${first.slice(0, 160)}…` : first
 }

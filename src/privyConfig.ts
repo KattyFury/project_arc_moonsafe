@@ -17,7 +17,7 @@ export const privyConfig: PrivyClientConfig = {
   loginMethods: ['email', 'google', 'wallet'],
   appearance: {
     theme: 'light',
-    accentColor: '#3b82f6',
+    accentColor: '#1E6DF7',
     logo: undefined,
     loginMessage: 'Đăng nhập vào MoonSafe',
     walletChainType: 'ethereum-only',

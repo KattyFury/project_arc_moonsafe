@@ -13,8 +13,13 @@ interface Message {
 
 interface RequestBody {
   messages: Message[]
-  profile: Record<string, unknown> | null
+  /** Declared profile, fund progress and DCA status sent by the app. */
+  context?: Record<string, unknown> | null
+  profile?: Record<string, unknown> | null // legacy clients
 }
+
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 
 const SYSTEM_PROMPT = `Bạn là agent tài chính cá nhân của MoonSafe — app giúp người dùng Web3 xây dựng quỹ dự phòng bằng USDC trước khi đầu tư.
 
@@ -26,7 +31,7 @@ Dẫn người dùng khai báo thông tin tài chính qua hội thoại tự nhi
 ## Thông tin cần thu thập
 1. Thu nhập hàng tháng (VND)
 2. Chi tiêu thiết yếu hàng tháng (ăn, nhà, đi lại, điện nước — VND)
-3. Có nợ bên ngoài không? (vay ngân hàng, tín dụng, không tính vay trong app)
+3. Nợ bên ngoài: có không, tổng bao nhiêu VND (vay ngân hàng, thẻ tín dụng, trả góp, vay người quen)
 4. Tuổi
 5. Thu nhập có ổn định không? (lương cố định = ổn định; freelance/kinh doanh = không)
 6. Tài sản khác (vàng, BĐS ngoài nhà ở, cổ phiếu — VND, bỏ qua nếu không có)
@@ -39,11 +44,16 @@ Dẫn người dùng khai báo thông tin tài chính qua hội thoại tự nhi
 - Tỷ lệ đầu tư tối đa: Normal = 110 − tuổi (%), Risky = 120 − tuổi (%)
 - Chỉ được đầu tư khi: không có nợ ngoài VÀ quỹ đủ sàn
 
-## Khi đủ thông tin
-Xuất JSON trong thẻ <profile> (đơn vị VND, null nếu không biết):
-<profile>{"monthlyIncome":X,"monthlyEssentials":X,"hasDebt":true/false,"debtNote":"...","otherAssets":X,"age":X,"incomeStable":true/false}</profile>
+## Ghi nhận khai báo
+Mỗi khi người dùng cho thêm số liệu, cuối câu trả lời xuất JSON trong thẻ <profile> với các trường đã biết (đơn vị VND, null nếu chưa biết):
+<profile>{"monthlyIncome":X,"monthlyExpenses":X,"debtAmount":X,"otherAssets":X,"age":X,"incomeStable":true/false}</profile>
+- debtAmount = tổng nợ bên ngoài (VND). Không có nợ → 0. Chưa hỏi → null.
+- Không tự đoán số. Người dùng nói khoảng/ước chừng thì ghi đúng con số họ nói.
+- App hiện số liệu này lên thẻ khai báo để người dùng kiểm tra rồi tự bấm "Lưu khai báo". Đừng nói là đã lưu.
+Khi đủ 5 trường bắt buộc (thu nhập, chi tiêu, nợ, tuổi, độ ổn định), tóm tắt ngắn: sàn quỹ bao nhiêu tháng, bao nhiêu tiền, và nhắc bấm "Lưu khai báo".
 
-Sau khi xuất profile, tóm tắt ngắn: sàn quỹ của họ là bao nhiêu tháng, bao nhiêu VND, và bước tiếp theo.
+## DCA
+Bản đầu chỉ đầu tư cirBTC theo DCA, người dùng tự duyệt và tự ký từng lần mua. Nếu người dùng muốn dừng DCA, xác nhận ngắn và thêm thẻ <dca action="stop"/> vào cuối câu trả lời.
 
 ## Phong cách
 - Tiếng Việt, thân thiện, ngắn gọn
@@ -95,12 +105,7 @@ async function webSearch(query: string): Promise<string> {
 
 export async function onRequestPost(context: { request: Request; env: Env }): Promise<Response> {
   const apiKey = context.env.OPENAI_API_KEY
-  if (!apiKey) {
-    return new Response(JSON.stringify({ content: 'Agent chưa được cấu hình. Vui lòng liên hệ admin.' }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
+  if (!apiKey) return json({ error: 'Agent chưa được cấu hình khoá AI' }, 503)
 
   let body: RequestBody
   try {
@@ -145,11 +150,12 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
 
     if (!res.ok) {
       const err = await res.text()
-      console.error('OpenAI error:', err)
-      return new Response(JSON.stringify({ content: 'Mình đang gặp sự cố kết nối. Hãy thử lại sau nhé!' }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      })
+      console.error('OpenAI error:', res.status, err)
+      // Fail loudly on billing / key problems so the owner can top up (AGENTS.md Part 3, rule 4).
+      if (res.status === 401) return json({ error: 'khoá OpenAI không hợp lệ' }, 502)
+      if (res.status === 429 && /insufficient_quota/.test(err)) return json({ error: 'tài khoản OpenAI hết credit' }, 502)
+      if (res.status === 429) return json({ error: 'OpenAI đang giới hạn tốc độ, thử lại sau ít phút' }, 502)
+      return json({ error: `OpenAI lỗi ${res.status}` }, 502)
     }
 
     const completion = await res.json() as {
@@ -171,10 +177,9 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
 
     // No tool calls — return final response
     if (!msg.tool_calls || msg.tool_calls.length === 0) {
-      return new Response(JSON.stringify({ content: msg.content ?? '' }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      })
+      const u = (completion as { usage?: { prompt_tokens?: number; completion_tokens?: number } }).usage
+      if (u) console.log(`chat tokens in=${u.prompt_tokens} out=${u.completion_tokens} rounds=${rounds}`)
+      return json({ content: msg.content ?? '' })
     }
 
     // Execute tool calls
@@ -203,8 +208,5 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
     // Loop back to get final response after tool results
   }
 
-  return new Response(JSON.stringify({ content: 'Mình cần thêm thời gian để xử lý. Bạn thử hỏi lại nhé!' }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
-  })
+  return json({ error: 'agent cần quá nhiều bước, hãy hỏi lại ngắn hơn' }, 502)
 }
