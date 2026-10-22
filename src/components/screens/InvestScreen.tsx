@@ -9,12 +9,15 @@ import { dcaNextRun, formatCirBtc } from '@/hooks/useCirBtc'
 import { useNow } from '@/hooks/useNow'
 import { DASH, formatUsdc, parseUsdcInput, usdcToInput } from '@/lib/format'
 import { AmountField, Btn, Chips, GlassCard, IconBox, Notice, Row, Screen, Sheet, glass } from '@/components/ui/kit'
+import type { Prefill } from '@/types'
+
+type InvestPrefill = Extract<Prefill, { kind: 'buy' | 'dca' }>
 
 const DCA_WEEKS = 12
 const DCA_INTERVAL_DAYS = 7
 const MIN_DCA = 1_000_000n
 
-export function InvestScreen({ onOpenFund, onDeclare }: { onOpenFund: () => void; onDeclare: () => void }) {
+export function InvestScreen({ onOpenFund, onDeclare, prefill }: { onOpenFund: () => void; onDeclare: () => void; prefill?: InvestPrefill | null }) {
   const { math, profile, money } = useApp()
 
   if (!math.investUnlocked) {
@@ -63,14 +66,15 @@ export function InvestScreen({ onOpenFund, onDeclare }: { onOpenFund: () => void
       </Screen>
     )
   }
-  return <InvestOpen />
+  return <InvestOpen prefill={prefill ?? null} />
 }
 
-function InvestOpen() {
+function InvestOpen({ prefill }: { prefill: InvestPrefill | null }) {
   const { profile, vault, cirBtc, money } = useApp()
   const now = useNow()
   const [risk, setRisk] = useState<'normal' | 'risky'>('normal')
-  const [amount, setAmount] = useState('')
+  const [amount, setAmount] = useState(prefill?.kind === 'buy' ? usdcToInput(prefill.amount) : '')
+  const [dcaOffer, setDcaOffer] = useState(prefill?.kind === 'dca' ? prefill : null)
   const age = profile.profile?.age ?? 0
   const capPct = Math.max(0, Math.min(100, (risk === 'normal' ? 110 : 120) - age))
 
@@ -135,6 +139,24 @@ function InvestOpen() {
 
       {invested === null && (cirBtc.balance ?? 0n) > 0n && (
         <Notice tone="warning">Chưa lấy được giá BTC nên chưa tính được trần. Thử lại sau ít phút.</Notice>
+      )}
+
+      {prefill?.kind === 'buy' && amount && (
+        <Notice tone="info" title="Agent đã điền sẵn">Bấm Xem báo giá, kiểm tra rồi ký trong ví.</Notice>
+      )}
+
+      {dcaOffer && !dca && (
+        <GlassCard className="p-4 flex flex-col gap-3" style={{ border: '1.5px solid var(--accent)' }}>
+          <p className="font-semibold text-[15px]" style={{ color: 'var(--ink)' }}>Agent đề xuất DCA</p>
+          <p className="text-[13px]" style={{ color: 'var(--subtle)' }}>
+            Mua {formatUsdc(dcaOffer.amount)} cirBTC mỗi {dcaOffer.intervalDays} ngày. Mỗi kỳ bạn vẫn tự xem báo giá và ký.
+          </p>
+          {room !== null && dcaOffer.amount > room && <Notice tone="danger">Mỗi kỳ vượt hạn mức còn được mua ({money(room)}).</Notice>}
+          <div className="flex gap-3">
+            <Btn variant="outline" onClick={() => setDcaOffer(null)}>Bỏ qua</Btn>
+            <Btn disabled={room === null || dcaOffer.amount > room} onClick={() => { cirBtc.startDca(dcaOffer.amount, dcaOffer.intervalDays); setDcaOffer(null) }}>Duyệt DCA</Btn>
+          </div>
+        </GlassCard>
       )}
 
       {/* DCA */}

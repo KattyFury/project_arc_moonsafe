@@ -6,14 +6,15 @@ import { ShieldAlert, TrendingUp } from 'lucide-react'
 import { useApp } from '@/state/AppState'
 import { GAS_ESTIMATE_USDC6, GAS_RESERVE_USDC6, txErrorMessage } from '@/hooks/useVault'
 import { formatNumber, formatUsdc, parseUsdcInput, usdcToInput } from '@/lib/format'
+import type { Prefill } from '@/types'
 import { AmountField, Btn, Chips, GlassCard, Notice, Screen, Sheet, glass } from '@/components/ui/kit'
 
 type Tab = 'deposit' | 'withdraw'
 
-export function FundScreen({ onDeclare }: { onDeclare: () => void }) {
+export function FundScreen({ onDeclare, prefill }: { onDeclare: () => void; prefill?: Extract<Prefill, { kind: 'deposit' | 'withdraw' }> | null }) {
   const { vault, math, money, unit, profile } = useApp()
-  const [tab, setTab] = useState<Tab>('deposit')
-  const [amount, setAmount] = useState('')
+  const [tab, setTab] = useState<Tab>(prefill?.kind ?? 'deposit')
+  const [amount, setAmount] = useState(prefill ? usdcToInput(prefill.amount) : '')
   const [sheet, setSheet] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
@@ -85,6 +86,10 @@ export function FundScreen({ onDeclare }: { onDeclare: () => void }) {
           </button>
         )}
       </section>
+
+      {prefill && amount && (
+        <Notice tone="info" title="Agent đã điền sẵn">Kiểm tra số tiền rồi bấm {tab === 'deposit' ? 'Nạp vào quỹ' : 'Rút về ví'} và ký trong ví.</Notice>
+      )}
 
       {/* Action card */}
       <GlassCard>

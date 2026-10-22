@@ -40,6 +40,15 @@ export interface AgentHooks {
   getContext: () => Record<string, unknown>
   onProfileDraft: (draft: Record<string, unknown>) => void
   onDcaStop: () => void
+  /** UI actions the agent asked for (open a screen with a prefilled amount). */
+  onActions?: (actions: AgentAction[]) => void
+}
+
+export interface AgentAction {
+  type: 'prepare_deposit' | 'prepare_withdraw' | 'prepare_buy_cirbtc' | 'propose_dca' | 'open_screen'
+  amount?: { amount: number; currency: 'VND' | 'USDC' }
+  intervalDays?: number
+  screen?: 'fund' | 'invest' | 'balance' | 'menu'
 }
 
 export function useAgent(hooks: AgentHooks) {
@@ -71,12 +80,13 @@ export function useAgent(hooks: AgentHooks) {
           context: hooksRef.current.getContext(),
         }),
       })
-      const data = await res.json().catch(() => null) as { content?: string; error?: string; profileUpdate?: Record<string, unknown> | null; dcaStop?: boolean } | null
+      const data = await res.json().catch(() => null) as { content?: string; error?: string; profileUpdate?: Record<string, unknown> | null; dcaStop?: boolean; actions?: AgentAction[] } | null
       if (!res.ok || !data?.content) throw new Error(data?.error ?? `HTTP ${res.status}`)
 
       let content = data.content
       if (data.profileUpdate) hooksRef.current.onProfileDraft(data.profileUpdate)
       if (data.dcaStop) hooksRef.current.onDcaStop()
+      if (data.actions?.length) hooksRef.current.onActions?.(data.actions)
       const pm = content.match(/<profile>([\s\S]*?)<\/profile>/)
       if (pm) {
         try { hooksRef.current.onProfileDraft(JSON.parse(pm[1]) as Record<string, unknown>) } catch { /* ignore bad JSON */ }

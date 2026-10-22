@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Loader2, Send } from 'lucide-react'
 import { toast } from 'sonner'
 import { useApp } from '@/state/AppState'
-import { WELCOME_BACK, useAgent } from '@/hooks/useAgent'
+import { WELCOME_BACK, useAgent, type AgentAction } from '@/hooks/useAgent'
 import { isProfileComplete, normalizeProfile, unitOf } from '@/hooks/useFinancialProfile'
 import { dcaNextRun } from '@/hooks/useCirBtc'
 import { useNow } from '@/hooks/useNow'
@@ -28,7 +28,7 @@ const Avatar = () => (
   </div>
 )
 
-export function ChatScreen({ declareKey, onError, onOpenInvest }: { declareKey: number; onError: (m: string | null) => void; onOpenInvest: () => void }) {
+export function ChatScreen({ declareKey, onError, onOpenInvest, onActions }: { declareKey: number; onError: (m: string | null) => void; onOpenInvest: () => void; onActions: (a: AgentAction[]) => void }) {
   const { profile, vault, math, cirBtc } = useApp()
   const now = useNow()
   const [input, setInput] = useState('')
@@ -43,6 +43,7 @@ export function ChatScreen({ declareKey, onError, onOpenInvest }: { declareKey: 
       profile: profile.profile,
       profileSaved: profile.complete,
       vaultBalanceUsdc: vault.vaultBalance !== null ? formatUsdc(vault.vaultBalance) : null,
+      walletBalanceUsdc: vault.walletBalance !== null ? formatUsdc(vault.walletBalance) : null,
       floorMonths: math.floorMonths,
       floorUsdc: math.floorUsdc !== null ? formatUsdc(math.floorUsdc) : null,
       shortfallUsdc: math.shortfall !== null ? formatUsdc(math.shortfall) : null,
@@ -71,6 +72,7 @@ export function ChatScreen({ declareKey, onError, onOpenInvest }: { declareKey: 
       setDeclareOpen(true)
     },
     onDcaStop: () => { cirBtc.stopDca(); toast('Đã dừng DCA') },
+    onActions,
   })
 
   // Cleared elsewhere (Menu → Xoá khai báo) → empty card again.
