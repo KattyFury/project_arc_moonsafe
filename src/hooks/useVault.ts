@@ -12,6 +12,15 @@ import { ensureArcChain } from '@/lib/chain'
 
 const CHAIN_ID = arcTestnet.id // 5042002
 export const FACTORY_ADDRESS = (import.meta.env.VITE_FACTORY_ADDRESS ?? '') as `0x${string}`
+/**
+ * Earlier factories. Vaults opened there keep working (a vault is its own contract),
+ * so the app still finds them: the first factory (Arc Studio build, fee set wrong)
+ * holds real user vaults. New vaults are always created on FACTORY_ADDRESS.
+ */
+export const LEGACY_FACTORIES = [
+  '0x358e6669347cdda814efca51657b7a97cbf2576f',
+  ...String(import.meta.env.VITE_LEGACY_FACTORY_ADDRESSES ?? '').split(',').map(a => a.trim()).filter(Boolean),
+].filter(a => a.toLowerCase() !== FACTORY_ADDRESS.toLowerCase()) as `0x${string}`[]
 
 /** Kept in the wallet for gas when the user taps "Tối đa" (0,02 USDC). */
 export const GAS_RESERVE_USDC6 = 20_000n
@@ -71,13 +80,19 @@ export function useVaultState(): VaultState {
         publicClient.getBalance({ address }),
         publicClient.readContract({ address: FACTORY_ADDRESS, abi: VAULT_FACTORY_ABI, functionName: 'fee' }),
       ])
-      const has = vault !== zeroAddress
+      // No vault on the current factory → look on the earlier ones.
+      let found = vault
+      for (const f of LEGACY_FACTORIES) {
+        if (found !== zeroAddress) break
+        found = await publicClient.readContract({ address: f, abi: VAULT_FACTORY_ABI, functionName: 'getVault', args: [address] })
+      }
+      const has = found !== zeroAddress
       let vb: bigint | null = 0n
       if (has) {
-        const native = await publicClient.readContract({ address: vault, abi: VAULT_PROXY_ABI, functionName: 'getBalance' })
+        const native = await publicClient.readContract({ address: found, abi: VAULT_PROXY_ABI, functionName: 'getBalance' })
         vb = nativeToUsdc6(native)
       }
-      setVaultAddress(has ? vault : null)
+      setVaultAddress(has ? found : null)
       setVaultBalance(has ? vb : null)
       setWalletBalance(nativeToUsdc6(walletNative))
       setFee(nativeToUsdc6(feeNative))
