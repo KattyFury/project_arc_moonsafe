@@ -40,12 +40,15 @@ export function ChatScreen({ onError, onOpenInvest, onActions }: { onError: (m: 
       // Plain number so the server can compute fund gaps (functions/api/chat.ts fundFacts).
       vaultUsdc: vault.vaultBalance !== null ? Number(vault.vaultBalance) / 1_000_000 : null,
       walletBalanceUsdc: vault.walletBalance !== null ? formatUsdc(vault.walletBalance) : null,
+      walletUsdc: vault.walletBalance !== null ? Number(vault.walletBalance) / 1_000_000 : null,
+      cirBtcUsdc: cirBtc.balance === 0n ? 0 : cirBtc.valueUsdc6 !== null ? Number(cirBtc.valueUsdc6) / 1_000_000 : null,
       floorMonths: math.floorMonths,
       floorUsdc: math.floorUsdc !== null ? formatUsdc(math.floorUsdc) : null,
       shortfallUsdc: math.shortfall !== null ? formatUsdc(math.shortfall) : null,
       floorReachedPct: math.floorPct !== null ? Math.round(math.floorPct) : null,
       vaultMonths: math.vaultMonths !== null ? Math.round(math.vaultMonths * 10) / 10 : null,
       investUnlocked: math.investUnlocked,
+      fundOk: math.fundOk,
       dca: cirBtc.dca ? { amountUsdc: formatUsdc(BigInt(cirBtc.dca.amountUsdc)), everyDays: cirBtc.dca.intervalDays } : null,
     }),
     onProfileDraft: raw => {

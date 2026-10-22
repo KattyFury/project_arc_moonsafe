@@ -20,3 +20,5 @@ traces.jsonl
 # OS / editor
 .DS_Store
 Thumbs.db
+
+scripts/agent-eval-last.txt
