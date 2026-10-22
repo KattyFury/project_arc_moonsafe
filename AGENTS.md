@@ -1,7 +1,7 @@
 # MoonSafe — Project Notes
 
 ## App
-"Có đường lui thì mới dám liều." — Personal emergency fund app on Arc Testnet.
+"Nên đầu tư nhưng phải có đường lui." — Personal emergency fund app on Arc Testnet.
 
 ## Deployed Contracts (Arc Testnet)
 

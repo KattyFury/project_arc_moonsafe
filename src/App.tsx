@@ -1,6 +1,6 @@
 /**
  * MoonSafe — App quỹ dự phòng cho người dùng Web3
- * "Có đường lui thì mới dám liều."
+ * "Nên đầu tư nhưng phải có đường lui."
  *
  * Flow (SPEC §3): 1 Đăng nhập → 3 Cảnh báo → (no vault) 4 / 4b → 5 / 5b → 6 Chat → 7–10 via row 1.
  */

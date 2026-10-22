@@ -12,7 +12,7 @@ const MAX_SEND = 30
 
 export const WELCOME: ChatMessage = {
   role: 'assistant',
-  content: 'Xin chào! Mình là agent của MoonSafe.\n\n"Có đường lui thì mới dám liều." Trước khi đầu tư, mình giúp bạn lập **quỹ dự phòng** bằng USDC.\n\nBắt đầu nhé: **thu nhập hàng tháng** của bạn khoảng bao nhiêu?',
+  content: 'Xin chào! Mình là agent của MoonSafe.\n\n"Nên đầu tư nhưng phải có đường lui." Trước khi đầu tư, mình giúp bạn lập **quỹ dự phòng** bằng USDC.\n\nBắt đầu nhé: **thu nhập hàng tháng** của bạn khoảng bao nhiêu?',
   timestamp: 0,
 }
 

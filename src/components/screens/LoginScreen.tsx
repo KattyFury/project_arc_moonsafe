@@ -12,7 +12,7 @@ export function LoginScreen() {
         <div className="flex flex-col items-center gap-4">
           <img src="/logo.svg" alt="MoonSafe" width={64} height={64} />
           <h1 className="text-app-large-title text-ink">MoonSafe</h1>
-          <p className="text-app-secondary text-grey max-w-[296px]">“Có đường lui thì mới dám liều.”</p>
+          <p className="text-app-secondary text-grey max-w-[296px]">“Nên đầu tư nhưng phải có đường lui.”</p>
         </div>
         <div className="flex flex-col items-center gap-4">
           <div className="flex flex-col gap-1">
