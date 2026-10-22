@@ -7,8 +7,9 @@
 
 | Contract | Address | Explorer |
 |---|---|---|
-| VaultProxy (implementation) | `0xfbfe31aa0ff4cd10d9fb2518c2a56ea954cad8c4` | [View](https://explorer.testnet.arc.io/address/0xfbfe31aa0ff4cd10d9fb2518c2a56ea954cad8c4) |
-| VaultFactory | `0x1ea1acf6227aa1702a7f88f0c56726c5753cbeaa` | [View](https://explorer.testnet.arc.io/address/0x1ea1acf6227aa1702a7f88f0c56726c5753cbeaa) |
+| VaultProxy (implementation) | `0xd0d5ca56381079d83d43b5da73940bd958b868d8` | [View](https://explorer.testnet.arc.io/address/0xd0d5ca56381079d83d43b5da73940bd958b868d8) |
+| VaultFactory (current, owner = user 0xEb2D…52F6, fee 1 USDC) | `0x7E0f289d535369E582C596071b637E78E69Ac88F` | [View](https://explorer.testnet.arc.io/address/0x7E0f289d535369E582C596071b637E78E69Ac88F) |
+| VaultFactory (legacy, Arc Studio, fee 1e12 wei — still read for old vaults) | `0x358e6669347cdda814efca51657b7a97cbf2576f` | [View](https://explorer.testnet.arc.io/address/0x358e6669347cdda814efca51657b7a97cbf2576f) |
 
 ## Environment Variables
 
@@ -18,11 +19,10 @@
 | `VITE_FACTORY_ADDRESS` | VaultFactory address (set to deployed address above) |
 | `OPENAI_API_KEY` | OpenAI API key for chat agent (server-side only) |
 
-## Factory Constructor Args
-- implementation: 0xfbfe31aa0ff4cd10d9fb2518c2a56ea954cad8c4 (VaultProxy)
-- usdc: 0x3600000000000000000000000000000000000000
-- feeRecipient: 0x5B12Ce46C7194aD57d143bC22847224047b1Ef42 (platform deployer)
-- fee: 1000000 (1 USDC)
+## Factory Constructor Args (current factory)
+- implementation: 0xd0d5ca56381079d83d43b5da73940bd958b868d8 (VaultProxy)
+- feeRecipient: 0xEb2D222d28F35fE7BeB5387f8Bc4eBF65f2652F6 (user, also owner/deployer)
+- fee: 1000000000000000000 (1 USDC — Arc native USDC has 18 decimals)
 
 ## Privy Allowed Origins
 - https://irol80jxblfxew72yvd5m.preview.studio.arc.io

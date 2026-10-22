@@ -5,14 +5,10 @@ Spec gốc: user dán trong chat (SPEC.md, 10 mục, màn 1–10). Cập nhật 
 
 ## ▶ Làm tiếp từ đây (mới nhất ở trên)
 
-1. **Deploy Factory mới bằng ví của user — đang chờ user ký.**
-   - User muốn ví `0xEb2D222d28F35fE7BeB5387f8Bc4eBF65f2652F6` (Rabby) vừa là ví deploy, vừa là owner, vừa nhận phí. Chỉ user giữ khoá → user phải tự ký 1 lần.
-   - Trang deploy: `scripts/deploy-factory/index.html` (có sẵn bytecode `contracts/VaultFactory.sol` + constructor args: implementation `0xd0d5ca56381079d83d43b5da73940bd958b868d8`, feeRecipient `0xEb2D…52F6`, fee `1e18`). Chạy:
-     `cd scripts/deploy-factory && python -m http.server 8787 --bind 127.0.0.1` → user mở http://localhost:8787 trong Chrome có Rabby, chọn ví 0xEb2D, bấm deploy, ký (~0,016 USDC gas). Trang kiểm tra đúng ví + đúng mạng trước khi gửi, rồi in địa chỉ contract.
-   - Đã mô phỏng (eth_call / estimateGas từ 0xEb2D): deploy được, runtime code giống hệt từng byte Factory `0x506c…982a` mà Arc Studio deploy.
-   - Khi user gửi địa chỉ: đọc onchain `owner()` == `fee()` == 1e18 == `feeRecipient()` == 0xEb2D… == `implementation()`; đổi `VITE_FACTORY_ADDRESS` trong `.env` (file .env không có trong git — nhớ sửa ở cả 2 máy), build, deploy, kiểm tra vault cũ của user vẫn hiện.
-   - **Không dùng** Factory `0x506c344e0e5cc367e9ee16607eb1ff9f891c982a` (Arc Studio deploy 2026-10-22: phí + người nhận đúng nhưng owner là ví Arc Studio `0xa303…0Cf6`; chưa có vault nào). Arc Studio đòi tạo Circle API key toàn quyền để chuyển owner → KHÔNG duyệt.
-   - Factory cũ `0x358e…576f` (phí 1e12 = 0,000001 USDC, owner Arc Studio) vẫn được app đọc qua `LEGACY_FACTORIES` trong `src/hooks/useVault.ts`: vault cũ vẫn hiện + nạp/rút bình thường. Vault 1.000 USDC của user: `0x5c38985218980664bf2d592c7a896449b6e57c72` (ví 0xEb2D) nằm ở factory cũ.
+1. **Factory mới — XONG 2026-10-22.** `0x7E0f289d535369E582C596071b637E78E69Ac88F`, user tự ký deploy bằng Rabby (tx `0x64fc068f…b3`). Đọc onchain: owner = feeRecipient = `0xEb2D…52F6`, fee = 1e18 (1 USDC), implementation `0xd0d5…68d8`, runtime code giống hệt bản đã rà. `.env` `VITE_FACTORY_ADDRESS` đã đổi ở máy Dell (**máy kia phải sửa tay**), đã deploy moonsafe.app.
+   - Factory cũ `0x358e…576f` vẫn được app đọc (`LEGACY_FACTORIES`): vault 1.000 USDC của user `0x5c38…7c72` nằm ở đó, vẫn nạp/rút bình thường. Vault mới luôn tạo ở factory mới.
+   - Factory `0x506c…982a` (Arc Studio deploy, owner ví Arc Studio) bỏ, không dùng, chưa có vault.
+   - Deploy lại sau này: `scripts/deploy-factory/index.html` (chạy `python -m http.server 8787 --bind 127.0.0.1` trong thư mục đó, user ký bằng Rabby).
 
 2. **Chưa test bằng đăng nhập thật** (Claude không đăng nhập Privy được — nhờ user test):
    - Mục "Ví đang dùng" (Menu) + app ưu tiên ví Rabby hơn ví nhúng Privy.
