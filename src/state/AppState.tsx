@@ -2,14 +2,17 @@
 // or a new rate updates every screen at once (Arc Studio's version gave each
 // screen its own copy, which left the invest lock stale until reload).
 
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { usePrivy } from '@privy-io/react-auth'
+import { cloudLoad, cloudSave, readOwner, setCloudAuth, writeOwner } from '@/lib/cloud'
+import { hydrateChat, readLocalChat } from '@/hooks/useAgent'
 import { useVaultState, type VaultState } from '@/hooks/useVault'
-import { useProfileState, type ProfileState } from '@/hooks/useFinancialProfile'
+import { normalizeProfile, readLocalProfile, useProfileState, type ProfileState } from '@/hooks/useFinancialProfile'
 import { useExchangeRateState, vndToUsdc6, usdc6ToVnd, type FxState } from '@/hooks/useExchangeRate'
 import { useCirBtcState, type CirBtcState } from '@/hooks/useCirBtc'
 import { DASH, formatUsdc, formatVnd } from '@/lib/format'
 import { unitOf } from '@/hooks/useFinancialProfile'
-import type { FinancialProfile, MoneyField } from '@/types'
+import type { ChatMessage, FinancialProfile, MoneyField } from '@/types'
 
 export type Unit = 'VND' | 'USD'
 const UNIT_KEY = 'moonsafe_unit_v1'
@@ -58,6 +61,8 @@ export interface AppState {
   /** A declared money field shown in the chosen display unit. */
   moneyOfField: (p: FinancialProfile | null | undefined, f: MoneyField) => string
   vndToUsdc: (vnd: number | null | undefined) => bigint | null
+  /** Server copy of profile + chat: ready once loaded (or failed and fell back to this browser). */
+  cloud: { ready: boolean; error: boolean }
 }
 
 export const AppStateContext = createContext<AppState | null>(null)
@@ -69,6 +74,37 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const fx = useExchangeRateState()
   const cirBtc = useCirBtcState()
   const [unit, setUnitState] = useState<Unit>(readUnit)
+  const { user, getAccessToken } = usePrivy()
+  const userId = user?.id ?? null
+  const [cloud, setCloud] = useState({ ready: false, error: false })
+
+  // Load the account's profile + chat from the server. First time on an account, whatever
+  // this browser already holds (from before the server copy existed) is uploaded instead.
+  useEffect(() => {
+    if (!userId) { setCloudAuth(null); setCloud({ ready: true, error: false }); return }
+    setCloudAuth(getAccessToken)
+    let alive = true
+    const hydrate = profile.hydrate
+    void (async () => {
+      const owner = readOwner()
+      if (owner && owner !== userId) { hydrate(null); hydrateChat(null) }
+      writeOwner(userId)
+      try {
+        const data = await cloudLoad()
+        if (!alive) return
+        if (data?.profile && typeof data.profile === 'object') hydrate(normalizeProfile(data.profile as Record<string, unknown>))
+        else { const local = readLocalProfile(); if (local) cloudSave({ profile: local }) }
+        if (Array.isArray(data?.chat) && data.chat.length) hydrateChat(data.chat as ChatMessage[])
+        else { const local = readLocalChat(); if (local.length) cloudSave({ chat: local }) }
+        setCloud({ ready: true, error: false })
+      } catch (e) {
+        console.error('cloud load failed', e)
+        if (alive) setCloud({ ready: true, error: true })
+      }
+    })()
+    return () => { alive = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per signed-in account
+  }, [userId])
 
   const setUnit = useCallback((u: Unit) => {
     try { localStorage.setItem(UNIT_KEY, u) } catch { /* storage blocked */ }
@@ -119,7 +155,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     return { floorMonths, monthlyExpUsdc, floorUsdc, floorPct, vaultMonths, shortfall, noDebt, fundOk, investUnlocked }
   }, [profile.profile, profile.complete, vault.vaultBalance, fieldUsdc])
 
-  const value: AppState = { vault, profile, fx, cirBtc, unit, setUnit, math, money, moneyFromVnd, vndToUsdc, fieldUsdc, moneyOfField }
+  const value: AppState = { vault, profile, fx, cirBtc, unit, setUnit, math, money, moneyFromVnd, vndToUsdc, fieldUsdc, moneyOfField, cloud }
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }
 

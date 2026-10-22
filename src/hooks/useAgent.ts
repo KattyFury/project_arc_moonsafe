@@ -1,10 +1,12 @@
-// Chat with the MoonSafe agent (/api/chat). History lives in localStorage.
+// Chat with the MoonSafe agent (/api/chat). History lives in localStorage and is synced
+// to /api/userdata (src/lib/cloud.ts) so it follows the Privy account.
 // Values the agent extracts (profileUpdate / <profile>…</profile>) are handed to
 // onProfileDraft and saved to the profile in this browser; there is no form to confirm.
 // If the agent is down we say so — no canned replies, no made-up profile.
 
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import type { ChatMessage } from '@/types'
+import { cloudSave } from '@/lib/cloud'
 
 const STORAGE_KEY = 'moonsafe_chat_v2'
 const MAX_KEEP = 80
@@ -28,11 +30,27 @@ function readChat(): ChatMessage[] {
 }
 
 function writeChat(msgs: ChatMessage[]) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(msgs.filter(m => !m.error).slice(-MAX_KEEP))) } catch { /* storage blocked */ }
+  const keep = msgs.filter(m => !m.error).slice(-MAX_KEEP)
+  hydrateChat(keep)
+  cloudSave({ chat: keep })
+}
+
+/** The stored history (no greeting added), for the first upload to the server. */
+export function readLocalChat(): ChatMessage[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    return raw ? (JSON.parse(raw) as ChatMessage[]) : []
+  } catch { return [] }
+}
+
+/** Replace the local history (no upload); null removes it. */
+export function hydrateChat(msgs: ChatMessage[] | null) {
+  try { if (msgs) localStorage.setItem(STORAGE_KEY, JSON.stringify(msgs)); else localStorage.removeItem(STORAGE_KEY) } catch { /* storage blocked */ }
 }
 
 export function clearChatStorage() {
-  try { localStorage.removeItem(STORAGE_KEY) } catch { /* storage blocked */ }
+  hydrateChat(null)
+  cloudSave({ chat: null })
 }
 
 export interface AgentHooks {

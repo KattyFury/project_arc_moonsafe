@@ -1,7 +1,9 @@
-// Self-declared finances, stored only in this browser (localStorage, try/catch).
+// Finances the user told the agent. localStorage is the fast local copy; every change is
+// also sent to /api/userdata (src/lib/cloud.ts) so it follows the Privy account.
 
 import { useCallback, useState } from 'react'
 import { EMPTY_PROFILE, MONEY_FIELDS, type Currency, type FinancialProfile, type MoneyField } from '@/types'
+import { cloudSave } from '@/lib/cloud'
 
 const STORAGE_KEY = 'moonsafe_profile_v1'
 
@@ -68,21 +70,37 @@ export interface ProfileState {
   complete: boolean
   saveProfile: (p: FinancialProfile) => void
   clearProfile: () => void
+  /** Replace the local copy with the server's (no upload). */
+  hydrate: (p: FinancialProfile | null) => void
 }
+
+function writeLocal(p: FinancialProfile | null) {
+  try { if (p) localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); else localStorage.removeItem(STORAGE_KEY) } catch { /* storage blocked */ }
+}
+
+/** The local copy as stored, for the first upload to the server. */
+export const readLocalProfile = read
 
 export function useProfileState(): ProfileState {
   const [profile, setProfile] = useState<FinancialProfile | null>(read)
 
   const saveProfile = useCallback((p: FinancialProfile) => {
     const next = { ...p, savedAt: Date.now() }
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch { /* storage blocked */ }
+    writeLocal(next)
     setProfile(next)
+    cloudSave({ profile: next })
   }, [])
 
   const clearProfile = useCallback(() => {
-    try { localStorage.removeItem(STORAGE_KEY) } catch { /* storage blocked */ }
+    writeLocal(null)
     setProfile(null)
+    cloudSave({ profile: null })
   }, [])
 
-  return { profile, complete: isProfileComplete(profile), saveProfile, clearProfile }
+  const hydrate = useCallback((p: FinancialProfile | null) => {
+    writeLocal(p)
+    setProfile(p)
+  }, [])
+
+  return { profile, complete: isProfileComplete(profile), saveProfile, clearProfile, hydrate }
 }

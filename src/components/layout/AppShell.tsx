@@ -39,7 +39,7 @@ function SetupHeader({ onLogout }: { onLogout: () => void }) {
 const WALLET_SYNC_MS = 8000
 
 export function AppShell({ onLogout }: { onLogout: () => void }) {
-  const { vault, math, vndToUsdc } = useApp()
+  const { vault, math, vndToUsdc, cloud } = useApp()
   const { connectWallet } = usePrivy()
   const { ready: walletsReady, wallets } = useWallets()
   const { address } = useAccount()
@@ -100,7 +100,7 @@ export function AppShell({ onLogout }: { onLogout: () => void }) {
     )
   }
 
-  if (!vault.ready) {
+  if (!vault.ready || !cloud.ready) {
     return (
       <Column>
         <div className="flex-1 flex items-center justify-center">
@@ -128,6 +128,11 @@ export function AppShell({ onLogout }: { onLogout: () => void }) {
     <Column wide>
       <NavBar active={tab} onChange={go} investLocked={!math.investUnlocked} />
 
+      {cloud.error && (
+        <div className="flex-shrink-0 px-4 py-2 text-[14px] leading-5 text-center" style={{ background: '#FEF5D9', color: '#8A5F00' }}>
+          Chưa tải được dữ liệu đã lưu của bạn, đang dùng bản trên máy này. Tải lại trang để thử lại.
+        </div>
+      )}
       <main className="flex-1 overflow-hidden flex flex-col min-h-0">
         {tab === 'chat'    && <ChatScreen onError={setError} onOpenInvest={() => go('invest')} onActions={runActions} />}
         {tab === 'fund'    && <FundScreen key={prefill?.key} onOpenChat={openChat} prefill={prefill && (prefill.kind === 'deposit' || prefill.kind === 'withdraw') ? prefill : null} />}

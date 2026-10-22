@@ -11,6 +11,7 @@ import { LoginScreen } from '@/components/screens/LoginScreen'
 import { WarningModal } from '@/components/screens/WarningModal'
 import { AppShell } from '@/components/layout/AppShell'
 import { AppStateProvider } from '@/state/AppState'
+import { cloudFlush, setCloudAuth, writeOwner } from '@/lib/cloud'
 
 // The warning shows once per login (cleared on logout and when the tab session ends).
 const WARNED_KEY = 'moonsafe_warned_v1'
@@ -42,6 +43,11 @@ export default function App() {
 
   const handleLogout = async () => {
     try { sessionStorage.removeItem(WARNED_KEY) } catch { /* storage blocked */ }
+    // Data stays on the account (server); a shared browser keeps nothing behind.
+    await cloudFlush()
+    setCloudAuth(null)
+    for (const k of ['moonsafe_profile_v1', 'moonsafe_chat_v2']) { try { localStorage.removeItem(k) } catch { /* storage blocked */ } }
+    writeOwner(null)
     setWarned(false)
     await logout()
   }

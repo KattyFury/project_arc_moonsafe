@@ -35,6 +35,7 @@
     "connectkit": "^1.9.2",
     "express": "^5.3.0",
     "framer-motion": "^11.15.0",
+    "jose": "4.15.9",
     "lucide-react": "^0.468.0",
     "qrcode": "1.5.4",
     "react": "^18.3.1",

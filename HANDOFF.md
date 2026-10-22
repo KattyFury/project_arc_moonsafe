@@ -5,6 +5,12 @@ Spec gốc: user dán trong chat (SPEC.md, 10 mục, màn 1–10). Cập nhật 
 
 ## ▶ Làm tiếp từ đây (mới nhất ở trên)
 
+-2. **Dữ liệu người dùng lưu theo tài khoản Privy trên server — 2026-10-22.**
+   - Trước đây profile + chat chỉ ở localStorage (đổi máy / trình duyệt / xoá dữ liệu trang là mất). Giờ: `functions/api/userdata.ts` (GET/PUT) lưu `{profile, chat, updatedAt}` vào **Cloudflare KV** namespace `moonsafe-userdata` (id `f5f9fd482e3b4810898171fa71dca952`, binding `USERDATA` cho production + preview, gắn qua API, secret OPENAI_API_KEY giữ nguyên). Khoá `u:<Privy user id>`; mỗi request phải có `Authorization: Bearer <Privy access token>`, kiểm bằng `jose` + JWKS `auth.privy.io/api/v1/apps/<appId>/jwks.json` (ES256, iss `privy.io`, aud = app id).
+   - Client: `src/lib/cloud.ts` (gom ghi ~1 s, lỗi thì gửi lại cùng lần ghi sau), `AppState` tải về khi đăng nhập (AppShell chờ tải xong mới hiện màn; lỗi thì dùng bản trên máy + dải báo vàng), lần đầu trên tài khoản thì đẩy bản localStorage cũ lên. `moonsafe_owner_v1` ghi chủ của bản trên máy; đăng nhập tài khoản khác thì xoá bản trên máy trước. Đăng xuất: gửi nốt, xoá profile + chat trên máy.
+   - Đã kiểm: API từ chối thiếu token / token giả (401). **Chưa kiểm luồng đăng nhập thật** (Claude không đăng nhập Privy được): nhờ user chat trên máy A, mở máy B xem Cân đối + chat còn không.
+   - Cân đối hiện ngay mọi số agent đã ghi nhận (không chờ đủ hồ sơ). Danh sách ví gộp trùng địa chỉ (OKX tự khai thêm là "MetaMask").
+
 -1. **Giao diện mới theo Figma + bỏ thẻ khai báo — 2026-10-22.**
    - Thiết kế chuẩn: Figma `WcPHEwY8xh33OvCFrxgLcQ` section 38:191 (mobile 393) / 38:192 (desktop 1440) / 39:193 (nav). Code: `src/components/ui/kit.tsx` (Screen, Grid/Col 12 cột, Btn md/sm, Toggle segmented, Stats, AmountField…), `NavBar.tsx` (mobile chỉ tab; desktop logo + tab + ví). Mọi màn vừa 1 khung 393×852 và 1440×900 (đã đo scrollHeight; Đầu tư đã mở khoá chỉ dư khi hiện thông báo lỗi giá BTC).
    - **Không còn thẻ khai báo.** Agent `update_profile` → `ChatScreen.onProfileDraft` gộp vào profile và lưu luôn (localStorage). Khoá đầu tư giữ nguyên logic, chữ đổi ("Agent chưa biết thu chi của bạn").
