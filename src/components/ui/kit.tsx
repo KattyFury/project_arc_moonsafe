@@ -101,7 +101,7 @@ export function Btn({ variant = 'primary', size = 'md', loading, className, chil
     : { background: 'var(--bg)', color: 'var(--accent)', boxShadow: 'var(--shadow-y2)' }
   return (
     <button {...rest} disabled={off} style={style}
-      className={clsx('w-full rounded-2xl font-semibold transition-colors flex items-center justify-center gap-2',
+      className={clsx('w-full rounded-2xl font-semibold transition-colors flex items-center justify-center gap-2 whitespace-nowrap',
         size === 'md' ? 'h-12 px-6 text-[16px] leading-6' : 'h-10 px-4 text-[14px] leading-5',
         off && 'cursor-not-allowed', className)}>
       {loading && <Loader2 size={16} className="animate-spin" />}

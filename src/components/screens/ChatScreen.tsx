@@ -2,7 +2,7 @@
 // agent (income, spending, debt…) is saved straight to the profile in this browser; they
 // can read it in Cân đối, correct it by telling the agent, or clear it in Menu.
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { Loader2, Send } from 'lucide-react'
 import { toast } from 'sonner'
 import { useApp } from '@/state/AppState'
@@ -13,6 +13,7 @@ import { useNow } from '@/hooks/useNow'
 import { formatUsdc } from '@/lib/format'
 import { EMPTY_PROFILE, MONEY_FIELDS, type FinancialProfile, type MoneyField } from '@/types'
 import { Notice } from '@/components/ui/kit'
+import { ActionCard, type ChatAction } from '@/components/chat/ActionCard'
 
 function renderContent(text: string): ReactNode {
   return text.split('\n').map((line, i, arr) => (
@@ -26,7 +27,26 @@ function renderContent(text: string): ReactNode {
 const Avatar = () => <img src="/logo.svg" alt="" width={32} height={32} className="flex-shrink-0" />
 
 export function ChatScreen({ onError, onOpenInvest, onActions }: { onError: (m: string | null) => void; onOpenInvest: () => void; onActions: (a: AgentAction[]) => void }) {
-  const { profile, vault, math, cirBtc } = useApp()
+  const { profile, vault, math, cirBtc, vndToUsdc } = useApp()
+  // Deposit / withdraw / buy / DCA from the agent become cards under its reply (index = anchor).
+  const [cards, setCards] = useState<ChatAction[]>([])
+  const countRef = useRef(0)
+  const handleActions = (actions: AgentAction[]) => {
+    const screens = actions.filter(a => a.type === 'open_screen')
+    if (screens.length) onActions(screens)
+    const next: ChatAction[] = []
+    for (const a of actions) {
+      if (a.type === 'open_screen' || !a.amount) continue
+      const amount = a.amount.currency === 'USDC' ? BigInt(Math.round(a.amount.amount * 1_000_000)) : vndToUsdc(a.amount.amount)
+      if (amount === null || amount <= 0n) { toast.error('Chưa quy đổi được số tiền (thiếu tỉ giá). Hãy nói số tiền bằng USDC.'); continue }
+      // The reply is appended right after this call, at the current message count.
+      const base = { id: Date.now() + next.length, anchor: countRef.current, amount }
+      next.push(a.type === 'propose_dca'
+        ? { ...base, kind: 'dca', intervalDays: a.intervalDays && a.intervalDays > 0 ? a.intervalDays : 7 }
+        : { ...base, kind: a.type === 'prepare_deposit' ? 'deposit' : a.type === 'prepare_withdraw' ? 'withdraw' : 'buy' })
+    }
+    if (next.length) setCards(c => [...c, ...next])
+  }
   const now = useNow()
   const [input, setInput] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -64,10 +84,11 @@ export function ChatScreen({ onError, onOpenInvest, onActions }: { onError: (m: 
       profile.saveProfile(next)
     },
     onDcaStop: () => { cirBtc.stopDca(); toast('Đã dừng DCA') },
-    onActions,
+    onActions: handleActions,
   })
 
   const count = messages.length
+  useLayoutEffect(() => { countRef.current = count })
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [count, loading])
 
   const handleSend = useCallback(async () => {
@@ -86,17 +107,20 @@ export function ChatScreen({ onError, onOpenInvest, onActions }: { onError: (m: 
       <div className="flex flex-col flex-1 min-h-0 lg:rounded-2xl lg:shadow-[0_2px_8px_0_rgba(0,0,0,0.32)] lg:overflow-hidden" style={{ background: 'var(--bg)' }}>
         <div className="flex-1 overflow-y-auto no-scrollbar px-4 py-4 lg:p-6 flex flex-col gap-4 [&>*]:flex-shrink-0">
           {messages.map((msg, i) => (
-            <div key={i} className={`flex gap-2 items-end ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              {msg.role === 'assistant' && <Avatar />}
-              <div className="max-w-[85%] px-4 py-4 text-[16px] leading-6 rounded-2xl"
-                style={msg.role === 'user'
-                  ? { background: 'var(--accent)', color: 'white' }
-                  : msg.error
-                    ? { background: '#FDE8EB', color: 'var(--danger)' }
-                    : { background: 'var(--surface-muted)', color: 'var(--ink)' }}>
-                {renderContent(msg.timestamp === 0 ? (profile.complete ? WELCOME_BACK : WELCOME.content) : msg.content)}
+            <Fragment key={i}>
+              <div className={`flex gap-2 items-end ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                {msg.role === 'assistant' && <Avatar />}
+                <div className="max-w-[85%] px-4 py-4 text-[16px] leading-6 rounded-2xl"
+                  style={msg.role === 'user'
+                    ? { background: 'var(--accent)', color: 'white' }
+                    : msg.error
+                      ? { background: '#FDE8EB', color: 'var(--danger)' }
+                      : { background: 'var(--surface-muted)', color: 'var(--ink)' }}>
+                  {renderContent(msg.timestamp === 0 ? (profile.complete ? WELCOME_BACK : WELCOME.content) : msg.content)}
+                </div>
               </div>
-            </div>
+              {cards.filter(c => c.anchor === i).map(c => <ActionCard key={c.id} action={c} />)}
+            </Fragment>
           ))}
 
           {loading && (
@@ -121,7 +145,7 @@ export function ChatScreen({ onError, onOpenInvest, onActions }: { onError: (m: 
           <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void handleSend() } }}
             placeholder="Nhắn với agent…" aria-label="Tin nhắn"
-            className="flex-1 min-w-0 h-12 px-4 rounded-full text-[16px] leading-6 outline-none border border-[var(--line)] focus:border-2 focus:border-[var(--accent)] placeholder:text-[var(--muted)]"
+            className="flex-1 min-w-0 h-12 px-4 rounded-full text-[16px] leading-6 outline-none focus-visible:outline-none border border-[var(--line)] focus:border-2 focus:border-[var(--accent)] placeholder:text-[var(--muted)]"
             style={{ background: 'var(--surface-muted)', color: 'var(--ink)' }} />
           <button onClick={() => { void handleSend() }} disabled={loading || !input.trim()} aria-label="Gửi"
             className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"

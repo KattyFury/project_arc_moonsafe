@@ -3,11 +3,9 @@
 // 430 column with header + vault setup (screens 4/5).
 
 import { useEffect, useState, type ReactNode } from 'react'
-import { toast } from 'sonner'
 import { usePrivy, useWallets } from '@privy-io/react-auth'
 import { useAccount } from 'wagmi'
 import type { AgentAction } from '@/hooks/useAgent'
-import type { Prefill } from '@/types'
 import { AlertCircle, Loader2 } from 'lucide-react'
 import { NavBar, type NavTab } from './NavBar'
 import { useApp } from '@/state/AppState'
@@ -39,13 +37,12 @@ function SetupHeader({ onLogout }: { onLogout: () => void }) {
 const WALLET_SYNC_MS = 8000
 
 export function AppShell({ onLogout }: { onLogout: () => void }) {
-  const { vault, math, vndToUsdc, cloud } = useApp()
+  const { vault, math, cloud } = useApp()
   const { connectWallet } = usePrivy()
   const { ready: walletsReady, wallets } = useWallets()
   const { address } = useAccount()
   const [tab, setTab] = useState<NavTab>('chat')
   const [error, setError] = useState<string | null>(null)
-  const [prefill, setPrefill] = useState<Prefill | null>(null)
   const [syncTimedOut, setSyncTimedOut] = useState(false)
 
   useEffect(() => {
@@ -62,27 +59,12 @@ export function AppShell({ onLogout }: { onLogout: () => void }) {
   const go = (t: NavTab) => { setError(null); setTab(t) }
   const openChat = () => go('chat')
 
-  // Agent tools → open the matching screen with the amount filled in. Nothing is signed here.
+  // "Mở màn …" from the agent. Deposit / withdraw / buy / DCA stay in the chat as cards.
   const runActions = (actions: AgentAction[]) => {
-    const a = actions[actions.length - 1]
-    if (!a) return
-    if (a.type === 'open_screen') {
-      const map = { fund: 'fund', invest: 'invest', balance: 'balance', menu: 'menu' } as const
-      if (a.screen) setTimeout(() => go(map[a.screen!]), 700)
-      return
-    }
-    const amt = a.amount
-    const usdc = !amt ? null : amt.currency === 'USDC' ? BigInt(Math.round(amt.amount * 1_000_000)) : vndToUsdc(amt.amount)
-    if (usdc === null || usdc <= 0n) { toast.error('Chưa quy đổi được số tiền (thiếu tỉ giá). Hãy nhập bằng USDC.'); return }
-    const key = Date.now()
-    const next: Prefill = a.type === 'propose_dca'
-      ? { kind: 'dca', amount: usdc, intervalDays: a.intervalDays && a.intervalDays > 0 ? a.intervalDays : 7, key }
-      : a.type === 'prepare_deposit' ? { kind: 'deposit', amount: usdc, key }
-      : a.type === 'prepare_withdraw' ? { kind: 'withdraw', amount: usdc, key }
-      : { kind: 'buy', amount: usdc, key }
-    setPrefill(next)
+    const map = { fund: 'fund', invest: 'invest', balance: 'balance', menu: 'menu' } as const
+    const screen = actions.filter(a => a.type === 'open_screen' && a.screen).pop()?.screen
     // Short pause so the agent's reply is seen before the screen changes.
-    setTimeout(() => go(next.kind === 'deposit' || next.kind === 'withdraw' ? 'fund' : 'invest'), 700)
+    if (screen) setTimeout(() => go(map[screen]), 700)
   }
 
   if (noWallet) {
@@ -135,8 +117,8 @@ export function AppShell({ onLogout }: { onLogout: () => void }) {
       )}
       <main className="flex-1 overflow-hidden flex flex-col min-h-0">
         {tab === 'chat'    && <ChatScreen onError={setError} onOpenInvest={() => go('invest')} onActions={runActions} />}
-        {tab === 'fund'    && <FundScreen key={prefill?.key} onOpenChat={openChat} prefill={prefill && (prefill.kind === 'deposit' || prefill.kind === 'withdraw') ? prefill : null} />}
-        {tab === 'invest'  && <InvestScreen key={prefill?.key} onOpenFund={() => go('fund')} onOpenChat={openChat} prefill={prefill && (prefill.kind === 'buy' || prefill.kind === 'dca') ? prefill : null} />}
+        {tab === 'fund'    && <FundScreen onOpenChat={openChat} />}
+        {tab === 'invest'  && <InvestScreen onOpenFund={() => go('fund')} onOpenChat={openChat} />}
         {tab === 'balance' && <BalanceSheet onOpenChat={openChat} />}
         {tab === 'menu'    && <SettingsScreen onLogout={onLogout} />}
       </main>

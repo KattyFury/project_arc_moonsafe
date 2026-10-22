@@ -32,12 +32,6 @@ export const EMPTY_PROFILE: FinancialProfile = {
 export type Panel = 'fund' | 'invest' | 'balance' | 'settings'
 
 /** What the agent opened for the user: a screen with an amount filled in (6-dec USDC). The user still signs. */
-export type Prefill =
-  | { kind: 'deposit'; amount: bigint; key: number }
-  | { kind: 'withdraw'; amount: bigint; key: number }
-  | { kind: 'buy'; amount: bigint; key: number }
-  | { kind: 'dca'; amount: bigint; intervalDays: number; key: number }
-
 export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string

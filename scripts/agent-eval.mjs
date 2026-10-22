@@ -51,7 +51,7 @@ function context(s) {
 }
 
 // ---- checks ----------------------------------------------------------------------------
-const CLAIM = /(đã|vừa)\s+(mở|điền)(?!\s*kh(?:oá|óa|oa))\s*(sẵn)?/i
+const CLAIM = /(đã|vừa)\s+(mở|điền|hiện|tạo)(?!\s*kh(?:oá|óa|oa))\s*(sẵn)?/i
 const NBSP = new RegExp(String.fromCharCode(160), 'g')
 // "1.160,71" → 1160.71, "59,5" → 59.5, "1500" → 1500
 const viNum = t => Number(t.replace(/\./g, '').replace(',', '.'))
@@ -102,7 +102,11 @@ function check(turn, res, ctx, userTexts) {
   if (want) {
     const a = acts.find(x => x.type === want.type)
     if (!a) fails.push(`expected action ${want.type}, got ${JSON.stringify(acts)}`)
-    else if (want.amount !== undefined && Math.abs((a.amount?.amount ?? -1) - want.amount) > (want.tol ?? 0.01)) fails.push(`action amount ${JSON.stringify(a.amount)} ≠ ${want.amount}`)
+    else if (want.amount !== undefined) {
+      // The app converts a VND amount to USDC itself, so compare in USDC.
+      const got = a.amount ? (a.amount.currency === 'VND' ? a.amount.amount / rate : a.amount.amount) : -1
+      if (Math.abs(got - want.amount) > (want.tol ?? 0.01)) fails.push(`action amount ${JSON.stringify(a.amount)} ≠ ${want.amount} USDC`)
+    }
   }
   for (const re of turn.must ?? []) if (!re.test(c)) fails.push(`missing ${re}`)
   for (const re of turn.mustNot ?? []) if (re.test(c)) fails.push(`should not say ${re}`)
@@ -130,6 +134,10 @@ const SC = [
     { u: 'Mình cần thêm bao nhiêu để đủ quỹ?', must: [/3 tháng/, /6 tháng/] }] },
   { name: 'freelance, tiền USDC, ví không đủ', s: { profile: P({}), vault: 1000, wallet: 300 }, turns: [
     { u: 'Mình làm freelance, thu nhập tầm 1500 USDC, tiêu khoảng 600 USDC mỗi tháng', profile: { incomeStable: false, monthlyIncome: 1500, monthlyExpenses: 600 }, must: [/6 tháng/], mustNot: [/3 tháng = /] }] },
+  { name: 'ví không đủ, có thu nhập: khuyên tiết kiệm + số tháng', s: { profile: P({ monthlyIncome: 15000000, monthlyExpenses: 10000000, debtAmount: 0, incomeStable: true }), vault: 0, wallet: 50 }, turns: [
+    { u: 'mình chưa có tiền để dành, giờ làm sao đủ quỹ?', must: [/tiết kiệm|để dành/i, /tháng/] }] },
+  { name: 'hỏi vì sao phải có quỹ dự phòng', s: { profile: P({}), vault: 0, wallet: 0 }, turns: [
+    { u: 'sao không đầu tư luôn mà phải để quỹ dự phòng làm gì?', must: [/bán/i] }] },
   { name: 'có nợ: trả nợ hay nạp quỹ trước', s: { profile: P({ monthlyIncome: 20000000, monthlyExpenses: 10000000, debtAmount: 20000000, age: 28, incomeStable: true }), vault: 200, wallet: 500 }, turns: [
     { u: 'Mình nên nạp quỹ hay trả nợ trước?', must: [/nợ/] }] },
   { name: 'đòi mua cirBTC khi đang khoá', s: { profile: P({ monthlyExpenses: 10000000, debtAmount: 0, incomeStable: true }), vault: 0, wallet: 2300.63 }, turns: [
@@ -171,7 +179,7 @@ const SC = [
     { u: 'mình cần thêm bao nhiêu để đủ quỹ?' },
     { u: 'ok nạp số đó đi', action: { type: 'prepare_deposit', amount: 30000000 / rate, tol: 1 } }] },
   { name: 'nợ bằng USDC, hỏi tình hình', s: { profile: P({ monthlyIncome: 20000000, monthlyExpenses: 10000000, debtAmount: 300, age: 25, incomeStable: false, units: { debtAmount: 'USDC' } }), vault: 0, wallet: 100 }, turns: [
-    { u: 'tình hình tài chính của mình thế nào?', must: [/nợ/] }] },
+    { u: 'tình hình tài chính của mình thế nào?', must: [/nợ/i] }] },
 ]
 
 // ---- run -------------------------------------------------------------------------------

@@ -6,15 +6,14 @@ import { ShieldAlert, Vault } from 'lucide-react'
 import { useApp } from '@/state/AppState'
 import { GAS_ESTIMATE_USDC6, GAS_RESERVE_USDC6, txErrorMessage } from '@/hooks/useVault'
 import { formatNumber, formatUsdc, parseUsdcInput, usdcToInput } from '@/lib/format'
-import type { Prefill } from '@/types'
 import { AmountField, Btn, Chips, Col, GlassCard, Grid, IconBox, Notice, Screen, Sheet, Toggle, glass } from '@/components/ui/kit'
 
 type Tab = 'deposit' | 'withdraw'
 
-export function FundScreen({ onOpenChat, prefill }: { onOpenChat: () => void; prefill?: Extract<Prefill, { kind: 'deposit' | 'withdraw' }> | null }) {
+export function FundScreen({ onOpenChat }: { onOpenChat: () => void }) {
   const { vault, math, money, unit, profile } = useApp()
-  const [tab, setTab] = useState<Tab>(prefill?.kind ?? 'deposit')
-  const [amount, setAmount] = useState(prefill ? usdcToInput(prefill.amount) : '')
+  const [tab, setTab] = useState<Tab>('deposit')
+  const [amount, setAmount] = useState('')
   const [sheet, setSheet] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
@@ -89,10 +88,6 @@ export function FundScreen({ onOpenChat, prefill }: { onOpenChat: () => void; pr
         </Col>
 
         <Col span={7}>
-          {prefill && amount && (
-            <Notice tone="info" title="Agent đã điền sẵn">Kiểm tra số tiền rồi bấm {tab === 'deposit' ? 'Nạp vào quỹ' : 'Rút về ví'} và ký trong ví.</Notice>
-          )}
-
           {/* Deposit / withdraw card */}
           <GlassCard className="p-4 lg:p-8 flex flex-col gap-4">
             <Toggle value={tab} onChange={t => { setTab(t); setAmount(''); setError(null); setDone(null) }}

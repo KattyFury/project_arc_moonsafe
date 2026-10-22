@@ -55,8 +55,20 @@ const DECLINES = /(không|chưa|ko|k)\s+(muốn|thích|tiện|định)\s+(nói|k
 const ACTION_INTENT = /(?<!\p{L})(nạp|rút|mua|bán|dca|mở(?!\s*kh(?:oá|óa|oa))|xem|điền|dừng|chuyển|làm đi)(?!\p{L})|^\s*(ok|oke|okay|được|đồng ý|ừ|uk|yes|chốt|nhất trí|triển)(?!\p{L})/iu
 const INVEST_INTENT = /(?<!\p{L})(mua|đầu tư|cirbtc|dca|btc)(?!\p{L})/iu
 
+/**
+ * Last resort after the rewrites: remove a repeated "ổn định?" question, then keep only the
+ * last question if several remain (one question per reply).
+ */
+function tidyQuestions(text: string, dropStable: boolean): string {
+  const lines = text.split('\n').map(line => line.split(/(?<=[.!?])\s+/))
+  if (dropStable) for (const parts of lines) for (let i = parts.length - 1; i >= 0; i--) if (/ổn định[^.!?]*\?$/i.test(parts[i].trim())) parts.splice(i, 1)
+  const questions = lines.flatMap((parts, li) => parts.map((p, pi) => ({ li, pi, q: p.trim().endsWith('?') }))).filter(x => x.q)
+  for (const x of questions.slice(0, -1)) lines[x.li][x.pi] = ''
+  return lines.map(parts => parts.filter(Boolean).join(' ')).join('\n').replace(/\n{3,}/g, '\n\n').trim()
+}
+
 // Phrases that report an app action as done; only allowed when an action actually ran.
-const CLAIMS_ACTION = /(đã|vừa)\s+(mở|điền|hiện)(?!\s*kh(?:oá|óa|oa))\s*(sẵn)?|mở sẵn màn .{0,40} (rồi|cho bạn)/i
+const CLAIMS_ACTION = /(đã|vừa)\s+(mở|điền|hiện|tạo)(?!\s*kh(?:oá|óa|oa))\s*(sẵn)?|mở sẵn màn .{0,40} (rồi|cho bạn)/i
 
 const REPLY_PROMPT = `Bạn là chuyên gia tư vấn tài chính cá nhân của MoonSafe, app quản lý tài chính cá nhân onchain cho người dùng Web3. Bạn có nhiều năm kinh nghiệm giúp người trẻ sắp xếp thu chi, dựng quỹ dự phòng và đầu tư có kỷ luật. Bạn nói chuyện như một người tư vấn đáng tin: chuyên nghiệp, rõ ràng, nhưng gần gũi như đang ngồi cà phê với khách.
 
@@ -66,12 +78,16 @@ const REPLY_PROMPT = `Bạn là chuyên gia tư vấn tài chính cá nhân củ
 - Thông tin hữu ích: thu nhập / tháng, chi tiêu thiết yếu / tháng, nợ bên ngoài (có không, tổng bao nhiêu), tuổi, thu nhập ổn định không; tài sản khác. Tiền có thể là VND hoặc USDC.
 - Lộ trình MoonSafe: làm rõ thu chi → tạo quỹ dự phòng → cân đối tài sản → mở khóa đầu tư. Khi đủ thông tin, gợi ý bước tiếp theo phù hợp với họ.
 
+## Vì sao cần quỹ dự phòng (giải thích ngắn khi phù hợp)
+- Quỹ dự phòng là khoản để lo chuyện bất ngờ: mất việc, ốm đau, sửa nhà, xe hỏng… Không có quỹ thì khi gặp chuyện buộc phải bán tài sản đầu tư (BTC, cổ phiếu…) để xoay xở, nhiều khi đúng lúc giá đang giảm nên phải bán lỗ, hoặc phải đi vay.
+- Tiết kiệm là nền tảng của mọi bước sau. Ví không đủ bù phần thiếu thì khuyên để dành đều mỗi tháng (trích ngay khi nhận lương, trước khi tiêu) và nạp dần vào quỹ; nếu số liệu có dòng "cần khoảng N tháng nữa" thì nêu đúng số đó. Chi tiêu ≥ thu nhập thì gợi ý nhẹ nhàng xem lại các khoản chi, không phán xét.
+
 ## Con số tiền (quan trọng nhất, sai là mất lòng tin)
 - Con số tiền CHỈ được lấy từ: lời người dùng, "SỐ LIỆU TÀI SẢN & QUỸ", hoặc trạng thái app. TUYỆT ĐỐI không tự cộng, trừ, nhân, chia hay quy đổi VND↔USDC, không ghép hai đơn vị trong một câu kiểu "30 triệu − 1.000 USDC". Số nào chưa có thì nói chưa tính được, đừng ước lượng.
 - Số dư ví, quỹ, mốc quỹ, phần còn thiếu, đã đủ hay chưa: dùng đúng các dòng trong "SỐ LIỆU TÀI SẢN & QUỸ" (có sẵn cả hai đơn vị). Nếu dòng đó ghi "ĐÃ ĐỦ" thì nói đã đủ, không nói "cần thêm".
 - Nạp quỹ = chuyển USDC từ ví vào vault MoonSafe để dành; KHÔNG phải trả nợ. App không trả nợ hộ, đừng đề nghị "nạp để trả nợ".
 - Chỉ đề nghị nạp số ví nạp được (dòng "nạp được tối đa"); ví ít hơn phần thiếu thì đề nghị nạp đúng số ví có.
-- Luôn nhìn ví trước khi khuyên: dòng quỹ ghi "VÍ ĐÃ ĐỦ để nạp ngay" thì nói rõ ví đang có bao nhiêu, gợi ý nạp phần còn thiếu từ ví và hỏi có muốn mình mở sẵn màn nạp với số đó không. KHÔNG hỏi kế hoạch tiết kiệm khi tiền đã nằm sẵn trong ví. Chỉ bàn chuyện tiết kiệm thêm khi ví không đủ.
+- Luôn nhìn ví trước khi khuyên: dòng quỹ ghi "VÍ ĐÃ ĐỦ để nạp ngay" thì nói rõ ví đang có bao nhiêu, gợi ý nạp phần còn thiếu từ ví và hỏi có muốn mình tạo lệnh nạp số đó để bạn ký không. KHÔNG hỏi kế hoạch tiết kiệm khi tiền đã nằm sẵn trong ví. Ví không đủ thì gợi ý nạp số ví có (nếu có) VÀ khuyên để dành đều mỗi tháng.
 - Khi nêu mốc quỹ luôn viết dạng "N tháng chi tiêu = số tiền" để người dùng hiểu số đó từ đâu ra.
 - Quỹ dự phòng khởi đầu: có việc làm / thu nhập ổn định = 3 tháng chi tiêu thiết yếu; không ổn định (freelance, tự kinh doanh, thu nhập thất thường) = 6 tháng. Đã biết độ ổn định thì chỉ nói đúng mốc của họ. CHƯA biết thì LUÔN nêu đủ hai mốc (lấy số trong "SỐ LIỆU TÀI SẢN & QUỸ"), đừng gộp thành khoảng "3–6 tháng", rồi hỏi một câu về độ ổn định.
 
@@ -79,11 +95,11 @@ ${RULES}
 
 ## Thao tác
 - Mọi thao tác trong app do hệ thống làm bằng tool TRƯỚC khi bạn trả lời; kết quả nằm trong ghi chú "Thao tác vừa thực hiện". Chỉ kể đúng những thao tác có trong ghi chú đó. KHÔNG nói đã mở / đã điền / đã làm gì nếu ghi chú không có.
-- Thao tác chỉ MỞ SẴN màn và điền số; người dùng tự kiểm tra và ký trong ví. Đừng nói "đã nạp", "đã rút", "đã mua", "đã lưu".
+- Nạp / rút / mua / DCA: app hiện THẺ XÁC NHẬN ngay dưới câu trả lời trong chat (không chuyển màn); người dùng bấm nút trên thẻ rồi tự ký trong ví. Đừng nói "đã nạp", "đã rút", "đã mua", "đã lưu". Chỉ "mở màn …" mới chuyển màn.
 - Số liệu người dùng kể được app tự lưu vào tài khoản của họ (không có thẻ, không có nút Lưu; đổi máy vẫn còn). Họ xem ở tab Cân đối; muốn sửa thì nói lại với agent; muốn xoá thì vào Menu.
 - Nếu ghi chú báo một thao tác bị chặn (ví dụ đầu tư đang khoá), giải thích lý do và bước cần làm.
 - Người dùng muốn đầu tư / mua cirBTC mà số liệu có dòng "Đầu tư đang KHOÁ" → câu đầu tiên nói rõ "đầu tư đang khoá" và lý do theo dòng đó, rồi mới gợi ý bước tiếp theo.
-- Dùng đúng động từ trong ghi chú: "đã mở sẵn", "đã điền", "đã hiện đề xuất". Không nói "đã thiết lập", "đã nạp", "đã rút", "đã mua", "đã lưu". Xưng "mình", không xưng "tôi".
+- Dùng đúng động từ trong ghi chú: "đã hiện thẻ xác nhận … bên dưới", "đã mở màn …". Đề nghị trước khi làm thì nói "Bạn có muốn mình tạo lệnh nạp … để bạn ký không?". Không nói "đã thiết lập", "đã nạp", "đã rút", "đã mua", "đã lưu". Xưng "mình", không xưng "tôi".
 
 ## Cách hỏi
 - Mỗi câu trả lời có TỐI ĐA MỘT câu hỏi.
@@ -291,10 +307,12 @@ function fundFacts(appState: Record<string, unknown> | null, update: Record<stri
   else if (debtRaw === 0 || (debtRaw && typeof debtRaw === 'object' && (debtRaw as { amount?: number }).amount === 0)) lines.push('- Nợ bên ngoài: không có')
   if (other) lines.push(`- Tài sản khác: ${both(other)}`)
   if (cir > 0) lines.push(`- cirBTC đang giữ: ${showUsd(cir)}`)
+  let savedUsd: number | null = null
   if (inc && exp) {
     const incUsd = inc.currency === 'USDC' ? inc.amount : rate ? inc.amount / rate : null
     const expUsd = exp.currency === 'USDC' ? exp.amount : rate ? exp.amount / rate : null
     if (incUsd && expUsd !== null) {
+      savedUsd = incUsd - expUsd
       const saved = inc.currency === exp.currency ? inc.amount - exp.amount : null
       lines.push(`- Tỷ lệ tiết kiệm (thu nhập − chi tiêu) / thu nhập: ${Math.round((incUsd - expUsd) / incUsd * 100)}%; để dành được mỗi tháng: ${saved !== null ? both({ amount: saved, currency: inc.currency }) : showUsd(incUsd - expUsd)}`)
     }
@@ -329,6 +347,12 @@ function fundFacts(appState: Record<string, unknown> | null, update: Record<stri
         else if (spendable !== null && spendable >= need) gap = `còn thiếu ${showUsd(need)}; VÍ ĐÃ ĐỦ để nạp ngay phần này`
         else if (spendable !== null && spendable > 0) gap = `còn thiếu ${showUsd(need)}; nạp hết ví (${showUsd(spendable)}) thì vẫn thiếu ${showUsd(need - spendable)}`
         else gap = `còn thiếu ${showUsd(need)}; ví chưa có tiền để nạp`
+        const rest = need - (spendable ?? 0)
+        if (rest > 0 && savedUsd !== null) {
+          gap += savedUsd > 0
+            ? `; nếu để dành ${showUsd(savedUsd)} mỗi tháng và nạp vào quỹ thì cần khoảng ${Math.ceil(rest / savedUsd)} tháng nữa`
+            : '; thu nhập hiện chưa dư để để dành (chi tiêu ≥ thu nhập)'
+        }
       }
       lines.push(`- ${who}: mốc ${m} tháng = ${show(floor)}; ${gap}`)
       floors.push({ months: m, texts: [cur === 'USDC' ? usdc(floor) : vnd(floor), ...(floorUsd !== null ? [usdc(floorUsd)] : [])] })
@@ -400,10 +424,10 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       const amt = moneyText(args.amount, rate)
       done.push(
         name === 'open_screen' ? `Đã mở màn ${SCREEN_NAMES[String(args.screen)] ?? String(args.screen)}; người dùng đang xem trên app, KHÔNG liệt kê lại số liệu, chỉ nói 1 câu ngắn.`
-        : name === 'propose_dca' ? `Đã hiện ĐỀ XUẤT DCA ${amt} mỗi ${String(args.intervalDays ?? 7)} ngày ở màn Đầu tư. CHƯA thiết lập: người dùng phải bấm "Duyệt DCA", rồi mỗi kỳ tự xem báo giá và ký. Nhắc 1 câu: giá cirBTC có thể giảm sâu, chỉ đầu tư số tiền sẵn sàng mất.`
-        : name === 'prepare_deposit' ? `Đã mở màn Nạp, điền sẵn ${amt}. CHƯA nạp: người dùng bấm "Nạp vào quỹ" rồi ký trong ví.`
-        : name === 'prepare_withdraw' ? `Đã mở màn Rút, điền sẵn ${amt}. CHƯA rút: người dùng bấm "Rút về ví" rồi ký; tiền về ví của chính họ.`
-        : `Đã mở màn Đầu tư, điền sẵn ${amt} để mua cirBTC. CHƯA mua: người dùng bấm "Xem báo giá", kiểm tra rồi ký. Nhắc 1 câu: giá cirBTC có thể giảm sâu, chỉ đầu tư số tiền sẵn sàng mất.`)
+        : name === 'propose_dca' ? `Đã hiện thẻ ĐỀ XUẤT DCA ${amt} mỗi ${String(args.intervalDays ?? 7)} ngày ngay dưới câu trả lời này trong chat. CHƯA thiết lập: người dùng bấm "Duyệt DCA" trên thẻ, rồi mỗi kỳ tự xem báo giá và ký. Nhắc 1 câu: giá cirBTC có thể giảm sâu, chỉ đầu tư số tiền sẵn sàng mất.`
+        : name === 'prepare_deposit' ? `Đã hiện thẻ xác nhận NẠP ${amt} vào quỹ ngay dưới câu trả lời này trong chat. CHƯA nạp: người dùng bấm "Ký giao dịch" trên thẻ rồi xác nhận trong ví.`
+        : name === 'prepare_withdraw' ? `Đã hiện thẻ xác nhận RÚT ${amt} về ví ngay dưới câu trả lời này trong chat. CHƯA rút: người dùng bấm "Ký giao dịch" trên thẻ rồi xác nhận trong ví; tiền về ví của chính họ.`
+        : `Đã hiện thẻ MUA cirBTC ${amt} ngay dưới câu trả lời này trong chat. CHƯA mua: người dùng bấm "Xem báo giá" trên thẻ, kiểm tra rồi "Ký mua". Nhắc 1 câu: giá cirBTC có thể giảm sâu, chỉ đầu tư số tiền sẵn sàng mất.`)
     }
   }
 
@@ -424,13 +448,13 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   if (facts) replyMessages.push({ role: 'system', content: facts })
   if (DECLINES.test(lastUserText)) replyMessages.push({ role: 'system', content: 'Người dùng vừa từ chối chia sẻ. Tôn trọng: câu trả lời này KHÔNG có câu hỏi nào về chuyện riêng của họ (thu nhập, công việc, độ ổn định, nợ, tuổi…). Chia sẻ kiến thức chung và nói lúc nào muốn kể cũng được.' })
 
-  let rewritten = false
-  for (let round = 1; round <= 3; round++) {
+  let rewrites = 0
+  for (let round = 1; round <= 4; round++) {
     const reply = await openai(apiKey, {
       model: 'gpt-4o-mini',
       messages: replyMessages,
       tools: REPLY_TOOLS,
-      tool_choice: round === 3 ? 'none' : 'auto',
+      tool_choice: round >= 3 ? 'none' : 'auto',
       max_tokens: 800,
       temperature: 0.5,
     })
@@ -442,21 +466,28 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       // The model sometimes claims a screen was opened / filled when no action ran
       // (measured 2026-10-22: "Mình đã mở sẵn màn nạp" with actions = []). Rewrite once.
       const problems: string[] = []
-      if (!actions.length && CLAIMS_ACTION.test(content)) problems.push('không có thao tác nào được thực hiện, app KHÔNG mở hay điền gì cả: chỉ ĐỀ NGHỊ (ví dụ "Bạn có muốn mình mở sẵn màn nạp … không?"), không nói "đã mở" / "đã điền"')
+      if (!actions.length && CLAIMS_ACTION.test(content)) problems.push('không có thao tác nào được thực hiện, app KHÔNG mở hay điền gì cả: chỉ ĐỀ NGHỊ (ví dụ "Bạn có muốn mình tạo lệnh nạp … để bạn ký không?"), không nói "đã mở" / "đã điền" / "đã tạo" / "đã hiện"')
       const plain = content.replace(/\u00a0/g, ' ')
       for (const f of floors) {
         if (f.texts.some(t => plain.includes(t.replace(/\u00a0/g, ' '))) && !plain.includes(`${f.months} tháng`)) {
           problems.push(`mốc ${f.texts[0]} phải ghi rõ là "${f.months} tháng chi tiêu"`)
         }
       }
+      if ((content.match(/\?/g) ?? []).length > 1) problems.push('chỉ được có MỘT câu hỏi, bỏ bớt các câu hỏi còn lại')
+      const prevAssistant = [...messages].reverse().find(m => m.role === 'assistant')?.content ?? ''
+      // Asked about job stability: in the question itself, or the line before it ("…có ổn định không. Bạn chia sẻ thêm được không?").
+      const asksStable = (t: string) => /ổn định[^.!?\n]*\?|ổn định[^.!?\n]*(không|chưa)\.\s*[^.!?\n]{0,80}\?/i.test(t)
+      if (asksStable(prevAssistant) && asksStable(content) && profileUpdate?.incomeStable === undefined) problems.push('lượt trước đã hỏi công việc có ổn định không mà người dùng chưa trả lời; KHÔNG hỏi lại câu đó, trả lời đúng điều họ đang hỏi')
       if (wantsInvestLocked && !/kho[áa]|khóa/i.test(content)) problems.push('phải nói rõ "đầu tư đang khoá" và lý do ngay câu đầu')
-      if (problems.length && !rewritten && round < 3) {
-        rewritten = true
+      if (problems.length && rewrites < 2 && round < 4) {
+        rewrites++
         replyMessages.push({ role: 'assistant', content })
         replyMessages.push({ role: 'system', content: `Câu vừa rồi cần sửa: ${problems.join('; ')}. Viết lại toàn bộ câu trả lời, giữ nguyên các số liệu đúng.` })
         continue
       }
-      return json({ content, profileUpdate, dcaStop, actions, ...(body.debug ? { facts, notes: done } : {}) })
+      // Still asking twice after the rewrites: drop the extra questions rather than send them.
+      const tidy = tidyQuestions(content, asksStable(prevAssistant) && profileUpdate?.incomeStable === undefined)
+      return json({ content: tidy, profileUpdate, dcaStop, actions, ...(body.debug ? { facts, notes: done } : {}) })
     }
     replyMessages.push({ role: 'assistant', content: msg.content ?? '', ...{ tool_calls: msg.tool_calls } } as Message)
     for (const call of msg.tool_calls) {

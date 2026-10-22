@@ -4,20 +4,17 @@
 import { useState } from 'react'
 import { ArrowRight, CheckCircle2, ExternalLink, Lock, TrendingUp, XCircle } from 'lucide-react'
 import { useApp } from '@/state/AppState'
-import { GAS_RESERVE_USDC6 } from '@/hooks/useVault'
+import { investRoom } from '@/lib/invest'
 import { dcaNextRun, formatCirBtc } from '@/hooks/useCirBtc'
 import { useNow } from '@/hooks/useNow'
 import { DASH, formatUsdc, parseUsdcInput, usdcToInput } from '@/lib/format'
 import { AmountField, Btn, Chips, Col, GlassCard, Grid, IconBox, Notice, Screen, Sheet, Toggle, glass } from '@/components/ui/kit'
-import type { Prefill } from '@/types'
-
-type InvestPrefill = Extract<Prefill, { kind: 'buy' | 'dca' }>
 
 const DCA_WEEKS = 12
 const DCA_INTERVAL_DAYS = 7
 const MIN_DCA = 1_000_000n
 
-export function InvestScreen({ onOpenFund, onOpenChat, prefill }: { onOpenFund: () => void; onOpenChat: () => void; prefill?: InvestPrefill | null }) {
+export function InvestScreen({ onOpenFund, onOpenChat }: { onOpenFund: () => void; onOpenChat: () => void }) {
   const { math, profile, money } = useApp()
 
   if (!math.investUnlocked) {
@@ -71,27 +68,20 @@ export function InvestScreen({ onOpenFund, onOpenChat, prefill }: { onOpenFund: 
       </Screen>
     )
   }
-  return <InvestOpen prefill={prefill ?? null} />
+  return <InvestOpen />
 }
 
-function InvestOpen({ prefill }: { prefill: InvestPrefill | null }) {
+function InvestOpen() {
   const { profile, vault, cirBtc, money } = useApp()
   const now = useNow()
   const [risk, setRisk] = useState<'normal' | 'risky'>('normal')
-  const [amount, setAmount] = useState(prefill?.kind === 'buy' ? usdcToInput(prefill.amount) : '')
-  const [dcaOffer, setDcaOffer] = useState(prefill?.kind === 'dca' ? prefill : null)
-  const [mode, setMode] = useState<'once' | 'dca'>(prefill?.kind === 'dca' ? 'dca' : 'once')
+  const [amount, setAmount] = useState('')
+  const [mode, setMode] = useState<'once' | 'dca'>('once')
   const age = profile.profile?.age ?? 0
-  const capPct = Math.max(0, Math.min(100, (risk === 'normal' ? 110 : 120) - age))
 
   const wb = vault.walletBalance
-  const spendable = wb !== null ? (wb > GAS_RESERVE_USDC6 ? wb - GAS_RESERVE_USDC6 : 0n) : null
   const invested = cirBtc.balance === 0n ? 0n : cirBtc.valueUsdc6
-  let room: bigint | null = null
-  if (spendable !== null && invested !== null) {
-    const r = ((spendable + invested) * BigInt(capPct)) / 100n - invested
-    room = r <= 0n ? 0n : r > spendable ? spendable : r
-  }
+  const { capPct, room } = investRoom(age, risk, wb, invested)
 
   const parsed = parseUsdcInput(amount)
   const overCap = room !== null && parsed > room
@@ -157,9 +147,6 @@ function InvestOpen({ prefill }: { prefill: InvestPrefill | null }) {
           {invested === null && (cirBtc.balance ?? 0n) > 0n && (
             <Notice tone="warning">Chưa lấy được giá BTC nên chưa tính được trần. Thử lại sau ít phút.</Notice>
           )}
-          {prefill?.kind === 'buy' && amount && (
-            <Notice tone="info" title="Agent đã điền sẵn">Bấm Xem báo giá, kiểm tra rồi ký trong ví.</Notice>
-          )}
 
           {/* One card: buy once or set a weekly DCA */}
           <GlassCard className="p-4 lg:p-8 flex flex-col gap-4">
@@ -187,17 +174,6 @@ function InvestOpen({ prefill }: { prefill: InvestPrefill | null }) {
                   onClick={() => { void cirBtc.estimate(parsed) }}>
                   {cirBtc.busy && !q ? 'Đang lấy báo giá…' : 'Xem báo giá · Mua cirBTC'}
                 </Btn>
-              </>
-            ) : dcaOffer && !dca ? (
-              <>
-                <p className="text-[16px] leading-6" style={{ color: 'var(--ink)' }}>
-                  <strong>Agent đề xuất:</strong> mua {formatUsdc(dcaOffer.amount)} cirBTC mỗi {dcaOffer.intervalDays} ngày. Mỗi kỳ bạn vẫn tự xem báo giá và ký.
-                </p>
-                {room !== null && dcaOffer.amount > room && <Notice tone="danger">Mỗi kỳ vượt hạn mức còn được mua ({money(room)}).</Notice>}
-                <div className="flex gap-4">
-                  <Btn variant="outline" onClick={() => setDcaOffer(null)}>Bỏ qua</Btn>
-                  <Btn disabled={room === null || dcaOffer.amount > room} onClick={() => { cirBtc.startDca(dcaOffer.amount, dcaOffer.intervalDays); setDcaOffer(null) }}>Duyệt DCA</Btn>
-                </div>
               </>
             ) : dca && dcaAmount !== null ? (
               <>
