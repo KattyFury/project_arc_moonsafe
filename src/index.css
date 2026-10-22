@@ -3,24 +3,29 @@
 @tailwind utilities;
 
 :root {
-  --bg: #f9f9fc;
-  --surface: rgba(255,255,255,0.82);
-  --surface-strong: rgba(255,255,255,0.96);
-  --surface-muted: #ECF0F8;
+  /* nguyen0xhieu design system (tokens.json). Old names kept so screens stay unchanged. */
+  --bg: #FFFFFF;            /* ground */
+  --surface: #FFFFFF;
+  --surface-strong: #FFFFFF;
+  --surface-muted: #ECF0F8; /* mist */
   --ink: #000000;
-  --ink-2: #1a1a2e;
+  --ink-2: #000000;
   --muted: #8B95A8;
-  --subtle: #4B5568;
-  --border: #DCE3EE;
-  --border-strong: rgba(30,109,247,0.30);
-  --accent: #1E6DF7;
-  --accent-dark: #0F3DB2;
+  --subtle: #4B5568;        /* grey */
+  --border: #DCE3EE;        /* line */
+  --line: #DCE3EE;
+  --border-strong: #1E6DF7;
+  --accent: #1E6DF7;        /* blue */
+  --accent-dark: #0F3DB2;   /* blue-strong */
   --accent-hover: #0F3DB2;
-  --focus: rgba(30,109,247,0.25);
-  --success: #0F9D58;
-  --danger: #E0344A;
+  --accent-soft: #E8F0FE;   /* blue-soft */
+  --focus: #1E6DF7;
+  --success: #0B7A45;       /* green-text */
+  --danger: #C42B3F;        /* red-text */
   --yellow: #F5B301;
-  --border-lock: #B9C2D3; /* locked tab: lighter than --muted, no opacity */
+  --border-lock: #B9C2D3;   /* locked tab: lighter than --muted, no opacity */
+  --shadow-y2: 0 2px 8px 0 rgba(0,0,0,0.32);
+  --font-app: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -28,19 +33,19 @@
 body {
   margin: 0;
   min-height: 100dvh;
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: var(--font-app);
+  letter-spacing: -0.011em;
   background: var(--bg);
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-.display { font-family: 'Space Grotesk', sans-serif; letter-spacing: -0.03em; }
-.mono    { font-family: 'JetBrains Mono', Menlo, monospace; }
+.display { font-family: var(--font-app); letter-spacing: -0.022em; }
+.mono    { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
 
-/* Glass surfaces */
-.glass-card  { background: var(--surface);       backdrop-filter: blur(32px) saturate(180%); -webkit-backdrop-filter: blur(32px) saturate(180%); }
-.glass-inner { background: var(--surface-strong); backdrop-filter: blur(20px) saturate(160%); -webkit-backdrop-filter: blur(20px) saturate(160%); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
 
 /* Scrollbar hidden */
 .no-scrollbar::-webkit-scrollbar { display: none; }

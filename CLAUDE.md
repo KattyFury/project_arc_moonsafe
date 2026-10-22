@@ -11,12 +11,15 @@ Khi tôi bảo "login dự án": đọc file này → `git pull` → đọc mụ
 ### Bàn trước, làm sau
 - **"Bàn với mình" = chỉ đưa phương án trong chat, KHÔNG sửa code.** Đưa vài lựa chọn đánh số (1a, 1b…), chờ tôi chốt rồi mới viết vào code.
 - **Hỏi trước mọi thay đổi code/spec.** Sửa lỗi tôi đã yêu cầu thì làm luôn, không hỏi lại.
-- **Nội dung chữ người dùng nhìn thấy** (trang chủ, lời chào agent, mô tả trang…): luôn bàn trước, không tự viết.
-- Góc nhìn sản phẩm (chốt 2026-10-22): **quản lý tài chính cá nhân cho dân web3**. Đầu tư chỉ là bước cuối, không phải trọng tâm. Tránh câu sến kiểu trích dẫn (ngoặc kép + in nghiêng).
+- **Nội dung chữ người dùng nhìn thấy** (trang chủ, lời chào agent, mô tả trang…): luôn bàn trước, không tự viết. Ngoại lệ (2026-10-22): tôi đã giao cho Claude tự soạn chữ theo giọng **chuyên gia tư vấn tài chính cá nhân**: chuyên nghiệp, gần gũi, xưng "mình" gọi "bạn"; giữ đúng giọng đó khi viết thêm.
+- Góc nhìn sản phẩm (chốt 2026-10-22): **quản lý tài chính cá nhân onchain cho dân web3**. Lộ trình: làm rõ thu chi → tạo quỹ dự phòng → cân đối tài sản → mở khóa đầu tư. Tránh câu sến kiểu trích dẫn (ngoặc kép + in nghiêng).
+- **Không ép ai khai báo. KHÔNG có thẻ/form khai báo.** Agent hỏi chuyện tự nhiên để tư vấn; số liệu người dùng kể được app tự lưu trên trình duyệt (xem ở Cân đối, sửa bằng cách nói lại với agent, xoá ở Menu). Đừng đưa lại form hay nút "Lưu khai báo" dưới bất kỳ hình thức nào.
 
 ### Thiết kế
-- **Bố cục giữ theo bản Arc Studio** (5 tab trên, luồng màn hình). Lần redesign "loạn" trước là do dựng lại khung theo SPEC, KHÔNG phải do design system.
-- **Phần trình bày theo design system nguyen0xhieu** (Design System artifact Rvs7H37zwuUdb8uBGf5rtM, Figma `hieu` IPyKVg7ylGw1mjMRyYVrL7): 0x Blue #1E6DF7, đen #000, font hệ thống Apple, chữ app chỉ 14·16·18·22·28·34·48, bo 16, shadow Y2, khoảng cách bội số 8, gradient tối đa 1 vùng mỗi màn, icon Lucide. Không giảm opacity cho trạng thái tắt.
+- **Thiết kế chuẩn = Figma `WcPHEwY8xh33OvCFrxgLcQ`, section "MoonSafe · Mobile web 393" (node 38:191) và "MoonSafe · Desktop web 1440" (node 38:192)**, nav ở "MoonSafe · Components" (39:193). Tôi sửa thiết kế bằng lời, Claude sửa thẳng trong code (không vẽ auto layout cho tôi kéo tay).
+- Mobile: chỉ hàng 5 tab, KHÔNG có hàng logo + ví. Desktop: thanh trên logo + tab dạng viên + ví; nội dung 1200 trên lưới 12 cột.
+- **Mỗi màn phải vừa 1 khung hình (393×852 và 1440×900), không bắt cuộn.** Nhiều nội dung thì gom lại (ô số liệu cùng hàng, nút gạt chuyển tab, gộp thẻ) chứ đừng xếp dọc dài. Chat là ngoại lệ (tin nhắn tự cuộn). Đo bằng scrollHeight trước khi báo xong.
+- **Phần trình bày theo design system nguyen0xhieu** (Design System artifact Rvs7H37zwuUdb8uBGf5rtM, Figma `hieu` IPyKVg7ylGw1mjMRyYVrL7): 0x Blue #1E6DF7, đen #000, font hệ thống Apple (SF Pro), chữ theo style Web / Web Mobile (14·16·20·24·32·40·48·56), bo 16, shadow Y2, khoảng cách bội số 8, gradient tối đa 1 vùng mỗi màn, icon Lucide, không emoji. Không giảm opacity cho trạng thái tắt.
 - **Logo** (Figma `WcPHEwY8xh33OvCFrxgLcQ`, node 34:303 logo, 32:367 logo + chữ): khối tròn xanh ruột trắng, **hiển thị full, KHÔNG đặt trong box trắng** (box trắng chỉ dùng làm PFP X). Đứng cạnh chữ thì **logo cao = 1.5 × cỡ chữ**. Không đặt logo xanh trên nền xanh.
 - **Figma là nguồn sự thật.** Thiết kế đã có trong Figma thì lấy đúng từ Figma, không tự vẽ lại.
 - **Đổi giao diện lớn → chụp ảnh từng màn (393×852) bỏ ra Desktop cho tôi duyệt TRƯỚC khi deploy.** Không làm cả bộ rồi mới cho xem.

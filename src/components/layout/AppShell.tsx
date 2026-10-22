@@ -1,5 +1,6 @@
-// The app after login, Arc Studio layout: 430px column, 5 tabs on top, status line
-// at the bottom. Before a vault exists: header + vault setup (screens 4/5).
+// The app after login (Figma MoonSafe · Mobile web 393 / Desktop web 1440): tabs on top
+// (desktop: logo + tabs + wallet bar), status line at the bottom. Before a vault exists:
+// 430 column with header + vault setup (screens 4/5).
 
 import { useEffect, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
@@ -16,21 +17,20 @@ import { FundScreen } from '@/components/screens/FundScreen'
 import { InvestScreen } from '@/components/screens/InvestScreen'
 import { BalanceSheet } from '@/components/screens/BalanceSheet'
 import { SettingsScreen } from '@/components/screens/SettingsScreen'
-import { Btn, Notice } from '@/components/ui/kit'
+import { Btn, Notice, Wordmark } from '@/components/ui/kit'
 
-function Column({ children }: { children: ReactNode }) {
-  return <div className="h-dvh flex flex-col overflow-hidden mx-auto" style={{ maxWidth: 430, background: 'var(--bg)' }}>{children}</div>
+function Column({ children, wide }: { children: ReactNode; wide?: boolean }) {
+  return <div className={`h-dvh flex flex-col overflow-hidden mx-auto w-full max-w-[430px] ${wide ? 'lg:max-w-none' : ''}`} style={{ background: 'var(--bg)' }}>{children}</div>
 }
 
 function SetupHeader({ onLogout }: { onLogout: () => void }) {
   return (
-    <div className="flex-shrink-0 px-5 pt-14 pb-4 flex items-center gap-3" style={{ background: 'white', borderBottom: '1px solid var(--border)' }}>
-      <img src="/logo.svg" alt="" width={36} height={36} />
+    <div className="flex-shrink-0 px-4 pt-14 pb-4 flex items-center gap-2" style={{ background: 'white', borderBottom: '1px solid var(--border)' }}>
       <div>
-        <h1 className="display font-bold text-[20px]" style={{ color: 'var(--ink)', letterSpacing: '-0.03em' }}>MoonSafe</h1>
-        <p className="text-[11px] mono" style={{ color: 'var(--muted)' }}>Arc Testnet</p>
+        <h1><Wordmark size={22} /></h1>
+        <p className="text-[14px] mono" style={{ color: 'var(--muted)' }}>Arc Testnet</p>
       </div>
-      <button onClick={onLogout} className="ml-auto text-[13px] font-semibold" style={{ color: 'var(--accent)' }}>Đăng xuất</button>
+      <button onClick={onLogout} className="ml-auto text-[14px] font-semibold" style={{ color: 'var(--accent)' }}>Đăng xuất</button>
     </div>
   )
 }
@@ -45,7 +45,6 @@ export function AppShell({ onLogout }: { onLogout: () => void }) {
   const { address } = useAccount()
   const [tab, setTab] = useState<NavTab>('chat')
   const [error, setError] = useState<string | null>(null)
-  const [declareKey, setDeclareKey] = useState(0)
   const [prefill, setPrefill] = useState<Prefill | null>(null)
   const [syncTimedOut, setSyncTimedOut] = useState(false)
 
@@ -61,7 +60,7 @@ export function AppShell({ onLogout }: { onLogout: () => void }) {
   const noWallet = !address && walletsReady && (wallets.length === 0 || syncTimedOut)
 
   const go = (t: NavTab) => { setError(null); setTab(t) }
-  const openDeclare = () => { setDeclareKey(k => k + 1); go('chat') }
+  const openChat = () => go('chat')
 
   // Agent tools → open the matching screen with the amount filled in. Nothing is signed here.
   const runActions = (actions: AgentAction[]) => {
@@ -126,14 +125,14 @@ export function AppShell({ onLogout }: { onLogout: () => void }) {
   }
 
   return (
-    <Column>
+    <Column wide>
       <NavBar active={tab} onChange={go} investLocked={!math.investUnlocked} />
 
       <main className="flex-1 overflow-hidden flex flex-col min-h-0">
-        {tab === 'chat'    && <ChatScreen declareKey={declareKey} onError={setError} onOpenInvest={() => go('invest')} onActions={runActions} />}
-        {tab === 'fund'    && <FundScreen key={prefill?.key} onDeclare={openDeclare} prefill={prefill && (prefill.kind === 'deposit' || prefill.kind === 'withdraw') ? prefill : null} />}
-        {tab === 'invest'  && <InvestScreen key={prefill?.key} onOpenFund={() => go('fund')} onDeclare={openDeclare} prefill={prefill && (prefill.kind === 'buy' || prefill.kind === 'dca') ? prefill : null} />}
-        {tab === 'balance' && <BalanceSheet onDeclare={openDeclare} />}
+        {tab === 'chat'    && <ChatScreen onError={setError} onOpenInvest={() => go('invest')} onActions={runActions} />}
+        {tab === 'fund'    && <FundScreen key={prefill?.key} onOpenChat={openChat} prefill={prefill && (prefill.kind === 'deposit' || prefill.kind === 'withdraw') ? prefill : null} />}
+        {tab === 'invest'  && <InvestScreen key={prefill?.key} onOpenFund={() => go('fund')} onOpenChat={openChat} prefill={prefill && (prefill.kind === 'buy' || prefill.kind === 'dca') ? prefill : null} />}
+        {tab === 'balance' && <BalanceSheet onOpenChat={openChat} />}
         {tab === 'menu'    && <SettingsScreen onLogout={onLogout} />}
       </main>
 
@@ -142,10 +141,10 @@ export function AppShell({ onLogout }: { onLogout: () => void }) {
         {error ? (
           <div className="flex items-center gap-2 w-full">
             <AlertCircle size={13} style={{ color: 'var(--danger)', flexShrink: 0 }} />
-            <p className="text-[12px] leading-tight line-clamp-1" style={{ color: 'var(--danger)' }}>{error}</p>
+            <p className="text-[14px] leading-tight line-clamp-1" style={{ color: 'var(--danger)' }}>{error}</p>
           </div>
         ) : (
-          <p className="text-[11px] w-full text-center mono" style={{ color: 'var(--muted)' }}>Arc Testnet · chain 5042002</p>
+          <p className="text-[14px] w-full text-center mono" style={{ color: 'var(--muted)' }}>Arc Testnet · chain 5042002</p>
         )}
       </div>
     </Column>

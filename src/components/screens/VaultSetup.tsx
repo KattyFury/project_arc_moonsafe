@@ -34,10 +34,10 @@ export function VaultSetup() {
     const out = tries >= MAX_TRIES
     return (
       <Screen>
-        <GlassCard className="p-5 flex flex-col gap-4">
-          <div className="flex items-center gap-3">
+        <GlassCard className="p-4 flex flex-col gap-4">
+          <div className="flex items-center gap-2">
             <IconBox><Lock size={20} style={{ color: 'var(--accent)' }} /></IconBox>
-            <p className="font-semibold text-[17px]" style={{ color: 'var(--ink)' }}>Xác nhận mở vault</p>
+            <p className="font-semibold text-[18px]" style={{ color: 'var(--ink)' }}>Xác nhận mở vault</p>
           </div>
           <div className="overflow-hidden" style={{ border: '1px solid var(--border)', borderRadius: 16 }}>
             <Row label="Phí mở vault" value={formatUsdc(vault.fee, 6)} />
@@ -54,7 +54,7 @@ export function VaultSetup() {
             </Notice>
           )}
         </GlassCard>
-        <div className="flex gap-3">
+        <div className="flex gap-4">
           <Btn variant="outline" disabled={signing} onClick={() => { setStep('intro'); setError(null) }}>Hủy</Btn>
           <Btn loading={signing} disabled={out || !enough} onClick={() => { void sign() }}>{signing ? 'Đang ký…' : 'Ký và mở vault'}</Btn>
         </div>
@@ -64,22 +64,22 @@ export function VaultSetup() {
 
   return (
     <Screen>
-      <section className="p-5" style={glass.hero}>
-        <p className="text-[13px] font-semibold text-white/70 mb-2">Số dư ví</p>
+      <section className="p-4" style={glass.hero}>
+        <p className="text-[14px] font-semibold text-white mb-2">Số dư ví</p>
         <div className="flex items-baseline gap-2">
-          <span className="display font-bold tabular-nums text-white" style={{ fontSize: 40, lineHeight: 1.1, letterSpacing: '-0.03em' }}>
+          <span className="display font-bold tabular-nums text-white" style={{ fontSize: 48, lineHeight: '56px' }}>
             {formatUsdc(wallet).replace(' USDC', '')}
           </span>
-          <span className="text-[18px] font-medium text-white/60">USDC</span>
+          <span className="text-[18px] font-medium text-white">USDC</span>
         </div>
       </section>
 
-      <GlassCard className="p-5 flex flex-col gap-4">
-        <div className="flex items-center gap-3">
+      <GlassCard className="p-4 flex flex-col gap-4">
+        <div className="flex items-center gap-2">
           <IconBox><Shield size={20} style={{ color: 'var(--accent)' }} /></IconBox>
           <div>
-            <p className="font-semibold text-[17px]" style={{ color: 'var(--ink)' }}>Mở vault quỹ dự phòng</p>
-            <p className="text-[12px]" style={{ color: 'var(--muted)' }}>Smart contract riêng, chỉ bạn rút được</p>
+            <p className="font-semibold text-[18px]" style={{ color: 'var(--ink)' }}>Mở vault quỹ dự phòng</p>
+            <p className="text-[14px]" style={{ color: 'var(--muted)' }}>Smart contract riêng, chỉ bạn rút được</p>
           </div>
         </div>
         <p className="text-[14px] leading-relaxed" style={{ color: 'var(--subtle)' }}>
@@ -89,15 +89,15 @@ export function VaultSetup() {
         {vault.readError && wallet === null && <Notice tone="warning">Chưa đọc được số dư, app sẽ tự thử lại.</Notice>}
 
         {wallet !== null && total !== null && !enough && address && (
-          <div className="p-4 flex flex-col gap-3" style={{ background: 'rgba(224,52,74,0.06)', border: '1px solid rgba(224,52,74,0.2)', borderRadius: 16 }}>
+          <div className="p-4 flex flex-col gap-2" style={{ background: '#FDE8EB', border: '1px solid #FDE8EB', borderRadius: 16 }}>
             <p className="font-semibold text-[14px]" style={{ color: 'var(--danger)' }}>Chưa đủ USDC để mở vault</p>
-            <p className="text-[12px]" style={{ color: 'var(--danger)' }}>Cần khoảng {formatUsdc(total, 6)} (phí mở vault + gas)</p>
-            <div className="flex flex-col items-center gap-3 pt-1">
+            <p className="text-[14px]" style={{ color: 'var(--danger)' }}>Cần khoảng {formatUsdc(total, 6)} (phí mở vault + gas)</p>
+            <div className="flex flex-col items-center gap-2 pt-2">
               <QrImage value={address} />
-              <p className="mono text-[11px] text-center break-all" style={{ color: 'var(--subtle)' }}>{address}</p>
+              <p className="mono text-[14px] text-center break-all" style={{ color: 'var(--subtle)' }}>{address}</p>
               <CopyButton text={address} />
               <a href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1 text-[13px] font-semibold" style={{ color: 'var(--accent)' }}>
+                className="flex items-center gap-2 text-[14px] font-semibold" style={{ color: 'var(--accent)' }}>
                 Lấy USDC testnet ở Circle Faucet <ExternalLink size={13} />
               </a>
             </div>
@@ -105,10 +105,10 @@ export function VaultSetup() {
         )}
 
         {enough && address && (
-          <div className="px-4 py-3 flex items-center gap-2" style={{ background: 'rgba(15,157,88,0.07)', border: '1px solid rgba(15,157,88,0.2)', borderRadius: 14 }}>
+          <div className="px-4 py-4 flex items-center gap-2" style={{ background: '#E3F5EC', border: '1px solid #E3F5EC', borderRadius: 16 }}>
             <CheckCircle2 size={15} style={{ color: 'var(--success)' }} />
             <p className="font-semibold text-[14px]" style={{ color: 'var(--success)' }}>Ví sẵn sàng</p>
-            <p className="mono text-[12px] ml-auto" style={{ color: 'var(--success)' }}>{address.slice(0, 8)}…{address.slice(-6)}</p>
+            <p className="mono text-[14px] ml-auto" style={{ color: 'var(--success)' }}>{address.slice(0, 8)}…{address.slice(-6)}</p>
           </div>
         )}
       </GlassCard>

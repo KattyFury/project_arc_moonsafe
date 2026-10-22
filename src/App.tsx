@@ -24,10 +24,10 @@ export default function App() {
 
   if (!ready) {
     return (
-      <div className="min-h-dvh flex items-center justify-center" style={{ background: 'linear-gradient(160deg,#0a2470 0%,#0F3DB2 45%,#1E6DF7 100%)' }}>
+      <div className="min-h-dvh flex items-center justify-center" style={{ background: 'linear-gradient(to top right, #0F3DB2, #1E6DF7)' }}>
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-          <p className="text-[14px] text-white/60">Đang tải…</p>
+          <p className="text-[14px] text-white">Đang tải…</p>
         </div>
       </div>
     )

@@ -1,53 +1,77 @@
+// Screen 1 — Trang chủ (Figma "01 Trang chủ"): mobile = lockup, tagline, four steps,
+// sign-in at the bottom; desktop = hero 6 col + fund preview card 6 col.
+
 import { useLogin } from '@privy-io/react-auth'
+import { Vault } from 'lucide-react'
+import { Wordmark } from '@/components/ui/kit'
+
+const STEPS = ['Làm rõ thu chi', 'Tạo quỹ dự phòng', 'Cân đối tài sản', 'Mở khóa đầu tư']
+
+function Steps() {
+  return (
+    <ol className="w-full max-w-[296px] lg:max-w-[384px] flex flex-col gap-2">
+      {STEPS.map((step, i) => (
+        <li key={step} className="h-12 flex items-center gap-4 px-4 rounded-2xl" style={{ background: 'var(--surface-muted)' }}>
+          <span className="w-6 h-6 rounded-full flex items-center justify-center text-[14px] leading-5 font-semibold flex-shrink-0" style={{ background: 'var(--accent)', color: 'white' }}>{i + 1}</span>
+          <span className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--ink)' }}>{step}</span>
+        </li>
+      ))}
+    </ol>
+  )
+}
 
 export function LoginScreen() {
   const { login } = useLogin()
+  const signIn = (
+    <button onClick={() => login()}
+      className="w-full max-w-[296px] h-12 lg:w-auto lg:h-14 lg:px-8 rounded-2xl text-[16px] leading-6 font-semibold"
+      style={{ background: 'var(--accent)', color: 'white', boxShadow: 'var(--shadow-y2)' }}>
+      Đăng nhập
+    </button>
+  )
 
   return (
-    <div
-      className="min-h-dvh flex flex-col items-center justify-between px-6 pt-20 pb-12"
-      style={{ background: 'linear-gradient(160deg, #0a2470 0%, #0F3DB2 45%, #1E6DF7 100%)' }}
-    >
-      {/* Top: logo + tagline */}
-      <div className="flex flex-col items-center gap-6 flex-1 justify-center">
-        <div
-          className="w-20 h-20 flex items-center justify-center"
-          style={{ background: 'white', borderRadius: 28, boxShadow: '0 8px 32px rgba(0,0,0,0.25)' }}
-        >
-          <img src="/logo.svg" alt="MoonSafe" width={64} height={64} />
+    <div className="min-h-dvh" style={{ background: 'var(--bg)' }}>
+      {/* Mobile */}
+      <div className="lg:hidden min-h-dvh flex flex-col items-center justify-between px-4 pt-24 pb-12">
+        <div className="flex flex-col items-center gap-8">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <h1><Wordmark size={32} /></h1>
+            <p className="max-w-[296px] text-[24px] leading-8 font-semibold" style={{ color: 'var(--ink)' }}>App quản lý tài chính cá nhân onchain</p>
+          </div>
+          <Steps />
         </div>
-
-        <div className="text-center">
-          <h1 className="display font-bold text-white mb-3" style={{ fontSize: 42, lineHeight: 1.1, letterSpacing: '-0.04em' }}>
-            MoonSafe
-          </h1>
-          <p className="text-[17px] leading-relaxed max-w-[280px]" style={{ color: 'rgba(255,255,255,0.75)', fontStyle: 'italic' }}>
-            "Nên đầu tư nhưng phải có đường lui."
-          </p>
-        </div>
-
-        <div className="flex gap-2 mt-2 flex-wrap justify-center">
-          {['Quỹ dự phòng', 'Vault riêng', 'Đầu tư có kỷ luật'].map(f => (
-            <span key={f} className="text-[12px] font-semibold px-3 py-1.5 rounded-full"
-              style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.2)' }}>
-              {f}
-            </span>
-          ))}
-        </div>
+        {signIn}
       </div>
 
-      {/* Bottom: CTA */}
-      <div className="w-full flex flex-col items-center gap-4">
-        <button
-          onClick={() => login()}
-          className="w-full max-w-[320px] py-4 font-semibold text-[16px] rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
-          style={{ background: 'white', color: 'var(--accent)', boxShadow: '0 4px 24px rgba(0,0,0,0.25)' }}
-        >
-          Đăng nhập
-        </button>
-        <p className="text-[12px] text-center" style={{ color: 'rgba(255,255,255,0.6)' }}>
-          Email OTP · Google · Ví web3 · Arc Testnet
-        </p>
+      {/* Desktop */}
+      <div className="hidden lg:flex min-h-dvh items-center">
+        <div className="w-full max-w-[1248px] mx-auto px-6 grid grid-cols-12 gap-6 items-center">
+          <div className="col-span-6 flex flex-col items-start gap-8">
+            <h1><Wordmark size={40} /></h1>
+            <p className="display text-[56px] leading-[64px] font-bold" style={{ color: 'var(--ink)' }}>App quản lý tài chính cá nhân onchain</p>
+            <Steps />
+            {signIn}
+          </div>
+          <div className="col-span-6 flex justify-center">
+            {/* The one gradient region on this screen */}
+            <div className="w-[384px] p-8 flex flex-col gap-2 rounded-2xl"
+              style={{ background: 'linear-gradient(to top right, #0F3DB2, #1E6DF7)', boxShadow: 'var(--shadow-y2)' }}>
+              <div className="flex items-center gap-2">
+                <Vault size={20} color="white" />
+                <span className="text-[14px] leading-5 font-semibold text-white">Quỹ dự phòng</span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="display text-[48px] leading-[56px] font-bold text-white tabular-nums">1.000</span>
+                <span className="text-[20px] leading-7 font-semibold text-white">USDC</span>
+              </div>
+              <p className="text-[16px] leading-6 text-white">Đủ 3 / 6 tháng chi tiêu thiết yếu</p>
+              <div className="h-2 rounded-full" style={{ background: 'rgba(255,255,255,0.24)' }}>
+                <div className="h-full w-1/2 rounded-full bg-white" />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

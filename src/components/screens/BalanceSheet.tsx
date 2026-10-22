@@ -1,11 +1,11 @@
-// Screens 8 / 8b — Bảng cân đối (Arc Studio look). Unknown values show "–".
+// Screens 8 / 8b — Bảng cân đối (Figma: title + notice, then two cards 6 + 6 col on desktop). Unknown values show "–".
 
 import { CheckCircle2, XCircle } from 'lucide-react'
 import { useApp } from '@/state/AppState'
 import { DASH, formatNumber, formatPercent } from '@/lib/format'
-import { Btn, GlassCard, Notice, Row, Screen, Title } from '@/components/ui/kit'
+import { Btn, Col, GlassCard, Grid, Notice, Row, Screen, Stats, Title } from '@/components/ui/kit'
 
-export function BalanceSheet({ onDeclare }: { onDeclare: () => void }) {
+export function BalanceSheet({ onOpenChat }: { onOpenChat: () => void }) {
   const { profile, vault, cirBtc, fx, math, money, moneyOfField, fieldUsdc } = useApp()
   const p = profile.complete ? profile.profile : null
 
@@ -38,32 +38,35 @@ export function BalanceSheet({ onDeclare }: { onDeclare: () => void }) {
       <Title>Bảng cân đối</Title>
 
       {!p && (
-        <div className="p-4 rounded-2xl" style={{ background: 'rgba(245,179,1,0.10)', border: '1px solid rgba(245,179,1,0.25)' }}>
-          <p className="font-semibold text-[14px] mb-1" style={{ color: '#8A5F00' }}>Chưa có khai báo</p>
-          <p className="text-[13px]" style={{ color: '#8A5F00' }}>Khai báo tài chính với agent ở tab Chat để xem bảng cân đối.</p>
-        </div>
+        <Notice tone="warning" title="Bảng cân đối đang trống">Trò chuyện với agent ở tab Chat. Bạn kể đến đâu, bảng tự điền đến đó.</Notice>
       )}
       {p && fx.vndPerUsd === null && <Notice tone="warning">Chưa lấy được tỉ giá, các số quy đổi tạm hiện “–”.</Notice>}
       {p && fx.stale && fx.fetchedAt && <Notice tone="warning">Đang dùng tỉ giá cũ ngày {new Date(fx.fetchedAt).toLocaleDateString('vi-VN')}.</Notice>}
 
-      <GlassCard>
-        <Row label="Giá trị ròng" sub="Quỹ + ví + cirBTC + tài sản khác − nợ" value={p ? money(netWorth) : DASH} />
-        <Row label="Thanh khoản" sub={math.floorMonths ? `Quỹ + ví · sàn ${math.floorMonths} tháng` : 'Quỹ + ví'}
-          value={p && liquidMonths !== null ? withMark(`${formatNumber(liquidMonths)} tháng`, liqOk) : DASH}
-          color={liqOk === null ? undefined : liqOk ? good : bad} />
-        <Row label="Nợ / tài sản" value={p ? withMark(formatPercent(debtRatio), debtRatio === null ? null : debtRatio === 0) : DASH}
-          color={debtRatio === null ? undefined : debtRatio === 0 ? good : bad} />
-        <Row label="Tỷ lệ tiết kiệm" sub="(Thu nhập − chi tiêu) / thu nhập" value={p ? formatPercent(savingRate) : DASH} />
-        <Row label="Tài sản khác" value={p ? moneyOfField(p, 'otherAssets') : DASH} last />
-      </GlassCard>
+      <Grid>
+        <Col span={6} className="lg:order-2">
+          <Stats items={[
+            { label: 'Quỹ dự phòng', value: money(vb) },
+            { label: 'Ví', value: money(wb) },
+            { label: 'cirBTC', value: cirBtc.balance === null ? DASH : money(cirValue) },
+          ]} />
+          <Btn variant="outline" className="hidden lg:flex" onClick={onOpenChat}>{p ? 'Cập nhật với agent' : 'Trò chuyện với agent'}</Btn>
+        </Col>
 
-      <GlassCard>
-        <Row label="Quỹ dự phòng" value={money(vb)} />
-        <Row label="Số dư ví" value={money(wb)} />
-        <Row label="cirBTC" value={cirBtc.balance === null ? DASH : money(cirValue)} last />
-      </GlassCard>
-
-      <Btn variant="outline" onClick={onDeclare}>{p ? 'Sửa khai báo' : 'Khai báo ở chat'}</Btn>
+        <Col span={6} className="lg:order-1">
+          <GlassCard>
+            <Row label="Giá trị ròng" sub="Quỹ + ví + cirBTC + tài sản khác − nợ" value={p ? money(netWorth) : DASH} />
+            <Row label="Thanh khoản" sub={math.floorMonths ? `Quỹ + ví · sàn ${math.floorMonths} tháng` : 'Quỹ + ví'}
+              value={p && liquidMonths !== null ? withMark(`${formatNumber(liquidMonths)} tháng`, liqOk) : DASH}
+              color={liqOk === null ? undefined : liqOk ? good : bad} />
+            <Row label="Nợ / tài sản" value={p ? withMark(formatPercent(debtRatio), debtRatio === null ? null : debtRatio === 0) : DASH}
+              color={debtRatio === null ? undefined : debtRatio === 0 ? good : bad} />
+            <Row label="Tỷ lệ tiết kiệm" sub="(Thu nhập − chi tiêu) / thu nhập" value={p ? formatPercent(savingRate) : DASH} />
+            <Row label="Tài sản khác" value={p ? moneyOfField(p, 'otherAssets') : DASH} last />
+          </GlassCard>
+          <Btn variant="outline" className="lg:hidden" onClick={onOpenChat}>{p ? 'Cập nhật với agent' : 'Trò chuyện với agent'}</Btn>
+        </Col>
+      </Grid>
     </Screen>
   )
 }

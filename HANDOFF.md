@@ -5,6 +5,13 @@ Spec gốc: user dán trong chat (SPEC.md, 10 mục, màn 1–10). Cập nhật 
 
 ## ▶ Làm tiếp từ đây (mới nhất ở trên)
 
+-1. **Giao diện mới theo Figma + bỏ thẻ khai báo — 2026-10-22.**
+   - Thiết kế chuẩn: Figma `WcPHEwY8xh33OvCFrxgLcQ` section 38:191 (mobile 393) / 38:192 (desktop 1440) / 39:193 (nav). Code: `src/components/ui/kit.tsx` (Screen, Grid/Col 12 cột, Btn md/sm, Toggle segmented, Stats, AmountField…), `NavBar.tsx` (mobile chỉ tab; desktop logo + tab + ví). Mọi màn vừa 1 khung 393×852 và 1440×900 (đã đo scrollHeight; Đầu tư đã mở khoá chỉ dư khi hiện thông báo lỗi giá BTC).
+   - **Không còn thẻ khai báo.** Agent `update_profile` → `ChatScreen.onProfileDraft` gộp vào profile và lưu luôn (localStorage). Khoá đầu tư giữ nguyên logic, chữ đổi ("Agent chưa biết thu chi của bạn").
+   - System prompt (`functions/api/chat.ts` REPLY_PROMPT) = chuyên gia tư vấn tài chính cá nhân, không ép khai báo. **Chưa test bằng câu hỏi thật sau khi đổi prompt** (luật AGENTS.md Part 3): nhờ user chat thử vài câu, so trước/sau.
+   - Preview thiết kế trên máy: `preview.html` + `src/preview-main.tsx` (ví giả chỉ đọc, đã cho vào `.git/info/exclude`, không commit). Chạy `bunx vite --port 5299` rồi mở `/preview.html?screen=login|app|warn`.
+   - `server/index.ts` (server dev cũ) vẫn còn prompt kiểu thẻ khai báo; production dùng `functions/api/chat.ts`.
+
 0. **Sửa lỗi quay mãi sau đăng nhập — đã deploy 2026-10-22.** User bỏ Rabby, chuyển sang **OKX Wallet**. Phiên đăng nhập cũ bằng Rabby không còn ví kết nối → wagmi không có `address` → `useVault` không bao giờ `ready` → spinner vô hạn. Giờ `AppShell` hiện màn "Ví chưa kết nối" (nút Kết nối ví = Privy `connectWallet`, nút Đăng xuất) khi Privy không có ví nào, hoặc sau 8 s mà wagmi vẫn chưa có ví. Trang `scripts/deploy-factory` giờ ưu tiên OKX, rồi Rabby, rồi ví đầu tiên tìm thấy. **Chưa test bằng đăng nhập thật**: nhờ user mở lại moonsafe.app. Lưu ý: vault + quyền chủ factory gắn với địa chỉ `0xEb2D…52F6`, nên OKX phải dùng đúng địa chỉ đó (nhập seed cũ).
 
 1. **Factory mới — XONG 2026-10-22.** `0x7E0f289d535369E582C596071b637E78E69Ac88F`, user tự ký deploy bằng Rabby (tx `0x64fc068f…b3`). Đọc onchain: owner = feeRecipient = `0xEb2D…52F6`, fee = 1e18 (1 USDC), implementation `0xd0d5…68d8`, runtime code giống hệt bản đã rà. `.env` `VITE_FACTORY_ADDRESS` đã đổi ở máy Dell (**máy kia phải sửa tay**), đã deploy moonsafe.app.

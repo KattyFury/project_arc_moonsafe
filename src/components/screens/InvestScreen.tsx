@@ -1,14 +1,14 @@
-// Screens 9 / 9b — Đầu tư, cirBTC only (Arc Studio look).
+// Screens 9 / 9b — Đầu tư, cirBTC only (Figma: locked = conditions 6 col + actions 6 col).
 // Cap by age applies to money outside the vault (wallet USDC + cirBTC held).
 
 import { useState } from 'react'
-import { AlertTriangle, ArrowRight, CheckCircle2, ExternalLink, Lock, TrendingUp, XCircle } from 'lucide-react'
+import { ArrowRight, CheckCircle2, ExternalLink, Lock, TrendingUp, XCircle } from 'lucide-react'
 import { useApp } from '@/state/AppState'
 import { GAS_RESERVE_USDC6 } from '@/hooks/useVault'
 import { dcaNextRun, formatCirBtc } from '@/hooks/useCirBtc'
 import { useNow } from '@/hooks/useNow'
 import { DASH, formatUsdc, parseUsdcInput, usdcToInput } from '@/lib/format'
-import { AmountField, Btn, Chips, GlassCard, IconBox, Notice, Row, Screen, Sheet, glass } from '@/components/ui/kit'
+import { AmountField, Btn, Chips, Col, GlassCard, Grid, IconBox, Notice, Screen, Sheet, Toggle, glass } from '@/components/ui/kit'
 import type { Prefill } from '@/types'
 
 type InvestPrefill = Extract<Prefill, { kind: 'buy' | 'dca' }>
@@ -17,52 +17,57 @@ const DCA_WEEKS = 12
 const DCA_INTERVAL_DAYS = 7
 const MIN_DCA = 1_000_000n
 
-export function InvestScreen({ onOpenFund, onDeclare, prefill }: { onOpenFund: () => void; onDeclare: () => void; prefill?: InvestPrefill | null }) {
+export function InvestScreen({ onOpenFund, onOpenChat, prefill }: { onOpenFund: () => void; onOpenChat: () => void; prefill?: InvestPrefill | null }) {
   const { math, profile, money } = useApp()
 
   if (!math.investUnlocked) {
     const checks = [
-      { ok: profile.complete, label: profile.complete ? 'Đã khai báo tài chính' : 'Chưa khai báo tài chính' },
+      { ok: profile.complete, label: profile.complete ? 'Agent đã biết thu chi của bạn' : 'Agent chưa biết thu chi của bạn' },
       { ok: math.noDebt === true, label: math.noDebt === false ? 'Còn nợ bên ngoài' : 'Không có nợ ngoài' },
       { ok: math.fundOk, label: math.fundOk ? 'Quỹ dự phòng đủ sàn' : 'Quỹ dự phòng chưa đủ sàn' },
     ]
     return (
       <Screen>
-        <GlassCard className="p-5 flex flex-col gap-4">
-          <div className="flex items-center gap-3">
-            <IconBox><Lock size={20} style={{ color: 'var(--accent)' }} /></IconBox>
-            <div>
-              <p className="font-semibold text-[17px]" style={{ color: 'var(--ink)' }}>Đầu tư đang khoá</p>
-              <p className="text-[12px]" style={{ color: 'var(--muted)' }}>Thứ tự: hết nợ → quỹ dự phòng → đầu tư</p>
-            </div>
-          </div>
-          <div className="flex flex-col gap-2">
-            {checks.map(({ ok, label }) => (
-              <div key={label} className="flex items-center gap-3 px-4 py-3 rounded-2xl"
-                style={{ background: ok ? 'rgba(15,157,88,0.08)' : 'rgba(224,52,74,0.08)', border: `1px solid ${ok ? 'rgba(15,157,88,0.2)' : 'rgba(224,52,74,0.2)'}` }}>
-                {ok ? <CheckCircle2 size={18} style={{ color: 'var(--success)', flexShrink: 0 }} /> : <XCircle size={18} style={{ color: 'var(--danger)', flexShrink: 0 }} />}
-                <span className="text-[14px] font-semibold" style={{ color: ok ? 'var(--success)' : 'var(--danger)' }}>{label}</span>
+        <Grid>
+          <Col span={6}>
+            <GlassCard className="p-4 lg:p-8 flex flex-col gap-4">
+              <div className="flex items-center gap-4">
+                <IconBox><Lock size={24} style={{ color: 'var(--accent)' }} /></IconBox>
+                <div>
+                  <p className="font-semibold text-[20px] leading-7" style={{ color: 'var(--ink)' }}>Đầu tư đang khoá</p>
+                  <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>Thứ tự: hết nợ → quỹ dự phòng → đầu tư</p>
+                </div>
               </div>
-            ))}
-          </div>
-          {math.floorUsdc !== null && (
-            <div className="h-[6px] rounded-full" style={{ background: 'var(--surface-muted)' }}>
-              <div className="h-full rounded-full" style={{ width: `${math.floorPct ?? 0}%`, background: 'var(--accent)' }} />
-            </div>
-          )}
-          {math.shortfall !== null && math.shortfall > 0n && (
-            <div className="px-4 py-3 rounded-2xl" style={{ background: 'var(--surface-muted)' }}>
-              <p className="text-[12px]" style={{ color: 'var(--subtle)' }}>Còn thiếu vào quỹ</p>
-              <p className="display font-bold text-[22px] tabular-nums mt-0.5" style={{ color: 'var(--ink)' }}>{money(math.shortfall)}</p>
-            </div>
-          )}
-        </GlassCard>
-        {!profile.complete
-          ? <Btn onClick={onDeclare}>Khai báo với agent</Btn>
-          : math.noDebt === false
-            ? <Notice tone="warning">Trả hết nợ bên ngoài rồi cập nhật khai báo để mở đầu tư.</Notice>
-            : <Btn onClick={onOpenFund}>Nạp quỹ dự phòng</Btn>}
-        <Btn disabled><Lock size={15} />Mua cirBTC</Btn>
+              <div className="flex flex-col gap-2">
+                {checks.map(({ ok, label }) => (
+                  <div key={label} className="min-h-12 flex items-center gap-2 px-4 py-2 rounded-2xl" style={{ background: ok ? '#E3F5EC' : '#FDE8EB' }}>
+                    {ok ? <CheckCircle2 size={20} style={{ color: 'var(--success)', flexShrink: 0 }} /> : <XCircle size={20} style={{ color: 'var(--danger)', flexShrink: 0 }} />}
+                    <span className="text-[16px] leading-6 font-semibold" style={{ color: ok ? 'var(--success)' : 'var(--danger)' }}>{label}</span>
+                  </div>
+                ))}
+              </div>
+              {math.floorUsdc !== null && (
+                <div className="h-2 rounded-full" style={{ background: 'var(--surface-muted)' }}>
+                  <div className="h-full rounded-full" style={{ width: `${Math.min(math.floorPct ?? 0, 100)}%`, background: 'var(--accent)' }} />
+                </div>
+              )}
+              {math.shortfall !== null && math.shortfall > 0n && (
+                <div className="p-4 rounded-2xl" style={{ background: 'var(--surface-muted)' }}>
+                  <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>Còn thiếu vào quỹ</p>
+                  <p className="display font-bold text-[24px] leading-8 tabular-nums" style={{ color: 'var(--ink)' }}>{money(math.shortfall)}</p>
+                </div>
+              )}
+            </GlassCard>
+          </Col>
+          <Col span={6}>
+            {!profile.complete
+              ? <Btn onClick={onOpenChat}>Trò chuyện với agent</Btn>
+              : math.noDebt === false
+                ? <Notice tone="warning">Khi đã trả hết nợ bên ngoài, báo agent một tiếng để mở đầu tư.</Notice>
+                : <Btn onClick={onOpenFund}>Nạp quỹ dự phòng</Btn>}
+            <Btn disabled><Lock size={16} />Mua cirBTC</Btn>
+          </Col>
+        </Grid>
       </Screen>
     )
   }
@@ -75,6 +80,7 @@ function InvestOpen({ prefill }: { prefill: InvestPrefill | null }) {
   const [risk, setRisk] = useState<'normal' | 'risky'>('normal')
   const [amount, setAmount] = useState(prefill?.kind === 'buy' ? usdcToInput(prefill.amount) : '')
   const [dcaOffer, setDcaOffer] = useState(prefill?.kind === 'dca' ? prefill : null)
+  const [mode, setMode] = useState<'once' | 'dca'>(prefill?.kind === 'dca' ? 'dca' : 'once')
   const age = profile.profile?.age ?? 0
   const capPct = Math.max(0, Math.min(100, (risk === 'normal' ? 110 : 120) - age))
 
@@ -107,130 +113,136 @@ function InvestOpen({ prefill }: { prefill: InvestPrefill | null }) {
 
   return (
     <Screen>
-      {/* Hero */}
-      <section className="p-5" style={glass.hero}>
-        <div className="flex items-center gap-2 mb-3">
-          <TrendingUp size={14} color="rgba(255,255,255,0.7)" />
-          <span className="text-[13px] font-semibold text-white/70">Đầu tư cirBTC</span>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[12px] text-white/70 mb-1">Số dư trong ví</p>
-            <p className="display font-bold tabular-nums text-white" style={{ fontSize: 28, letterSpacing: '-0.03em' }}>{money(wb)}</p>
-            <p className="text-[11px] text-white/70 mt-1">Trần đầu tư: {capPct}% tiền ngoài quỹ</p>
-          </div>
-          <div className="flex-shrink-0 flex gap-1" style={{ background: 'rgba(255,255,255,0.1)', borderRadius: 24, padding: '6px 8px' }}>
-            {(['normal', 'risky'] as const).map(r => (
-              <button key={r} onClick={() => setRisk(r)} className="text-[12px] font-semibold px-2 py-1 rounded-full transition-all"
-                style={{ background: risk === r ? 'white' : 'transparent', color: risk === r ? 'var(--accent)' : 'rgba(255,255,255,0.75)' }}>
-                {r === 'normal' ? 'Normal' : 'Risky'}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <GlassCard>
-        <Row label="Trần đầu tư" sub={`${risk === 'normal' ? '110' : '120'} − tuổi ${age}`} value={`${capPct}%`} />
-        <Row label="Đang giữ cirBTC" sub={formatCirBtc(cirBtc.balance)} value={money(invested)} />
-        <Row label="Còn được mua tối đa" value={money(room)} last />
-      </GlassCard>
-      <p className="text-[11px] -mt-2 px-1" style={{ color: 'var(--muted)' }}>Phần còn lại giữ bằng USDC — khuyến nghị, không bắt buộc.</p>
-
-      {invested === null && (cirBtc.balance ?? 0n) > 0n && (
-        <Notice tone="warning">Chưa lấy được giá BTC nên chưa tính được trần. Thử lại sau ít phút.</Notice>
-      )}
-
-      {prefill?.kind === 'buy' && amount && (
-        <Notice tone="info" title="Agent đã điền sẵn">Bấm Xem báo giá, kiểm tra rồi ký trong ví.</Notice>
-      )}
-
-      {dcaOffer && !dca && (
-        <GlassCard className="p-4 flex flex-col gap-3" style={{ border: '1.5px solid var(--accent)' }}>
-          <p className="font-semibold text-[15px]" style={{ color: 'var(--ink)' }}>Agent đề xuất DCA</p>
-          <p className="text-[13px]" style={{ color: 'var(--subtle)' }}>
-            Mua {formatUsdc(dcaOffer.amount)} cirBTC mỗi {dcaOffer.intervalDays} ngày. Mỗi kỳ bạn vẫn tự xem báo giá và ký.
-          </p>
-          {room !== null && dcaOffer.amount > room && <Notice tone="danger">Mỗi kỳ vượt hạn mức còn được mua ({money(room)}).</Notice>}
-          <div className="flex gap-3">
-            <Btn variant="outline" onClick={() => setDcaOffer(null)}>Bỏ qua</Btn>
-            <Btn disabled={room === null || dcaOffer.amount > room} onClick={() => { cirBtc.startDca(dcaOffer.amount, dcaOffer.intervalDays); setDcaOffer(null) }}>Duyệt DCA</Btn>
-          </div>
-        </GlassCard>
-      )}
-
-      {/* DCA */}
-      <GlassCard className="p-4 flex flex-col gap-3">
-        <p className="font-semibold text-[15px]" style={{ color: 'var(--ink)' }}>Mua đều hàng tuần (DCA)</p>
-        {dca && dcaAmount !== null ? (
-          <>
-            <p className="text-[13px]" style={{ color: 'var(--subtle)' }}>
-              {formatUsdc(dcaAmount)} mỗi {dca.intervalDays} ngày. {due ? 'Đã đến kỳ mua.' : `Kỳ tới: ${next ? new Date(next).toLocaleDateString('vi-VN') : DASH}.`}
-            </p>
-            <div className="flex gap-3">
-              <Btn variant="outline" onClick={cirBtc.stopDca}>Dừng DCA</Btn>
-              <Btn disabled={!due} onClick={() => setAmount(usdcToInput(dcaAmount))}>Mua kỳ này</Btn>
+      <Grid>
+        <Col span={5}>
+          {/* Hero: the one gradient region on this screen. Holds the cap figures so the screen fits without scrolling. */}
+          <section className="p-4 lg:p-8 flex flex-col gap-2" style={glass.hero}>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <TrendingUp size={20} color="white" />
+                <span className="text-[14px] leading-5 font-semibold text-white">Đầu tư cirBTC</span>
+              </div>
+              <div className="flex gap-2 p-1 rounded-2xl" style={{ background: 'rgba(255,255,255,0.16)' }}>
+                {(['normal', 'risky'] as const).map(r => (
+                  <button key={r} onClick={() => setRisk(r)} className="h-8 px-2 text-[14px] leading-5 font-semibold rounded-2xl"
+                    style={{ background: risk === r ? 'white' : 'transparent', color: risk === r ? 'var(--accent)' : 'white' }}>
+                    {r === 'normal' ? 'Normal' : 'Risky'}
+                  </button>
+                ))}
+              </div>
             </div>
-            <p className="text-[11px]" style={{ color: 'var(--muted)' }}>Mỗi kỳ bạn tự xem báo giá và ký. Có thể nói “dừng DCA” trong chat.</p>
-          </>
-        ) : suggest !== null && suggest >= MIN_DCA ? (
-          <>
-            <p className="text-[13px]" style={{ color: 'var(--subtle)' }}>Đề xuất: mua {formatUsdc(suggest)} cirBTC mỗi tuần trong {DCA_WEEKS} tuần, thay vì mua một lần.</p>
-            <Btn variant="outline" onClick={() => cirBtc.startDca(suggest, DCA_INTERVAL_DAYS)}>Duyệt DCA</Btn>
-          </>
-        ) : (
-          <p className="text-[13px]" style={{ color: 'var(--subtle)' }}>Chưa đủ hạn mức để chia DCA (tối thiểu {formatUsdc(MIN_DCA)} mỗi kỳ).</p>
-        )}
-      </GlassCard>
+            <div>
+              <p className="text-[14px] leading-5 text-white">Số dư trong ví</p>
+              <p className="display font-bold tabular-nums text-white text-[32px] leading-10">{money(wb)}</p>
+            </div>
+            <div className="grid grid-cols-3 gap-2 pt-2">
+              {[
+                { label: `Trần (${risk === 'normal' ? '110' : '120'} − ${age})`, value: `${capPct}%` },
+                { label: 'Đang giữ', value: money(invested) },
+                { label: 'Còn mua được', value: money(room) },
+              ].map(i => (
+                <div key={i.label} className="min-w-0">
+                  <p className="text-[14px] leading-5 text-white truncate">{i.label}</p>
+                  <p className="text-[16px] leading-6 font-semibold text-white tabular-nums break-words">{i.value}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+          <p className="text-[14px] leading-5 -mt-2 lg:-mt-4" style={{ color: 'var(--subtle)' }}>
+            Đang giữ {formatCirBtc(cirBtc.balance)}. Phần còn lại giữ bằng USDC — khuyến nghị, không bắt buộc.
+          </p>
+        </Col>
 
-      {/* Buy */}
-      <GlassCard className="p-4 flex flex-col gap-3">
-        <p className="text-[12px] font-semibold tracking-widest uppercase" style={{ color: 'var(--muted)' }}>Mua cirBTC bằng USDC</p>
-        <Chips items={[
-          { label: '25%', onClick: () => room && setAmount(usdcToInput((room * 25n) / 100n)), disabled: !room },
-          { label: '50%', onClick: () => room && setAmount(usdcToInput((room * 50n) / 100n)), disabled: !room },
-          { label: 'Tối đa', onClick: () => room && setAmount(usdcToInput(room)), disabled: !room },
-        ]} />
-        <AmountField value={amount} onChange={v => { setAmount(v); cirBtc.clearQuote() }} disabled={cirBtc.busy} />
-        <Notice tone="warning">Giá cirBTC có thể giảm sâu. Chỉ đầu tư số tiền sẵn sàng mất. Đây là thông tin tham khảo, không phải tư vấn đầu tư.</Notice>
-        {overCap && <Notice tone="danger">Vượt trần đầu tư theo tuổi. Tối đa {money(room)}.</Notice>}
-        {cirBtc.error && !q && <Notice tone="danger">{cirBtc.error}</Notice>}
-        {cirBtc.lastTxHash && (
-          <Notice tone="success" title="Đã mua cirBTC">
-            <a className="inline-flex items-center gap-1 underline" target="_blank" rel="noopener noreferrer"
-              href={`https://explorer.testnet.arc.io/tx/${cirBtc.lastTxHash}`}>Xem giao dịch <ExternalLink size={12} /></a>
-          </Notice>
-        )}
-        <Btn loading={cirBtc.busy && !q} disabled={parsed <= 0n || overCap || room === null}
-          onClick={() => { void cirBtc.estimate(parsed) }}>
-          {cirBtc.busy && !q ? 'Đang lấy báo giá…' : 'Xem báo giá · Mua cirBTC'}
-        </Btn>
-      </GlassCard>
+        <Col span={7}>
+          {invested === null && (cirBtc.balance ?? 0n) > 0n && (
+            <Notice tone="warning">Chưa lấy được giá BTC nên chưa tính được trần. Thử lại sau ít phút.</Notice>
+          )}
+          {prefill?.kind === 'buy' && amount && (
+            <Notice tone="info" title="Agent đã điền sẵn">Bấm Xem báo giá, kiểm tra rồi ký trong ví.</Notice>
+          )}
+
+          {/* One card: buy once or set a weekly DCA */}
+          <GlassCard className="p-4 lg:p-8 flex flex-col gap-4">
+            <Toggle value={mode} onChange={setMode}
+              options={[{ value: 'once', label: 'Mua một lần' }, { value: 'dca', label: due ? 'DCA · đến kỳ' : 'Mua đều (DCA)' }]} />
+
+            {mode === 'once' ? (
+              <>
+                <Chips items={[
+                  { label: '25%', onClick: () => room && setAmount(usdcToInput((room * 25n) / 100n)), disabled: !room },
+                  { label: '50%', onClick: () => room && setAmount(usdcToInput((room * 50n) / 100n)), disabled: !room },
+                  { label: 'Tối đa', onClick: () => room && setAmount(usdcToInput(room)), disabled: !room },
+                ]} />
+                <AmountField value={amount} onChange={v => { setAmount(v); cirBtc.clearQuote() }} disabled={cirBtc.busy} />
+                <Notice tone="warning">Giá cirBTC có thể giảm sâu. Chỉ đầu tư số tiền sẵn sàng mất. Đây là thông tin tham khảo, không phải tư vấn đầu tư.</Notice>
+                {overCap && <Notice tone="danger">Vượt trần đầu tư theo tuổi. Tối đa {money(room)}.</Notice>}
+                {cirBtc.error && !q && <Notice tone="danger">{cirBtc.error}</Notice>}
+                {cirBtc.lastTxHash && (
+                  <Notice tone="success" title="Đã mua cirBTC">
+                    <a className="inline-flex items-center gap-2 underline" target="_blank" rel="noopener noreferrer"
+                      href={`https://explorer.testnet.arc.io/tx/${cirBtc.lastTxHash}`}>Xem giao dịch <ExternalLink size={16} /></a>
+                  </Notice>
+                )}
+                <Btn loading={cirBtc.busy && !q} disabled={parsed <= 0n || overCap || room === null}
+                  onClick={() => { void cirBtc.estimate(parsed) }}>
+                  {cirBtc.busy && !q ? 'Đang lấy báo giá…' : 'Xem báo giá · Mua cirBTC'}
+                </Btn>
+              </>
+            ) : dcaOffer && !dca ? (
+              <>
+                <p className="text-[16px] leading-6" style={{ color: 'var(--ink)' }}>
+                  <strong>Agent đề xuất:</strong> mua {formatUsdc(dcaOffer.amount)} cirBTC mỗi {dcaOffer.intervalDays} ngày. Mỗi kỳ bạn vẫn tự xem báo giá và ký.
+                </p>
+                {room !== null && dcaOffer.amount > room && <Notice tone="danger">Mỗi kỳ vượt hạn mức còn được mua ({money(room)}).</Notice>}
+                <div className="flex gap-4">
+                  <Btn variant="outline" onClick={() => setDcaOffer(null)}>Bỏ qua</Btn>
+                  <Btn disabled={room === null || dcaOffer.amount > room} onClick={() => { cirBtc.startDca(dcaOffer.amount, dcaOffer.intervalDays); setDcaOffer(null) }}>Duyệt DCA</Btn>
+                </div>
+              </>
+            ) : dca && dcaAmount !== null ? (
+              <>
+                <p className="text-[16px] leading-6" style={{ color: 'var(--ink)' }}>
+                  {formatUsdc(dcaAmount)} mỗi {dca.intervalDays} ngày. {due ? 'Đã đến kỳ mua.' : `Kỳ tới: ${next ? new Date(next).toLocaleDateString('vi-VN') : DASH}.`}
+                </p>
+                <div className="flex gap-4">
+                  <Btn variant="outline" onClick={cirBtc.stopDca}>Dừng DCA</Btn>
+                  <Btn disabled={!due} onClick={() => { setAmount(usdcToInput(dcaAmount)); setMode('once') }}>Mua kỳ này</Btn>
+                </div>
+                <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>Mỗi kỳ bạn tự xem báo giá và ký. Có thể nói “dừng DCA” trong chat.</p>
+              </>
+            ) : suggest !== null && suggest >= MIN_DCA ? (
+              <>
+                <p className="text-[16px] leading-6" style={{ color: 'var(--ink)' }}>Đề xuất: mua {formatUsdc(suggest)} cirBTC mỗi tuần trong {DCA_WEEKS} tuần, thay vì mua một lần.</p>
+                <Btn onClick={() => cirBtc.startDca(suggest, DCA_INTERVAL_DAYS)}>Duyệt DCA</Btn>
+              </>
+            ) : (
+              <p className="text-[16px] leading-6" style={{ color: 'var(--subtle)' }}>Chưa đủ hạn mức để chia DCA (tối thiểu {formatUsdc(MIN_DCA)} mỗi kỳ).</p>
+            )}
+          </GlassCard>
+        </Col>
+      </Grid>
 
       {q && (
         <Sheet>
-          <p className="font-bold text-[19px]" style={{ color: 'var(--ink)', letterSpacing: '-0.02em' }}>Xác nhận mua</p>
-          <div className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: 'var(--surface-muted)' }}>
+          <p className="font-semibold text-[20px] leading-7" style={{ color: 'var(--ink)' }}>Xác nhận mua</p>
+          <div className="flex items-center gap-2 px-4 py-4 rounded-2xl" style={{ background: 'var(--surface-muted)' }}>
             <div className="text-center flex-1">
               <p className="font-bold text-[16px]" style={{ color: 'var(--ink)' }}>{q.amountInUsdc.replace('.', ',')} USDC</p>
-              <p className="text-[11px]" style={{ color: 'var(--muted)' }}>Bạn trả</p>
+              <p className="text-[14px]" style={{ color: 'var(--muted)' }}>Bạn trả</p>
             </div>
             <ArrowRight size={18} style={{ color: 'var(--muted)' }} className="flex-shrink-0" />
             <div className="text-center flex-1">
               <p className="font-bold text-[16px]" style={{ color: 'var(--ink)' }}>{q.estimate.estimatedOutput.amount} cirBTC</p>
-              <p className="text-[11px]" style={{ color: 'var(--muted)' }}>Nhận ước tính</p>
+              <p className="text-[14px]" style={{ color: 'var(--muted)' }}>Nhận ước tính</p>
             </div>
           </div>
           <div className="flex justify-between">
-            <span className="text-[12px]" style={{ color: 'var(--muted)' }}>Nhận tối thiểu (trượt giá ≤ 3%)</span>
-            <span className="text-[12px] font-medium" style={{ color: 'var(--ink)' }}>{q.estimate.stopLimit.amount} cirBTC</span>
+            <span className="text-[14px]" style={{ color: 'var(--muted)' }}>Nhận tối thiểu (trượt giá ≤ 3%)</span>
+            <span className="text-[14px] font-medium" style={{ color: 'var(--ink)' }}>{q.estimate.stopLimit.amount} cirBTC</span>
           </div>
-          <div className="px-3 py-2 rounded-xl flex items-start gap-2" style={{ background: 'rgba(245,179,1,0.08)', border: '1px solid rgba(245,179,1,0.2)' }}>
-            <AlertTriangle size={13} style={{ color: 'var(--yellow)', flexShrink: 0, marginTop: 1 }} />
-            <p className="text-[11px] leading-relaxed" style={{ color: '#8A5F00' }}>Giá thực tế có thể khác ước tính. Chỉ đầu tư số tiền sẵn sàng mất.</p>
-          </div>
+          <Notice tone="warning">Giá thực tế có thể khác ước tính. Chỉ đầu tư số tiền sẵn sàng mất.</Notice>
           {cirBtc.error && <Notice tone="danger">{cirBtc.error}</Notice>}
-          <div className="flex gap-3">
+          <div className="flex gap-4">
             <Btn variant="outline" disabled={cirBtc.busy} onClick={cirBtc.clearQuote}>Huỷ</Btn>
             <Btn loading={cirBtc.busy} onClick={() => { void buy() }}>{cirBtc.busy ? 'Đang mua…' : 'Mua cirBTC'}</Btn>
           </div>

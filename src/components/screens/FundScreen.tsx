@@ -1,17 +1,17 @@
-// Screens 7 / 7b — Quỹ dự phòng (Arc Studio look).
+// Screens 7 / 7b — Quỹ dự phòng (Figma: hero 5 col + deposit/withdraw card 7 col on desktop).
 // Withdrawals go to the owner's wallet; below the floor → warning sheet, still allowed.
 
 import { useState } from 'react'
-import { ShieldAlert, TrendingUp } from 'lucide-react'
+import { ShieldAlert, Vault } from 'lucide-react'
 import { useApp } from '@/state/AppState'
 import { GAS_ESTIMATE_USDC6, GAS_RESERVE_USDC6, txErrorMessage } from '@/hooks/useVault'
 import { formatNumber, formatUsdc, parseUsdcInput, usdcToInput } from '@/lib/format'
 import type { Prefill } from '@/types'
-import { AmountField, Btn, Chips, GlassCard, Notice, Screen, Sheet, glass } from '@/components/ui/kit'
+import { AmountField, Btn, Chips, Col, GlassCard, Grid, IconBox, Notice, Screen, Sheet, Toggle, glass } from '@/components/ui/kit'
 
 type Tab = 'deposit' | 'withdraw'
 
-export function FundScreen({ onDeclare, prefill }: { onDeclare: () => void; prefill?: Extract<Prefill, { kind: 'deposit' | 'withdraw' }> | null }) {
+export function FundScreen({ onOpenChat, prefill }: { onOpenChat: () => void; prefill?: Extract<Prefill, { kind: 'deposit' | 'withdraw' }> | null }) {
   const { vault, math, money, unit, profile } = useApp()
   const [tab, setTab] = useState<Tab>(prefill?.kind ?? 'deposit')
   const [amount, setAmount] = useState(prefill ? usdcToInput(prefill.amount) : '')
@@ -55,96 +55,88 @@ export function FundScreen({ onDeclare, prefill }: { onDeclare: () => void; pref
 
   return (
     <Screen>
-      {/* Hero balance card */}
-      <section className="p-5 relative overflow-hidden" style={glass.hero}>
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.18)' }}>
-            <TrendingUp size={14} color="white" />
-          </div>
-          <span className="text-[13px] font-semibold text-white/70 tracking-wide">Quỹ dự phòng</span>
-        </div>
-        <div className="flex items-baseline gap-2 mb-1">
-          <span className="display font-bold tabular-nums text-white" style={{ fontSize: 40, lineHeight: 1.1, letterSpacing: '-0.03em' }}>{num}</span>
-          <span className="text-[18px] font-medium text-white/60">{unitLabel}</span>
-        </div>
-        {math.floorUsdc !== null ? (
-          <>
-            <p className="text-[12px] text-white/70 mb-4">
-              Sàn {math.floorMonths} tháng: {formatUsdc(math.floorUsdc, 0)} · đang có {formatNumber(math.vaultMonths)} tháng
-            </p>
-            <div className="h-[6px] rounded-full mb-1" style={{ background: 'rgba(255,255,255,0.18)' }}>
-              <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: pct >= 100 ? '#4ade80' : 'white' }} />
+      <Grid>
+        <Col span={5}>
+          {/* Hero balance card: the one gradient region on this screen */}
+          <section className="p-4 lg:p-8 flex flex-col gap-2" style={glass.hero}>
+            <div className="flex items-center gap-2">
+              <Vault size={20} color="white" />
+              <span className="text-[14px] leading-5 font-semibold text-white">Quỹ dự phòng</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-[11px] text-white/70">{formatUsdc(vb, 0)} / {formatUsdc(math.floorUsdc, 0)}</span>
-              <span className="text-[11px] text-white/70">{pct >= 100 ? 'Đủ sàn' : `Còn thiếu ${formatUsdc(math.shortfall, 0)}`}</span>
+            <div className="flex items-baseline gap-2">
+              <span className="display font-bold tabular-nums text-white text-[48px] leading-[56px] lg:text-[56px] lg:leading-[64px]">{num}</span>
+              <span className="text-[20px] leading-7 font-semibold text-white">{unitLabel}</span>
             </div>
-          </>
-        ) : (
-          <button onClick={onDeclare} className="text-[12px] text-white/80 mt-1 underline">
-            {profile.complete ? 'Chưa có tỉ giá để tính mức sàn' : 'Khai báo chi tiêu với agent để biết mức sàn'}
-          </button>
-        )}
-      </section>
+            {math.floorUsdc !== null ? (
+              <>
+                <p className="text-[16px] leading-6 text-white">
+                  Sàn {math.floorMonths} tháng: {formatUsdc(math.floorUsdc, 0)} · đang có {formatNumber(math.vaultMonths)} tháng
+                </p>
+                <div className="h-2 rounded-full" style={{ background: 'rgba(255,255,255,0.24)' }}>
+                  <div className="h-full rounded-full transition-all duration-700 bg-white" style={{ width: `${Math.min(pct, 100)}%` }} />
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[14px] leading-5 text-white">{formatUsdc(vb, 0)} / {formatUsdc(math.floorUsdc, 0)}</span>
+                  <span className="text-[14px] leading-5 font-semibold text-white">{pct >= 100 ? 'Đủ sàn' : `Còn thiếu ${formatUsdc(math.shortfall, 0)}`}</span>
+                </div>
+              </>
+            ) : (
+              <button onClick={onOpenChat} className="text-left text-[16px] leading-6 text-white underline">
+                {profile.complete ? 'Chưa có tỉ giá để tính mức sàn' : 'Kể chi tiêu hằng tháng cho agent để biết quỹ cần bao nhiêu'}
+              </button>
+            )}
+          </section>
+        </Col>
 
-      {prefill && amount && (
-        <Notice tone="info" title="Agent đã điền sẵn">Kiểm tra số tiền rồi bấm {tab === 'deposit' ? 'Nạp vào quỹ' : 'Rút về ví'} và ký trong ví.</Notice>
-      )}
-
-      {/* Action card */}
-      <GlassCard>
-        <div className="flex border-b" style={{ borderColor: 'var(--border)' }}>
-          {(['deposit', 'withdraw'] as Tab[]).map(t => (
-            <button key={t} onClick={() => { setTab(t); setAmount(''); setError(null); setDone(null) }}
-              className="flex-1 py-3.5 text-[15px] font-semibold transition-colors"
-              style={{ color: tab === t ? 'var(--accent)' : 'var(--muted)', borderBottom: tab === t ? '2px solid var(--accent)' : '2px solid transparent' }}>
-              {t === 'deposit' ? 'Nạp vào quỹ' : 'Rút về ví'}
-            </button>
-          ))}
-        </div>
-
-        <div className="p-4 flex flex-col gap-3">
-          <Chips items={[
-            { label: '25%', onClick: () => chip(25), disabled: !max },
-            { label: '50%', onClick: () => chip(50), disabled: !max },
-            { label: 'Tối đa', onClick: () => chip('max'), disabled: !max },
-          ]} />
-          <AmountField value={amount} onChange={v => { setAmount(v); setDone(null) }} disabled={vault.busy} />
-          <p className="text-[12px]" style={{ color: 'var(--muted)' }}>
-            {tab === 'deposit'
-              ? `Trong ví: ${formatUsdc(wb)} · giữ lại ${formatUsdc(GAS_RESERVE_USDC6)} làm phí`
-              : `Trong quỹ: ${formatUsdc(vb)} · tiền rút về ví của bạn`}
-          </p>
-
-          {tab === 'withdraw' && wb !== null && wb < GAS_ESTIMATE_USDC6 && (
-            <Notice tone="warning">Ví cần khoảng {formatUsdc(GAS_ESTIMATE_USDC6)} để trả phí giao dịch rút.</Notice>
+        <Col span={7}>
+          {prefill && amount && (
+            <Notice tone="info" title="Agent đã điền sẵn">Kiểm tra số tiền rồi bấm {tab === 'deposit' ? 'Nạp vào quỹ' : 'Rút về ví'} và ký trong ví.</Notice>
           )}
-          {tooMuch && <Notice tone="danger">{tab === 'deposit' ? 'Vượt số USDC có thể nạp từ ví.' : 'Vượt số dư trong quỹ.'}</Notice>}
-          {done && <Notice tone="success">{done}</Notice>}
-          {error && <Notice tone="danger">{error}</Notice>}
 
-          <Btn loading={vault.busy} disabled={parsed <= 0n || tooMuch || max === null}
-            onClick={() => { if (belowFloor) setSheet(true); else void run() }}>
-            {vault.busy ? 'Đang chờ ví…' : tab === 'deposit' ? 'Nạp vào quỹ' : 'Rút về ví'}
-          </Btn>
-        </div>
-      </GlassCard>
+          {/* Deposit / withdraw card */}
+          <GlassCard className="p-4 lg:p-8 flex flex-col gap-4">
+            <Toggle value={tab} onChange={t => { setTab(t); setAmount(''); setError(null); setDone(null) }}
+              options={[{ value: 'deposit', label: 'Nạp vào quỹ' }, { value: 'withdraw', label: 'Rút về ví' }]} />
+            <Chips items={[
+              { label: '25%', onClick: () => chip(25), disabled: !max },
+              { label: '50%', onClick: () => chip(50), disabled: !max },
+              { label: 'Tối đa', onClick: () => chip('max'), disabled: !max },
+            ]} />
+            <AmountField value={amount} onChange={v => { setAmount(v); setDone(null) }} disabled={vault.busy} />
+            <p className="text-[14px] leading-5 -mt-2" style={{ color: 'var(--subtle)' }}>
+              {tab === 'deposit'
+                ? `Trong ví: ${formatUsdc(wb)} · giữ lại ${formatUsdc(GAS_RESERVE_USDC6)} làm phí`
+                : `Trong quỹ: ${formatUsdc(vb)} · tiền rút về ví của bạn`}
+            </p>
+
+            {tab === 'withdraw' && wb !== null && wb < GAS_ESTIMATE_USDC6 && (
+              <Notice tone="warning">Ví cần khoảng {formatUsdc(GAS_ESTIMATE_USDC6)} để trả phí giao dịch rút.</Notice>
+            )}
+            {tooMuch && <Notice tone="danger">{tab === 'deposit' ? 'Vượt số USDC có thể nạp từ ví.' : 'Vượt số dư trong quỹ.'}</Notice>}
+            {done && <Notice tone="success">{done}</Notice>}
+            {error && <Notice tone="danger">{error}</Notice>}
+
+            <Btn loading={vault.busy} disabled={parsed <= 0n || tooMuch || max === null}
+              onClick={() => { if (belowFloor) setSheet(true); else void run() }}>
+              {vault.busy ? 'Đang chờ ví…' : tab === 'deposit' ? 'Nạp vào quỹ' : 'Rút về ví'}
+            </Btn>
+          </GlassCard>
+        </Col>
+      </Grid>
 
       {/* 7b — below floor */}
       {sheet && (
         <Sheet>
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0" style={{ background: 'rgba(224,52,74,0.1)' }}>
-              <ShieldAlert size={20} style={{ color: 'var(--danger)' }} />
-            </div>
-            <div>
-              <p className="font-semibold text-[17px]" style={{ color: 'var(--ink)' }}>Rút dưới mức sàn</p>
-              <p className="text-[14px] mt-1 leading-relaxed" style={{ color: 'var(--subtle)' }}>
+          <div className="flex items-start gap-2">
+            <IconBox tone="red"><ShieldAlert size={24} style={{ color: 'var(--danger)' }} /></IconBox>
+            <div className="flex flex-col gap-2">
+              <p className="font-semibold text-[20px] leading-7" style={{ color: 'var(--ink)' }}>Rút dưới mức sàn</p>
+              <p className="text-[16px] leading-6" style={{ color: 'var(--subtle)' }}>
                 Sau khi rút, quỹ còn {formatUsdc(vb !== null ? vb - parsed : null)}, thấp hơn sàn {math.floorMonths} tháng ({formatUsdc(math.floorUsdc)}). Đầu tư sẽ bị khoá cho đến khi nạp đủ lại.
               </p>
             </div>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-4">
             <Btn variant="outline" disabled={vault.busy} onClick={() => setSheet(false)}>Hủy</Btn>
             <Btn variant="danger" loading={vault.busy} onClick={() => { void run() }}>Vẫn rút</Btn>
           </div>

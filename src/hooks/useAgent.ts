@@ -1,6 +1,6 @@
 // Chat with the MoonSafe agent (/api/chat). History lives in localStorage.
-// The agent never saves anything by itself: values it extracts (<profile>…</profile>)
-// go to the declaration card as a draft, and the user taps "Lưu khai báo".
+// Values the agent extracts (profileUpdate / <profile>…</profile>) are handed to
+// onProfileDraft and saved to the profile in this browser; there is no form to confirm.
 // If the agent is down we say so — no canned replies, no made-up profile.
 
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
@@ -11,11 +11,11 @@ const MAX_KEEP = 80
 const MAX_SEND = 30
 
 /** Greeting shown to someone who already saved a declaration (UI only, never sent to the model). */
-export const WELCOME_BACK = 'Chào bạn quay lại! Mình đã có khai báo tài chính của bạn, xem hoặc sửa ở tab **Cân đối**.\n\nBạn muốn hỏi gì về quỹ dự phòng hay đầu tư?'
+export const WELCOME_BACK = 'Chào bạn quay lại! Mình vẫn nhớ tình hình tài chính bạn đã kể, bạn xem lại ở tab **Cân đối** nhé. Có gì thay đổi cứ nói, mình cập nhật ngay.\n\nHôm nay mình bàn chuyện gì đây: chi tiêu, quỹ dự phòng hay đầu tư?'
 
 export const WELCOME: ChatMessage = {
   role: 'assistant',
-  content: 'Xin chào! Mình là agent của MoonSafe.\n\n"Nên đầu tư nhưng phải có đường lui." Trước khi đầu tư, mình giúp bạn lập **quỹ dự phòng** bằng USDC.\n\nBắt đầu nhé: **thu nhập hàng tháng** của bạn khoảng bao nhiêu?',
+  content: 'Chào bạn! Mình là chuyên gia tài chính cá nhân của MoonSafe.\n\nMình đồng hành cùng bạn từng bước: nắm rõ thu chi, để dành một **quỹ dự phòng** bằng USDC cho những lúc bất ngờ, rồi mới tính chuyện đầu tư.\n\nBạn không cần khai báo gì cả, cứ kể đến đâu mình tư vấn đến đó. Bạn đang muốn lo chuyện gì trước: chi tiêu, để dành hay đầu tư?',
   timestamp: 0,
 }
 
@@ -102,7 +102,7 @@ export function useAgent(hooks: AgentHooks) {
       const detail = (e as Error).message
       setMessages([...history, {
         role: 'assistant',
-        content: `Agent đang không trả lời được (${detail}). Tin nhắn của bạn vẫn được giữ, thử gửi lại sau nhé. Bạn vẫn có thể tự điền thẻ khai báo.`,
+        content: `Agent đang không trả lời được (${detail}). Tin nhắn của bạn vẫn được giữ, thử gửi lại sau ít phút nhé.`,
         timestamp: Date.now(),
         error: true,
       }])

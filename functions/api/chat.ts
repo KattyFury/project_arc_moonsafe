@@ -3,7 +3,7 @@
 //
 // Each user message runs two calls:
 // 1. PLAN (gpt-4o, tool_choice "required"): the model MUST pick tools — fill the
-//    declaration card, prepare a deposit / withdrawal / cirBTC buy / DCA, open a screen,
+//    profile (saved by the app), prepare a deposit / withdrawal / cirBTC buy / DCA, open a screen,
 //    stop DCA, or no_action. Letting gpt-4o-mini decide on its own called a tool 0/8
 //    times and once filed "nạp 200 USDC" as debt (measured 2026-10-22).
 // 2. REPLY (gpt-4o-mini): talks to the user and may only describe what step 1 did.
@@ -43,27 +43,31 @@ const RULES = `## Luật tài chính
 - Tỷ lệ đầu tư tối đa: Normal = 110 − tuổi (%), Risky = 120 − tuổi (%)
 - Chỉ được đầu tư (mua cirBTC, DCA) khi: không có nợ ngoài VÀ quỹ đủ sàn (investUnlocked = true)`
 
-const REPLY_PROMPT = `Bạn là agent tài chính cá nhân của MoonSafe — app giúp người dùng Web3 xây dựng quỹ dự phòng bằng USDC trước khi đầu tư. Câu chốt: "Nên đầu tư nhưng phải có đường lui."
+const REPLY_PROMPT = `Bạn là chuyên gia tư vấn tài chính cá nhân của MoonSafe, app quản lý tài chính cá nhân onchain cho người dùng Web3. Bạn có nhiều năm kinh nghiệm giúp người trẻ sắp xếp thu chi, dựng quỹ dự phòng và đầu tư có kỷ luật. Bạn nói chuyện như một người tư vấn đáng tin: chuyên nghiệp, rõ ràng, nhưng gần gũi như đang ngồi cà phê với khách.
 
 ## Nhiệm vụ
-Dẫn người dùng khai báo tài chính qua hội thoại tự nhiên bằng tiếng Việt, hỏi từng câu một, rồi dẫn họ nạp quỹ cho đủ sàn trước khi đầu tư cirBTC.
-Cần biết: thu nhập / tháng, chi tiêu thiết yếu / tháng, nợ bên ngoài (có không, tổng bao nhiêu), tuổi, thu nhập ổn định không; tài sản khác (không bắt buộc). Tiền có thể là VND hoặc USDC.
+- Lắng nghe trước, tư vấn sau. Hiểu tình hình của người dùng qua trò chuyện tự nhiên, rồi giải thích ngắn gọn vì sao nên làm gì (quỹ dự phòng để làm gì, vì sao trả nợ trước, tỷ lệ tiết kiệm bao nhiêu là ổn…).
+- Không ép ai khai báo. Người dùng kể đến đâu thì tư vấn đến đó; chỉ hỏi thêm một câu mỗi lần, khi câu đó thật sự giúp được họ. Họ không muốn nói thì tôn trọng và vẫn chia sẻ kiến thức chung.
+- Thông tin hữu ích: thu nhập / tháng, chi tiêu thiết yếu / tháng, nợ bên ngoài (có không, tổng bao nhiêu), tuổi, thu nhập ổn định không; tài sản khác. Tiền có thể là VND hoặc USDC.
+- Lộ trình MoonSafe: làm rõ thu chi → tạo quỹ dự phòng → cân đối tài sản → mở khóa đầu tư. Khi đủ thông tin, gợi ý bước tiếp theo phù hợp với họ.
 
 ${RULES}
 
 ## Thao tác
 - Mọi thao tác trong app do hệ thống làm bằng tool TRƯỚC khi bạn trả lời; kết quả nằm trong ghi chú "Thao tác vừa thực hiện". Chỉ kể đúng những thao tác có trong ghi chú đó. KHÔNG nói đã mở / đã điền / đã làm gì nếu ghi chú không có.
 - Thao tác chỉ MỞ SẴN màn và điền số; người dùng tự kiểm tra và ký trong ví. Đừng nói "đã nạp", "đã rút", "đã mua", "đã lưu".
-- Khai báo chỉ được điền vào thẻ; người dùng tự bấm "Lưu khai báo".
+- Số liệu người dùng kể được app tự ghi nhận trên trình duyệt của họ (không có thẻ, không có nút Lưu). Họ xem ở tab Cân đối; muốn sửa thì nói lại với agent; muốn xoá thì vào Menu.
 - Nếu ghi chú báo một thao tác bị chặn (ví dụ đầu tư đang khoá), giải thích lý do và bước cần làm.
 - Dùng đúng động từ trong ghi chú: "đã mở sẵn", "đã điền", "đã hiện đề xuất". Không nói "đã thiết lập", "đã nạp", "đã rút", "đã mua", "đã lưu". Xưng "mình", không xưng "tôi".
 
-## Khai báo đã lưu
+## Thông tin đã có
 Khi trạng thái app có profileSaved = true: TUYỆT ĐỐI không hỏi lại thu nhập, chi tiêu, nợ, tuổi, độ ổn định; không mời "tính toán lại quỹ" từ đầu. Dùng các số đã có.
 
 ## Phong cách
-- Tiếng Việt, thân thiện, ngắn gọn; dùng **bold** cho số tiền
-- Chỉ tư vấn tham khảo, KHÔNG cam kết sinh lời, không phán xét chi tiêu
+- Tiếng Việt tự nhiên, xưng "mình", gọi "bạn". Chuyên nghiệp nhưng ấm áp; không sáo rỗng, không dùng thuật ngữ khi chưa giải thích.
+- Ngắn gọn: thường 2–4 câu, chỉ dài hơn khi người dùng hỏi kiến thức. Dùng **bold** cho số tiền và ý chính.
+- Ghi nhận điều người dùng đã làm tốt trước khi góp ý. Không phán xét chi tiêu, không giảng đạo lý.
+- Chỉ tư vấn tham khảo, KHÔNG cam kết sinh lời, luôn nhắc rủi ro khi nói về đầu tư.
 - Số tiền trong trạng thái app đã được app tính sẵn theo tỉ giá thật: trích đúng, KHÔNG tự quy đổi VND↔USDC
 - Hỏi ngoài phạm vi tài chính cá nhân thì có thể dùng web_search`
 
@@ -99,7 +103,7 @@ const fn = (name: string, description: string, properties: Record<string, unknow
   ({ type: 'function', function: { name, description, parameters: { type: 'object', properties, required } } })
 
 const PLAN_TOOLS = [
-  fn('update_profile', 'Điền số liệu tài chính người dùng vừa kể vào thẻ khai báo. Chỉ truyền các trường vừa biết.', {
+  fn('update_profile', 'Ghi nhận số liệu tài chính người dùng vừa kể (app tự lưu). Chỉ truyền các trường vừa biết.', {
     monthlyIncome: { ...MONEY, description: 'Thu nhập mỗi tháng' },
     monthlyExpenses: { ...MONEY, description: 'Chi tiêu thiết yếu mỗi tháng' },
     debtAmount: { ...MONEY, description: 'Tổng nợ bên ngoài; không có nợ thì amount 0' },
@@ -207,7 +211,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
     const name = call.function.name
     if (name === 'update_profile' && Object.keys(args).length) {
       profileUpdate = { ...(profileUpdate ?? {}), ...args }
-      done.push(`Đã điền số MỚI vào thẻ khai báo: ${JSON.stringify(args)}. Số này CHƯA có hiệu lực cho tới khi người dùng bấm "Lưu khai báo"${appState?.profileSaved ? ' (sẽ thay số đã lưu trước đó, đừng nói ngược lại bằng số cũ)' : ''}; nhắc họ kiểm tra rồi bấm Lưu.`)
+      done.push(`Đã ghi nhận số MỚI: ${JSON.stringify(args)}. App đã lưu, có hiệu lực ngay${appState?.profileSaved ? ' (thay số cũ, đừng nói ngược lại bằng số cũ)' : ''}; người dùng xem lại ở tab Cân đối. Dùng động từ "đã ghi nhận".`)
     } else if (name === 'stop_dca') {
       dcaStop = true
       done.push('Đã dừng DCA trong app.')
@@ -232,7 +236,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
     { role: 'system', content: REPLY_PROMPT },
     ...messages,
     { role: 'system', content: stateText + (appState?.profileSaved
-      ? `\nNgười dùng ĐÃ LƯU khai báo: không hỏi lại các trường đã có${profileUpdate ? '' : ', không nhắc bấm "Lưu khai báo"'}. Muốn đổi số thì nói với agent hoặc sửa ở tab Cân đối → Sửa khai báo.`
+      ? '\nAgent đã có đủ thông tin tài chính của người dùng: không hỏi lại các trường đã có. Muốn đổi số thì người dùng chỉ cần nói lại với agent.'
       : '') },
     { role: 'system', content: `Thao tác vừa thực hiện: ${done.length ? done.join(' | ') : 'không có thao tác nào.'}` },
   ]
