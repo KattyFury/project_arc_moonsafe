@@ -9,11 +9,10 @@ import { StrictMode, Component, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { PrivyProvider } from '@privy-io/react-auth'
-import { WagmiProvider } from '@privy-io/wagmi'
 import { Toaster } from 'sonner'
-import { config } from './config'
 import { PRIVY_APP_ID, privyConfig } from './privyConfig'
 import App from './App'
+import { WalletPrefProvider } from './state/WalletPref'
 import './index.css'
 
 const queryClient = new QueryClient()
@@ -48,10 +47,10 @@ createRoot(document.getElementById('root')!).render(
     <PrivyErrorBoundary>
       <PrivyProvider appId={PRIVY_APP_ID} config={privyConfig}>
         <QueryClientProvider client={queryClient}>
-          <WagmiProvider config={config}>
+          <WalletPrefProvider>
             <App />
             <Toaster position="top-center" />
-          </WagmiProvider>
+          </WalletPrefProvider>
         </QueryClientProvider>
       </PrivyProvider>
     </PrivyErrorBoundary>
