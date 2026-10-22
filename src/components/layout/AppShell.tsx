@@ -1,8 +1,10 @@
 // The app after login, Arc Studio layout: 430px column, 5 tabs on top, status line
 // at the bottom. Before a vault exists: header + vault setup (screens 4/5).
 
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
+import { usePrivy, useWallets } from '@privy-io/react-auth'
+import { useAccount } from 'wagmi'
 import type { AgentAction } from '@/hooks/useAgent'
 import type { Prefill } from '@/types'
 import { AlertCircle, Loader2 } from 'lucide-react'
@@ -20,12 +22,43 @@ function Column({ children }: { children: ReactNode }) {
   return <div className="h-dvh flex flex-col overflow-hidden mx-auto" style={{ maxWidth: 430, background: 'var(--bg)' }}>{children}</div>
 }
 
+function SetupHeader({ onLogout }: { onLogout: () => void }) {
+  return (
+    <div className="flex-shrink-0 px-5 pt-14 pb-4 flex items-center gap-3" style={{ background: 'white', borderBottom: '1px solid var(--border)' }}>
+      <img src="/logo.svg" alt="" width={36} height={36} />
+      <div>
+        <h1 className="display font-bold text-[20px]" style={{ color: 'var(--ink)', letterSpacing: '-0.03em' }}>MoonSafe</h1>
+        <p className="text-[11px] mono" style={{ color: 'var(--muted)' }}>Arc Testnet</p>
+      </div>
+      <button onClick={onLogout} className="ml-auto text-[13px] font-semibold" style={{ color: 'var(--accent)' }}>Đăng xuất</button>
+    </div>
+  )
+}
+
+// After the Privy wallets load, wagmi needs a moment to take the active one.
+const WALLET_SYNC_MS = 8000
+
 export function AppShell({ onLogout }: { onLogout: () => void }) {
   const { vault, math, vndToUsdc } = useApp()
+  const { connectWallet } = usePrivy()
+  const { ready: walletsReady, wallets } = useWallets()
+  const { address } = useAccount()
   const [tab, setTab] = useState<NavTab>('chat')
   const [error, setError] = useState<string | null>(null)
   const [declareKey, setDeclareKey] = useState(0)
   const [prefill, setPrefill] = useState<Prefill | null>(null)
+  const [syncTimedOut, setSyncTimedOut] = useState(false)
+
+  useEffect(() => {
+    setSyncTimedOut(false)
+    if (address || !walletsReady) return
+    const id = setTimeout(() => setSyncTimedOut(true), WALLET_SYNC_MS)
+    return () => clearTimeout(id)
+  }, [address, walletsReady])
+
+  // Logged in with an external wallet that is no longer connected (extension removed,
+  // switched to another wallet app): no address, so the vault can never load.
+  const noWallet = !address && walletsReady && (wallets.length === 0 || syncTimedOut)
 
   const go = (t: NavTab) => { setError(null); setTab(t) }
   const openDeclare = () => { setDeclareKey(k => k + 1); go('chat') }
@@ -53,6 +86,21 @@ export function AppShell({ onLogout }: { onLogout: () => void }) {
     setTimeout(() => go(next.kind === 'deposit' || next.kind === 'withdraw' ? 'fund' : 'invest'), 700)
   }
 
+  if (noWallet) {
+    return (
+      <Column>
+        <SetupHeader onLogout={onLogout} />
+        <div className="flex-1 px-4 py-6 flex flex-col gap-4">
+          <Notice tone="warning" title="Ví chưa kết nối">
+            Ví bạn dùng để đăng nhập không còn kết nối với trình duyệt này (ví bị khoá, đã gỡ, hoặc bạn đã đổi sang ví khác). Kết nối lại ví để xem vault.
+          </Notice>
+          <Btn onClick={() => connectWallet()}>Kết nối ví</Btn>
+          <Btn variant="outline" onClick={onLogout}>Đăng xuất</Btn>
+        </div>
+      </Column>
+    )
+  }
+
   if (!vault.ready) {
     return (
       <Column>
@@ -66,14 +114,7 @@ export function AppShell({ onLogout }: { onLogout: () => void }) {
   if (!vault.vaultAddress) {
     return (
       <Column>
-        <div className="flex-shrink-0 px-5 pt-14 pb-4 flex items-center gap-3" style={{ background: 'white', borderBottom: '1px solid var(--border)' }}>
-          <img src="/logo.svg" alt="" width={36} height={36} />
-          <div>
-            <h1 className="display font-bold text-[20px]" style={{ color: 'var(--ink)', letterSpacing: '-0.03em' }}>MoonSafe</h1>
-            <p className="text-[11px] mono" style={{ color: 'var(--muted)' }}>Arc Testnet</p>
-          </div>
-          <button onClick={onLogout} className="ml-auto text-[13px] font-semibold" style={{ color: 'var(--accent)' }}>Đăng xuất</button>
-        </div>
+        <SetupHeader onLogout={onLogout} />
         {vault.readError ? (
           <div className="flex-1 px-4 py-6 flex flex-col gap-4">
             <Notice tone="warning" title="Chưa đọc được dữ liệu từ Arc Testnet">Mạng có thể đang chậm. App tự thử lại mỗi 15 giây.</Notice>

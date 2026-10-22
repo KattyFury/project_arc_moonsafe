@@ -5,6 +5,8 @@ Spec gốc: user dán trong chat (SPEC.md, 10 mục, màn 1–10). Cập nhật 
 
 ## ▶ Làm tiếp từ đây (mới nhất ở trên)
 
+0. **Sửa lỗi quay mãi sau đăng nhập — đã deploy 2026-10-22.** User bỏ Rabby, chuyển sang **OKX Wallet**. Phiên đăng nhập cũ bằng Rabby không còn ví kết nối → wagmi không có `address` → `useVault` không bao giờ `ready` → spinner vô hạn. Giờ `AppShell` hiện màn "Ví chưa kết nối" (nút Kết nối ví = Privy `connectWallet`, nút Đăng xuất) khi Privy không có ví nào, hoặc sau 8 s mà wagmi vẫn chưa có ví. Trang `scripts/deploy-factory` giờ ưu tiên OKX, rồi Rabby, rồi ví đầu tiên tìm thấy. **Chưa test bằng đăng nhập thật**: nhờ user mở lại moonsafe.app. Lưu ý: vault + quyền chủ factory gắn với địa chỉ `0xEb2D…52F6`, nên OKX phải dùng đúng địa chỉ đó (nhập seed cũ).
+
 1. **Factory mới — XONG 2026-10-22.** `0x7E0f289d535369E582C596071b637E78E69Ac88F`, user tự ký deploy bằng Rabby (tx `0x64fc068f…b3`). Đọc onchain: owner = feeRecipient = `0xEb2D…52F6`, fee = 1e18 (1 USDC), implementation `0xd0d5…68d8`, runtime code giống hệt bản đã rà. `.env` `VITE_FACTORY_ADDRESS` đã đổi ở máy Dell (**máy kia phải sửa tay**), đã deploy moonsafe.app.
    - Factory cũ `0x358e…576f` vẫn được app đọc (`LEGACY_FACTORIES`): vault 1.000 USDC của user `0x5c38…7c72` nằm ở đó, vẫn nạp/rút bình thường. Vault mới luôn tạo ở factory mới.
    - Factory `0x506c…982a` (Arc Studio deploy, owner ví Arc Studio) bỏ, không dùng, chưa có vault.
