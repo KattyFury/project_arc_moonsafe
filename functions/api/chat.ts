@@ -51,25 +51,29 @@ const REPLY_PROMPT = `Bạn là chuyên gia tư vấn tài chính cá nhân củ
 - Thông tin hữu ích: thu nhập / tháng, chi tiêu thiết yếu / tháng, nợ bên ngoài (có không, tổng bao nhiêu), tuổi, thu nhập ổn định không; tài sản khác. Tiền có thể là VND hoặc USDC.
 - Lộ trình MoonSafe: làm rõ thu chi → tạo quỹ dự phòng → cân đối tài sản → mở khóa đầu tư. Khi đủ thông tin, gợi ý bước tiếp theo phù hợp với họ.
 
+## Con số tiền (quan trọng nhất, sai là mất lòng tin)
+- Con số tiền CHỈ được lấy từ: lời người dùng, "SỐ LIỆU QUỸ", hoặc trạng thái app. TUYỆT ĐỐI không tự cộng, trừ, nhân, chia hay quy đổi VND↔USDC, không ghép hai đơn vị trong một câu kiểu "30 triệu − 1.000 USDC". Số nào chưa có thì nói chưa tính được, đừng ước lượng.
+- Mốc quỹ, số đang có, phần còn thiếu, đã đủ hay chưa: dùng đúng các dòng trong "SỐ LIỆU QUỸ" (có sẵn cả hai đơn vị). Nếu dòng đó ghi "ĐÃ ĐỦ" thì nói đã đủ, không nói "cần thêm".
+- Quỹ dự phòng khởi đầu: có việc làm / thu nhập ổn định = 3 tháng chi tiêu thiết yếu; không ổn định (freelance, tự kinh doanh, thu nhập thất thường) = 6 tháng. Đã biết độ ổn định thì chỉ nói đúng mốc của họ. CHƯA biết thì LUÔN nêu đủ hai mốc (lấy số trong "SỐ LIỆU QUỸ"), đừng gộp thành khoảng "3–6 tháng", rồi hỏi một câu về độ ổn định.
+
 ${RULES}
 
 ## Thao tác
 - Mọi thao tác trong app do hệ thống làm bằng tool TRƯỚC khi bạn trả lời; kết quả nằm trong ghi chú "Thao tác vừa thực hiện". Chỉ kể đúng những thao tác có trong ghi chú đó. KHÔNG nói đã mở / đã điền / đã làm gì nếu ghi chú không có.
 - Thao tác chỉ MỞ SẴN màn và điền số; người dùng tự kiểm tra và ký trong ví. Đừng nói "đã nạp", "đã rút", "đã mua", "đã lưu".
-- Số liệu người dùng kể được app tự ghi nhận trên trình duyệt của họ (không có thẻ, không có nút Lưu). Họ xem ở tab Cân đối; muốn sửa thì nói lại với agent; muốn xoá thì vào Menu.
+- Số liệu người dùng kể được app tự lưu vào tài khoản của họ (không có thẻ, không có nút Lưu; đổi máy vẫn còn). Họ xem ở tab Cân đối; muốn sửa thì nói lại với agent; muốn xoá thì vào Menu.
 - Nếu ghi chú báo một thao tác bị chặn (ví dụ đầu tư đang khoá), giải thích lý do và bước cần làm.
 - Dùng đúng động từ trong ghi chú: "đã mở sẵn", "đã điền", "đã hiện đề xuất". Không nói "đã thiết lập", "đã nạp", "đã rút", "đã mua", "đã lưu". Xưng "mình", không xưng "tôi".
 
 ## Thông tin đã có
-Khi trạng thái app có profileSaved = true: TUYỆT ĐỐI không hỏi lại thu nhập, chi tiêu, nợ, tuổi, độ ổn định; không mời "tính toán lại quỹ" từ đầu. Dùng các số đã có.
+- Trường nào trong profile của trạng thái app đã có giá trị (khác null) thì TUYỆT ĐỐI không hỏi lại, kể cả khi hồ sơ chưa đủ. Chỉ hỏi trường còn thiếu, và chỉ khi nó giúp được câu đang bàn.
+- profileSaved = true nghĩa là đã đủ thông tin: không hỏi lại gì, không mời "tính toán lại quỹ" từ đầu. Dùng các số đã có.
 
 ## Phong cách
 - Tiếng Việt tự nhiên, xưng "mình", gọi "bạn". Chuyên nghiệp nhưng ấm áp; không sáo rỗng, không dùng thuật ngữ khi chưa giải thích.
 - Ngắn gọn: thường 2–4 câu, chỉ dài hơn khi người dùng hỏi kiến thức. Dùng **bold** cho số tiền và ý chính.
 - Ghi nhận điều người dùng đã làm tốt trước khi góp ý. Không phán xét chi tiêu, không giảng đạo lý.
 - Chỉ tư vấn tham khảo, KHÔNG cam kết sinh lời, luôn nhắc rủi ro khi nói về đầu tư.
-- Số tiền trong trạng thái app đã được app tính sẵn theo tỉ giá thật: trích đúng, KHÔNG tự quy đổi VND↔USDC. Trạng thái app chưa có số USDC tương ứng (floorUsdc, shortfallUsdc… = null) thì chỉ nói bằng đơn vị người dùng đang dùng, TUYỆT ĐỐI không tự đưa ra con số USDC.
-- Quỹ dự phòng khởi đầu: có việc làm / thu nhập ổn định = 3 tháng chi tiêu thiết yếu; không ổn định (freelance, tự kinh doanh, thu nhập thất thường) = 6 tháng. Đã biết độ ổn định thì chỉ nói đúng mốc của họ. CHƯA biết mà đã có số chi tiêu thì LUÔN nêu đủ hai trường hợp kèm số tiền (đừng chỉ hỏi suông, đừng gộp thành khoảng "3–6 tháng" hay "30–60 triệu"), rồi hỏi một câu về độ ổn định để chốt. Ví dụ chi tiêu 10 triệu: "Nếu bạn có việc làm ổn định, quỹ khởi đầu là **3 tháng = 30 triệu**. Nếu thu nhập chưa ổn định, nên để **6 tháng = 60 triệu**. Công việc hiện tại của bạn có ổn định không?"
 - Hỏi ngoài phạm vi tài chính cá nhân thì có thể dùng web_search`
 
 const PLAN_PROMPT = `Bạn là bộ điều phối thao tác của app MoonSafe. Đọc tin nhắn MỚI NHẤT của người dùng (tin trước chỉ để hiểu ngữ cảnh) cùng trạng thái app, rồi GỌI tool phù hợp. Bắt buộc gọi ít nhất một tool; không có gì cần làm thì gọi no_action.
@@ -171,8 +175,26 @@ async function webSearch(query: string): Promise<string> {
   }
 }
 
-// Emergency-fund floor worked out here, in the user's own currency, so the model only
-// quotes it (it multiplied and converted wrongly when left to do it).
+// ---- Fund figures ----------------------------------------------------------------
+// Every emergency-fund number the reply may quote is computed here, in BOTH currencies,
+// with the same rate source as the app (/api/rates → open.er-api.com). The model mixed
+// "30 triệu − 1.000 USDC" when it had to subtract across currencies itself (2026-10-22).
+
+async function vndPerUsd(): Promise<number | null> {
+  try {
+    const url = 'https://open.er-api.com/v6/latest/USD'
+    const cache = (caches as unknown as { default: Cache }).default
+    const hit = await cache.match(url)
+    const res = hit ?? await fetch(url)
+    if (!res.ok) return null
+    if (!hit) await cache.put(url, new Response(res.clone().body, { headers: { 'Cache-Control': 'public, max-age=86400' } }))
+    const data = await res.json() as { rates?: { VND?: number } }
+    return data.rates?.VND && data.rates.VND > 0 ? data.rates.VND : null
+  } catch {
+    return null
+  }
+}
+
 function moneyOf(v: unknown, unit: unknown): { amount: number; currency: 'VND' | 'USDC' } | null {
   if (v && typeof v === 'object' && 'amount' in v) {
     const o = v as { amount?: unknown; currency?: unknown }
@@ -181,19 +203,44 @@ function moneyOf(v: unknown, unit: unknown): { amount: number; currency: 'VND' |
   return typeof v === 'number' && v > 0 ? { amount: v, currency: unit === 'USDC' ? 'USDC' : 'VND' } : null
 }
 
-function floorNote(profile: unknown, update: Record<string, unknown> | null): string {
-  const p = { ...((profile && typeof profile === 'object' ? profile : {}) as Record<string, unknown>), ...(update ?? {}) }
+const vnd = (n: number) => n >= 1_000_000
+  ? `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 1 }).format(n / 1_000_000)} triệu ₫`
+  : `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(n)} ₫`
+const usdc = (n: number) => `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: n >= 100 ? 0 : 2 }).format(n)} USDC`
+
+/** Fund figures as text for the reply model, or '' when monthly spending is unknown. */
+function fundFacts(appState: Record<string, unknown> | null, update: Record<string, unknown> | null, rate: number | null): string {
+  const p = { ...((appState?.profile && typeof appState.profile === 'object' ? appState.profile : {}) as Record<string, unknown>), ...(update ?? {}) }
   const units = (p.units && typeof p.units === 'object' ? p.units : {}) as Record<string, unknown>
   const exp = moneyOf(p.monthlyExpenses, units.monthlyExpenses)
   if (!exp) return ''
-  const fmt = (n: number) => exp.currency === 'USDC'
-    ? `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 }).format(n)} USDC`
-    : n >= 1_000_000 ? `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 1 }).format(n / 1_000_000)} triệu` : `${new Intl.NumberFormat('vi-VN').format(n)} ₫`
+  const vault = typeof appState?.vaultUsdc === 'number' ? appState.vaultUsdc : null
   const stable = typeof p.incomeStable === 'boolean' ? p.incomeStable : null
-  if (stable === null) {
-    return `Mốc quỹ dự phòng (app đã tính, trích đúng số này): có việc làm ổn định → 3 tháng = ${fmt(exp.amount * 3)}; thu nhập chưa ổn định → 6 tháng = ${fmt(exp.amount * 6)}. Độ ổn định CHƯA biết: khi nói về quỹ, nêu đủ hai mốc rồi hỏi công việc có ổn định không.`
+
+  // An amount in the user's own currency first, the other in brackets (when a rate exists).
+  const toUsd = (amount: number) => exp.currency === 'USDC' ? amount : rate ? amount / rate : null
+  const show = (amount: number) => {
+    const usd = toUsd(amount)
+    if (exp.currency === 'USDC') return rate ? `${usdc(amount)} (≈ ${vnd(amount * rate)})` : usdc(amount)
+    return usd !== null ? `${vnd(amount)} (≈ ${usdc(usd)})` : vnd(amount)
   }
-  return `Mốc quỹ dự phòng (app đã tính, trích đúng số này): ${stable ? 'thu nhập ổn định → 3 tháng' : 'thu nhập không ổn định → 6 tháng'} = ${fmt(exp.amount * (stable ? 3 : 6))}.`
+  const showUsd = (usd: number) => exp.currency === 'VND' && rate ? `${vnd(usd * rate)} (≈ ${usdc(usd)})` : rate ? `${usdc(usd)} (≈ ${vnd(usd * rate)})` : usdc(usd)
+
+  const lines = [
+    `- Chi tiêu thiết yếu / tháng: ${show(exp.amount)}`,
+    vault !== null ? `- Quỹ dự phòng đang có: ${showUsd(vault)}` : '- Quỹ dự phòng đang có: chưa rõ',
+  ]
+  const months = stable === null ? [3, 6] : [stable ? 3 : 6]
+  for (const m of months) {
+    const floor = exp.amount * m
+    const floorUsd = toUsd(floor)
+    const who = m === 3 ? 'có việc làm / thu nhập ổn định' : 'thu nhập chưa ổn định'
+    let gap = 'chưa tính được phần còn thiếu (thiếu tỉ giá hoặc số dư quỹ)'
+    if (floorUsd !== null && vault !== null) gap = vault >= floorUsd ? 'quỹ hiện có ĐÃ ĐỦ mốc này' : `còn thiếu ${showUsd(floorUsd - vault)}`
+    lines.push(`- ${stable === null ? `Nếu ${who}` : `Thu nhập ${stable ? 'ổn định' : 'chưa ổn định'}`}: mốc ${m} tháng = ${show(floor)}; ${gap}`)
+  }
+  return `SỐ LIỆU QUỸ (server đã tính sẵn bằng tỉ giá thật; chỉ trích NGUYÊN VĂN, không tự cộng/trừ/nhân/chia hay quy đổi):\n${lines.join('\n')}`
+    + (stable === null ? '\nĐộ ổn định thu nhập CHƯA biết: khi nói về quỹ, nêu đủ hai mốc ở trên rồi hỏi công việc có ổn định không.' : '')
 }
 
 export async function onRequestPost(context: { request: Request; env: Env }): Promise<Response> {
@@ -266,8 +313,8 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       : '') },
     { role: 'system', content: `Thao tác vừa thực hiện: ${done.length ? done.join(' | ') : 'không có thao tác nào.'}` },
   ]
-  const floor = floorNote(appState?.profile, profileUpdate)
-  if (floor) replyMessages.push({ role: 'system', content: floor })
+  const facts = fundFacts(appState, profileUpdate, await vndPerUsd())
+  if (facts) replyMessages.push({ role: 'system', content: facts })
 
   for (let round = 1; round <= 3; round++) {
     const reply = await openai(apiKey, {

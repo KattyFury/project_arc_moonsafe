@@ -37,6 +37,8 @@ export function ChatScreen({ onError, onOpenInvest, onActions }: { onError: (m: 
       profile: profile.profile,
       profileSaved: profile.complete,
       vaultBalanceUsdc: vault.vaultBalance !== null ? formatUsdc(vault.vaultBalance) : null,
+      // Plain number so the server can compute fund gaps (functions/api/chat.ts fundFacts).
+      vaultUsdc: vault.vaultBalance !== null ? Number(vault.vaultBalance) / 1_000_000 : null,
       walletBalanceUsdc: vault.walletBalance !== null ? formatUsdc(vault.walletBalance) : null,
       floorMonths: math.floorMonths,
       floorUsdc: math.floorUsdc !== null ? formatUsdc(math.floorUsdc) : null,
