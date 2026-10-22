@@ -1,161 +1,85 @@
-// The app after login: row 1 nav, chat (or vault setup) underneath, popups 7–10
-// over the chat area, chat input at the bottom (row 10).
-// No vault yet → Đầu tư + Cân đối locked, chat locked ("Mở vault để chat").
+// The app after login, Arc Studio layout: 430px column, 5 tabs on top, status line
+// at the bottom. Before a vault exists: header + vault setup (screens 4/5).
 
-import { useCallback, useEffect, useState } from 'react'
-import { useAccount } from 'wagmi'
-import { toast } from 'sonner'
-import { Frame, useFrame } from './Frame'
-import { NavBar } from './NavBar'
+import { useState, type ReactNode } from 'react'
+import { AlertCircle, Loader2 } from 'lucide-react'
+import { NavBar, type NavTab } from './NavBar'
 import { useApp } from '@/state/AppState'
-import { useAgent } from '@/hooks/useAgent'
-import { normalizeProfile } from '@/hooks/useFinancialProfile'
-import { dcaNextRun } from '@/hooks/useCirBtc'
-import { useNow } from '@/hooks/useNow'
-import { EMPTY_PROFILE, type FinancialProfile, type Panel } from '@/types'
-import { formatUsdc } from '@/lib/format'
-import { Button, Modal, Notice, Spinner } from '@/components/ui/kit'
 import { VaultSetup } from '@/components/screens/VaultSetup'
-import { ChatInput, ChatMessages, DeclarationCard } from '@/components/screens/ChatView'
-import { FundPanel } from '@/components/screens/FundPanel'
-import { InvestPanel } from '@/components/screens/InvestPanel'
-import { BalancePanel } from '@/components/screens/BalancePanel'
-import { SettingsPanel } from '@/components/screens/SettingsPanel'
+import { ChatScreen } from '@/components/screens/ChatScreen'
+import { FundScreen } from '@/components/screens/FundScreen'
+import { InvestScreen } from '@/components/screens/InvestScreen'
+import { BalanceSheet } from '@/components/screens/BalanceSheet'
+import { SettingsScreen } from '@/components/screens/SettingsScreen'
+import { Btn, Notice } from '@/components/ui/kit'
+
+function Column({ children }: { children: ReactNode }) {
+  return <div className="h-dvh flex flex-col overflow-hidden mx-auto" style={{ maxWidth: 430, background: 'var(--bg)' }}>{children}</div>
+}
 
 export function AppShell({ onLogout }: { onLogout: () => void }) {
-  const { mode } = useFrame()
-  const { address } = useAccount()
-  const { vault, profile, cirBtc, math } = useApp()
+  const { vault, math } = useApp()
+  const [tab, setTab] = useState<NavTab>('chat')
+  const [error, setError] = useState<string | null>(null)
+  const [declareKey, setDeclareKey] = useState(0)
 
-  const [panel, setPanel] = useState<Panel | null>(null)
-  const [lockNote, setLockNote] = useState<string | null>(null)
-  const [input, setInput] = useState('')
-  const [declareOpen, setDeclareOpen] = useState(!profile.complete)
-  const [draft, setDraft] = useState<FinancialProfile>(profile.profile ?? EMPTY_PROFILE)
-  const [agentFilled, setAgentFilled] = useState(false)
+  const go = (t: NavTab) => { setError(null); setTab(t) }
+  const openDeclare = () => { setDeclareKey(k => k + 1); go('chat') }
 
-  const hasVault = !!vault.vaultAddress
-  const now = useNow()
-
-  const agent = useAgent({
-    getContext: () => ({
-      profile: profile.profile,
-      profileSaved: profile.complete,
-      hasVault,
-      vaultBalanceUsdc: vault.vaultBalance !== null ? formatUsdc(vault.vaultBalance) : null,
-      floorMonths: math.floorMonths,
-      floorUsdc: math.floorUsdc !== null ? formatUsdc(math.floorUsdc) : null,
-      investUnlocked: math.investUnlocked,
-      dca: cirBtc.dca ? { amountUsdc: formatUsdc(BigInt(cirBtc.dca.amountUsdc)), everyDays: cirBtc.dca.intervalDays } : null,
-    }),
-    onProfileDraft: raw => {
-      const found = normalizeProfile(raw)
-      setDraft(prev => {
-        const next = { ...prev }
-        for (const k of Object.keys(found) as (keyof FinancialProfile)[]) {
-          if (k !== 'savedAt' && found[k] !== null && found[k] !== undefined) (next as Record<string, unknown>)[k] = found[k]
-        }
-        return next
-      })
-      setAgentFilled(true)
-      setDeclareOpen(true)
-    },
-    onDcaStop: () => { cirBtc.stopDca(); toast('Đã dừng DCA') },
-  })
-
-  // Keep the card in sync when the saved profile is cleared elsewhere.
-  useEffect(() => {
-    if (!profile.profile) { setDraft(EMPTY_PROFILE); setDeclareOpen(true) }
-  }, [profile.profile])
-
-  const openDeclare = useCallback(() => {
-    setPanel(null)
-    setDraft(profile.profile ?? EMPTY_PROFILE)
-    setAgentFilled(false)
-    setDeclareOpen(true)
-  }, [profile.profile])
-
-  const select = (p: Panel) => {
-    if (!hasVault && (p === 'invest' || p === 'balance')) {
-      setLockNote(p === 'invest' ? 'Mở vault quỹ dự phòng trước. Đầu tư chỉ mở khi không có nợ và quỹ đủ sàn.' : 'Mở vault quỹ dự phòng trước để xem bảng cân đối.')
-      return
-    }
-    if (!hasVault && p === 'fund') { setPanel(null); return }
-    setPanel(cur => (cur === p ? null : p))
-  }
-
-  const send = () => {
-    const text = input.trim()
-    if (!text) return
-    setInput('')
-    setPanel(null)
-    void agent.sendMessage(text)
-  }
-
-  const save = () => {
-    profile.saveProfile(draft)
-    setDeclareOpen(false)
-    setAgentFilled(false)
-    toast.success('Đã lưu khai báo')
-  }
-
-  const dcaDue = math.investUnlocked && cirBtc.dca !== null && (dcaNextRun(cirBtc.dca) ?? Infinity) <= now
-
-  const nav = (
-    <NavBar mode={mode} active={panel} address={address} onSelect={select}
-      locked={{ invest: !hasVault || !math.investUnlocked, balance: !hasVault }} />
-  )
-
-  let body
   if (!vault.ready) {
-    body = <div className="flex-1 flex items-center justify-center"><Spinner label="Đang đọc vault…" /></div>
-  } else if (!hasVault && vault.readError) {
-    body = (
-      <div className="flex-1 flex flex-col justify-center gap-4">
-        <Notice tone="warning" title="Chưa đọc được dữ liệu từ Arc Testnet">Mạng có thể đang chậm. App tự thử lại mỗi 15 giây.</Notice>
-        <div className="flex justify-center"><Button variant="secondary" onClick={() => { void vault.refresh() }}>Thử lại</Button></div>
-      </div>
-    )
-  } else if (!hasVault) {
-    body = <VaultSetup />
-  } else {
-    body = (
-      <ChatMessages messages={agent.messages} loading={agent.loading} footer={
-        <div className="flex flex-col gap-2">
-          {dcaDue && (
-            <Notice tone="info" title="Đến kỳ mua DCA">
-              <button className="underline" onClick={() => setPanel('invest')}>Mở Đầu tư để xem báo giá và ký</button>
-            </Notice>
-          )}
-          {declareOpen ? (
-            <DeclarationCard draft={draft} onChange={setDraft} onSave={save} agentFilled={agentFilled}
-              onClose={profile.complete ? () => setDeclareOpen(false) : undefined} />
-          ) : null}
+    return (
+      <Column>
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 size={28} className="animate-spin" style={{ color: 'var(--accent)' }} />
         </div>
-      } />
+      </Column>
+    )
+  }
+
+  if (!vault.vaultAddress) {
+    return (
+      <Column>
+        <div className="flex-shrink-0 px-5 pt-14 pb-4 flex items-center gap-3" style={{ background: 'white', borderBottom: '1px solid var(--border)' }}>
+          <img src="/logo.svg" alt="" width={36} height={36} />
+          <div>
+            <h1 className="display font-bold text-[20px]" style={{ color: 'var(--ink)', letterSpacing: '-0.03em' }}>MoonSafe</h1>
+            <p className="text-[11px] mono" style={{ color: 'var(--muted)' }}>Arc Testnet</p>
+          </div>
+          <button onClick={onLogout} className="ml-auto text-[13px] font-semibold" style={{ color: 'var(--accent)' }}>Đăng xuất</button>
+        </div>
+        {vault.readError ? (
+          <div className="flex-1 px-4 py-6 flex flex-col gap-4">
+            <Notice tone="warning" title="Chưa đọc được dữ liệu từ Arc Testnet">Mạng có thể đang chậm. App tự thử lại mỗi 15 giây.</Notice>
+            <Btn variant="outline" onClick={() => { void vault.refresh() }}>Thử lại</Btn>
+          </div>
+        ) : <VaultSetup />}
+      </Column>
     )
   }
 
   return (
-    <Frame nav={nav}>
-      <div className="relative flex-1 min-h-0 flex flex-col">
-        {body}
-        {hasVault && panel === 'fund' && <FundPanel onClose={() => setPanel(null)} onDeclare={openDeclare} />}
-        {hasVault && panel === 'invest' && <InvestPanel onClose={() => setPanel(null)} onOpenFund={() => setPanel('fund')} onDeclare={openDeclare} />}
-        {hasVault && panel === 'balance' && <BalancePanel onClose={() => setPanel(null)} onDeclare={openDeclare} />}
-        {panel === 'settings' && (
-          <SettingsPanel onClose={() => setPanel(null)} onLogout={onLogout}
-            onClearAll={() => { profile.clearProfile(); agent.clearChat(); setPanel(null) }} />
+    <Column>
+      <NavBar active={tab} onChange={go} investLocked={!math.investUnlocked} />
+
+      <main className="flex-1 overflow-hidden flex flex-col min-h-0">
+        {tab === 'chat'    && <ChatScreen declareKey={declareKey} onError={setError} onOpenInvest={() => go('invest')} />}
+        {tab === 'fund'    && <FundScreen onDeclare={openDeclare} />}
+        {tab === 'invest'  && <InvestScreen onOpenFund={() => go('fund')} onDeclare={openDeclare} />}
+        {tab === 'balance' && <BalanceSheet onDeclare={openDeclare} />}
+        {tab === 'menu'    && <SettingsScreen onLogout={onLogout} />}
+      </main>
+
+      {/* Status line */}
+      <div className="flex-shrink-0 flex items-center px-4" style={{ height: 40, borderTop: '1px solid var(--border)', background: 'white' }}>
+        {error ? (
+          <div className="flex items-center gap-2 w-full">
+            <AlertCircle size={13} style={{ color: 'var(--danger)', flexShrink: 0 }} />
+            <p className="text-[12px] leading-tight line-clamp-1" style={{ color: 'var(--danger)' }}>{error}</p>
+          </div>
+        ) : (
+          <p className="text-[11px] w-full text-center mono" style={{ color: 'var(--muted)' }}>Arc Testnet · chain 5042002</p>
         )}
       </div>
-      <ChatInput value={input} onChange={setInput} onSend={send} disabled={agent.loading}
-        lockedText={hasVault ? undefined : 'Mở vault để chat'} />
-      {lockNote && (
-        <Modal title="Đang khoá" onClose={() => setLockNote(null)}>
-          <p className="text-app-note text-grey">{lockNote}</p>
-          <Button block onClick={() => setLockNote(null)}>Đã hiểu</Button>
-        </Modal>
-      )}
-    </Frame>
+    </Column>
   )
 }

@@ -1,17 +1,13 @@
-// Screens 4 / 4b / 5 / 5b — open the personal vault.
-// 4  no vault yet: card + "Mở vault"
-// 4b wallet lacks USDC: balance in red, QR + address + copy, "Mở vault" disabled
-// 5  confirm: fee read from the factory, gas, network, total, immutable note
-// 5b waiting for the wallet: spinner, both buttons disabled; on reject/error back
-//    to 5 with the error; at most 5 attempts, then stop and say so.
+// Screens 4 / 4b / 5 / 5b — open the personal vault (Arc Studio look).
+// Fee is read from the factory; at most 5 signing attempts.
 
 import { useState } from 'react'
-import { ExternalLink, ShieldCheck } from 'lucide-react'
+import { CheckCircle2, ExternalLink, Lock, Shield } from 'lucide-react'
 import { useAccount } from 'wagmi'
 import { useApp } from '@/state/AppState'
 import { GAS_ESTIMATE_USDC6, txErrorMessage } from '@/hooks/useVault'
 import { formatUsdc } from '@/lib/format'
-import { Button, Card, CopyButton, Notice, QrImage, Row, Spinner } from '@/components/ui/kit'
+import { Btn, CopyButton, GlassCard, IconBox, Notice, QrImage, Row, Screen, Spinner, glass } from '@/components/ui/kit'
 
 const MAX_TRIES = 5
 
@@ -23,86 +19,101 @@ export function VaultSetup() {
   const [error, setError] = useState<string | null>(null)
   const [tries, setTries] = useState(0)
 
-  const fee = vault.fee
-  const total = fee !== null ? fee + GAS_ESTIMATE_USDC6 : null
+  const total = vault.fee !== null ? vault.fee + GAS_ESTIMATE_USDC6 : null
   const wallet = vault.walletBalance
   const enough = wallet !== null && total !== null && wallet >= total
 
   const sign = async () => {
-    setSigning(true)
-    setError(null)
-    try {
-      await vault.createVault()
-    } catch (e) {
-      setError(txErrorMessage(e))
-      setTries(t => t + 1)
-    } finally {
-      setSigning(false)
-    }
+    setSigning(true); setError(null)
+    try { await vault.createVault() }
+    catch (e) { setError(txErrorMessage(e)); setTries(t => t + 1) }
+    finally { setSigning(false) }
   }
 
   if (step === 'confirm') {
     const out = tries >= MAX_TRIES
     return (
-      <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col gap-4 py-2">
-        <Card>
-          <h2 className="text-app-title-card text-ink">Xác nhận mở vault</h2>
-          <div>
-            <Row label="Phí mở vault" value={formatUsdc(fee, 6)} />
-            <Row label="Phí giao dịch" value={`~${formatUsdc(GAS_ESTIMATE_USDC6)}`} />
+      <Screen>
+        <GlassCard className="p-5 flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <IconBox><Lock size={20} style={{ color: 'var(--accent)' }} /></IconBox>
+            <p className="font-semibold text-[17px]" style={{ color: 'var(--ink)' }}>Xác nhận mở vault</p>
+          </div>
+          <div className="overflow-hidden" style={{ border: '1px solid var(--border)', borderRadius: 16 }}>
+            <Row label="Phí mở vault" value={formatUsdc(vault.fee, 6)} />
+            <Row label="Gas ước tính" value={`~${formatUsdc(GAS_ESTIMATE_USDC6)}`} />
             <Row label="Mạng" value="Arc Testnet" />
             <Row label="Tổng" value={`~${formatUsdc(total, 6)}`} last />
           </div>
-          <Notice tone="info">Vault là smart contract riêng của bạn, bất biến sau khi tạo. Chỉ ví này rút được tiền, và tiền rút luôn về ví này.</Notice>
+          <Notice tone="info">Ví sẽ yêu cầu ký 1 lần — phí và vault được tạo trong cùng giao dịch.</Notice>
+          <Notice tone="warning">Vault bất biến sau khi tạo — chỉ ví của bạn mới rút được, và tiền rút luôn về ví này.</Notice>
           {signing && <Spinner label="Đang chờ xác nhận trong ví…" />}
           {error && !signing && (
-            <Notice tone="danger" title="Chưa mở được vault">
-              {error}
-              {out ? ` Đã thử ${MAX_TRIES} lần, tạm dừng. Kiểm tra ví rồi tải lại trang để thử tiếp.` : ` Lần ${tries}/${MAX_TRIES}.`}
+            <Notice tone="danger" title="Giao dịch thất bại">
+              {error} {out ? `Đã thử ${MAX_TRIES} lần, tạm dừng. Kiểm tra ví rồi tải lại trang để thử tiếp.` : `(Lần ${tries}/${MAX_TRIES})`}
             </Notice>
           )}
-        </Card>
-        <div className="grid grid-cols-2 gap-4">
-          <Button block variant="secondary" disabled={signing} onClick={() => { setStep('intro'); setError(null) }}>Hủy</Button>
-          <Button block disabled={signing || out || !enough} onClick={() => { void sign() }}>Ký và mở vault</Button>
+        </GlassCard>
+        <div className="flex gap-3">
+          <Btn variant="outline" disabled={signing} onClick={() => { setStep('intro'); setError(null) }}>Hủy</Btn>
+          <Btn loading={signing} disabled={out || !enough} onClick={() => { void sign() }}>{signing ? 'Đang ký…' : 'Ký và mở vault'}</Btn>
         </div>
-      </div>
+      </Screen>
     )
   }
 
   return (
-    <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col gap-4 py-2">
-      <Card>
-        <div className="flex items-center gap-2">
-          <ShieldCheck size={24} className="text-blue shrink-0" />
-          <h2 className="text-app-title-card text-ink">Mở vault quỹ dự phòng</h2>
+    <Screen>
+      <section className="p-5" style={glass.hero}>
+        <p className="text-[13px] font-semibold text-white/70 mb-2">Số dư ví</p>
+        <div className="flex items-baseline gap-2">
+          <span className="display font-bold tabular-nums text-white" style={{ fontSize: 40, lineHeight: 1.1, letterSpacing: '-0.03em' }}>
+            {formatUsdc(wallet).replace(' USDC', '')}
+          </span>
+          <span className="text-[18px] font-medium text-white/60">USDC</span>
         </div>
-        <p className="text-app-note text-grey">
-          Quỹ dự phòng nằm trong smart contract riêng, tách khỏi ví. Có quỹ đủ sàn thì mới được đầu tư.
-        </p>
-        <Row label="Số dư ví" value={formatUsdc(wallet)} valueClass={wallet !== null && !enough ? 'text-red-text' : undefined} />
-        <Row label="Cần để mở vault" value={total !== null ? `~${formatUsdc(total, 6)}` : '–'} last />
+      </section>
 
-        {vault.readError && wallet === null && (
-          <Notice tone="warning" title="Chưa đọc được số dư">Mạng Arc đang chậm, app sẽ tự thử lại.</Notice>
-        )}
+      <GlassCard className="p-5 flex flex-col gap-4">
+        <div className="flex items-center gap-3">
+          <IconBox><Shield size={20} style={{ color: 'var(--accent)' }} /></IconBox>
+          <div>
+            <p className="font-semibold text-[17px]" style={{ color: 'var(--ink)' }}>Mở vault quỹ dự phòng</p>
+            <p className="text-[12px]" style={{ color: 'var(--muted)' }}>Smart contract riêng, chỉ bạn rút được</p>
+          </div>
+        </div>
+        <p className="text-[14px] leading-relaxed" style={{ color: 'var(--subtle)' }}>
+          Vault là smart contract độc lập trên Arc Testnet, tách hoàn toàn khỏi ví. Chỉ địa chỉ ví của bạn mới có quyền rút tiền.
+        </p>
+
+        {vault.readError && wallet === null && <Notice tone="warning">Chưa đọc được số dư, app sẽ tự thử lại.</Notice>}
 
         {wallet !== null && total !== null && !enough && address && (
-          <div className="flex flex-col items-center gap-4 pt-2">
-            <p className="text-app-btn-sm text-red-text text-center">Chưa đủ USDC để mở vault</p>
-            <QrImage value={address} />
-            <p className="mono text-app-caption text-grey break-all text-center">{address}</p>
-            <CopyButton text={address} />
-            <a href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-app-note text-blue">
-              Lấy USDC testnet ở Circle Faucet <ExternalLink size={16} />
-            </a>
+          <div className="p-4 flex flex-col gap-3" style={{ background: 'rgba(224,52,74,0.06)', border: '1px solid rgba(224,52,74,0.2)', borderRadius: 16 }}>
+            <p className="font-semibold text-[14px]" style={{ color: 'var(--danger)' }}>Chưa đủ USDC để mở vault</p>
+            <p className="text-[12px]" style={{ color: 'var(--danger)' }}>Cần khoảng {formatUsdc(total, 6)} (phí mở vault + gas)</p>
+            <div className="flex flex-col items-center gap-3 pt-1">
+              <QrImage value={address} />
+              <p className="mono text-[11px] text-center break-all" style={{ color: 'var(--subtle)' }}>{address}</p>
+              <CopyButton text={address} />
+              <a href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1 text-[13px] font-semibold" style={{ color: 'var(--accent)' }}>
+                Lấy USDC testnet ở Circle Faucet <ExternalLink size={13} />
+              </a>
+            </div>
           </div>
         )}
-      </Card>
-      <div className="flex justify-center">
-        <Button disabled={!enough} onClick={() => setStep('confirm')}>Mở vault</Button>
-      </div>
-    </div>
+
+        {enough && address && (
+          <div className="px-4 py-3 flex items-center gap-2" style={{ background: 'rgba(15,157,88,0.07)', border: '1px solid rgba(15,157,88,0.2)', borderRadius: 14 }}>
+            <CheckCircle2 size={15} style={{ color: 'var(--success)' }} />
+            <p className="font-semibold text-[14px]" style={{ color: 'var(--success)' }}>Ví sẵn sàng</p>
+            <p className="mono text-[12px] ml-auto" style={{ color: 'var(--success)' }}>{address.slice(0, 8)}…{address.slice(-6)}</p>
+          </div>
+        )}
+      </GlassCard>
+
+      <Btn disabled={!enough} onClick={() => setStep('confirm')}>Mở vault</Btn>
+    </Screen>
   )
 }

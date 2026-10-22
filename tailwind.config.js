@@ -8,20 +8,27 @@ export default {
   theme: {
     extend: {
       colors: {
-        // nguyen0xhieu tokens — values live in src/index.css (light + dark)
-        blue:        { DEFAULT: 'var(--blue)', strong: 'var(--blue-strong)', soft: 'var(--blue-soft)' },
-        'on-blue':   'var(--on-blue)',
-        ink:    'var(--ink)',
-        grey:   'var(--grey)',
-        muted:  'var(--muted)',
-        ground: 'var(--ground)',
-        mist:   'var(--mist)',
-        line:   'var(--line)',
-        scrim:  'var(--scrim)',
-        green:  { DEFAULT: 'var(--green)',  text: 'var(--green-text)',  soft: 'var(--green-soft)' },
-        red:    { DEFAULT: 'var(--red)',    text: 'var(--red-text)',    soft: 'var(--red-soft)' },
-        yellow: { DEFAULT: 'var(--yellow)', text: 'var(--yellow-text)', soft: 'var(--yellow-soft)' },
-        orange: { DEFAULT: 'var(--orange)', text: 'var(--orange-text)', soft: 'var(--orange-soft)' },
+        // Brand blue
+        blue:        { DEFAULT: '#1E6DF7', strong: '#0F3DB2', soft: '#E8F0FE' },
+        'on-blue':   '#FFFFFF',
+        // Gradient
+        'grad-start': '#1E6DF7',
+        'grad-end':   '#0F3DB2',
+        // Text / surface
+        ink:    '#000000',
+        grey:   '#4B5568',
+        muted:  '#8B95A8',
+        ground: '#FFFFFF',
+        mist:   '#ECF0F8',
+        line:   '#DCE3EE',
+        scrim:  'rgba(0,0,0,0.48)',
+        // Accent
+        green:  { DEFAULT: '#0F9D58', text: '#0B7A45', soft: '#E3F5EC' },
+        red:    { DEFAULT: '#E0344A', text: '#C42B3F', soft: '#FDE8EB' },
+        purple: { DEFAULT: '#7B4DF2', text: '#6A3CE6', soft: '#EFE9FE' },
+        yellow: { DEFAULT: '#F5B301', text: '#8A5F00', soft: '#FEF5D9' },
+        orange: { DEFAULT: '#F06A1D', text: '#B84A0C', soft: '#FDEDE3' },
+        cyan:   { DEFAULT: '#0EA5C6', text: '#087089', soft: '#E0F5FA' },
       },
       fontFamily: {
         app: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', 'system-ui', 'sans-serif'],
@@ -46,7 +53,7 @@ export default {
         pill: '9999px',
       },
       boxShadow: {
-        'y2': 'var(--shadow-y2)',
+        'y2': '0 2px 8px 0 rgba(0,0,0,0.32)',
       },
       spacing: {
         // brand spacing tokens (all multiples of 8)
