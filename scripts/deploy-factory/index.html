@@ -4,7 +4,7 @@
 h1{font-size:22px}table{border-collapse:collapse;width:100%;font-size:14px}td{padding:6px 4px;border-bottom:1px solid #DCE3EE;vertical-align:top}
 td:first-child{color:#4B5568;width:150px}code{word-break:break-all}button{background:#1E6DF7;color:#fff;border:0;border-radius:16px;height:48px;padding:0 24px;font-size:18px;font-weight:600;cursor:pointer;margin-top:16px}
 button:disabled{background:#DCE3EE;color:#8B95A8;cursor:default}#log{margin-top:16px;font-size:14px;white-space:pre-wrap;background:#ECF0F8;border-radius:16px;padding:12px}
-.ok{color:#0B7A45}.err{color:#C42B3F}</style></head><body>
+.ok{color:#0B7A45;font-weight:600}.err{color:#C42B3F}</style></head><body>
 <h1>Deploy MoonSafe VaultFactory (Arc Testnet)</h1>
 <p>Trang này gửi <b>1 giao dịch tạo contract</b> từ ví của bạn. Bạn là người deploy nên cũng là chủ (owner) của Factory.</p>
 <table>
@@ -22,32 +22,64 @@ const DATA = "0x60a060405234801561001057600080fd5b50604051610a7a380380610a7a8339
 const OWNER = "0xeb2d222d28f35fe7beb5387f8bc4ebf65f2652f6";
 const ARC = { chainId: "0x4cef52", chainName: "Arc Testnet", nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
   rpcUrls: ["https://rpc.testnet.arc.io"], blockExplorerUrls: ["https://explorer.testnet.arc.io"] };
-const log = (t, c) => { const el = document.getElementById("log"); el.innerHTML += "
-" + (c ? `<span class="${c}">${t}</span>` : t) };
+const logEl = document.getElementById("log");
+const log = (t, cls) => {
+  const line = document.createElement("div");
+  line.textContent = t;
+  if (cls) line.className = cls;
+  logEl.appendChild(line);
+};
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// Several wallet extensions fight over window.ethereum; EIP-6963 lets us pick Rabby by name.
+const providers = [];
+window.addEventListener("eip6963:announceProvider", e => providers.push(e.detail));
+window.dispatchEvent(new Event("eip6963:requestProvider"));
+function pickWallet() {
+  const rabby = providers.find(p => p.info && (p.info.rdns === "io.rabby" || /rabby/i.test(p.info.name)));
+  if (rabby) return { eth: rabby.provider, name: rabby.info.name };
+  if (window.ethereum) return { eth: window.ethereum, name: window.ethereum.isRabby ? "Rabby" : "ví mặc định của trình duyệt" };
+  return null;
+}
+
 document.getElementById("go").onclick = async () => {
-  const btn = document.getElementById("go"); btn.disabled = true; document.getElementById("log").textContent = "Bắt đầu…";
+  const btn = document.getElementById("go");
+  btn.disabled = true;
+  logEl.textContent = "";
+  log("Bắt đầu…");
   try {
-    const eth = window.ethereum; if (!eth) throw new Error("Không thấy ví trình duyệt. Mở trang này trong Chrome có Rabby.");
+    const w = pickWallet();
+    if (!w) throw new Error("Không thấy ví trình duyệt. Mở trang này trong Chrome có Rabby.");
+    const eth = w.eth;
+    log("Dùng ví: " + w.name + (providers.length > 1 ? " (tìm thấy " + providers.length + " ví: " + providers.map(p => p.info.name).join(", ") + ")" : ""));
     const [from] = await eth.request({ method: "eth_requestAccounts" });
     log("Ví: " + from);
-    if (from.toLowerCase() !== OWNER) throw new Error("Ví đang chọn không phải 0xEb2D…52F6. Đổi sang đúng ví trong Rabby rồi tải lại trang.");
-    try { await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: ARC.chainId }] }) }
-    catch (e) { if (e.code === 4902) await eth.request({ method: "wallet_addEthereumChain", params: [ARC] }); else throw e }
+    if (from.toLowerCase() !== OWNER) throw new Error("Ví đang chọn không phải 0xEb2D…52F6. Đổi sang đúng ví trong Rabby rồi bấm lại.");
+    try {
+      await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: ARC.chainId }] });
+    } catch (e) {
+      if (e && (e.code === 4902 || e.code === -32603)) await eth.request({ method: "wallet_addEthereumChain", params: [ARC] });
+      else throw e;
+    }
     const chain = await eth.request({ method: "eth_chainId" });
     if (chain.toLowerCase() !== ARC.chainId) throw new Error("Ví chưa ở Arc Testnet (đang " + chain + ").");
-    log("Mạng: Arc Testnet ✓  — hãy ký giao dịch trong Rabby…");
+    log("Mạng: Arc Testnet ✓ — hãy ký giao dịch trong Rabby…");
     const hash = await eth.request({ method: "eth_sendTransaction", params: [{ from, data: DATA }] });
-    log("Tx: " + hash + "
-Đang chờ xác nhận…");
+    log("Tx: " + hash);
+    log("Đang chờ xác nhận…");
     let rc = null;
-    for (let i = 0; i < 120 && !rc; i++) { await sleep(1500); rc = await eth.request({ method: "eth_getTransactionReceipt", params: [hash] }) }
-    if (!rc) throw new Error("Chưa thấy xác nhận sau 3 phút. Gửi tx hash cho Claude để kiểm tra.");
+    for (let i = 0; i < 120 && !rc; i++) {
+      await sleep(1500);
+      rc = await eth.request({ method: "eth_getTransactionReceipt", params: [hash] });
+    }
+    if (!rc) throw new Error("Chưa thấy xác nhận sau 3 phút. Gửi tx hash ở trên cho Claude để kiểm tra.");
     if (rc.status !== "0x1") throw new Error("Giao dịch thất bại trên chuỗi.");
-    log("✓ Deploy thành công!
-Địa chỉ VaultFactory mới: " + rc.contractAddress + "
-
-Copy địa chỉ này gửi lại cho Claude.", "ok");
-  } catch (e) { log("Lỗi: " + (e && e.message ? e.message : e), "err"); btn.disabled = false }
+    log("✓ Deploy thành công!", "ok");
+    log("Địa chỉ VaultFactory mới: " + rc.contractAddress, "ok");
+    log("Copy địa chỉ này gửi lại cho Claude.", "ok");
+  } catch (e) {
+    log("Lỗi: " + (e && e.message ? e.message : String(e)), "err");
+    btn.disabled = false;
+  }
 };
 </script></body></html>
