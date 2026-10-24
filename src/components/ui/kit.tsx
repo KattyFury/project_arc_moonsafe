@@ -153,7 +153,7 @@ export function Chips({ items }: { items: { label: string; onClick: () => void; 
 }
 
 /** USDC amount: Web/Input spec (48 high, padding 16, Mist + Line 1px, focus Blue 2px). Value is the cleaned string ("1234,5"). */
-export function AmountField({ value, onChange, disabled, label = 'Số tiền' }: { value: string; onChange: (v: string) => void; disabled?: boolean; label?: string }) {
+export function AmountField({ value, onChange, disabled, label = 'Amount' }: { value: string; onChange: (v: string) => void; disabled?: boolean; label?: string }) {
   return (
     <label className="flex flex-col gap-2">
       <span className="text-[14px] leading-5 font-semibold" style={{ color: 'var(--subtle)' }}>{label}</span>
@@ -217,18 +217,18 @@ export function QrImage({ value, size = 184 }: { value: string; size?: number })
   }, [value, size])
   return (
     <div className="p-2 bg-white" style={{ width: size, height: size, borderRadius: 16, border: '1px solid var(--line)' }}>
-      {src && <img src={src} alt="Mã QR địa chỉ ví" className="w-full h-full" />}
+      {src && <img src={src} alt="Wallet address QR code" className="w-full h-full" />}
     </div>
   )
 }
 
-export function CopyButton({ text, label = 'Sao chép địa chỉ' }: { text: string; label?: string }) {
+export function CopyButton({ text, label = 'Copy address' }: { text: string; label?: string }) {
   const [done, setDone] = useState(false)
   return (
     <Btn variant="outline" size="sm" className="!w-auto"
       onClick={() => { void navigator.clipboard?.writeText(text).then(() => { setDone(true); setTimeout(() => setDone(false), 2000) }) }}>
       <Copy size={16} />
-      {done ? 'Đã sao chép' : label}
+      {done ? 'Copied' : label}
     </Btn>
   )
 }

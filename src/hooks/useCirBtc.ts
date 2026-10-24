@@ -107,7 +107,7 @@ export function useCirBtcState(): CirBtcState {
   }, [address, refresh])
 
   const getAdapter = useCallback(async () => {
-    if (!connector) throw new Error('Ví chưa kết nối')
+    if (!connector) throw new Error('Wallet not connected')
     await ensureArcChain(connector, switchChainAsync)
     const provider = await connector.getProvider() as EIP1193Provider
     return await createViemAdapterFromProvider({ provider })
@@ -115,7 +115,7 @@ export function useCirBtcState(): CirBtcState {
 
   const estimate = useCallback(async (amountUsdc6: bigint) => {
     setError(null); setQuote(null); setLastTxHash(null)
-    if (!address) { setError('Ví chưa kết nối'); return }
+    if (!address) { setError('Wallet not connected'); return }
     setBusy(true)
     try {
       const adapter = await getAdapter()
@@ -127,7 +127,7 @@ export function useCirBtcState(): CirBtcState {
       })
       setQuote({ amountInUsdc: amountIn, estimate: est, address })
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Không lấy được báo giá')
+      setError(e instanceof Error ? e.message : 'Could not get a quote')
     } finally {
       setBusy(false)
     }
@@ -135,7 +135,7 @@ export function useCirBtcState(): CirBtcState {
 
   const execute = useCallback(async (): Promise<boolean> => {
     if (!quote) return false
-    if (address !== quote.address) { setError('Ví đã đổi, hãy lấy báo giá lại'); setQuote(null); return false }
+    if (address !== quote.address) { setError('Your wallet changed, please get a new quote'); setQuote(null); return false }
     setError(null); setBusy(true)
     try {
       const adapter = await getAdapter()
@@ -149,8 +149,8 @@ export function useCirBtcState(): CirBtcState {
       await refresh()
       return true
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Mua thất bại'
-      setError(/reject|denied/i.test(msg) ? 'Bạn đã từ chối ký trong ví.' : msg)
+      const msg = e instanceof Error ? e.message : 'Purchase failed'
+      setError(/reject|denied/i.test(msg) ? 'You declined to sign in your wallet.' : msg)
       return false
     } finally {
       setBusy(false)
@@ -188,6 +188,6 @@ export function dcaNextRun(p: DcaPlan | null): number | null {
 
 export function formatCirBtc(units: bigint | null): string {
   if (units === null) return '–'
-  const s = (Number(units) / 10 ** CIRBTC_DECIMALS).toLocaleString('vi-VN', { maximumFractionDigits: 8 })
+  const s = (Number(units) / 10 ** CIRBTC_DECIMALS).toLocaleString('en-US', { maximumFractionDigits: 8 })
   return `${s} cirBTC`
 }

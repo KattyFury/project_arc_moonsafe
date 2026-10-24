@@ -11,12 +11,12 @@ Bản gốc user chốt 23/10/2026; mục **"Chốt 24/10"** bên dưới là ph
    | Phần | Gồm | Nguồn số |
    |---|---|---|
    | An toàn | Gửi tiết kiệm ngân hàng (bảo hiểm tiền gửi) | Người dùng kể → agent ghi |
-   | Đầu tư | Vàng SJC, cổ phiếu / ETF Mỹ, coin, cirBTC | Kể → agent ghi; cirBTC app tự đọc |
+   | Đầu tư | Vàng, cổ phiếu / ETF Mỹ, coin, cirBTC | Kể → agent ghi; cirBTC app tự đọc |
    | Nhàn rỗi | Tiền chưa phân bổ: USDC trong ví, tiền mặt / tài khoản thanh toán, stablecoin | Ví app tự đọc; còn lại kể |
 4. **Mục tiêu theo tuổi:** an toàn = tuổi %, đầu tư = 100 − tuổi %. Ví dụ 31 tuổi: 31% an toàn, 69% đầu tư. Nhàn rỗi không có mục tiêu: là tiền người dùng còn phải chia. App gợi ý chia tiền nhàn rỗi để lấp phần thiếu của mỗi bên.
 5. **Người dùng đầu tư gì là quyền của họ.** App không chỉ định tài sản trong phần đầu tư, **không chặn mua vượt mục tiêu** (chỉ cảnh báo). Crypto được nhiều hơn mức các tổ chức khuyên (0–5%).
 6. **Ghi tài sản = tool `record_asset` của agent** (không có form). Người dùng nói số lượng, app tự lấy giá:
-   - Vàng: SJC miếng, **giá mua vào** (số tiền nhận được khi bán), theo lượng (1 cây = 1 lượng = 10 chỉ).
+   - Vàng: **giá vàng thế giới** (XAU/USD theo troy ounce, chốt 2026-10-24 khi app chuyển sang English; trước đó là giá SJC mua vào). Lưu theo ounce; agent nhận oz, g, kg, lượng, chỉ (1 lượng = 37,5 g). Vàng đã khai theo lượng trước 10-24 được tự quy đổi.
    - Cổ phiếu: chỉ cổ phiếu / ETF niêm yết ở Mỹ. Cổ phiếu Việt Nam không theo dõi giá: ghi vào "tài sản khác" theo giá trị người dùng nói.
    - Nhà, đất, xe: "tài sản khác" (tính vào giá trị ròng, không vào biểu đồ).
 7. **Biểu đồ hiện ở:** Cân đối (nút gạt "Phân bổ"), Đầu tư, và trong chat khi hỏi về phân bổ.
@@ -24,7 +24,7 @@ Bản gốc user chốt 23/10/2026; mục **"Chốt 24/10"** bên dưới là ph
 ### Nguồn giá (`functions/api/prices.ts`, cache 10 phút)
 | Loại | Nguồn | Ghi chú |
 |---|---|---|
-| Vàng SJC | vang.today (`type=SJL1L10`, giá mua) | Trang tổng hợp, không chính thức; sjc.com.vn chặn máy gọi tự động |
+| Vàng | api.gold-api.com (XAU spot), dự phòng Yahoo `GC=F` (hợp đồng tương lai, cao hơn spot vài USD) | Không cần key |
 | Cổ phiếu Mỹ | Yahoo Finance chart API (query1 → query2) | Không chính thức, không cần key |
 | Coin | Coinbase spot → Binance | Stablecoin tính = 1 USD, xếp vào nhàn rỗi |
 Không có giá thì tài sản đó hiện "chưa có giá" và tạm không tính, không đoán.

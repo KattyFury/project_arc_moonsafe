@@ -19,14 +19,14 @@ export function WarningModal({ onAcknowledge }: WarningModalProps) {
           >
             <AlertTriangle size={20} style={{ color:'#F5B301' }} />
           </div>
-          <p className="font-semibold text-[18px]" style={{ color:'var(--ink)' }}>Lưu ý quan trọng</p>
+          <p className="font-semibold text-[18px]" style={{ color:'var(--ink)' }}>Before you start</p>
         </div>
 
         <ul className="flex flex-col gap-2">
           {[
-            'Chỉ để tham khảo, không phải tư vấn đầu tư.',
-            'Không có cam kết sinh lời. Giá trị tài sản có thể giảm sâu.',
-            'Đang chạy trên Arc Testnet — USDC thử nghiệm, không có giá trị thật.',
+            'For information only, not investment advice.',
+            'No returns are promised. Asset values can fall sharply.',
+            'Running on Arc Testnet: test USDC with no real value.',
           ].map((item, i) => (
             <li key={i} className="flex items-start gap-2">
               <span
@@ -45,7 +45,7 @@ export function WarningModal({ onAcknowledge }: WarningModalProps) {
           className="w-full h-12 rounded-2xl font-semibold text-[16px] leading-6 text-white"
           style={{ background:'var(--accent)' }}
         >
-          Tôi hiểu
+          I understand
         </button>
       </div>
     </div>

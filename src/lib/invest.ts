@@ -14,5 +14,5 @@ export function overTargetWarning(alloc: Allocation, amount: bigint): string | n
   if (!alloc.target || alloc.total <= 0) return null
   const after = ((alloc.invest + Number(amount) / 1_000_000) / alloc.total) * 100
   if (after <= alloc.target.investPct + 0.5) return null
-  return `Sau khi mua, đầu tư chiếm khoảng ${Math.round(after)}% tiền ngoài quỹ, cao hơn mục tiêu ${alloc.target.investPct}% theo tuổi. Quyết định là của bạn.`
+  return `After this buy, investments would be about ${Math.round(after)}% of your money outside the fund, above your ${alloc.target.investPct}% target for your age. Your call.`
 }

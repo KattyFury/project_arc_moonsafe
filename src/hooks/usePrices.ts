@@ -1,6 +1,6 @@
 // Live prices for the declared holdings (/api/prices, functions/api/prices.ts). Refetched
 // when the list of symbols changes and every 5 minutes. No price → the holding shows
-// "chưa có giá" and stays out of the totals, never a guessed value.
+// "no price yet" and stays out of the totals, never a guessed value.
 
 import { useEffect, useState } from 'react'
 import type { Holding } from '@/types'
@@ -25,7 +25,7 @@ export function usePricesState(holdings: Holding[] | undefined): PricesState {
         const r = await fetch(`/api/prices?stocks=${encodeURIComponent(stocks)}&crypto=${encodeURIComponent(crypto)}`)
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
         const d = await r.json() as Prices
-        if (alive) setState({ prices: { goldVndPerLuong: d.goldVndPerLuong ?? null, usd: d.usd ?? {} }, error: false })
+        if (alive) setState({ prices: { goldUsdPerOz: d.goldUsdPerOz ?? null, usd: d.usd ?? {} }, error: false })
       } catch {
         if (alive) setState(s => ({ ...s, error: true }))
       }

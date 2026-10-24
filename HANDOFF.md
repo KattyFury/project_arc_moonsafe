@@ -6,6 +6,14 @@ Khung tài chính đang chạy: **`docs/FRAMEWORK-TAI-CHINH.md`** (ưu tiên hơ
 
 ## ▶ Làm tiếp từ đây (mới nhất ở trên)
 
+-7. **Phiên 2026-10-24 (chiều) — app chuyển sang English (thi hackathon). ĐÃ DEPLOY. Eval 86/86 (`--runs 2`, 43 tình huống, có 5 tình huống tiếng Việt).**
+   - User chốt: **chỉ English** (1a), agent trả lời theo ngôn ngữ người dùng nhắn, mặc định English (2a), **mặc định USD** (3a), **vàng = giá thế giới** XAU/USD theo ounce (api.gold-api.com, dự phòng Yahoo GC=F). Sau này ổn mới thêm ngôn ngữ.
+   - Gác cổng: `node scripts/check-lang.mjs` quét `src/`, `functions/`, `index.html` (bỏ comment), bắt cả chữ có dấu lẫn vài từ không dấu hay gặp ("Mua" từng lọt). Dòng cố ý giữ tiếng Việt (regex đọc tin nhắn tiếng Việt) gắn `lang-ok`. **Chạy trước mỗi lần deploy.**
+   - Số hiển thị kiểu en-US (`3,200.50`), ô nhập dùng dấu chấm thập phân. Vàng lưu theo ounce (`unit: 'oz'`); vàng cũ lưu theo lượng tự đổi khi đọc (`toHolding`).
+   - Agent (`chat.ts`) viết lại bằng English. Chốt chặn mới: server ghi rõ "Reply language" (trước đó lượt viết lại làm câu hỏi English bị trả lời tiếng Việt); **mọi số tiền trong câu trả lời phải có trong số liệu / lời người dùng** (`ungrounded()`, bắt chuyện model tự trừ "còn thiếu 2,800 sau khi nạp 200"); hỏi tổng quan → nợ → quỹ → phân bổ.
+   - Ảnh duyệt: Desktop\MoonSafe-english-2026-10-24 (tất cả màn, mobile + desktop, đo vừa 1 khung).
+   - `server/index.ts` (server dev cũ, không dùng ở production) vẫn tiếng Việt, không nằm trong check-lang.
+
 -6. **Phiên 2026-10-24 — khung tài chính mới + biểu đồ phân bổ. ĐÃ DEPLOY moonsafe.app 2026-10-24 (ảnh ở Desktop\MoonSafe-phan-bo-2026-10-24). Eval 76/76 (`--runs 2`, chạy trên `wrangler pages dev` local).**
    - User chốt: tiền ngoài quỹ chia **An toàn (gửi tiết kiệm) / Đầu tư (vàng, cổ phiếu Mỹ, coin, cirBTC) / Nhàn rỗi (ví USDC, tiền mặt, stablecoin)**; mục tiêu an toàn = tuổi %, đầu tư = 100 − tuổi %; quỹ đứng riêng; khoá đầu tư giữ (C1); **không chặn mua vượt mục tiêu, chỉ cảnh báo** (H1); vàng giá SJC mua vào (I1); không theo dõi cổ phiếu Việt; **bỏ 110/120, 3 mức, giới hạn 8 USDC** (sắp lên mainnet). Chi tiết: `docs/FRAMEWORK-TAI-CHINH.md`.
    - Code: `src/lib/allocation.ts` (tính phân bổ, dùng chung app + `chat.ts` qua import tương đối), `functions/api/prices.ts` (vàng vang.today, Yahoo, Coinbase/Binance), `src/hooks/usePrices.ts`, `src/components/ui/AllocationPies.tsx` (2 vòng tròn; bản `compact` ở Đầu tư + chat), `FinancialProfile.holdings`. Agent: tool `record_asset` (ghi tài sản, quantity 0 = xoá) + `show_allocation`; prompt REPLY viết lại ngắn (~88 token ra/câu); chốt chặn mới: thẻ phải khớp động từ (mua ≠ nạp), nêu đủ "an toàn X%, đầu tư Y%", không nhầm phần an toàn với quỹ, không đọc lại bảng khi đã hiện biểu đồ.

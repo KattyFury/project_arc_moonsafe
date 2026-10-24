@@ -16,7 +16,7 @@ export type ChatAction =
 
 type Status = 'idle' | 'busy' | 'done' | 'error' | 'cancelled'
 
-const TITLES = { deposit: 'Nạp vào quỹ', withdraw: 'Rút về ví', buy: 'Mua cirBTC', dca: 'Mua đều (DCA)' } as const
+const TITLES = { deposit: 'Add to fund', withdraw: 'Withdraw to wallet', buy: 'Buy cirBTC', dca: 'Recurring buy (DCA)' } as const
 const ICONS = { deposit: ArrowDownToLine, withdraw: ArrowUpFromLine, buy: TrendingUp, dca: Repeat } as const
 
 export function ActionCard({ action }: { action: ChatAction }) {
@@ -36,20 +36,20 @@ export function ActionCard({ action }: { action: ChatAction }) {
   let block: string | null = null
   const warnings: string[] = []
   if (kind === 'deposit') {
-    if (maxDeposit !== null && amount > maxDeposit) block = `Vượt số USDC có thể nạp từ ví (tối đa ${formatUsdc(maxDeposit)}, giữ lại ${formatUsdc(GAS_RESERVE_USDC6)} làm phí).`
+    if (maxDeposit !== null && amount > maxDeposit) block = `More than the wallet can add (up to ${formatUsdc(maxDeposit)}, keeping ${formatUsdc(GAS_RESERVE_USDC6)} for fees).`
   } else if (kind === 'withdraw') {
-    if (vb !== null && amount > vb) block = `Vượt số dư trong quỹ (${formatUsdc(vb)}).`
-    else if (wb !== null && wb < GAS_ESTIMATE_USDC6) block = `Ví cần khoảng ${formatUsdc(GAS_ESTIMATE_USDC6)} để trả phí giao dịch rút.`
+    if (vb !== null && amount > vb) block = `More than the fund holds (${formatUsdc(vb)}).`
+    else if (wb !== null && wb < GAS_ESTIMATE_USDC6) block = `The wallet needs about ${formatUsdc(GAS_ESTIMATE_USDC6)} to pay the withdrawal fee.`
     else if (math.floorUsdc !== null && vb !== null && vb - amount < math.floorUsdc) {
-      warnings.push(`Sau khi rút, quỹ còn ${formatUsdc(vb - amount)}, thấp hơn sàn ${math.floorMonths} tháng (${formatUsdc(math.floorUsdc)}). Đầu tư sẽ bị khoá cho đến khi nạp đủ lại.`)
+      warnings.push(`After this, the fund holds ${formatUsdc(vb - amount)}, below the ${math.floorMonths}-month floor (${formatUsdc(math.floorUsdc)}). Investing locks until you top it back up.`)
     }
   } else {
-    if (!math.investUnlocked) block = 'Đầu tư đang khoá: cần không còn nợ và quỹ dự phòng đủ mốc.'
-    else if (kind === 'buy' && room !== null && amount > room) block = `Vượt số USDC trong ví (dùng được tối đa ${formatUsdc(room)}).`
+    if (!math.investUnlocked) block = 'Investing is locked: it needs no outside debt and a full emergency fund.'
+    else if (kind === 'buy' && room !== null && amount > room) block = `More than the USDC in your wallet (up to ${formatUsdc(room)}).`
     else {
       const over = kind === 'buy' ? overTargetWarning(alloc, amount) : null
       if (over) warnings.push(over)
-      warnings.push('Giá cirBTC có thể giảm sâu. Chỉ đầu tư số tiền sẵn sàng mất. Đây là thông tin tham khảo, không phải tư vấn đầu tư.')
+      warnings.push('cirBTC can fall sharply. Only invest money you can afford to lose. For information only, not investment advice.')
     }
   }
 
@@ -60,7 +60,7 @@ export function ActionCard({ action }: { action: ChatAction }) {
       else if (kind === 'withdraw') await vault.withdraw(amount)
       else if (kind === 'dca') cirBtc.startDca(amount, action.intervalDays)
       else if (!q) { await cirBtc.estimate(amount); setStatus('idle'); return }
-      else if (!(await cirBtc.execute())) throw new Error(cirBtc.error ?? 'Mua cirBTC không thành công')
+      else if (!(await cirBtc.execute())) throw new Error(cirBtc.error ?? 'The cirBTC purchase did not go through')
       setStatus('done')
     } catch (e) {
       setError(txErrorMessage(e)); setStatus('error')
@@ -68,12 +68,12 @@ export function ActionCard({ action }: { action: ChatAction }) {
   }
   const cancel = () => { if (kind === 'buy') cirBtc.clearQuote(); setStatus('cancelled') }
 
-  const doneText = kind === 'deposit' ? `Đã nạp ${formatUsdc(amount)} vào quỹ.`
-    : kind === 'withdraw' ? `Đã rút ${formatUsdc(amount)} về ví.`
-    : kind === 'dca' ? `Đã duyệt DCA: ${formatUsdc(amount)} mỗi ${action.intervalDays} ngày. Mỗi kỳ bạn vẫn tự xem báo giá và ký.`
-    : 'Đã mua cirBTC.'
-  const signLabel = kind === 'dca' ? 'Duyệt DCA' : kind === 'buy' && !q ? 'Xem báo giá' : kind === 'buy' ? 'Ký mua' : kind === 'withdraw' && warnings.length ? 'Vẫn ký rút' : 'Ký giao dịch'
-  const busyLabel = kind === 'buy' && !q ? 'Đang lấy báo giá…' : 'Đang chờ ví…'
+  const doneText = kind === 'deposit' ? `Added ${formatUsdc(amount)} to your fund.`
+    : kind === 'withdraw' ? `Withdrew ${formatUsdc(amount)} to your wallet.`
+    : kind === 'dca' ? `DCA approved: ${formatUsdc(amount)} every ${action.intervalDays} days. Each time you still review the quote and sign.`
+    : 'cirBTC bought.'
+  const signLabel = kind === 'dca' ? 'Approve DCA' : kind === 'buy' && !q ? 'Get a quote' : kind === 'buy' ? 'Sign purchase' : kind === 'withdraw' && warnings.length ? 'Withdraw anyway' : 'Sign transaction'
+  const busyLabel = kind === 'buy' && !q ? 'Getting a quote…' : 'Waiting for wallet…'
 
   return (
     <GlassCard className="ml-10 p-4 flex flex-col gap-4">
@@ -82,7 +82,7 @@ export function ActionCard({ action }: { action: ChatAction }) {
         <div className="min-w-0">
           <p className="text-[14px] leading-5 font-semibold" style={{ color: 'var(--subtle)' }}>{TITLES[kind]}</p>
           <p className="display font-bold text-[24px] leading-8 tabular-nums" style={{ color: 'var(--ink)' }}>
-            {formatUsdc(amount)}{kind === 'dca' ? <span className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--subtle)' }}> / {action.intervalDays} ngày</span> : null}
+            {formatUsdc(amount)}{kind === 'dca' ? <span className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--subtle)' }}> / {action.intervalDays} days</span> : null}
           </p>
           {unit === 'VND' && <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>≈ {money(amount)}</p>}
         </div>
@@ -91,13 +91,13 @@ export function ActionCard({ action }: { action: ChatAction }) {
       {kind === 'buy' && q && status !== 'done' && (
         <div className="flex items-center gap-2 p-4 rounded-2xl" style={{ background: 'var(--surface-muted)' }}>
           <div className="flex-1 text-center">
-            <p className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--ink)' }}>{q.amountInUsdc.replace('.', ',')} USDC</p>
-            <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>Bạn trả</p>
+            <p className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--ink)' }}>{q.amountInUsdc} USDC</p>
+            <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>You pay</p>
           </div>
           <ArrowRight size={20} style={{ color: 'var(--muted)' }} />
           <div className="flex-1 text-center">
             <p className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--ink)' }}>{q.estimate.estimatedOutput.amount} cirBTC</p>
-            <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>Nhận ước tính (tối thiểu {q.estimate.stopLimit.amount})</p>
+            <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>You get, estimated (min {q.estimate.stopLimit.amount})</p>
           </div>
         </div>
       )}
@@ -106,11 +106,11 @@ export function ActionCard({ action }: { action: ChatAction }) {
         <Notice tone="success" title={doneText}>
           {kind === 'buy' && cirBtc.lastTxHash && (
             <a className="inline-flex items-center gap-2 underline" target="_blank" rel="noopener noreferrer"
-              href={`https://explorer.testnet.arc.io/tx/${cirBtc.lastTxHash}`}>Xem giao dịch <ExternalLink size={16} /></a>
+              href={`https://explorer.testnet.arc.io/tx/${cirBtc.lastTxHash}`}>View transaction <ExternalLink size={16} /></a>
           )}
         </Notice>
       ) : status === 'cancelled' ? (
-        <p className="text-[14px] leading-5" style={{ color: 'var(--muted)' }}>Đã huỷ. Cần thì cứ nhắn lại agent.</p>
+        <p className="text-[14px] leading-5" style={{ color: 'var(--muted)' }}>Cancelled. Message the agent whenever you need it.</p>
       ) : (
         <>
           {block && <Notice tone="danger">{block}</Notice>}
@@ -118,7 +118,7 @@ export function ActionCard({ action }: { action: ChatAction }) {
           {error && <Notice tone="danger">{error}</Notice>}
           {!block && kind === 'buy' && cirBtc.error && !error && <Notice tone="danger">{cirBtc.error}</Notice>}
           <div className="flex gap-4">
-            <Btn variant="outline" disabled={status === 'busy'} onClick={cancel}>Huỷ</Btn>
+            <Btn variant="outline" disabled={status === 'busy'} onClick={cancel}>Cancel</Btn>
             <Btn variant={kind === 'withdraw' && warnings.length ? 'danger' : 'primary'} loading={status === 'busy'} disabled={!!block} onClick={() => { void run() }}>
               {status === 'busy' ? busyLabel : signLabel}
             </Btn>

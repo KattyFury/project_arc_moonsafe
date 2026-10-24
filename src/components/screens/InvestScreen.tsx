@@ -21,9 +21,9 @@ export function InvestScreen({ onOpenFund, onOpenChat }: { onOpenFund: () => voi
 
   if (!math.investUnlocked) {
     const checks = [
-      { ok: profile.complete, label: profile.complete ? 'Agent đã biết thu chi của bạn' : 'Agent chưa biết thu chi của bạn' },
-      { ok: math.noDebt === true, label: math.noDebt === false ? 'Còn nợ bên ngoài' : 'Không có nợ ngoài' },
-      { ok: math.fundOk, label: math.fundOk ? 'Quỹ dự phòng đủ sàn' : 'Quỹ dự phòng chưa đủ sàn' },
+      { ok: profile.complete, label: profile.complete ? 'The agent knows your cash flow' : 'The agent does not know your cash flow yet' },
+      { ok: math.noDebt === true, label: math.noDebt === false ? 'You still have outside debt' : 'No outside debt' },
+      { ok: math.fundOk, label: math.fundOk ? 'Emergency fund at its floor' : 'Emergency fund below its floor' },
     ]
     return (
       <Screen>
@@ -33,8 +33,8 @@ export function InvestScreen({ onOpenFund, onOpenChat }: { onOpenFund: () => voi
               <div className="flex items-center gap-4">
                 <IconBox><Lock size={24} style={{ color: 'var(--accent)' }} /></IconBox>
                 <div>
-                  <p className="font-semibold text-[20px] leading-7" style={{ color: 'var(--ink)' }}>Đầu tư đang khoá</p>
-                  <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>Thứ tự: hết nợ → quỹ dự phòng → đầu tư</p>
+                  <p className="font-semibold text-[20px] leading-7" style={{ color: 'var(--ink)' }}>Investing is locked</p>
+                  <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>Order: clear debt → emergency fund → invest</p>
                 </div>
               </div>
               <div className="flex flex-col gap-2">
@@ -52,7 +52,7 @@ export function InvestScreen({ onOpenFund, onOpenChat }: { onOpenFund: () => voi
               )}
               {math.shortfall !== null && math.shortfall > 0n && (
                 <div className="p-4 rounded-2xl" style={{ background: 'var(--surface-muted)' }}>
-                  <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>Còn thiếu vào quỹ</p>
+                  <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>Still needed in the fund</p>
                   <p className="display font-bold text-[24px] leading-8 tabular-nums" style={{ color: 'var(--ink)' }}>{money(math.shortfall)}</p>
                 </div>
               )}
@@ -60,11 +60,11 @@ export function InvestScreen({ onOpenFund, onOpenChat }: { onOpenFund: () => voi
           </Col>
           <Col span={6}>
             {!profile.complete
-              ? <Btn onClick={onOpenChat}>Trò chuyện với agent</Btn>
+              ? <Btn onClick={onOpenChat}>Talk to the agent</Btn>
               : math.noDebt === false
-                ? <Notice tone="warning">Khi đã trả hết nợ bên ngoài, báo agent một tiếng để mở đầu tư.</Notice>
-                : <Btn onClick={onOpenFund}>Nạp quỹ dự phòng</Btn>}
-            <Btn disabled><Lock size={16} />Mua cirBTC</Btn>
+                ? <Notice tone="warning">Once your outside debt is paid off, tell the agent to unlock investing.</Notice>
+                : <Btn onClick={onOpenFund}>Add to emergency fund</Btn>}
+            <Btn disabled><Lock size={16} />Buy cirBTC</Btn>
             <GlassCard className="p-4 lg:p-8"><AllocationPies compact /></GlassCard>
           </Col>
         </Grid>
@@ -115,56 +115,56 @@ function InvestOpen() {
 
         <Col span={7}>
           {cirBtc.valueUsdc6 === null && (cirBtc.balance ?? 0n) > 0n && (
-            <Notice tone="warning">Chưa lấy được giá BTC nên phần cirBTC tạm chưa tính vào biểu đồ. Thử lại sau ít phút.</Notice>
+            <Notice tone="warning">No BTC price yet, so cirBTC is left out of the chart for now. Try again in a few minutes.</Notice>
           )}
 
           {/* One card: buy once or set a weekly DCA */}
           <GlassCard className="p-4 lg:p-8 flex flex-col gap-4">
             <Toggle value={mode} onChange={setMode}
-              options={[{ value: 'once', label: 'Mua một lần' }, { value: 'dca', label: due ? 'DCA · đến kỳ' : 'Mua đều (DCA)' }]} />
+              options={[{ value: 'once', label: 'Buy once' }, { value: 'dca', label: due ? 'DCA · due' : 'Recurring (DCA)' }]} />
 
             {mode === 'once' ? (
               <>
                 <Chips items={[
-                  { label: 'Theo mục tiêu', onClick: () => toTarget && setAmount(usdcToInput(toTarget)), disabled: !toTarget },
-                  { label: '50% ví', onClick: () => room && setAmount(usdcToInput((room * 50n) / 100n)), disabled: !room },
-                  { label: 'Hết ví', onClick: () => room && setAmount(usdcToInput(room)), disabled: !room },
+                  { label: 'To target', onClick: () => toTarget && setAmount(usdcToInput(toTarget)), disabled: !toTarget },
+                  { label: '50% wallet', onClick: () => room && setAmount(usdcToInput((room * 50n) / 100n)), disabled: !room },
+                  { label: 'All wallet', onClick: () => room && setAmount(usdcToInput(room)), disabled: !room },
                 ]} />
                 <AmountField value={amount} onChange={v => { setAmount(v); cirBtc.clearQuote() }} disabled={cirBtc.busy} />
-                <p className="text-[14px] leading-5 -mt-2" style={{ color: 'var(--subtle)' }}>Ví {money(vault.walletBalance)} · đang giữ {formatCirBtc(cirBtc.balance)}</p>
-                <Notice tone="warning">Giá cirBTC có thể giảm sâu. Chỉ đầu tư số tiền sẵn sàng mất. Đây là thông tin tham khảo, không phải tư vấn đầu tư.</Notice>
-                {overWallet && <Notice tone="danger">Vượt số USDC trong ví. Tối đa {money(room)}.</Notice>}
+                <p className="text-[14px] leading-5 -mt-2" style={{ color: 'var(--subtle)' }}>Wallet {money(vault.walletBalance)} · holding {formatCirBtc(cirBtc.balance)}</p>
+                <Notice tone="warning">cirBTC can fall sharply. Only invest money you can afford to lose. For information only, not investment advice.</Notice>
+                {overWallet && <Notice tone="danger">More than the USDC in your wallet. Max {money(room)}.</Notice>}
                 {overTarget && <Notice tone="warning">{overTarget}</Notice>}
                 {cirBtc.error && !q && <Notice tone="danger">{cirBtc.error}</Notice>}
                 {cirBtc.lastTxHash && (
-                  <Notice tone="success" title="Đã mua cirBTC">
+                  <Notice tone="success" title="cirBTC bought">
                     <a className="inline-flex items-center gap-2 underline" target="_blank" rel="noopener noreferrer"
-                      href={`https://explorer.testnet.arc.io/tx/${cirBtc.lastTxHash}`}>Xem giao dịch <ExternalLink size={16} /></a>
+                      href={`https://explorer.testnet.arc.io/tx/${cirBtc.lastTxHash}`}>View transaction <ExternalLink size={16} /></a>
                   </Notice>
                 )}
                 <Btn loading={cirBtc.busy && !q} disabled={parsed <= 0n || overWallet || room === null}
                   onClick={() => { void cirBtc.estimate(parsed) }}>
-                  {cirBtc.busy && !q ? 'Đang lấy báo giá…' : 'Xem báo giá · Mua cirBTC'}
+                  {cirBtc.busy && !q ? 'Getting a quote…' : 'Get a quote · Buy cirBTC'}
                 </Btn>
               </>
             ) : dca && dcaAmount !== null ? (
               <>
                 <p className="text-[16px] leading-6" style={{ color: 'var(--ink)' }}>
-                  {formatUsdc(dcaAmount)} mỗi {dca.intervalDays} ngày. {due ? 'Đã đến kỳ mua.' : `Kỳ tới: ${next ? new Date(next).toLocaleDateString('vi-VN') : DASH}.`}
+                  {formatUsdc(dcaAmount)} every {dca.intervalDays} days. {due ? 'A buy is due.' : `Next: ${next ? new Date(next).toLocaleDateString('en-US') : DASH}.`}
                 </p>
                 <div className="flex gap-4">
-                  <Btn variant="outline" onClick={cirBtc.stopDca}>Dừng DCA</Btn>
-                  <Btn disabled={!due} onClick={() => { setAmount(usdcToInput(dcaAmount)); setMode('once') }}>Mua kỳ này</Btn>
+                  <Btn variant="outline" onClick={cirBtc.stopDca}>Stop DCA</Btn>
+                  <Btn disabled={!due} onClick={() => { setAmount(usdcToInput(dcaAmount)); setMode('once') }}>Buy this round</Btn>
                 </div>
-                <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>Mỗi kỳ bạn tự xem báo giá và ký. Có thể nói “dừng DCA” trong chat.</p>
+                <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>Each round you review the quote and sign. You can say “stop DCA” in the chat.</p>
               </>
             ) : suggest !== null && suggest >= MIN_DCA ? (
               <>
-                <p className="text-[16px] leading-6" style={{ color: 'var(--ink)' }}>Đề xuất: mua {formatUsdc(suggest)} cirBTC mỗi tuần trong {DCA_WEEKS} tuần, thay vì mua một lần.</p>
-                <Btn onClick={() => cirBtc.startDca(suggest, DCA_INTERVAL_DAYS)}>Duyệt DCA</Btn>
+                <p className="text-[16px] leading-6" style={{ color: 'var(--ink)' }}>Suggestion: buy {formatUsdc(suggest)} of cirBTC every week for {DCA_WEEKS} weeks instead of all at once.</p>
+                <Btn onClick={() => cirBtc.startDca(suggest, DCA_INTERVAL_DAYS)}>Approve DCA</Btn>
               </>
             ) : (
-              <p className="text-[16px] leading-6" style={{ color: 'var(--subtle)' }}>Chưa có tiền nhàn rỗi cần đưa vào đầu tư để chia DCA (tối thiểu {formatUsdc(MIN_DCA)} mỗi kỳ). Muốn mua đều số khác thì nói với agent.</p>
+              <p className="text-[16px] leading-6" style={{ color: 'var(--subtle)' }}>No idle money to move into investments for a DCA plan (minimum {formatUsdc(MIN_DCA)} per round). For a different recurring amount, ask the agent.</p>
             )}
           </GlassCard>
         </Col>
@@ -172,27 +172,27 @@ function InvestOpen() {
 
       {q && (
         <Sheet>
-          <p className="font-semibold text-[20px] leading-7" style={{ color: 'var(--ink)' }}>Xác nhận mua</p>
+          <p className="font-semibold text-[20px] leading-7" style={{ color: 'var(--ink)' }}>Confirm purchase</p>
           <div className="flex items-center gap-2 px-4 py-4 rounded-2xl" style={{ background: 'var(--surface-muted)' }}>
             <div className="text-center flex-1">
-              <p className="font-bold text-[16px]" style={{ color: 'var(--ink)' }}>{q.amountInUsdc.replace('.', ',')} USDC</p>
-              <p className="text-[14px]" style={{ color: 'var(--muted)' }}>Bạn trả</p>
+              <p className="font-bold text-[16px]" style={{ color: 'var(--ink)' }}>{q.amountInUsdc} USDC</p>
+              <p className="text-[14px]" style={{ color: 'var(--muted)' }}>You pay</p>
             </div>
             <ArrowRight size={18} style={{ color: 'var(--muted)' }} className="flex-shrink-0" />
             <div className="text-center flex-1">
               <p className="font-bold text-[16px]" style={{ color: 'var(--ink)' }}>{q.estimate.estimatedOutput.amount} cirBTC</p>
-              <p className="text-[14px]" style={{ color: 'var(--muted)' }}>Nhận ước tính</p>
+              <p className="text-[14px]" style={{ color: 'var(--muted)' }}>You get (estimate)</p>
             </div>
           </div>
           <div className="flex justify-between">
-            <span className="text-[14px]" style={{ color: 'var(--muted)' }}>Nhận tối thiểu (trượt giá ≤ 3%)</span>
+            <span className="text-[14px]" style={{ color: 'var(--muted)' }}>Minimum received (slippage ≤ 3%)</span>
             <span className="text-[14px] font-medium" style={{ color: 'var(--ink)' }}>{q.estimate.stopLimit.amount} cirBTC</span>
           </div>
-          <Notice tone="warning">Giá thực tế có thể khác ước tính. Chỉ đầu tư số tiền sẵn sàng mất.</Notice>
+          <Notice tone="warning">The final price may differ from the estimate. Only invest money you can afford to lose.</Notice>
           {cirBtc.error && <Notice tone="danger">{cirBtc.error}</Notice>}
           <div className="flex gap-4">
-            <Btn variant="outline" disabled={cirBtc.busy} onClick={cirBtc.clearQuote}>Huỷ</Btn>
-            <Btn loading={cirBtc.busy} onClick={() => { void buy() }}>{cirBtc.busy ? 'Đang mua…' : 'Mua cirBTC'}</Btn>
+            <Btn variant="outline" disabled={cirBtc.busy} onClick={cirBtc.clearQuote}>Cancel</Btn>
+            <Btn loading={cirBtc.busy} onClick={() => { void buy() }}>{cirBtc.busy ? 'Buying…' : 'Buy cirBTC'}</Btn>
           </div>
         </Sheet>
       )}

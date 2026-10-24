@@ -8,7 +8,7 @@ import { formatPercent } from '@/lib/format'
 import type { Bucket } from '@/lib/allocation'
 
 export const BUCKET_COLOR: Record<Bucket, string> = { safe: '#1baf7a', invest: '#1E6DF7', idle: '#eda100' }
-export const BUCKET_NAME: Record<Bucket, string> = { safe: 'An toàn', invest: 'Đầu tư', idle: 'Nhàn rỗi' }
+export const BUCKET_NAME: Record<Bucket, string> = { safe: 'Safe', invest: 'Invest', idle: 'Idle' }
 const ORDER: Bucket[] = ['safe', 'invest', 'idle']
 
 function arc(cx: number, cy: number, r: number, from: number, to: number): string {
@@ -26,7 +26,7 @@ function Donut({ slices, size, center, sub, label }: { slices: { bucket: Bucket;
   let at = 0
   return (
     <figure className="flex flex-col items-center gap-2 min-w-0">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`${label}: ${shown.map(s => s.title).join(', ') || 'chưa có dữ liệu'}`}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`${label}: ${shown.map(s => s.title).join(', ') || 'no data yet'}`}>
         <circle cx={c} cy={c} r={r} fill="none" stroke="var(--surface-muted)" strokeWidth={stroke} />
         {shown.length === 1
           ? <circle cx={c} cy={c} r={r} fill="none" stroke={BUCKET_COLOR[shown[0].bucket]} strokeWidth={stroke}><title>{shown[0].title}</title></circle>
@@ -65,16 +65,16 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
   const pct = (v: number) => total > 0 ? (v / total) * 100 : 0
   const now = ORDER.map(b => ({ bucket: b, share: total > 0 ? alloc[b] / total : 0, title: `${BUCKET_NAME[b]} ${formatPercent(pct(alloc[b]))}` }))
   const goal = target ? [
-    { bucket: 'safe' as const, share: target.safePct / 100, title: `An toàn ${target.safePct}%` },
-    { bucket: 'invest' as const, share: target.investPct / 100, title: `Đầu tư ${target.investPct}%` },
+    { bucket: 'safe' as const, share: target.safePct / 100, title: `Safe ${target.safePct}%` },
+    { bucket: 'invest' as const, share: target.investPct / 100, title: `Invest ${target.investPct}%` },
   ] : []
 
   if (compact) return (
     // One row: target donut, current donut, legend (centre shows the invest share). In a narrow
     // place (the chat bubble column) the legend wraps under the donuts instead of truncating.
     <div className="flex flex-wrap items-center gap-2">
-      <Donut slices={goal} size={size} label="Mục tiêu" center={target ? `${target.investPct}%` : '–'} />
-      <Donut slices={now} size={size} label="Hiện tại" center={total > 0 ? formatPercent(pct(alloc.invest), 0) : '–'} />
+      <Donut slices={goal} size={size} label="Target" center={target ? `${target.investPct}%` : '–'} />
+      <Donut slices={now} size={size} label="Now" center={total > 0 ? formatPercent(pct(alloc.invest), 0) : '–'} />
       <ul className="flex-1 min-w-[152px] flex flex-col gap-1">
         {ORDER.map(b => (
           <li key={b} className="flex items-center gap-2 text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>
@@ -85,7 +85,7 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
             </span>
           </li>
         ))}
-        <li className="text-[14px] leading-5" style={{ color: 'var(--muted)' }}>Giữa vòng: % đầu tư</li>
+        <li className="text-[14px] leading-5" style={{ color: 'var(--muted)' }}>Centre: % invested</li>
       </ul>
     </div>
   )
@@ -93,9 +93,9 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-4">
-        <Donut slices={goal} size={size} label={target ? `Mục tiêu theo tuổi ${profile.profile?.age}` : 'Mục tiêu (cần biết tuổi)'}
-          center={target ? `${target.investPct}%` : '–'} sub="đầu tư" />
-        <Donut slices={now} size={size} label="Hiện tại" center={total > 0 ? formatPercent(pct(alloc.invest), 0) : '–'} sub="đầu tư" />
+        <Donut slices={goal} size={size} label={target ? `Target at age ${profile.profile?.age}` : 'Target (needs your age)'}
+          center={target ? `${target.investPct}%` : '–'} sub="invested" />
+        <Donut slices={now} size={size} label="Now" center={total > 0 ? formatPercent(pct(alloc.invest), 0) : '–'} sub="invested" />
       </div>
 
       {/* Legend: colour + name + share + amount, so no slice relies on colour alone. */}
@@ -115,7 +115,7 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
 
       {suggest && (suggest.toSafe >= 0.01 || suggest.toInvest >= 0.01) && (
         <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>
-          Tiền nhàn rỗi để đúng mục tiêu: <strong style={{ color: 'var(--ink)' }}>{moneyUsd(suggest.toSafe)}</strong> vào an toàn, <strong style={{ color: 'var(--ink)' }}>{moneyUsd(suggest.toInvest)}</strong> vào đầu tư.
+          To reach the target with idle money: <strong style={{ color: 'var(--ink)' }}>{moneyUsd(suggest.toSafe)}</strong> to safe, <strong style={{ color: 'var(--ink)' }}>{moneyUsd(suggest.toInvest)}</strong> to invest.
         </p>
       )}
       {alloc.parts.length > 0 && (
@@ -125,10 +125,10 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
       )}
       {unpriced.length > 0 && (
         <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>
-          Chưa có giá{prices.error ? ' (nguồn giá đang lỗi)' : ''}, tạm chưa tính: {unpriced.map(h => h.symbol ?? (h.kind === 'gold' ? 'vàng SJC' : h.kind)).join(', ')}.
+          No price yet{prices.error ? ' (price source failing)' : ''}, left out for now: {unpriced.map(h => h.symbol ?? h.kind).join(', ')}.
         </p>
       )}
-      <p className="text-[14px] leading-5" style={{ color: 'var(--muted)' }}>Tính trên tiền ngoài quỹ dự phòng. Quỹ giữ riêng, không chia.</p>
+      <p className="text-[14px] leading-5" style={{ color: 'var(--muted)' }}>Counts money outside the emergency fund. The fund stays separate.</p>
     </div>
   )
 }

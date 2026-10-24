@@ -13,11 +13,11 @@ const MAX_KEEP = 80
 const MAX_SEND = 30
 
 /** Greeting shown to someone who already saved a declaration (UI only, never sent to the model). */
-export const WELCOME_BACK = 'Chào bạn quay lại! Mình vẫn nhớ tình hình tài chính bạn đã kể, bạn xem lại ở tab **Cân đối** nhé. Có gì thay đổi cứ nói, mình cập nhật ngay.\n\nHôm nay mình bàn chuyện gì đây: chi tiêu, quỹ dự phòng hay đầu tư?'
+export const WELCOME_BACK = 'Welcome back! I still have the finances you shared, you can review them in the **Balance** tab. If anything has changed, just tell me and I will update it.\n\nWhat shall we look at today: spending, your emergency fund or investing?'
 
 export const WELCOME: ChatMessage = {
   role: 'assistant',
-  content: 'Chào bạn! Mình là chuyên gia tài chính cá nhân của MoonSafe.\n\nMình đồng hành cùng bạn từng bước: nắm rõ thu chi, để dành một **quỹ dự phòng** bằng USDC cho những lúc bất ngờ, rồi mới tính chuyện đầu tư.\n\nBạn không cần khai báo gì cả, cứ kể đến đâu mình tư vấn đến đó. Bạn đang muốn lo chuyện gì trước: chi tiêu, để dành hay đầu tư?',
+  content: 'Hi! I am MoonSafe\u2019s personal finance advisor.\n\nWe go step by step: get clear on your cash flow, build an **emergency fund** in USDC for the unexpected, then invest.\n\nNo forms to fill in. Share as much as you like and I will advise from there. Where would you like to start: spending, saving or investing?',
   timestamp: 0,
 }
 
@@ -121,7 +121,7 @@ export function useAgent(hooks: AgentHooks) {
       const detail = (e as Error).message
       setMessages([...history, {
         role: 'assistant',
-        content: `Agent đang không trả lời được (${detail}). Tin nhắn của bạn vẫn được giữ, thử gửi lại sau ít phút nhé.`,
+        content: `The agent cannot reply right now (${detail}). Your message is kept, please try again in a few minutes.`,
         timestamp: Date.now(),
         error: true,
       }])

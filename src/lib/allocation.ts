@@ -18,11 +18,15 @@ export const STABLECOINS = new Set(['USDT', 'USDC', 'DAI', 'FDUSD', 'USDE'])
 export const bucketOf = (h: Holding): Bucket =>
   h.kind === 'crypto' && STABLECOINS.has((h.symbol ?? '').toUpperCase()) ? 'idle' : BUCKET_OF[h.kind]
 
-/** Live prices: gold in VND per lượng (SJC buy price), stocks and coins in USD keyed "stock:SPY" / "crypto:ETH". */
+/** Live prices in USD: gold spot per troy ounce, stocks and coins keyed "stock:SPY" / "crypto:ETH". */
 export interface Prices {
-  goldVndPerLuong: number | null
+  goldUsdPerOz: number | null
   usd: Record<string, number>
 }
+
+/** Gold is stored in troy ounces. Holdings saved before 2026-10-24 (no unit) were in lượng (37.5 g). */
+export const OZ_PER_LUONG = 37.5 / 31.1034768
+export const GOLD_UNITS_TO_OZ: Record<string, number> = { oz: 1, g: 1 / 31.1034768, kg: 1000 / 31.1034768, luong: OZ_PER_LUONG, chi: OZ_PER_LUONG / 10 }
 
 export const priceKey = (h: Pick<Holding, 'kind' | 'symbol'>) => `${h.kind}:${(h.symbol ?? '').toUpperCase()}`
 
@@ -38,6 +42,12 @@ export function toHolding(raw: unknown): Holding | null {
   const symbol = typeof o.symbol === 'string' && o.symbol.trim() ? o.symbol.trim() : undefined
   if ((kind === 'stock' || kind === 'crypto') && !symbol) return null
   const h: Holding = { kind, quantity }
+  if (kind === 'gold') {
+    // Any other unit (or none: the old lượng records) is converted to troy ounces.
+    const unit = typeof o.unit === 'string' ? o.unit.toLowerCase() : 'luong'
+    h.quantity = quantity * (GOLD_UNITS_TO_OZ[unit] ?? OZ_PER_LUONG)
+    h.unit = 'oz'
+  }
   if (symbol && kind !== 'gold') h.symbol = kind === 'stock' || kind === 'crypto' ? symbol.toUpperCase() : symbol
   if (kind === 'savings' || kind === 'cash') {
     const c = typeof o.currency === 'string' ? o.currency.toUpperCase().replace(/^USD$/, 'USDC') : 'VND'
@@ -61,7 +71,7 @@ export function mergeHoldings(list: Holding[] | undefined, updates: Holding[]): 
 /** Value in USD, null when its price (or the VND rate) is missing. */
 export function holdingUsd(h: Holding, prices: Prices | null, vndPerUsd: number | null): number | null {
   if (h.kind === 'savings' || h.kind === 'cash') return h.currency === 'USDC' ? h.quantity : vndPerUsd ? h.quantity / vndPerUsd : null
-  if (h.kind === 'gold') return prices?.goldVndPerLuong && vndPerUsd ? h.quantity * prices.goldVndPerLuong / vndPerUsd : null
+  if (h.kind === 'gold') return prices?.goldUsdPerOz ? h.quantity * prices.goldUsdPerOz : null
   if (h.kind === 'crypto' && STABLECOINS.has((h.symbol ?? '').toUpperCase())) return h.quantity
   const p = prices?.usd[priceKey(h)]
   return p ? h.quantity * p : null
@@ -84,7 +94,7 @@ export interface Allocation {
   suggest: { toSafe: number; toInvest: number } | null
 }
 
-export const HOLDING_LABEL: Record<HoldingKind, string> = { savings: 'Gửi tiết kiệm', cash: 'Tiền mặt', gold: 'Vàng SJC', stock: 'Cổ phiếu', crypto: 'Coin' }
+export const HOLDING_LABEL: Record<HoldingKind, string> = { savings: 'Savings', cash: 'Cash', gold: 'Gold', stock: 'Stock', crypto: 'Coin' }
 
 export function partLabel(h: Holding): string {
   if (h.kind === 'stock' || h.kind === 'crypto') return h.symbol ?? HOLDING_LABEL[h.kind]
@@ -94,7 +104,7 @@ export function partLabel(h: Holding): string {
 export function allocate(input: { holdings?: Holding[]; walletUsd: number | null; cirBtcUsd: number | null; age: number | null; prices: Prices | null; vndPerUsd: number | null }): Allocation {
   const parts: AllocationPart[] = []
   const unpriced: Holding[] = []
-  if (input.walletUsd !== null && input.walletUsd > 0) parts.push({ label: 'USDC trong ví', bucket: 'idle', usd: input.walletUsd })
+  if (input.walletUsd !== null && input.walletUsd > 0) parts.push({ label: 'Wallet USDC', bucket: 'idle', usd: input.walletUsd })
   if (input.cirBtcUsd !== null && input.cirBtcUsd > 0) parts.push({ label: 'cirBTC', bucket: 'invest', usd: input.cirBtcUsd })
   for (const h of input.holdings ?? []) {
     const usd = holdingUsd(h, input.prices, input.vndPerUsd)

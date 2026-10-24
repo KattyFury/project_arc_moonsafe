@@ -12,17 +12,17 @@ export async function ensureArcChain(
   connector: Connector | undefined,
   switchChainAsync: (args: { chainId: typeof ARC_CHAIN_ID; connector?: Connector }) => Promise<unknown>,
 ): Promise<void> {
-  if (!connector) throw new Error('Ví chưa kết nối')
+  if (!connector) throw new Error('Wallet not connected')
   const current = await connector.getChainId()
   if (current === ARC_CHAIN_ID) return
   try {
     await switchChainAsync({ chainId: ARC_CHAIN_ID, connector })
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
-    if (/reject|denied/i.test(msg)) throw new Error('Bạn đã từ chối chuyển ví sang mạng Arc Testnet.')
-    throw new Error('Không chuyển được ví sang mạng Arc Testnet. Hãy chọn mạng Arc Testnet trong ví rồi thử lại.')
+    if (/reject|denied/i.test(msg)) throw new Error('You declined to switch your wallet to Arc Testnet.')
+    throw new Error('Could not switch your wallet to Arc Testnet. Pick Arc Testnet in your wallet and try again.')
   }
   if ((await connector.getChainId()) !== ARC_CHAIN_ID) {
-    throw new Error('Ví vẫn chưa ở mạng Arc Testnet. Hãy chọn mạng Arc Testnet trong ví rồi thử lại.')
+    throw new Error('Your wallet is still not on Arc Testnet. Pick Arc Testnet in your wallet and try again.')
   }
 }

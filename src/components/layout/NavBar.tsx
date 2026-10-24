@@ -17,9 +17,9 @@ interface NavBarProps {
 
 const tabs: Array<{ id: NavTab; label: string; icon: LucideIcon }> = [
   { id: 'chat',    label: 'Chat',    icon: MessageCircle },
-  { id: 'fund',    label: 'Quỹ',     icon: Vault },
-  { id: 'invest',  label: 'Đầu tư',  icon: TrendingUp },
-  { id: 'balance', label: 'Cân đối', icon: BarChart3 },
+  { id: 'fund',    label: 'Fund',    icon: Vault },
+  { id: 'invest',  label: 'Invest',  icon: TrendingUp },
+  { id: 'balance', label: 'Balance', icon: BarChart3 },
   { id: 'menu',    label: 'Menu',    icon: MoreHorizontal },
 ]
 
@@ -73,9 +73,9 @@ function WalletChip() {
   if (!address) return <span />
   const copy = () => { void navigator.clipboard?.writeText(address).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) }) }
   return (
-    <button onClick={copy} className="h-10 px-4 flex items-center gap-2 rounded-full" style={{ background: 'var(--surface-muted)' }} title="Sao chép địa chỉ ví">
+    <button onClick={copy} className="h-10 px-4 flex items-center gap-2 rounded-full" style={{ background: 'var(--surface-muted)' }} title="Copy wallet address">
       <span className="text-[14px] leading-5 font-semibold" style={{ color: 'var(--ink)' }}>
-        {copied ? 'Đã sao chép' : `${address.slice(0, 6)}…${address.slice(-4)}`}
+        {copied ? 'Copied' : `${address.slice(0, 6)}…${address.slice(-4)}`}
       </span>
       <Copy size={16} style={{ color: 'var(--subtle)' }} />
     </button>

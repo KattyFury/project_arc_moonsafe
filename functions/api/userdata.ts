@@ -45,30 +45,30 @@ async function read(env: Env, id: string): Promise<Stored> {
 }
 
 export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
-  if (!env.USERDATA) return json({ error: 'Chưa cấu hình nơi lưu dữ liệu' }, 503)
+  if (!env.USERDATA) return json({ error: 'Data storage is not configured' }, 503)
   const id = await userId(request, env)
-  if (!id) return json({ error: 'Phiên đăng nhập không hợp lệ' }, 401)
+  if (!id) return json({ error: 'Invalid sign-in session' }, 401)
   return json(await read(env, id))
 }
 
 /** Body: { profile?: object | null, chat?: array | null }. Fields left out are kept. */
 export const onRequestPut: PagesFunction<Env> = async ({ request, env }) => {
-  if (!env.USERDATA) return json({ error: 'Chưa cấu hình nơi lưu dữ liệu' }, 503)
+  if (!env.USERDATA) return json({ error: 'Data storage is not configured' }, 503)
   const id = await userId(request, env)
-  if (!id) return json({ error: 'Phiên đăng nhập không hợp lệ' }, 401)
+  if (!id) return json({ error: 'Invalid sign-in session' }, 401)
 
   const text = await request.text()
-  if (text.length > MAX_BYTES) return json({ error: 'Dữ liệu quá lớn' }, 413)
+  if (text.length > MAX_BYTES) return json({ error: 'Data too large' }, 413)
   let body: { profile?: unknown; chat?: unknown }
   try { body = JSON.parse(text) as typeof body } catch { return json({ error: 'Invalid JSON' }, 400) }
 
   const cur = await read(env, id)
   if ('profile' in body) {
-    if (body.profile !== null && (typeof body.profile !== 'object' || Array.isArray(body.profile))) return json({ error: 'profile phải là object' }, 400)
+    if (body.profile !== null && (typeof body.profile !== 'object' || Array.isArray(body.profile))) return json({ error: 'profile must be an object' }, 400)
     cur.profile = body.profile as Stored['profile']
   }
   if ('chat' in body) {
-    if (body.chat !== null && !Array.isArray(body.chat)) return json({ error: 'chat phải là mảng' }, 400)
+    if (body.chat !== null && !Array.isArray(body.chat)) return json({ error: 'chat must be an array' }, 400)
     cur.chat = body.chat === null ? null : (body.chat as unknown[]).slice(-MAX_CHAT)
   }
   cur.updatedAt = Date.now()

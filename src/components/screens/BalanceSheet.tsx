@@ -40,26 +40,26 @@ export function BalanceSheet({ onOpenChat }: { onOpenChat: () => void }) {
   const withMark = (text: string, ok: boolean | null) => <span className="inline-flex items-center gap-2">{text}{mark(ok)}</span>
 
   const liqOk = liquidMonths !== null && math.floorMonths ? liquidMonths >= math.floorMonths : null
-  const chatLabel = known ? 'Cập nhật với agent' : 'Trò chuyện với agent'
+  const chatLabel = known ? 'Update with the agent' : 'Talk to the agent'
 
   return (
     <Screen>
-      <Title>Bảng cân đối</Title>
+      <Title>Balance sheet</Title>
 
       {!known && (
-        <Notice tone="warning" title="Bảng cân đối đang trống">Trò chuyện với agent ở tab Chat. Bạn kể đến đâu, bảng tự điền đến đó.</Notice>
+        <Notice tone="warning" title="Your balance sheet is empty">Talk to the agent in the Chat tab. It fills in as you share.</Notice>
       )}
-      {known && fx.vndPerUsd === null && <Notice tone="warning">Chưa lấy được tỉ giá, các số quy đổi tạm hiện “–”.</Notice>}
-      {known && fx.stale && fx.fetchedAt && <Notice tone="warning">Đang dùng tỉ giá cũ ngày {new Date(fx.fetchedAt).toLocaleDateString('vi-VN')}.</Notice>}
+      {known && fx.vndPerUsd === null && <Notice tone="warning">No exchange rate yet, converted figures show “–” for now.</Notice>}
+      {known && fx.stale && fx.fetchedAt && <Notice tone="warning">Using the exchange rate from {new Date(fx.fetchedAt).toLocaleDateString('en-US')}.</Notice>}
 
-      <Toggle value={view} onChange={setView} options={[{ value: 'overview', label: 'Tổng quan' }, { value: 'alloc', label: 'Phân bổ' }]} />
+      <Toggle value={view} onChange={setView} options={[{ value: 'overview', label: 'Overview' }, { value: 'alloc', label: 'Allocation' }]} />
 
       {view === 'alloc' ? (
         <Grid>
           <Col span={7}><GlassCard className="p-4 lg:p-8"><AllocationPies /></GlassCard></Col>
           <Col span={5}>
             <p className="hidden lg:block text-[16px] leading-6" style={{ color: 'var(--subtle)' }}>
-              An toàn là tiền gửi tiết kiệm. Đầu tư là vàng, cổ phiếu, coin, cirBTC. Nhàn rỗi là tiền chưa phân bổ: USDC trong ví và tiền mặt. Kể với agent tài sản bạn đang có, app tự lấy giá.
+              Safe is bank savings. Invest is gold, stocks, coins and cirBTC. Idle is money not put to work yet: wallet USDC and cash. Tell the agent what you hold and the app prices it live.
             </p>
             <Btn variant="outline" onClick={onOpenChat}>{chatLabel}</Btn>
           </Col>
@@ -68,22 +68,22 @@ export function BalanceSheet({ onOpenChat }: { onOpenChat: () => void }) {
       <Grid>
         <Col span={6} className="lg:order-2">
           <Stats items={[
-            { label: 'Quỹ dự phòng', value: money(vb) },
-            { label: 'Ví', value: money(wb) },
+            { label: 'Emergency fund', value: money(vb) },
+            { label: 'Wallet', value: money(wb) },
             { label: 'cirBTC', value: cirBtc.balance === null ? DASH : money(cirValue) },
           ]} />
           {known && p && (
             <div className="flex flex-col gap-2">
-              <Caps>Agent đã ghi nhận</Caps>
+              <Caps>What the agent knows</Caps>
               <Stats items={[
-                { label: 'Thu nhập', value: moneyOfField(p, 'monthlyIncome') },
-                { label: 'Chi tiêu', value: moneyOfField(p, 'monthlyExpenses') },
-                { label: 'Nợ ngoài', value: p.debtAmount === 0 ? 'Không nợ' : moneyOfField(p, 'debtAmount') },
+                { label: 'Income', value: moneyOfField(p, 'monthlyIncome') },
+                { label: 'Spending', value: moneyOfField(p, 'monthlyExpenses') },
+                { label: 'Debt', value: p.debtAmount === 0 ? 'None' : moneyOfField(p, 'debtAmount') },
               ]} />
               <Stats items={[
-                { label: 'Tuổi', value: p.age ?? DASH },
-                { label: 'Thu nhập', value: p.incomeStable === null ? DASH : p.incomeStable ? 'Ổn định' : 'Không ổn định' },
-                { label: 'Tài sản khác', value: moneyOfField(p, 'otherAssets') },
+                { label: 'Age', value: p.age ?? DASH },
+                { label: 'Income is', value: p.incomeStable === null ? DASH : p.incomeStable ? 'Stable' : 'Irregular' },
+                { label: 'Other assets', value: moneyOfField(p, 'otherAssets') },
               ]} />
             </div>
           )}
@@ -92,13 +92,13 @@ export function BalanceSheet({ onOpenChat }: { onOpenChat: () => void }) {
 
         <Col span={6} className="lg:order-1">
           <GlassCard>
-            <Row label="Giá trị ròng" sub="Mọi tài sản − nợ" value={<span className="whitespace-nowrap">{money(netWorth)}</span>} />
-            <Row label="Thanh khoản" sub={math.floorMonths ? `Quỹ + ví · sàn ${math.floorMonths} tháng` : 'Quỹ + ví'}
-              value={liquidMonths !== null ? withMark(`${formatNumber(liquidMonths)} tháng`, liqOk) : DASH}
+            <Row label="Net worth" sub="All assets − debt" value={<span className="whitespace-nowrap">{money(netWorth)}</span>} />
+            <Row label="Liquidity" sub={math.floorMonths ? `Fund + wallet · ${math.floorMonths}-month floor` : 'Fund + wallet'}
+              value={liquidMonths !== null ? withMark(`${formatNumber(liquidMonths)} months`, liqOk) : DASH}
               color={liqOk === null ? undefined : liqOk ? good : bad} />
-            <Row label="Nợ / tài sản" value={debtRatio !== null ? withMark(formatPercent(debtRatio), debtRatio === 0) : DASH}
+            <Row label="Debt / assets" value={debtRatio !== null ? withMark(formatPercent(debtRatio), debtRatio === 0) : DASH}
               color={debtRatio === null ? undefined : debtRatio === 0 ? good : bad} />
-            <Row label="Tỷ lệ tiết kiệm" sub="(Thu nhập − chi tiêu) / thu nhập" value={formatPercent(savingRate)} last />
+            <Row label="Savings rate" sub="(Income − spending) / income" value={formatPercent(savingRate)} last />
           </GlassCard>
           <Btn variant="outline" className="lg:hidden" onClick={onOpenChat}>{chatLabel}</Btn>
         </Col>

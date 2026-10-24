@@ -32,7 +32,7 @@ export function FundScreen({ onOpenChat }: { onOpenChat: () => void }) {
     try {
       if (tab === 'deposit') await vault.deposit(parsed)
       else await vault.withdraw(parsed)
-      setDone(tab === 'deposit' ? `Đã nạp ${formatUsdc(parsed)} vào quỹ` : `Đã rút ${formatUsdc(parsed)} về ví`)
+      setDone(tab === 'deposit' ? `Added ${formatUsdc(parsed)} to your fund` : `Withdrew ${formatUsdc(parsed)} to your wallet`)
       setAmount('')
     } catch (e) {
       setError(txErrorMessage(e))
@@ -60,7 +60,7 @@ export function FundScreen({ onOpenChat }: { onOpenChat: () => void }) {
           <section className="p-4 lg:p-8 flex flex-col gap-2" style={glass.hero}>
             <div className="flex items-center gap-2">
               <Vault size={20} color="white" />
-              <span className="text-[14px] leading-5 font-semibold text-white">Quỹ dự phòng</span>
+              <span className="text-[14px] leading-5 font-semibold text-white">Emergency fund</span>
             </div>
             <div className="flex items-baseline gap-2">
               <span className="display font-bold tabular-nums text-white text-[48px] leading-[56px] lg:text-[56px] lg:leading-[64px]">{num}</span>
@@ -69,19 +69,19 @@ export function FundScreen({ onOpenChat }: { onOpenChat: () => void }) {
             {math.floorUsdc !== null ? (
               <>
                 <p className="text-[16px] leading-6 text-white">
-                  Sàn {math.floorMonths} tháng: {formatUsdc(math.floorUsdc, 0)} · đang có {formatNumber(math.vaultMonths)} tháng
+                  {math.floorMonths}-month floor: {formatUsdc(math.floorUsdc, 0)} · you have {formatNumber(math.vaultMonths)} months
                 </p>
                 <div className="h-2 rounded-full" style={{ background: 'rgba(255,255,255,0.24)' }}>
                   <div className="h-full rounded-full transition-all duration-700 bg-white" style={{ width: `${Math.min(pct, 100)}%` }} />
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[14px] leading-5 text-white">{formatUsdc(vb, 0)} / {formatUsdc(math.floorUsdc, 0)}</span>
-                  <span className="text-[14px] leading-5 font-semibold text-white">{pct >= 100 ? 'Đủ sàn' : `Còn thiếu ${formatUsdc(math.shortfall, 0)}`}</span>
+                  <span className="text-[14px] leading-5 font-semibold text-white">{pct >= 100 ? 'Floor reached' : `${formatUsdc(math.shortfall, 0)} to go`}</span>
                 </div>
               </>
             ) : (
               <button onClick={onOpenChat} className="text-left text-[16px] leading-6 text-white underline">
-                {profile.complete ? 'Chưa có tỉ giá để tính mức sàn' : 'Kể chi tiêu hằng tháng cho agent để biết quỹ cần bao nhiêu'}
+                {profile.complete ? 'No exchange rate yet to work out the floor' : 'Tell the agent your monthly spending to see how big the fund should be'}
               </button>
             )}
           </section>
@@ -91,29 +91,29 @@ export function FundScreen({ onOpenChat }: { onOpenChat: () => void }) {
           {/* Deposit / withdraw card */}
           <GlassCard className="p-4 lg:p-8 flex flex-col gap-4">
             <Toggle value={tab} onChange={t => { setTab(t); setAmount(''); setError(null); setDone(null) }}
-              options={[{ value: 'deposit', label: 'Nạp vào quỹ' }, { value: 'withdraw', label: 'Rút về ví' }]} />
+              options={[{ value: 'deposit', label: 'Add to fund' }, { value: 'withdraw', label: 'Withdraw' }]} />
             <Chips items={[
               { label: '25%', onClick: () => chip(25), disabled: !max },
               { label: '50%', onClick: () => chip(50), disabled: !max },
-              { label: 'Tối đa', onClick: () => chip('max'), disabled: !max },
+              { label: 'Max', onClick: () => chip('max'), disabled: !max },
             ]} />
             <AmountField value={amount} onChange={v => { setAmount(v); setDone(null) }} disabled={vault.busy} />
             <p className="text-[14px] leading-5 -mt-2" style={{ color: 'var(--subtle)' }}>
               {tab === 'deposit'
-                ? `Trong ví: ${formatUsdc(wb)} · giữ lại ${formatUsdc(GAS_RESERVE_USDC6)} làm phí`
-                : `Trong quỹ: ${formatUsdc(vb)} · tiền rút về ví của bạn`}
+                ? `In wallet: ${formatUsdc(wb)} · keeping ${formatUsdc(GAS_RESERVE_USDC6)} for fees`
+                : `In fund: ${formatUsdc(vb)} · goes back to your own wallet`}
             </p>
 
             {tab === 'withdraw' && wb !== null && wb < GAS_ESTIMATE_USDC6 && (
-              <Notice tone="warning">Ví cần khoảng {formatUsdc(GAS_ESTIMATE_USDC6)} để trả phí giao dịch rút.</Notice>
+              <Notice tone="warning">The wallet needs about {formatUsdc(GAS_ESTIMATE_USDC6)} to pay the withdrawal fee.</Notice>
             )}
-            {tooMuch && <Notice tone="danger">{tab === 'deposit' ? 'Vượt số USDC có thể nạp từ ví.' : 'Vượt số dư trong quỹ.'}</Notice>}
+            {tooMuch && <Notice tone="danger">{tab === 'deposit' ? 'More than the wallet can add.' : 'More than the fund holds.'}</Notice>}
             {done && <Notice tone="success">{done}</Notice>}
             {error && <Notice tone="danger">{error}</Notice>}
 
             <Btn loading={vault.busy} disabled={parsed <= 0n || tooMuch || max === null}
               onClick={() => { if (belowFloor) setSheet(true); else void run() }}>
-              {vault.busy ? 'Đang chờ ví…' : tab === 'deposit' ? 'Nạp vào quỹ' : 'Rút về ví'}
+              {vault.busy ? 'Waiting for wallet…' : tab === 'deposit' ? 'Add to fund' : 'Withdraw to wallet'}
             </Btn>
           </GlassCard>
         </Col>
@@ -125,15 +125,15 @@ export function FundScreen({ onOpenChat }: { onOpenChat: () => void }) {
           <div className="flex items-start gap-2">
             <IconBox tone="red"><ShieldAlert size={24} style={{ color: 'var(--danger)' }} /></IconBox>
             <div className="flex flex-col gap-2">
-              <p className="font-semibold text-[20px] leading-7" style={{ color: 'var(--ink)' }}>Rút dưới mức sàn</p>
+              <p className="font-semibold text-[20px] leading-7" style={{ color: 'var(--ink)' }}>Withdraw below the floor</p>
               <p className="text-[16px] leading-6" style={{ color: 'var(--subtle)' }}>
-                Sau khi rút, quỹ còn {formatUsdc(vb !== null ? vb - parsed : null)}, thấp hơn sàn {math.floorMonths} tháng ({formatUsdc(math.floorUsdc)}). Đầu tư sẽ bị khoá cho đến khi nạp đủ lại.
+                After this, the fund holds {formatUsdc(vb !== null ? vb - parsed : null)}, below the {math.floorMonths}-month floor ({formatUsdc(math.floorUsdc)}). Investing locks until you top it back up.
               </p>
             </div>
           </div>
           <div className="flex gap-4">
-            <Btn variant="outline" disabled={vault.busy} onClick={() => setSheet(false)}>Hủy</Btn>
-            <Btn variant="danger" loading={vault.busy} onClick={() => { void run() }}>Vẫn rút</Btn>
+            <Btn variant="outline" disabled={vault.busy} onClick={() => setSheet(false)}>Cancel</Btn>
+            <Btn variant="danger" loading={vault.busy} onClick={() => { void run() }}>Withdraw anyway</Btn>
           </div>
         </Sheet>
       )}

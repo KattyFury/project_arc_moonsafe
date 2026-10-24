@@ -1,5 +1,5 @@
-// Number formatting + parsing. The UI is Vietnamese, so numbers use vi-VN
-// separators everywhere: 3.200,50 (dot = thousands, comma = decimals).
+// Number formatting + parsing. The UI is English (since 2026-10-24), so numbers use en-US
+// separators everywhere: 3,200.50 (comma = thousands, dot = decimals).
 
 import { parseUnits } from 'viem'
 
@@ -11,9 +11,9 @@ export const nativeToUsdc6 = (n: bigint) => n / NATIVE_PER_USDC6
 export const usdc6ToNative = (u: bigint) => u * NATIVE_PER_USDC6
 
 const nf = (max: number, min = 0) =>
-  new Intl.NumberFormat('vi-VN', { minimumFractionDigits: min, maximumFractionDigits: max })
+  new Intl.NumberFormat('en-US', { minimumFractionDigits: min, maximumFractionDigits: max })
 
-/** 6-decimal USDC units → "3.200,5" (no unit). */
+/** 6-decimal USDC units → "3,200.5" (no unit). */
 export function formatUsdcNumber(units: bigint, maxFrac = 2): string {
   const neg = units < 0n
   const abs = neg ? -units : units
@@ -43,31 +43,31 @@ export function formatPercent(n: number | null | undefined, maxFrac = 1): string
   return `${nf(maxFrac).format(n)}%`
 }
 
-/** Keeps only digits and one decimal comma ("." typed by the user becomes ","). Max 6 decimals. */
+/** Keeps only digits and one decimal point (thousands commas are dropped). Max 6 decimals. */
 export function cleanUsdcInput(raw: string): string {
-  let s = raw.replace(/\./g, ',').replace(/[^0-9,]/g, '')
-  const i = s.indexOf(',')
-  if (i !== -1) s = s.slice(0, i + 1) + s.slice(i + 1).replace(/,/g, '').slice(0, 6)
+  let s = raw.replace(/[^0-9.]/g, '')
+  const i = s.indexOf('.')
+  if (i !== -1) s = s.slice(0, i + 1) + s.slice(i + 1).replace(/\./g, '').slice(0, 6)
   s = s.replace(/^0+(?=\d)/, '')
   return s
 }
 
-/** "1234,5" → 1234500000n (6-decimal units). Invalid / empty → 0n. */
+/** "1234.5" → 1234500000n (6-decimal units). Invalid / empty → 0n. */
 export function parseUsdcInput(s: string): bigint {
-  const v = s.replace(/,/g, '.')
+  const v = s
   if (!v || v === '.' || !/^\d*\.?\d*$/.test(v)) return 0n
   try { return parseUnits(v.endsWith('.') ? v.slice(0, -1) || '0' : v, 6) } catch { return 0n }
 }
 
-/** 6-decimal units → editable input string ("1234,5"), truncated (never rounded up). */
+/** 6-decimal units → editable input string ("1234.5"), truncated (never rounded up). */
 export function usdcToInput(units: bigint): string {
   if (units <= 0n) return ''
   const whole = units / 1_000_000n
   let frac = (units % 1_000_000n).toString().padStart(6, '0').slice(0, 2).replace(/0+$/, '')
-  return frac ? `${whole},${frac}` : `${whole}`
+  return frac ? `${whole}.${frac}` : `${whole}`
 }
 
-/** "12.000.000" → 12000000; empty → null. */
+/** "12,000,000" → 12000000; empty → null. */
 export function parseVndInput(s: string): number | null {
   const digits = s.replace(/\D/g, '')
   if (!digits) return null

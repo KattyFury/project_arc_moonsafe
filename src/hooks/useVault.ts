@@ -118,13 +118,13 @@ export function useVaultState(): VaultState {
   }, [address, refresh])
 
   const send = useCallback(async (tx: { to: `0x${string}`; value?: bigint; data: `0x${string}` }) => {
-    if (!publicClient) throw new Error('Chưa kết nối mạng Arc')
+    if (!publicClient) throw new Error('Not connected to the Arc network')
     setBusy(true)
     try {
       await ensureArcChain(connector, switchChainAsync)
       const hash = await sendTransactionAsync({ ...tx, chainId: CHAIN_ID })
       const receipt = await publicClient.waitForTransactionReceipt({ hash })
-      if (receipt.status !== 'success') throw new Error('Giao dịch bị từ chối trên chuỗi')
+      if (receipt.status !== 'success') throw new Error('The transaction was rejected onchain')
       await refresh()
     } finally {
       setBusy(false)
@@ -132,7 +132,7 @@ export function useVaultState(): VaultState {
   }, [publicClient, sendTransactionAsync, refresh, connector, switchChainAsync])
 
   const createVault = useCallback(async () => {
-    if (!address || !publicClient) throw new Error('Chưa kết nối ví')
+    if (!address || !publicClient) throw new Error('Wallet not connected')
     // Read the fee right before signing so the value always matches the contract.
     const feeNative = await publicClient.readContract({ address: FACTORY_ADDRESS, abi: VAULT_FACTORY_ABI, functionName: 'fee' })
     await send({
@@ -143,7 +143,7 @@ export function useVaultState(): VaultState {
   }, [address, publicClient, send])
 
   const deposit = useCallback(async (amount: bigint) => {
-    if (!vaultAddress) throw new Error('Chưa có vault')
+    if (!vaultAddress) throw new Error('No vault yet')
     await send({
       to: vaultAddress,
       value: usdc6ToNative(amount),
@@ -153,7 +153,7 @@ export function useVaultState(): VaultState {
 
   // Withdrawals always go back to the owner's own wallet.
   const withdraw = useCallback(async (amount: bigint) => {
-    if (!vaultAddress || !address) throw new Error('Chưa có vault')
+    if (!vaultAddress || !address) throw new Error('No vault yet')
     await send({
       to: vaultAddress,
       data: encodeFunctionData({ abi: VAULT_PROXY_ABI, functionName: 'withdraw', args: [usdc6ToNative(amount), address] }),
@@ -166,9 +166,9 @@ export function useVaultState(): VaultState {
 /** Short Vietnamese message for wallet / tx errors (user rejection, gas, …). */
 export function txErrorMessage(e: unknown): string {
   const msg = e instanceof Error ? e.message : String(e)
-  if (/reject|denied|cancel/i.test(msg)) return 'Bạn đã từ chối ký trong ví.'
-  if (/insufficient funds|exceeds balance/i.test(msg)) return 'Ví không đủ USDC để trả số tiền và phí giao dịch.'
-  if (/VaultAlreadyExists/i.test(msg)) return 'Ví này đã có vault.'
+  if (/reject|denied|cancel/i.test(msg)) return 'You declined to sign in your wallet.'
+  if (/insufficient funds|exceeds balance/i.test(msg)) return 'The wallet does not have enough USDC for the amount and the fee.'
+  if (/VaultAlreadyExists/i.test(msg)) return 'This wallet already has a vault.'
   const first = msg.split('\n')[0] ?? msg
   return first.length > 160 ? `${first.slice(0, 160)}…` : first
 }

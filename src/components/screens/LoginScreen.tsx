@@ -5,7 +5,7 @@ import { useLogin } from '@privy-io/react-auth'
 import { Vault } from 'lucide-react'
 import { Wordmark } from '@/components/ui/kit'
 
-const STEPS = ['Làm rõ thu chi', 'Tạo quỹ dự phòng', 'Cân đối tài sản', 'Mở khóa đầu tư']
+const STEPS = ['Know your cash flow', 'Build an emergency fund', 'Balance your assets', 'Unlock investing']
 
 function Steps() {
   return (
@@ -26,7 +26,7 @@ export function LoginScreen() {
     <button onClick={() => login()}
       className="w-full max-w-[296px] h-12 lg:w-auto lg:h-14 lg:px-8 rounded-2xl text-[16px] leading-6 font-semibold"
       style={{ background: 'var(--accent)', color: 'white', boxShadow: 'var(--shadow-y2)' }}>
-      Đăng nhập
+      Log in
     </button>
   )
 
@@ -37,7 +37,7 @@ export function LoginScreen() {
         <div className="flex flex-col items-center gap-8">
           <div className="flex flex-col items-center gap-4 text-center">
             <h1><Wordmark size={32} /></h1>
-            <p className="max-w-[296px] text-[24px] leading-8 font-semibold" style={{ color: 'var(--ink)' }}>App quản lý tài chính cá nhân onchain</p>
+            <p className="max-w-[296px] text-[24px] leading-8 font-semibold" style={{ color: 'var(--ink)' }}>Onchain personal finance for Web3</p>
           </div>
           <Steps />
         </div>
@@ -49,7 +49,7 @@ export function LoginScreen() {
         <div className="w-full max-w-[1248px] mx-auto px-6 grid grid-cols-12 gap-6 items-center">
           <div className="col-span-6 flex flex-col items-start gap-8">
             <h1><Wordmark size={40} /></h1>
-            <p className="display text-[56px] leading-[64px] font-bold" style={{ color: 'var(--ink)' }}>App quản lý tài chính cá nhân onchain</p>
+            <p className="display text-[56px] leading-[64px] font-bold" style={{ color: 'var(--ink)' }}>Onchain personal finance for Web3</p>
             <Steps />
             {signIn}
           </div>
@@ -59,13 +59,13 @@ export function LoginScreen() {
               style={{ background: 'linear-gradient(to top right, #0F3DB2, #1E6DF7)', boxShadow: 'var(--shadow-y2)' }}>
               <div className="flex items-center gap-2">
                 <Vault size={20} color="white" />
-                <span className="text-[14px] leading-5 font-semibold text-white">Quỹ dự phòng</span>
+                <span className="text-[14px] leading-5 font-semibold text-white">Emergency fund</span>
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="display text-[48px] leading-[56px] font-bold text-white tabular-nums">1.000</span>
                 <span className="text-[20px] leading-7 font-semibold text-white">USDC</span>
               </div>
-              <p className="text-[16px] leading-6 text-white">Đủ 3 / 6 tháng chi tiêu thiết yếu</p>
+              <p className="text-[16px] leading-6 text-white">3 to 6 months of essential spending</p>
               <div className="h-2 rounded-full" style={{ background: 'rgba(255,255,255,0.24)' }}>
                 <div className="h-full w-1/2 rounded-full bg-white" />
               </div>

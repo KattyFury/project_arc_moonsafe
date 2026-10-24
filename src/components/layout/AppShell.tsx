@@ -28,7 +28,7 @@ function SetupHeader({ onLogout }: { onLogout: () => void }) {
         <h1><Wordmark size={22} /></h1>
         <p className="text-[14px] mono" style={{ color: 'var(--muted)' }}>Arc Testnet</p>
       </div>
-      <button onClick={onLogout} className="ml-auto text-[14px] font-semibold" style={{ color: 'var(--accent)' }}>Đăng xuất</button>
+      <button onClick={onLogout} className="ml-auto text-[14px] font-semibold" style={{ color: 'var(--accent)' }}>Log out</button>
     </div>
   )
 }
@@ -72,11 +72,11 @@ export function AppShell({ onLogout }: { onLogout: () => void }) {
       <Column>
         <SetupHeader onLogout={onLogout} />
         <div className="flex-1 px-4 py-6 flex flex-col gap-4">
-          <Notice tone="warning" title="Ví chưa kết nối">
-            Ví bạn dùng để đăng nhập không còn kết nối với trình duyệt này (ví bị khoá, đã gỡ, hoặc bạn đã đổi sang ví khác). Kết nối lại ví để xem vault.
+          <Notice tone="warning" title="Wallet not connected">
+            The wallet you signed in with is no longer connected to this browser (locked, removed, or you switched wallets). Reconnect it to see your vault.
           </Notice>
-          <Btn onClick={() => connectWallet()}>Kết nối ví</Btn>
-          <Btn variant="outline" onClick={onLogout}>Đăng xuất</Btn>
+          <Btn onClick={() => connectWallet()}>Connect wallet</Btn>
+          <Btn variant="outline" onClick={onLogout}>Log out</Btn>
         </div>
       </Column>
     )
@@ -98,8 +98,8 @@ export function AppShell({ onLogout }: { onLogout: () => void }) {
         <SetupHeader onLogout={onLogout} />
         {vault.readError ? (
           <div className="flex-1 px-4 py-6 flex flex-col gap-4">
-            <Notice tone="warning" title="Chưa đọc được dữ liệu từ Arc Testnet">Mạng có thể đang chậm. App tự thử lại mỗi 15 giây.</Notice>
-            <Btn variant="outline" onClick={() => { void vault.refresh() }}>Thử lại</Btn>
+            <Notice tone="warning" title="Could not read data from Arc Testnet">The network may be slow. The app retries every 15 seconds.</Notice>
+            <Btn variant="outline" onClick={() => { void vault.refresh() }}>Try again</Btn>
           </div>
         ) : <VaultSetup />}
       </Column>
@@ -112,7 +112,7 @@ export function AppShell({ onLogout }: { onLogout: () => void }) {
 
       {cloud.error && (
         <div className="flex-shrink-0 px-4 py-2 text-[14px] leading-5 text-center" style={{ background: '#FEF5D9', color: '#8A5F00' }}>
-          Chưa tải được dữ liệu đã lưu của bạn, đang dùng bản trên máy này. Tải lại trang để thử lại.
+          Could not load your saved data, using the copy on this device. Reload the page to try again.
         </div>
       )}
       <main className="flex-1 overflow-hidden flex flex-col min-h-0">

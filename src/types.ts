@@ -24,15 +24,18 @@ export interface FinancialProfile {
 
 /**
  * savings = bank savings deposit (safe part), cash = cash / payment account (idle money),
- * gold = SJC bars, stock = US stock or ETF, crypto = coin held off Arc (exchange, other chains).
+ * gold = physical gold at the world spot price, stock = US stock or ETF, crypto = coin held
+ * off Arc (exchange, other chains).
  */
 export type HoldingKind = 'savings' | 'cash' | 'gold' | 'stock' | 'crypto'
 export const HOLDING_KINDS: HoldingKind[] = ['savings', 'cash', 'gold', 'stock', 'crypto']
 
 export interface Holding {
   kind: HoldingKind
-  /** gold: lượng; stock: shares; crypto: coins; savings / cash: amount of money in `currency`. */
+  /** gold: troy ounces; stock: shares; crypto: coins; savings / cash: amount of money in `currency`. */
   quantity: number
+  /** gold only: 'oz'. Missing on gold saved before 2026-10-24, which was in lượng (converted on load). */
+  unit?: 'oz'
   /** stock: ticker (SPY); crypto: symbol (ETH); savings / cash: bank or label (optional). */
   symbol?: string
   /** savings / cash only. */

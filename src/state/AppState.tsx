@@ -23,12 +23,9 @@ function readUnit(): Unit {
   try {
     const v = localStorage.getItem(UNIT_KEY)
     if (v === 'VND' || v === 'USD') return v
-    const legacy = localStorage.getItem('moonsafe_lang_v1')
-    if (legacy === 'en') return 'USD'
-    if (legacy === 'vi') return 'VND'
   } catch { /* storage blocked */ }
-  // Default follows the browser language.
-  return typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('vi') ? 'VND' : 'USD'
+  // English-first app (2026-10-24): USD unless the user picked VND in Menu.
+  return 'USD'
 }
 
 export interface FundMath {

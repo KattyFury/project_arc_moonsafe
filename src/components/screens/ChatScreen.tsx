@@ -43,7 +43,7 @@ export function ChatScreen({ onError, onOpenInvest, onActions }: { onError: (m: 
     for (const a of actions) {
       if (a.type === 'open_screen' || a.type === 'show_allocation' || !a.amount) continue
       const amount = a.amount.currency === 'USDC' ? BigInt(Math.round(a.amount.amount * 1_000_000)) : vndToUsdc(a.amount.amount)
-      if (amount === null || amount <= 0n) { toast.error('Chưa quy đổi được số tiền (thiếu tỉ giá). Hãy nói số tiền bằng USDC.'); continue }
+      if (amount === null || amount <= 0n) { toast.error('Could not convert the amount (no exchange rate). Please say it in USDC.'); continue }
       // The reply is appended right after this call, at the current message count.
       const base = { id: Date.now() + next.length, anchor: countRef.current, amount }
       next.push(a.type === 'propose_dca'
@@ -90,7 +90,7 @@ export function ChatScreen({ onError, onOpenInvest, onActions }: { onError: (m: 
       }
       profile.saveProfile(next)
     },
-    onDcaStop: () => { cirBtc.stopDca(); toast('Đã dừng DCA') },
+    onDcaStop: () => { cirBtc.stopDca(); toast('DCA stopped') },
     onActions: handleActions,
   })
 
@@ -141,8 +141,8 @@ export function ChatScreen({ onError, onOpenInvest, onActions }: { onError: (m: 
           )}
 
           {dcaDue && (
-            <Notice tone="info" title="Đến kỳ mua DCA">
-              <button className="underline" onClick={onOpenInvest}>Mở Đầu tư để xem báo giá và ký</button>
+            <Notice tone="info" title="Your DCA buy is due">
+              <button className="underline" onClick={onOpenInvest}>Open Invest to get a quote and sign</button>
             </Notice>
           )}
           <div ref={bottomRef} />
@@ -152,10 +152,10 @@ export function ChatScreen({ onError, onOpenInvest, onActions }: { onError: (m: 
         <div className="flex-shrink-0 flex gap-2 items-center px-4 py-4 lg:px-6 lg:pb-6 lg:pt-0" style={{ background: 'var(--bg)' }}>
           <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void handleSend() } }}
-            placeholder="Nhắn với agent…" aria-label="Tin nhắn"
+            placeholder="Message the agent…" aria-label="Message"
             className="flex-1 min-w-0 h-12 px-4 rounded-full text-[16px] leading-6 outline-none focus-visible:outline-none border border-[var(--line)] focus:border-2 focus:border-[var(--accent)] placeholder:text-[var(--muted)]"
             style={{ background: 'var(--surface-muted)', color: 'var(--ink)' }} />
-          <button onClick={() => { void handleSend() }} disabled={loading || !input.trim()} aria-label="Gửi"
+          <button onClick={() => { void handleSend() }} disabled={loading || !input.trim()} aria-label="Send"
             className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
             style={loading || !input.trim()
               ? { background: 'var(--line)', color: 'var(--muted)' }
