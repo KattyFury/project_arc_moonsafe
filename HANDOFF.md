@@ -6,7 +6,7 @@ Khung tài chính đang chạy: **`docs/FRAMEWORK-TAI-CHINH.md`** (ưu tiên hơ
 
 ## ▶ Làm tiếp từ đây (mới nhất ở trên)
 
--6. **Phiên 2026-10-24 — khung tài chính mới + biểu đồ phân bổ. ĐÃ COMMIT, CHƯA DEPLOY (chờ user duyệt ảnh ở Desktop\MoonSafe-phan-bo-2026-10-24). Eval 76/76 (`--runs 2`, chạy trên `wrangler pages dev` local).**
+-6. **Phiên 2026-10-24 — khung tài chính mới + biểu đồ phân bổ. ĐÃ DEPLOY moonsafe.app 2026-10-24 (ảnh ở Desktop\MoonSafe-phan-bo-2026-10-24). Eval 76/76 (`--runs 2`, chạy trên `wrangler pages dev` local).**
    - User chốt: tiền ngoài quỹ chia **An toàn (gửi tiết kiệm) / Đầu tư (vàng, cổ phiếu Mỹ, coin, cirBTC) / Nhàn rỗi (ví USDC, tiền mặt, stablecoin)**; mục tiêu an toàn = tuổi %, đầu tư = 100 − tuổi %; quỹ đứng riêng; khoá đầu tư giữ (C1); **không chặn mua vượt mục tiêu, chỉ cảnh báo** (H1); vàng giá SJC mua vào (I1); không theo dõi cổ phiếu Việt; **bỏ 110/120, 3 mức, giới hạn 8 USDC** (sắp lên mainnet). Chi tiết: `docs/FRAMEWORK-TAI-CHINH.md`.
    - Code: `src/lib/allocation.ts` (tính phân bổ, dùng chung app + `chat.ts` qua import tương đối), `functions/api/prices.ts` (vàng vang.today, Yahoo, Coinbase/Binance), `src/hooks/usePrices.ts`, `src/components/ui/AllocationPies.tsx` (2 vòng tròn; bản `compact` ở Đầu tư + chat), `FinancialProfile.holdings`. Agent: tool `record_asset` (ghi tài sản, quantity 0 = xoá) + `show_allocation`; prompt REPLY viết lại ngắn (~88 token ra/câu); chốt chặn mới: thẻ phải khớp động từ (mua ≠ nạp), nêu đủ "an toàn X%, đầu tư Y%", không nhầm phần an toàn với quỹ, không đọc lại bảng khi đã hiện biểu đồ.
    - Chi phí đo 2026-10-24: PLAN gpt-4o ~2.600 token vào → ~$0,0067; REPLY 4o-mini ~1,1 lượt × 2.300 vào / 88 ra → ~$0,0004. **≈ $0,007 / tin nhắn** (cũ ~$0,0045; tăng do schema 2 tool mới).
