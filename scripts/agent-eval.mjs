@@ -123,7 +123,12 @@ function check(turn, res, ctx, userTexts) {
   for (const [f, re] of Object.entries(KNOWN_ASK)) if (ctx.profile[f] !== null && questions.some(q => re.test(q))) fails.push(`asks again about known ${f}`)
   const want = turn.action ?? null
   // allowAction: showing the allocation chart unasked is fine on allocation questions.
-  if (!want && acts.some(a => !(turn.allowAction && a.type === 'show_allocation'))) fails.push(`unrequested action ${JSON.stringify(acts)}`)
+  if (!want && !turn.anyAction && acts.some(a => !(turn.allowAction && a.type === 'show_allocation'))) fails.push(`unrequested action ${JSON.stringify(acts)}`)
+  for (const t of turn.forbid ?? []) if (acts.some(a => a.type === t)) fails.push(`must not ${t}`)
+  if (turn.buyMax !== undefined) for (const a of acts.filter(x => x.type === 'prepare_buy_cirbtc')) {
+    const got = a.amount?.currency === 'VND' ? a.amount.amount / rate : a.amount?.amount
+    if (!(got <= turn.buyMax)) fails.push(`cirBTC buy ${got} > BTC share ${turn.buyMax}`)
+  }
   if (want) {
     const a = acts.find(x => x.type === want.type)
     if (!a) fails.push(`expected action ${want.type}, got ${JSON.stringify(acts)}`)
@@ -239,6 +244,13 @@ const SC = [
   // Several steps in one message (PLAN loop, 2026-10-24): record, then show the chart.
   { name: 'record then show allocation', s: { profile: P({ age: 31 }), vault: 0, wallet: 200 }, turns: [
     { u: 'I have $5,000 in savings and 1 ETH. How is my money split now?', assets: [{ kind: 'savings', quantity: 5000 }, { kind: 'crypto', symbol: 'ETH', quantity: 1 }], action: { type: 'show_allocation' } }] },
+  // Real chat 2026-10-24: wallet taken as all the user's money; safe part became a fund deposit; whole invest part into cirBTC.
+  { name: 'wallet only, no split', s: { profile: P({ monthlyIncome: 3000, monthlyExpenses: 1000, debtAmount: 0, age: 31, incomeStable: true, units: USD(['monthlyIncome', 'monthlyExpenses', 'debtAmount']) }), vault: 3000, wallet: 1100.02 }, turns: [
+    { u: 'What should I do with my money?', allowAction: true, mustNot: [/346|754/], must: [/\?/] },
+    { u: 'ok do it', anyAction: true, forbid: ['prepare_deposit', 'prepare_buy_cirbtc'] }] },
+  { name: 'split idle money: bank + mixed invest', s: { profile: P({ monthlyIncome: 3000, monthlyExpenses: 1000, debtAmount: 0, age: 31, incomeStable: true, units: USD(['monthlyIncome', 'monthlyExpenses', 'debtAmount']), holdings: [{ kind: 'savings', quantity: 500, currency: 'USDC' }] }), vault: 3000, wallet: 2000.02 }, turns: [
+    { u: 'What should I do with my idle money?', allowAction: true, must: [/bank|savings/i, /stock|ETF/i, /BTC/], mustNot: [/(add|deposit)[^.?!]{0,30}(to|into) (your |the )?(emergency )?fund/i] },
+    { u: 'ok do it', anyAction: true, forbid: ['prepare_deposit'], buyMax: 520 }] },
   // ---- vi: Vietnamese messages get Vietnamese replies ----
   { name: 'vi: chào hỏi', s: { profile: P({}), vault: 0, wallet: 0 }, turns: [
     { u: 'chào bạn', mustNot: [/\d/, /khoá|khóa/i] }] }, // lang-ok

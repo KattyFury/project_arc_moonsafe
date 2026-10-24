@@ -6,6 +6,17 @@ Khung tài chính đang chạy: **`docs/FRAMEWORK-TAI-CHINH.md`** (ưu tiên hơ
 
 ## ▶ Làm tiếp từ đây (mới nhất ở trên)
 
+-12. **2026-10-24 (tối, cuối) — sửa theo ảnh user gửi + agent gọn hơn. ĐÃ DEPLOY. Eval local 100/100 (`--runs 2`, 47 tình huống).**
+   - Lỗi thật (ảnh chat): agent chia USDC trong ví thành "Add 346 USDC to your safe assets" → **thẻ nạp QUỸ** + "Buy 754 USDC of cirBTC" (cả phần đầu tư vào BTC), coi ví là toàn bộ tài sản.
+   - User chốt: phần an toàn = tiết kiệm ngân hàng ngoài quỹ; phần đầu tư chia nhiều loại theo bản gốc 23/10 (**2a**); phải hỏi tài sản khác để có bức tranh tổng thể. Đã ghi vào `docs/FRAMEWORK-TAI-CHINH.md` mục 5.
+   - Code: `investMix()` + `byClass` / `suggestInvest` / `declared` trong `src/lib/allocation.ts`; facts: chưa khai tài sản → chỉ %, hỏi tài sản khác (chỉ khi hỏi chuyện chia / đầu tư); gợi ý chia phần đầu tư (cổ phiếu / BTC / altcoin).
+   - Chốt chặn PLAN mới: thẻ nạp bằng đúng số gợi ý phần an toàn → từ chối; "ok" không kèm số → số trên thẻ phải là số agent vừa đề xuất (trừ "all / whole / hết"); mua cirBTC / DCA không kèm số → không vượt phần BTC, chưa khai tài sản → từ chối; DCA chỉ khi người dùng hoặc agent nhắc tới; `record_asset` chỉ ghi số lượng có trong câu người dùng (mini từng bịa 759 USDC tiền mặt từ "ok do it").
+   - Chốt chặn REPLY mới: mời / nhận "chuyển vào savings" → viết lại (`SAFE_IN_APP`); "please provide…" → viết lại (`PUSHY`); hỏi về nợ phải trả lời về nợ; hỏi cách xây quỹ phải nêu để dành mỗi tháng; hỏi dùng tiền phải nêu chia cổ phiếu / BTC / altcoin + phần ngân hàng.
+   - **Gọn hơn** (user: "nói khá dài dòng"): prompt = câu đầu trả lời thẳng, tối đa 2 câu + 1 câu hỏi (hỏi why/what tối đa 4); server bắt rút gọn khi > 340 ký tự (why: 520), chỉ SAU khi nội dung đã đúng (sửa cùng lúc thì model cắt mất ý). Viết lại tối đa 3 lần. Trung vị độ dài 305 → **228 ký tự**, p90 422 → ~320.
+   - Chi phí đo (100 tin): PLAN ~4.290 vào / 31 ra, REPLY ~2.645 vào / 70 ra → **≈ $0,0011 / tin**.
+   - Chờ user: vàng có tỉ lệ riêng trong phần đầu tư không? Biểu đồ trong app (Balance / Invest) chưa vẽ phần chia cổ phiếu / BTC / altcoin, mới chỉ agent nói.
+   - Mẹo: `wrangler pages dev` thỉnh thoảng chết khi tự reload (`SQLITE_BUSY`) → chạy lại lệnh, không phải lỗi code.
+
 -11. **2026-10-24 (tối, tiếp) — PLAN thành vòng lặp tool tối đa 10 bước (user chọn 1a). ĐÃ DEPLOY. Eval 91/92 (`--runs 2`, 45 tình huống).**
    - `MAX_PLAN_STEPS = 10` trong `functions/api/chat.ts`. Mỗi bước gpt-4o-mini bắt buộc gọi tool, nhận lại kết quả từng tool (đã làm / bị chặn / "Not done: the user did not ask" / "Already done"), sau khi ghi số liệu thì nhận "Figures now" (cùng `currentFacts()` mà REPLY dùng); gọi `no_action` là dừng. Gọi lại y hệt bị từ chối; mỗi loại thẻ chỉ hiện 1 lần. Mọi chốt chặn cũ giữ nguyên (nằm trong `handle()`).
    - Ví dụ chạy được giờ: "I have $5,000 in savings and 1 ETH. How is my money split now?" → ghi tài sản → thấy số mới → hiện biểu đồ, trong 1 tin nhắn (tình huống `record then show allocation`).

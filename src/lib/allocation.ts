@@ -15,6 +15,25 @@ export const BUCKET_OF: Record<HoldingKind, Bucket> = { savings: 'safe', cash: '
 /** Dollar stablecoins: priced at 1 and counted as idle money, not as an investment. */
 export const STABLECOINS = new Set(['USDT', 'USDC', 'DAI', 'FDUSD', 'USDE'])
 
+/** BTC and its wrapped forms (cirBTC is bought in the app). */
+export const BTC_SYMBOLS = new Set(['BTC', 'WBTC', 'CBBTC', 'CIRBTC'])
+
+/** Kinds inside the invest part. Gold has no set share in the MoonSafe view. */
+export type InvestClass = 'stocks' | 'btc' | 'altcoin' | 'gold'
+export const INVEST_CLASS_LABEL: Record<InvestClass, string> = { stocks: 'Index stocks / ETF', btc: 'BTC', altcoin: 'Altcoins', gold: 'Gold' }
+
+/**
+ * MoonSafe's view of the invest part, in % of ALL money outside the fund (docs/FRAMEWORK-TAI-CHINH.md,
+ * original 23/10, user chose it 2026-10-24): age 30 → stocks 40, BTC 20, altcoins 10. Older: altcoins
+ * go first (none from 40), then BTC (none from 60), stocks last.
+ */
+export function investMix(age: number): Record<Exclude<InvestClass, 'gold'>, number> {
+  const invest = Math.max(0, 100 - Math.round(age))
+  const altcoin = Math.min(invest, Math.max(0, Math.min(10, 40 - Math.round(age))))
+  const btc = Math.min(invest - altcoin, Math.max(0, Math.min(20, 60 - Math.round(age))))
+  return { stocks: invest - altcoin - btc, btc, altcoin }
+}
+
 export const bucketOf = (h: Holding): Bucket =>
   h.kind === 'crypto' && STABLECOINS.has((h.symbol ?? '').toUpperCase()) ? 'idle' : BUCKET_OF[h.kind]
 
@@ -92,6 +111,14 @@ export interface Allocation {
   target: { safePct: number; investPct: number } | null
   /** How to place the idle money to move toward the target (USD); null without a target or idle money. */
   suggest: { toSafe: number; toInvest: number } | null
+  /** USD held in each kind of the invest part. */
+  byClass: Record<InvestClass, number>
+  /** investMix(age); null until the age is known. */
+  mix: Record<Exclude<InvestClass, 'gold'>, number> | null
+  /** suggest.toInvest split over the kinds that lack against the mix (USD). */
+  suggestInvest: Record<Exclude<InvestClass, 'gold'>, number> | null
+  /** True when the user told the agent about money outside the app (savings, cash, gold, stocks, coins). */
+  declared: boolean
 }
 
 export const HOLDING_LABEL: Record<HoldingKind, string> = { savings: 'Savings', cash: 'Cash', gold: 'Gold', stock: 'Stock', crypto: 'Coin' }
@@ -106,6 +133,7 @@ export function allocate(input: { holdings?: Holding[]; walletUsd: number | null
   const unpriced: Holding[] = []
   if (input.walletUsd !== null && input.walletUsd > 0) parts.push({ label: 'Wallet USDC', bucket: 'idle', usd: input.walletUsd })
   if (input.cirBtcUsd !== null && input.cirBtcUsd > 0) parts.push({ label: 'cirBTC', bucket: 'invest', usd: input.cirBtcUsd })
+  const declared = (input.holdings ?? []).length > 0
   for (const h of input.holdings ?? []) {
     const usd = holdingUsd(h, input.prices, input.vndPerUsd)
     if (usd === null) unpriced.push(h)
@@ -126,5 +154,24 @@ export function allocate(input: { holdings?: Holding[]; walletUsd: number | null
     const k = need > idle ? idle / need : 1
     suggest = { toSafe: needSafe * k, toInvest: needInvest * k }
   }
-  return { safe, invest, idle, total, parts, unpriced, target, suggest }
+  const byClass: Record<InvestClass, number> = { stocks: 0, btc: 0, altcoin: 0, gold: 0 }
+  for (const p of parts) {
+    if (p.bucket !== 'invest') continue
+    const h = p.holding
+    const c: InvestClass = !h ? 'btc' : h.kind === 'gold' ? 'gold' : h.kind === 'stock' ? 'stocks' : BTC_SYMBOLS.has((h.symbol ?? '').toUpperCase()) ? 'btc' : 'altcoin'
+    byClass[c] += p.usd
+  }
+  const mix = age !== null && age > 0 ? investMix(age) : null
+  let suggestInvest: Allocation['suggestInvest'] = null
+  if (mix && suggest && suggest.toInvest > 0) {
+    // Gold has no share, so these gaps add up to at least toInvest; share it pro rata.
+    const gap = { stocks: 0, btc: 0, altcoin: 0 }
+    for (const c of ['stocks', 'btc', 'altcoin'] as const) gap[c] = Math.max(0, total * mix[c] / 100 - byClass[c])
+    const all = gap.stocks + gap.btc + gap.altcoin
+    if (all > 0) {
+      const k = Math.min(1, suggest.toInvest / all)
+      suggestInvest = { stocks: gap.stocks * k, btc: gap.btc * k, altcoin: gap.altcoin * k }
+    }
+  }
+  return { safe, invest, idle, total, parts, unpriced, target, suggest, byClass, mix, suggestInvest, declared }
 }
