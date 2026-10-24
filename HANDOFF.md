@@ -13,7 +13,7 @@ Khung tài chính đang chạy: **`docs/FRAMEWORK-TAI-CHINH.md`** (ưu tiên hơ
    - **Chưa test bằng đăng nhập thật** (Claude không đăng nhập Privy được): kể tài sản với agent → Balance › Allocation; ký nạp / mua cirBTC qua thẻ trong chat; vàng cũ (đã khai theo lượng) có tự đổi sang ounce đúng không.
    - Mẹo kiểm agent bằng lệnh: gửi tiếng Việt bằng `node` (fetch), KHÔNG dùng `curl` trong Git Bash — curl làm hỏng dấu nên agent tưởng là English.
    - Dọn dẹp tuỳ chọn: `git stash@{0}` trên máy Dell (bản 3 mức + 8 USDC đã bỏ) xoá được khi chắc không cần; `server/index.ts` (server dev cũ) vẫn tiếng Việt, không dùng ở production.
-   - Còn treo từ trước: não agent vẫn là OpenAI (gpt-4o + 4o-mini), luật chung muốn Claude qua SDK Anthropic — chờ user quyết.
+   - **Não agent: GIỮ OpenAI (user chốt 2026-10-24)** — user được tặng token OpenAI miễn phí, muốn dùng GPT mini cho rẻ. Ngoại lệ của luật chung "não mặc định Claude"; đừng đề xuất đổi sang Claude nữa.
 
 -7. **Phiên 2026-10-24 (chiều) — app chuyển sang English (thi hackathon). ĐÃ DEPLOY. Eval 86/86 (`--runs 2`, 43 tình huống, có 5 tình huống tiếng Việt).**
    - User chốt: **chỉ English** (1a), agent trả lời theo ngôn ngữ người dùng nhắn, mặc định English (2a), **mặc định USD** (3a), **vàng = giá thế giới** XAU/USD theo ounce (api.gold-api.com, dự phòng Yahoo GC=F). Sau này ổn mới thêm ngôn ngữ.
@@ -73,7 +73,7 @@ Khung tài chính đang chạy: **`docs/FRAMEWORK-TAI-CHINH.md`** (ưu tiên hơ
    - Agent mở sẵn màn + điền số (thử "nạp 10 USDC vào quỹ").
    - Thẻ khai báo với nút ₫ / USDC.
 
-3. **Chờ user quyết:** não agent đang là OpenAI (gpt-4o + gpt-4o-mini, Arc Studio chọn); luật chung muốn Claude qua SDK Anthropic.
+3. **Đã quyết 2026-10-24:** giữ OpenAI (user có token OpenAI miễn phí, ưu tiên GPT mini cho rẻ). Không đổi sang Claude.
 
 4. Lỗi typecheck có sẵn từ Arc Studio, không liên quan: `scripts/compass-deploy.ts` thiếu module `@circlefin/compass-chains`.
 
