@@ -153,6 +153,7 @@ function check(turn, res, ctx, userTexts) {
     else if (Math.abs(a.quantity - w.quantity) > 1e-3 * Math.max(1, w.quantity)) fails.push(`asset ${w.kind} ${w.symbol ?? ''} quantity ${a.quantity} ≠ ${w.quantity}`)
   }
   for (const k of turn.noAsset ?? []) if (got.some(h => `${h.kind}:${h.symbol ?? ''}` === k)) fails.push(`should not record ${k}`)
+  if (turn.goldMaxOz !== undefined) for (const h of got.filter(x => x.kind === 'gold')) if (!(h.quantity > 0 && h.quantity <= turn.goldMaxOz)) fails.push(`gold recorded as ${h.quantity} ${h.unit ?? ''}, want 0–${turn.goldMaxOz} oz`)
   if (!turn.assets && !turn.allowAssets && got.length) fails.push(`unrequested assets ${JSON.stringify(got)}`)
   return fails
 }
@@ -254,6 +255,14 @@ const SC = [
   // Stocks and gold are one share of investing (user, 2026-10-24).
   { name: 'gold counts with stocks', s: { profile: P({ monthlyIncome: 3000, monthlyExpenses: 1000, debtAmount: 0, age: 31, incomeStable: true, units: USD(['monthlyIncome', 'monthlyExpenses', 'debtAmount']), holdings: [{ kind: 'gold', quantity: 0.1, unit: 'oz' }] }), vault: 3000, wallet: 3000.02 }, turns: [
     { u: 'What should I do with my idle money?', allowAction: true, must: [/stocks? (&|and) gold|gold/i, /BTC/] }] },
+  // Real chat 2026-10-24 (pasted by the user): 15.93 = cirBTC already held, read as "you can invest 15.93";
+  // "$2000 of gold" recorded as 2,000 oz; a fund deposit offered for the bank-savings part.
+  { name: 'real chat: holds cirBTC, gold by value', s: { profile: P({ monthlyIncome: 3000, monthlyExpenses: 1000, debtAmount: 0, age: 31, incomeStable: true, units: USD(['monthlyIncome', 'monthlyExpenses', 'debtAmount']) }), vault: 3000, wallet: 1100.63, cir: 15.93 }, turns: [
+    { u: 'Yes I do want to. What should I invest', allowAction: true, forbid: ['prepare_deposit', 'prepare_buy_cirbtc'], mustNot: [/(invest|buy|purchase)[^.?!]{0,20}15.93/i] },
+    { u: 'I have 2000$ of gold at curent price', allowAssets: true, allowAction: true, goldMaxOz: 1, mustNot: [/(invest|buy|purchase)[^.?!]{0,20}15.93/i] },
+    { u: 'just doing at you said', anyAction: true, forbid: ['prepare_deposit'], buyMax: 100, mustNot: [/(invest|buy|purchase)[^.?!]{0,20}15.93/i, /deposit[^.?!]{0,30}1,1\d\d/i] },
+    { u: 'just BTC', anyAction: true, forbid: ['prepare_deposit'], buyMax: 100, mustNot: [/(invest|buy|purchase)[^.?!]{0,20}15.93/i] },
+    { u: 'yes', anyAction: true, buyMax: 100 }] },
   // ---- vi: Vietnamese messages get Vietnamese replies ----
   { name: 'vi: chào hỏi', s: { profile: P({}), vault: 0, wallet: 0 }, turns: [
     { u: 'chào bạn', mustNot: [/\d/, /khoá|khóa/i] }] }, // lang-ok

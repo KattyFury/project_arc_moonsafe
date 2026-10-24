@@ -95,7 +95,7 @@ const STABILITY_WORDS = /(?<!\p{L})(stable|steady|regular|irregular|fixed|employ
 const SAYS_NONE = /(?<!\p{L})(no|none|zero|nothing|don'?t have|do not have|debt[- ]free|paid off|không|chưa có|hết nợ|ko có)(?!\p{L})|(?<![\d.,])0(?![\d.,])/iu // lang-ok
 // Vietnamese stocks are not price-tracked; gpt-4o-mini still filed "FPT on the Vietnam exchange" as a stock.
 const VN_MARKET = /vietnam|(?<!\p{L})(vn|hose|hnx|upcom|vn-?index)(?!\p{L})|việt nam|sàn việt|chứng khoán việt|cổ phiếu việt/iu // lang-ok
-const ASKS_STABLE =/(stable|steady|regular)[^.!?\n]*\?|ổn định[^.!?\n]*\?|ổn định[^.!?\n]*(không|chưa)\.\s*[^.!?\n]{0,80}\?/i // lang-ok
+const ASKS_STABLE = /(stable|steady|regular)[^.!?\n]*\?|ổn định[^.!?\n]*\?|ổn định[^.!?\n]*(không|chưa)\.\s*[^.!?\n]{0,80}\?/i // lang-ok
 
 /**
  * Last resort after the rewrites: remove a repeated stability question, then keep only the
@@ -116,14 +116,23 @@ const SAYS_NOTED = /\b(noted|recorded|got it saved)\b|đã ghi nhận/i // lang-
 const NEEDS_AMOUNT = /((need|have|has) to (add|deposit|put)|can (add|deposit|put) up to|to reach (its|the|your) (required )?floor)[^.?!\n]{0,30}\d|(cần|phải|được tối đa) (nạp|thêm)[^.?!\n]{0,30}\d/i // lang-ok
 // "Yes. How much I have to add?" is a question, not an order: gpt-4o-mini prepared a deposit of the whole wallet (2026-10-24).
 const ASKS_USE = /idle|what (should|can) i do with|how (should|do) i (split|invest|use)|nhàn rỗi|làm gì với|chia (tiền|thế nào|sao)/i // lang-ok
-const BUILD_FUND =/(?<!\p{L})(build|grow|save|saving|reach|xây|để dành|tiết kiệm)(?!\p{L})/iu // lang-ok
-const DEBT_WORD =/(?<!\p{L})(debts?|loans?|nợ|khoản vay)(?!\p{L})/iu // lang-ok
-const PUSHY =/(you need to|you must|please) (declare|provide|fill in)|(bạn cần|vui lòng|hãy|bạn phải)\s+khai báo/i // lang-ok
-const SOLD =/(?<!\p{L})(sold|no longer|don'?t have|gone|bán hết|không còn)(?!\p{L})/iu // lang-ok
+const BUILD_FUND = /(?<!\p{L})(build|grow|save|saving|reach|xây|để dành|tiết kiệm)(?!\p{L})/iu // lang-ok
+const DEBT_WORD = /(?<!\p{L})(debts?|loans?|nợ|khoản vay)(?!\p{L})/iu // lang-ok
+const PUSHY = /(you need to|you must|please) (declare|provide|fill in)|(bạn cần|vui lòng|hãy|bạn phải)\s+khai báo/i // lang-ok
+const OFFERED: Record<string, RegExp> = {
+  prepare_buy_cirbtc: /(prepare|set up|proceed|go ahead)[^.?!\n]{0,40}(buy|purchase|invest)|(buy|purchase|cirBTC)[^.?!\n]{0,40}\?/i,
+  prepare_deposit: /(prepare|set up)[^.?!\n]{0,30}deposit/i,
+  prepare_withdraw: /(prepare|set up)[^.?!\n]{0,30}withdraw/i,
+}
+const NOTHING_ELSE = /(?<!\p{L})(nothing( else)?|none|no other|that'?s (all|it)|only (the|this|my) (app )?wallet|just (the|this|my) wallet|không có gì|không còn gì|chỉ có (ví|thế))(?!\p{L})/iu // lang-ok
+const ASKED_HOLDINGS = /what (else|other)[^.?!\n]{0,60}\?|other (assets|investments)[^.?!\n]{0,40}\?|(tài sản|đầu tư) (gì )?khác[^.?!\n]{0,40}\?/i // lang-ok
+// Money amounts with their unit on either side: "$2,000", "2000$", "2,000 USD", "50 million VND".
+const MONEY_AMT = /\$\s?(\d[\d.,]*\d|\d)|(\d[\d.,]*\d|\d)\s?(\$|usdc?\b|dollars?\b|vnd\b|đ\b|₫|triệu|million)/gi // lang-ok
+const SOLD = /(?<!\p{L})(sold|no longer|don'?t have|gone|bán hết|không còn)(?!\p{L})/iu // lang-ok
 // "Would you like me to prepare a deposit for your savings?" / "I've prepared to move 275 USDC to your savings account".
 // Only offers / claims by the agent, so advice like "you could move 275 USDC to your bank savings" passes.
 const SAFE_IN_APP = /(\bI(['’]ve|['’]ll| have| will| can)?|would you like me to|shall I|let me|want me to)\s[^.?!\n]{0,20}(prepare|prepared|set up|make|arrange|move|moved|transfer|transferred)\b[^.?!\n]{0,40}(to|into|for) (your |the )?(safe )?(savings|bank|safe)|(mình|để mình)[^.?!\n]{0,20}(chuẩn bị|chuyển|nạp)[^.?!\n]{0,40}(tiết kiệm|ngân hàng)/i // lang-ok
-const FUND_WORD =/fund|vault|emergency|quỹ/i // lang-ok
+const FUND_WORD = /fund|vault|emergency|quỹ/i // lang-ok
 const ALL_OF_IT = /(?<!\p{L})(all|whole|everything|entire|max|hết|toàn bộ|tất cả)(?!\p{L})/iu // lang-ok
 const ASKS_HOW_MUCH = /how much|bao nhiêu/i // lang-ok
 const SAYS_LOCKED = /lock|kho[áa]|khóa/i // lang-ok
@@ -230,7 +239,8 @@ Examples: "credit card debt of $2,000" → debtAmount 2000 USDC. "an apartment w
 
 ## record_asset
 - savings = bank savings deposit (quantity = amount, currency, symbol = bank name if given). cash = cash / checking account (quantity = amount, currency).
-- gold = physical gold (quantity + unit: "oz", "g", "kg", "luong" or "chi"; ${VI_GOLD}). If they only give the value of their gold and no quantity → do not record it.
+- gold = physical gold (quantity + unit: "oz", "g", "kg", "luong" or "chi"; ${VI_GOLD}).
+- Only a value given ("$2,000 of gold", "ETH worth $500") → record_asset with worth (amount + currency) and no quantity; the app converts it at the live price. Never put gold, US stocks or coins in otherAssets.
 - stock = US-listed stock or ETF (symbol = ticker: SPY, VOO, AAPL; quantity = shares). Vietnamese stocks (FPT, VNM…) are NOT stock: put their stated value in update_profile.otherAssets.
 - crypto = coins held off Arc (symbol: BTC, ETH, SOL, USDT…; quantity = coins). cirBTC in the Arc wallet is read by the app, do not record it.
 - Record only quantities the user said, never guess. Example: "I have $10,000 in savings at Chase, 2 oz of gold and 0.5 ETH on Binance" → savings 10000 USDC symbol "Chase"; gold 2 oz; crypto ETH 0.5.`
@@ -263,12 +273,13 @@ const PLAN_TOOLS = [
         type: 'object',
         properties: {
           kind: { type: 'string', enum: ['savings', 'cash', 'gold', 'stock', 'crypto'], description: 'savings = bank savings, cash = cash / checking account, gold = physical gold, stock = US stock / ETF, crypto = coin held off Arc' },
-          quantity: { type: 'number', description: 'savings / cash: amount of money; gold: quantity in unit; stock: shares; crypto: coins' },
+          quantity: { type: 'number', description: 'savings / cash: amount of money; gold: quantity in unit; stock: shares; crypto: coins. Leave out when the user only gave what it is worth.' },
+          worth: { ...MONEY, description: 'What it is worth, when the user gave a value instead of a quantity ("$2,000 of gold", "ETH worth 50 million VND"); the app converts at the live price' },
           symbol: { type: 'string', description: 'stock: US ticker (SPY); crypto: symbol (ETH); savings / cash: bank name if given' },
           unit: { type: 'string', enum: ['oz', 'g', 'kg', 'luong', 'chi'], description: 'Gold only' },
           currency: { type: 'string', enum: ['VND', 'USDC'], description: 'Savings / cash only' },
         },
-        required: ['kind', 'quantity'],
+        required: ['kind'],
       },
     },
   }, ['items']),
@@ -423,7 +434,8 @@ function fundFacts(appState: Record<string, unknown> | null, update: Record<stri
   if (debt) lines.push(`- Outside debt: ${both(debt)}`)
   else if (debtRaw === 0 || (debtRaw && typeof debtRaw === 'object' && (debtRaw as { amount?: number }).amount === 0)) lines.push('- Outside debt: none')
   if (other) lines.push(`- Other assets: ${both(other)}`)
-  if (cir > 0) lines.push(`- cirBTC held: ${showUsd(cir)}`)
+  // "You can invest 15.93 USDC in cirBTC" quoted the cirBTC already held (real chat 2026-10-24).
+  if (cir > 0) lines.push(`- cirBTC already held: ${showUsd(cir)} (owned, NOT an amount to buy or invest)`)
   let savedUsd: number | null = null
   if (inc && exp) {
     const incUsd = inc.currency === 'USDC' ? inc.amount : rate ? inc.amount / rate : null
@@ -456,7 +468,7 @@ function fundFacts(appState: Record<string, unknown> | null, update: Record<stri
       lines.push(`- MoonSafe view of the invest part at age ${age} (% of all money outside the fund): stocks & gold ${m.stocks}% (one share: the safer, larger part of investing; index stocks / ETF and gold), BTC ${m.btc}%, altcoins up to ${m.altcoin}%. Held now: stocks & gold ${showUsd(c.stocks)}, BTC incl. cirBTC ${showUsd(c.btc)}, altcoins ${showUsd(c.altcoin)}. When suggesting this split, say it is MoonSafe's view and that its crypto share is above what institutions suggest (0–5%).`)
     }
     // A wallet alone is not someone's money: the agent once split the wallet as if it were everything (real chat 2026-10-24).
-    if (!alloc.declared) lines.push('- Only the app wallet is known: the user has not said what else they hold (bank savings, cash, gold, stocks, coins). If they ask how to split, invest or use their money: suggest NO split and NO deposit or purchase from the wallet; first ask what else they hold, one question (unless they already said they have nothing else). On other topics do not bring it up.')
+    if (!alloc.declared) lines.push('- Only the app wallet is known: the user has not said what else they hold (bank savings, cash, gold, stocks, coins). If they ask how to split, invest or use their money: suggest NO split and NO deposit or purchase from the wallet, and turn NO percentage into an amount (40% of the wallet is not 40% of their money); first ask what else they hold, one question (unless they already said they have nothing else). On other topics do not bring it up.')
     else if (alloc.suggest && alloc.idle > 0) {
       lines.push(`- Suggested split of idle money ${showUsd(alloc.idle)} to get closer to target: ${showUsd(alloc.suggest.toSafe)} to safe = the user's OWN bank savings account (state-backed bank, earns interest; NOT the emergency fund, nothing to do in the app), ${showUsd(alloc.suggest.toInvest)} to invest`)
       const si = alloc.suggestInvest
@@ -530,10 +542,14 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   const prevAssistantText = [...messages.slice(0, lastUserAt)].reverse().find(m => m.role === 'assistant')?.content ?? ''
   const vnClauses = lastUserText.split(/[.;\n]|,(?!\d)|\band\b/i).filter(c => VN_MARKET.test(c))
   const vnDropped: string[] = []
+  // Stop asking what else they hold once they said there is nothing else, or after asking twice.
+  const firstAsk = messages.findIndex((m, i) => i < lastUserAt && m.role === 'assistant' && ASKED_HOLDINGS.test(m.content))
+  const askedHoldings = firstAsk >= 0 && (messages.filter((m, i) => i < lastUserAt && m.role === 'assistant' && ASKED_HOLDINGS.test(m.content)).length >= 2
+    || messages.some((m, i) => i > firstAsk && m.role === 'user' && NOTHING_ELSE.test(m.content)))
   const wantsInvestLocked = !investUnlocked && INVEST_INTENT.test(lastUserText) && !ASKS_WHY.test(lastUserText) && !DEPOSIT_WORD.test(lastUserText)
   let startAlloc: Allocation | null = null
   // One tool call → its result for the next PLAN step.
-  const handle = (call: ToolCall): string => {
+  const handle = async (call: ToolCall): Promise<string> => {
     let args: Record<string, unknown> = {}
     try { args = JSON.parse(call.function.arguments || '{}') as Record<string, unknown> } catch { return 'Could not read the arguments.' }
     const name = call.function.name
@@ -563,11 +579,31 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       // Each quantity must be in the user's words: "ok do it" once recorded 759 USDC of cash out of nothing (2026-10-24).
       const said = [...lastUserText.replace(/ /g, ' ').matchAll(NUMBER)].flatMap(m => readings(m[1]).map(v => v * (m[2] ? 1e6 : 1)))
       const stated = (q: unknown) => typeof q === 'number' && (q === 0 ? SAYS_NONE.test(lastUserText) || SOLD.test(lastUserText) : said.some(n => n > 0 && (Math.abs(n - q) / n <= 0.01 || Math.abs(n * 1000 - q) / (n * 1000) <= 0.01)))
-      const items = (Array.isArray(args.items) ? args.items as Array<Record<string, unknown>> : []).filter(i => {
-        if (stated(i.quantity)) return true
-        console.log(`dropped asset ${JSON.stringify(i)}: quantity not in "${lastUserText.slice(0, 60)}"`)
-        return false
+      // "$2000 of gold" is a worth, not 2,000 oz (real chat 2026-10-24): convert it at the live price.
+      const money = [...lastUserText.replace(/ /g, ' ').matchAll(MONEY_AMT)].map(m => {
+        const unit = (m[3] ?? '$').toLowerCase()
+        const k = /^(triệu|million)/.test(unit) ? 1e6 : 1 // lang-ok
+        return { amount: readings(m[1] ?? m[2])[0] * k, currency: /vnd|đ|₫|triệu/.test(unit) ? 'VND' : 'USDC' } // lang-ok
       })
+      const items: Array<Record<string, unknown>> = []
+      for (const i of Array.isArray(args.items) ? args.items as Array<Record<string, unknown>> : []) {
+        const kind = String(i.kind), sym = String(i.symbol ?? '').toUpperCase()
+        const w = i.worth && typeof i.worth === 'object' ? i.worth as { amount?: unknown; currency?: unknown } : null
+        const worth = w && typeof w.amount === 'number' ? { amount: w.amount, currency: w.currency === 'VND' ? 'VND' : 'USDC' }
+          : typeof i.quantity === 'number' && i.quantity > 0 ? money.find(m => Math.abs(m.amount - (i.quantity as number)) <= m.amount * 0.01) ?? null : null
+        if (worth && (kind === 'savings' || kind === 'cash')) { items.push({ ...i, quantity: worth.amount, currency: worth.currency }); continue }
+        if (worth && (kind === 'gold' || kind === 'stock' || kind === 'crypto')) {
+          if (!stated(worth.amount)) { console.log(`dropped asset ${JSON.stringify(i)}: worth not in the message`); continue }
+          const usd = worth.currency === 'VND' ? (rate ? worth.amount / rate : null) : worth.amount
+          const pr = await getPrices(kind === 'stock' ? [sym] : [], kind === 'crypto' ? [sym] : [])
+          const price = kind === 'gold' ? pr.goldUsdPerOz : pr.usd[`${kind}:${sym}`]
+          if (!usd || !price) { done.push(`No live price for ${sym || kind}, so it was NOT recorded: ask how much they hold (ounces / shares / coins).`); continue }
+          items.push({ kind, ...(sym ? { symbol: sym } : {}), quantity: usd / price, ...(kind === 'gold' ? { unit: 'oz' } : {}) })
+          continue
+        }
+        if (stated(i.quantity)) items.push(i)
+        else console.log(`dropped asset ${JSON.stringify(i)}: quantity not in "${lastUserText.slice(0, 60)}"`)
+      }
       // toHolding converts gold from any unit to troy ounces.
       const found = items.map(i => toHolding(i.kind === 'gold' ? { ...i, unit: typeof i.unit === 'string' ? i.unit : 'oz' } : i))
         .filter((h): h is Holding => h !== null)
@@ -587,12 +623,19 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       dcaStop = true
       done.push('DCA was stopped in the app.')
     } else if (UI_ACTIONS.has(name)) {
-      if (!ACTION_INTENT.test(lastUserText) || (ASKS_HOW_MUCH.test(lastUserText) && !/\d/.test(lastUserText)) || (ACTION_VERB[name] && !ACTION_VERB[name].test(lastUserText) && !AGREES.test(lastUserText))) {
+      // "just doing as you said" / "just BTC" right after the agent offered this action is a yes (real chat 2026-10-24).
+      // A message with numbers ("I have 2000$ of gold") tells something new, it does not accept the offer.
+      const acceptsOffer = !!OFFERED[name]?.test(prevAssistantText) && !lastUserText.includes('?') && !/\d/.test(lastUserText)
+      if (!acceptsOffer && (!ACTION_INTENT.test(lastUserText) || (ASKS_HOW_MUCH.test(lastUserText) && !/\d/.test(lastUserText)) || (ACTION_VERB[name] && !ACTION_VERB[name].test(lastUserText) && !AGREES.test(lastUserText)))) {
         console.log(`dropped ${name}: no request in "${lastUserText.slice(0, 60)}"`)
         return `Not done: the user did not ask for ${name}.`
       }
       if (actions.some(a => a.type === name)) return 'Already shown under the reply, not repeated.'
       // "ok" to a split once turned the safe part (bank savings) into a fund deposit card (real chat 2026-10-24).
+      if (name === 'prepare_deposit' && appState?.fundOk === true && !FUND_WORD.test(lastUserText) && !DEPOSIT_WORD.test(lastUserText)) {
+        console.log('dropped prepare_deposit: fund already full')
+        return 'Not done: the emergency fund is already full; nothing to add unless the user asks to.'
+      }
       const amt0 = (args.amount ?? {}) as { amount?: number; currency?: string }
       const amtUsd = typeof amt0.amount === 'number' ? (amt0.currency === 'VND' ? (rate ? amt0.amount / rate : null) : amt0.amount) : null
       const toSafe = startAlloc?.suggest?.toSafe
@@ -653,6 +696,8 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       prices,
       vndPerUsd: rate,
     })
+    // Asked once is enough: the agent kept asking "what else do you hold?" every turn (real chat 2026-10-24).
+    if (askedHoldings) alloc.declared = true
     return { alloc, ...fundFacts(appState, profileUpdate, rate, alloc) }
   }
 
@@ -687,7 +732,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
         if (seen.has(key)) result = 'Already done this turn, do not repeat it.'
         else {
           seen.add(key)
-          result = handle(call)
+          result = await handle(call)
           acted = true
           if (call.function.name === 'update_profile' || call.function.name === 'record_asset') recorded = true
         }
@@ -778,7 +823,10 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       }
       if (!floors.length && appState?.fundOk !== true && NEEDS_AMOUNT.test(content)) problems.push('monthly spending is unknown, so nobody knows how much the fund needs: never say an amount is needed or quote the wallet as what to add; say the fund is 3 months of essential spending (6 if income is irregular) and ask how much they spend a month')
       const si = alloc.suggestInvest
-      if (si && ASKS_USE.test(lastUserText) && !/stock|ETF|gold|cổ phiếu|vàng/i.test(content)) problems.push(`give the invest part split from the figures: stocks & gold ${usdc(si.stocks)}, BTC ${usdc(si.btc)} (cirBTC in the app), altcoins ${usdc(si.altcoin)}, and say it is MoonSafe's view`) // lang-ok
+      if (si && alloc.declared && ASKS_USE.test(lastUserText) && !/stock|ETF|gold|cổ phiếu|vàng/i.test(content)) problems.push(`give the invest part split from the figures: stocks & gold ${usdc(si.stocks)}, BTC ${usdc(si.btc)} (cirBTC in the app), altcoins ${usdc(si.altcoin)}, and say it is MoonSafe's view`) // lang-ok
+      // "Would you like me to prepare a deposit of 1,101 USDC" for the bank-savings part (real chat 2026-10-24).
+      const toSafe = alloc.suggest?.toSafe ?? 0
+      if (toSafe > 1 && /deposit/i.test(content) && [...plain.matchAll(AMOUNT)].some(m => readings(m[1] ?? m[2]).some(v => Math.abs(v - toSafe) <= toSafe * 0.01 + 1))) problems.push(`${usdc(toSafe)} is the safe part: the user's OWN bank savings, not a deposit in the app; do not offer to deposit it, tell them to put it in their bank savings`)
       if (alloc.declared && alloc.suggest && alloc.suggest.toSafe > 1 && ASKS_USE.test(lastUserText) && !/bank|savings|ngân hàng|tiết kiệm/i.test(content)) problems.push(`say where the safe part goes: ${usdc(alloc.suggest.toSafe)} into their own bank savings account`) // lang-ok
       if (DEBT_WORD.test(lastUserText) && !DEBT_WORD.test(content)) problems.push('the user asked about their debt: say plainly what to do about the debt')
       if (BUILD_FUND.test(lastUserText) && /a month into the fund takes about/.test(facts) && !/sav|để dành|tiết kiệm/i.test(content)) problems.push('they asked how to build the fund: suggest saving the monthly amount from the figures and say about how many months it takes') // lang-ok

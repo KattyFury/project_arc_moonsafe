@@ -6,6 +6,15 @@ Khung tài chính đang chạy: **`docs/FRAMEWORK-TAI-CHINH.md`** (ưu tiên hơ
 
 ## ▶ Làm tiếp từ đây (mới nhất ở trên)
 
+-14. **2026-10-24/25 — biểu đồ chia phần đầu tư + sửa theo đoạn chat thật user dán. ĐÃ DEPLOY. Eval local 111/112 (`--runs 2`, 49 tình huống).**
+   - **Biểu đồ** (`src/components/ui/AllocationPies.tsx`): 2 vòng Target / Now giờ có 5 phần: Safe · Stocks & gold · BTC · Altcoins · Idle (màu xanh ngọc / 0x Blue / cam #eb6834 / tím #6250d6 / vàng, đã chạy validator dataviz: CVD ΔE thấp nhất 27,3). Chú thích ghi % hiện tại / mục tiêu; bản Balance có số tiền + gợi ý chia tiền nhàn rỗi (bỏ khoản 0); chỉ có ví thì hiện "Only your app wallet is counted…". Bản thu gọn (Invest + chat): vòng 72px, số dạng "39/40%". Desktop: chú thích 2 cột. Ảnh đã đo vừa 1 khung: Desktop\MoonSafe-invest-split-2026-10-24 (6 ảnh).
+   - **Lỗi thật (user dán đoạn chat):** (1) "You can invest 15.93 USDC in cirBTC" = số cirBTC ĐANG GIỮ → facts ghi "cirBTC already held … NOT an amount to buy"; (2) "$2000 of gold" bị ghi vào otherAssets (prompt cũ dặn "chỉ có giá trị thì đừng ghi") → agent hỏi "what other assets" mãi → `record_asset` có thêm `worth`, server quy ra số lượng theo giá sống (`MONEY_AMT`; số lượng trùng số tiền trong câu cũng coi là worth); (3) "prepare a deposit of 1,101 USDC" cho phần tiết kiệm → REPLY bắt viết lại khi mời nạp đúng số phần an toàn; (4) "just doing as you said" / "just BTC" không ra thẻ → coi là đồng ý nếu agent vừa mời đúng thao tác (`OFFERED`) và câu không có số / dấu hỏi.
+   - Hỏi tài sản khác: thôi hỏi khi user nói "nothing else / only the wallet…" (`NOTHING_ELSE`) hoặc đã hỏi 2 lần. Quỹ đã đủ thì không tạo thẻ nạp quỹ trừ khi user nói rõ.
+   - Tình huống eval mới `real chat: holds cirBTC, gold by value` (5 lượt, đúng đoạn chat user). Kết quả: vàng ghi 0,5 oz, "just doing as you said" → thẻ mua 92,01 USDC = đúng phần BTC còn thiếu.
+   - **Chưa xử lý:** thẻ mua cirBTC báo "Stablecoin Service createSwap failed: Route or resource not found. No route available" (Circle App Kit, lúc mua 15,93 USDC). Chưa rõ do số tiền nhỏ hay route testnet; cần đọc docs swap (skill circle:swap-tokens) + thử số khác.
+   - Lượt eval còn hụt (lúc có lúc không): hỏi dùng tiền nhàn rỗi đôi khi chỉ nói tổng đầu tư, không tách cổ phiếu+vàng / BTC / altcoin.
+   - Bài học: chạy `node scripts/check-lang.mjs` KHÔNG qua `| tail` (pipe nuốt mã lỗi → từng deploy khi gác cổng báo 1 dòng, may chỉ là comment). Edit tool hay ăn dấu cách cuối chuỗi `= ` → sau khi chèn hằng số chạy `sed -E 's/^const ([A-Z_]+) =\//const  = \//'`.
+
 -13. **2026-10-24 — vàng + cổ phiếu = 1 khoản. ĐÃ DEPLOY. Eval 102/102 local (`--runs 2`, 48 tình huống).** User: "vàng và chứng khoán là cùng 1 khoản, là đầu tư nhưng an toàn, nằm ở phần hơn của đầu tư". `InvestClass` còn `stocks` (nhãn "Stocks & gold") / `btc` / `altcoin`; vàng tính vào `stocks`. Tuổi 31: cổ phiếu + vàng 40%, BTC 20%, altcoin 9%. Tình huống eval mới `gold counts with stocks`. Còn chờ user: vẽ phần chia này lên biểu đồ trong app (Balance / Invest).
 
 -12. **2026-10-24 (tối, cuối) — sửa theo ảnh user gửi + agent gọn hơn. ĐÃ DEPLOY. Eval local 100/100 (`--runs 2`, 47 tình huống).**
