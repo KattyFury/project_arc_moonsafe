@@ -6,6 +6,8 @@ Khung tài chính đang chạy: **`docs/FRAMEWORK-TAI-CHINH.md`** (ưu tiên hơ
 
 ## ▶ Làm tiếp từ đây (mới nhất ở trên)
 
+-13. **2026-10-24 — vàng + cổ phiếu = 1 khoản. ĐÃ DEPLOY. Eval 102/102 local (`--runs 2`, 48 tình huống).** User: "vàng và chứng khoán là cùng 1 khoản, là đầu tư nhưng an toàn, nằm ở phần hơn của đầu tư". `InvestClass` còn `stocks` (nhãn "Stocks & gold") / `btc` / `altcoin`; vàng tính vào `stocks`. Tuổi 31: cổ phiếu + vàng 40%, BTC 20%, altcoin 9%. Tình huống eval mới `gold counts with stocks`. Còn chờ user: vẽ phần chia này lên biểu đồ trong app (Balance / Invest).
+
 -12. **2026-10-24 (tối, cuối) — sửa theo ảnh user gửi + agent gọn hơn. ĐÃ DEPLOY. Eval local 100/100 (`--runs 2`, 47 tình huống).**
    - Lỗi thật (ảnh chat): agent chia USDC trong ví thành "Add 346 USDC to your safe assets" → **thẻ nạp QUỸ** + "Buy 754 USDC of cirBTC" (cả phần đầu tư vào BTC), coi ví là toàn bộ tài sản.
    - User chốt: phần an toàn = tiết kiệm ngân hàng ngoài quỹ; phần đầu tư chia nhiều loại theo bản gốc 23/10 (**2a**); phải hỏi tài sản khác để có bức tranh tổng thể. Đã ghi vào `docs/FRAMEWORK-TAI-CHINH.md` mục 5.
@@ -14,7 +16,7 @@ Khung tài chính đang chạy: **`docs/FRAMEWORK-TAI-CHINH.md`** (ưu tiên hơ
    - Chốt chặn REPLY mới: mời / nhận "chuyển vào savings" → viết lại (`SAFE_IN_APP`); "please provide…" → viết lại (`PUSHY`); hỏi về nợ phải trả lời về nợ; hỏi cách xây quỹ phải nêu để dành mỗi tháng; hỏi dùng tiền phải nêu chia cổ phiếu / BTC / altcoin + phần ngân hàng.
    - **Gọn hơn** (user: "nói khá dài dòng"): prompt = câu đầu trả lời thẳng, tối đa 2 câu + 1 câu hỏi (hỏi why/what tối đa 4); server bắt rút gọn khi > 340 ký tự (why: 520), chỉ SAU khi nội dung đã đúng (sửa cùng lúc thì model cắt mất ý). Viết lại tối đa 3 lần. Trung vị độ dài 305 → **228 ký tự**, p90 422 → ~320.
    - Chi phí đo (100 tin): PLAN ~4.290 vào / 31 ra, REPLY ~2.645 vào / 70 ra → **≈ $0,0011 / tin**.
-   - Chờ user: vàng có tỉ lệ riêng trong phần đầu tư không? Biểu đồ trong app (Balance / Invest) chưa vẽ phần chia cổ phiếu / BTC / altcoin, mới chỉ agent nói.
+   - ~~Vàng có tỉ lệ riêng?~~ → xem -13. Biểu đồ trong app (Balance / Invest) chưa vẽ phần chia cổ phiếu / BTC / altcoin, mới chỉ agent nói.
    - Mẹo: `wrangler pages dev` thỉnh thoảng chết khi tự reload (`SQLITE_BUSY`) → chạy lại lệnh, không phải lỗi code.
 
 -11. **2026-10-24 (tối, tiếp) — PLAN thành vòng lặp tool tối đa 10 bước (user chọn 1a). ĐÃ DEPLOY. Eval 91/92 (`--runs 2`, 45 tình huống).**

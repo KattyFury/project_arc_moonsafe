@@ -251,6 +251,9 @@ const SC = [
   { name: 'split idle money: bank + mixed invest', s: { profile: P({ monthlyIncome: 3000, monthlyExpenses: 1000, debtAmount: 0, age: 31, incomeStable: true, units: USD(['monthlyIncome', 'monthlyExpenses', 'debtAmount']), holdings: [{ kind: 'savings', quantity: 500, currency: 'USDC' }] }), vault: 3000, wallet: 2000.02 }, turns: [
     { u: 'What should I do with my idle money?', allowAction: true, must: [/bank|savings/i, /stock|ETF/i, /BTC/], mustNot: [/(add|deposit)[^.?!]{0,30}(to|into) (your |the )?(emergency )?fund/i] },
     { u: 'ok do it', anyAction: true, forbid: ['prepare_deposit'], buyMax: 520 }] },
+  // Stocks and gold are one share of investing (user, 2026-10-24).
+  { name: 'gold counts with stocks', s: { profile: P({ monthlyIncome: 3000, monthlyExpenses: 1000, debtAmount: 0, age: 31, incomeStable: true, units: USD(['monthlyIncome', 'monthlyExpenses', 'debtAmount']), holdings: [{ kind: 'gold', quantity: 0.1, unit: 'oz' }] }), vault: 3000, wallet: 3000.02 }, turns: [
+    { u: 'What should I do with my idle money?', allowAction: true, must: [/stocks? (&|and) gold|gold/i, /BTC/] }] },
   // ---- vi: Vietnamese messages get Vietnamese replies ----
   { name: 'vi: chào hỏi', s: { profile: P({}), vault: 0, wallet: 0 }, turns: [
     { u: 'chào bạn', mustNot: [/\d/, /khoá|khóa/i] }] }, // lang-ok

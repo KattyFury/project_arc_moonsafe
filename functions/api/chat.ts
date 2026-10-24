@@ -453,14 +453,14 @@ function fundFacts(appState: Record<string, unknown> | null, update: Record<stri
     lines.push(`- Target by age ${age}: ${safePct}% safe, ${investPct}% invest${alloc.total > 0 && alloc.declared ? ` (= ${showUsd(alloc.total * safePct / 100)} safe, ${showUsd(alloc.total * investPct / 100)} invest)` : ' (percentages only: quote no amounts until the user says what they hold)'}${gap}`)
     if (alloc.mix) {
       const m = alloc.mix, c = alloc.byClass
-      lines.push(`- MoonSafe view of the invest part at age ${age} (% of all money outside the fund): index stocks / ETF ${m.stocks}%, BTC ${m.btc}%, altcoins up to ${m.altcoin}%; gold has no set share. Held now: stocks ${showUsd(c.stocks)}, BTC incl. cirBTC ${showUsd(c.btc)}, altcoins ${showUsd(c.altcoin)}, gold ${showUsd(c.gold)}. When suggesting this split, say it is MoonSafe's view and that its crypto share is above what institutions suggest (0–5%).`)
+      lines.push(`- MoonSafe view of the invest part at age ${age} (% of all money outside the fund): stocks & gold ${m.stocks}% (one share: the safer, larger part of investing; index stocks / ETF and gold), BTC ${m.btc}%, altcoins up to ${m.altcoin}%. Held now: stocks & gold ${showUsd(c.stocks)}, BTC incl. cirBTC ${showUsd(c.btc)}, altcoins ${showUsd(c.altcoin)}. When suggesting this split, say it is MoonSafe's view and that its crypto share is above what institutions suggest (0–5%).`)
     }
     // A wallet alone is not someone's money: the agent once split the wallet as if it were everything (real chat 2026-10-24).
     if (!alloc.declared) lines.push('- Only the app wallet is known: the user has not said what else they hold (bank savings, cash, gold, stocks, coins). If they ask how to split, invest or use their money: suggest NO split and NO deposit or purchase from the wallet; first ask what else they hold, one question (unless they already said they have nothing else). On other topics do not bring it up.')
     else if (alloc.suggest && alloc.idle > 0) {
       lines.push(`- Suggested split of idle money ${showUsd(alloc.idle)} to get closer to target: ${showUsd(alloc.suggest.toSafe)} to safe = the user's OWN bank savings account (state-backed bank, earns interest; NOT the emergency fund, nothing to do in the app), ${showUsd(alloc.suggest.toInvest)} to invest`)
       const si = alloc.suggestInvest
-      if (si) lines.push(`- Of that ${showUsd(alloc.suggest.toInvest)} to invest: index stocks / ETF ${showUsd(si.stocks)} (bought outside the app), BTC ${showUsd(si.btc)} (the only part buyable in the app, as cirBTC), altcoins ${showUsd(si.altcoin)} (outside the app). Never put the whole invest amount into cirBTC.`)
+      if (si) lines.push(`- Of that ${showUsd(alloc.suggest.toInvest)} to invest: stocks & gold ${showUsd(si.stocks)} (index stocks / ETF or gold, bought outside the app), BTC ${showUsd(si.btc)} (the only part buyable in the app, as cirBTC), altcoins ${showUsd(si.altcoin)} (outside the app). Never put the whole invest amount into cirBTC.`)
     }
   } else if (alloc.total > 0) lines.push('- Age unknown, so no allocation target yet')
   if (appState && appState.investUnlocked !== true) {
@@ -778,7 +778,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       }
       if (!floors.length && appState?.fundOk !== true && NEEDS_AMOUNT.test(content)) problems.push('monthly spending is unknown, so nobody knows how much the fund needs: never say an amount is needed or quote the wallet as what to add; say the fund is 3 months of essential spending (6 if income is irregular) and ask how much they spend a month')
       const si = alloc.suggestInvest
-      if (si && ASKS_USE.test(lastUserText) && !/stock|ETF|cổ phiếu/i.test(content)) problems.push(`give the invest part split from the figures: index stocks / ETF ${usdc(si.stocks)}, BTC ${usdc(si.btc)} (cirBTC in the app), altcoins ${usdc(si.altcoin)}, and say it is MoonSafe's view`) // lang-ok
+      if (si && ASKS_USE.test(lastUserText) && !/stock|ETF|gold|cổ phiếu|vàng/i.test(content)) problems.push(`give the invest part split from the figures: stocks & gold ${usdc(si.stocks)}, BTC ${usdc(si.btc)} (cirBTC in the app), altcoins ${usdc(si.altcoin)}, and say it is MoonSafe's view`) // lang-ok
       if (alloc.declared && alloc.suggest && alloc.suggest.toSafe > 1 && ASKS_USE.test(lastUserText) && !/bank|savings|ngân hàng|tiết kiệm/i.test(content)) problems.push(`say where the safe part goes: ${usdc(alloc.suggest.toSafe)} into their own bank savings account`) // lang-ok
       if (DEBT_WORD.test(lastUserText) && !DEBT_WORD.test(content)) problems.push('the user asked about their debt: say plainly what to do about the debt')
       if (BUILD_FUND.test(lastUserText) && /a month into the fund takes about/.test(facts) && !/sav|để dành|tiết kiệm/i.test(content)) problems.push('they asked how to build the fund: suggest saving the monthly amount from the figures and say about how many months it takes') // lang-ok
