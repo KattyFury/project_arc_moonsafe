@@ -11,7 +11,8 @@ Khung tài chính đang chạy: **`docs/FRAMEWORK-TAI-CHINH.md`** (ưu tiên hơ
    - Code: `src/lib/allocation.ts` (tính phân bổ, dùng chung app + `chat.ts` qua import tương đối), `functions/api/prices.ts` (vàng vang.today, Yahoo, Coinbase/Binance), `src/hooks/usePrices.ts`, `src/components/ui/AllocationPies.tsx` (2 vòng tròn; bản `compact` ở Đầu tư + chat), `FinancialProfile.holdings`. Agent: tool `record_asset` (ghi tài sản, quantity 0 = xoá) + `show_allocation`; prompt REPLY viết lại ngắn (~88 token ra/câu); chốt chặn mới: thẻ phải khớp động từ (mua ≠ nạp), nêu đủ "an toàn X%, đầu tư Y%", không nhầm phần an toàn với quỹ, không đọc lại bảng khi đã hiện biểu đồ.
    - Chi phí đo 2026-10-24: PLAN gpt-4o ~2.600 token vào → ~$0,0067; REPLY 4o-mini ~1,1 lượt × 2.300 vào / 88 ra → ~$0,0004. **≈ $0,007 / tin nhắn** (cũ ~$0,0045; tăng do schema 2 tool mới).
    - Đã đo vừa 1 màn: Cân đối (Tổng quan + Phân bổ), Đầu tư (khoá + mở khoá giả lập số dư quỹ) ở 393×852 và 1440×900.
-   - **Khi deploy:** gọi thử `https://moonsafe.app/api/prices?stocks=SPY&crypto=ETH` — mới thử từ máy Dell, chưa thử từ server Cloudflare (CoinGecko từng 403 từ Workers). Thiếu giá nào thì app hiện "chưa có giá", không sập.
+   - `/api/prices` đã thử trên production 2026-10-24: vàng SJC, Yahoo (SPY, VOO), Coinbase (ETH, SOL) đều trả giá từ server Cloudflare.
+   - **Chưa test bằng đăng nhập thật:** nhờ user kể tài sản với agent rồi xem Cân đối › Phân bổ.
    - Còn 4 thay đổi cũ (3 mức + 8 USDC) nằm trong `git stash@{0}` trên máy Dell, user đã bỏ; xoá stash khi chắc không cần.
    - Preview local: `vite.preview.config.ts` (proxy `/api` → `wrangler pages dev dist --port 8788`), đã cho vào `.git/info/exclude`.
 
