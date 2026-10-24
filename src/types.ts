@@ -13,11 +13,30 @@ export interface FinancialProfile {
   monthlyIncome: number | null
   monthlyExpenses: number | null   // essential spending per month
   debtAmount: number | null        // external debt declared; 0 = no debt
-  otherAssets: number | null       // gold, property besides home, stocks…
+  otherAssets: number | null       // home, property… (what the allocation chart does not track)
   age: number | null
   incomeStable: boolean | null     // true → floor 3 months, false → 6 months
   units?: Partial<Record<MoneyField, Currency>>
+  /** Assets the user told the agent about, valued at live prices (src/lib/allocation.ts). */
+  holdings?: Holding[]
   savedAt?: number
+}
+
+/**
+ * savings = bank savings deposit (safe part), cash = cash / payment account (idle money),
+ * gold = SJC bars, stock = US stock or ETF, crypto = coin held off Arc (exchange, other chains).
+ */
+export type HoldingKind = 'savings' | 'cash' | 'gold' | 'stock' | 'crypto'
+export const HOLDING_KINDS: HoldingKind[] = ['savings', 'cash', 'gold', 'stock', 'crypto']
+
+export interface Holding {
+  kind: HoldingKind
+  /** gold: lượng; stock: shares; crypto: coins; savings / cash: amount of money in `currency`. */
+  quantity: number
+  /** stock: ticker (SPY); crypto: symbol (ETH); savings / cash: bank or label (optional). */
+  symbol?: string
+  /** savings / cash only. */
+  currency?: Currency
 }
 
 export const EMPTY_PROFILE: FinancialProfile = {

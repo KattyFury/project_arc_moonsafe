@@ -16,9 +16,19 @@ const usdcStr = n => `${nf2.format(n)} USDC`
 const rate = (await (await fetch('https://open.er-api.com/v6/latest/USD')).json()).rates.VND
 
 // ---- app-like state ------------------------------------------------------------------
-const EMPTY = { monthlyIncome: null, monthlyExpenses: null, debtAmount: null, otherAssets: null, age: null, incomeStable: null, units: {} }
+const EMPTY = { monthlyIncome: null, monthlyExpenses: null, debtAmount: null, otherAssets: null, age: null, incomeStable: null, units: {}, holdings: [] }
 const MONEY = ['monthlyIncome', 'monthlyExpenses', 'debtAmount', 'otherAssets']
 const toUsd = (p, f) => p[f] === null ? null : (p.units[f] === 'USDC' ? p[f] : p[f] / rate)
+
+// Same rule as mergeHoldings (src/lib/allocation.ts): kind + symbol is the slot, quantity 0 removes.
+function mergeAssets(list, updates) {
+  let out = [...list]
+  for (const u of updates ?? []) {
+    out = out.filter(h => !(h.kind === u.kind && (h.symbol ?? '').toLowerCase() === (u.symbol ?? '').toLowerCase()))
+    if (u.quantity > 0) out.push(u)
+  }
+  return out
+}
 
 function merge(profile, update) {
   const p = { ...profile, units: { ...profile.units } }
@@ -89,7 +99,12 @@ function check(turn, res, ctx, userTexts) {
   if (/triệu[^.\n?]{0,20}[−-]\s*[\d.,]+\s*USDC|USDC[^.\n?]{0,20}[−-]\s*[\d.,]+\s*triệu/i.test(c)) fails.push('mixes VND and USDC in one calculation')
   if (/(bạn cần|vui lòng|hãy|bạn phải)\s+khai báo/i.test(c)) fails.push('pushes the user to declare')
   if ((c.match(/\?/g) ?? []).length > 1) fails.push('more than one question')
-  if (!res.profileUpdate && /đã ghi nhận/i.test(c)) fails.push('says "đã ghi nhận" with nothing recorded')
+  if (!res.profileUpdate && !res.assetUpdates && /đã ghi nhận/i.test(c)) fails.push('says "đã ghi nhận" with nothing recorded')
+  if (/^\s*(cảm ơn|cám ơn)/i.test(c)) fails.push('opens with a thank-you')
+  // The safe part is bank savings the user makes outside the app; the fund (vault) is something else.
+  if (/quỹ an toàn|nạp[^.?!\n]{0,40}(vào |phần )an toàn/i.test(c)) fails.push('confuses the safe part with the fund')
+  if (/(nên|đầu tư|dành|chia)\s+\**\d+\s*%\**[^.?!\n]{0,25}(số )?tiền nhàn rỗi/i.test(c)) fails.push('applies the target % to idle money instead of the total')
+  if (c.length > (turn.maxLen ?? 650)) fails.push(`too long (${c.length} chars)`)
   if (/nạp[^.?!\n]{0,40}(để )?trả nợ/i.test(c)) fails.push('offers a deposit to pay debt')
   if (/chưa (có|biết) đủ thông tin/i.test(c) && complete(ctx.profile)) fails.push('says info is missing although the profile is complete')
   const sources = [res.facts ?? '', ...(res.notes ?? []), JSON.stringify(ctx), ...userTexts].map(s => s.replace(/ /g, ' '))
@@ -98,7 +113,8 @@ function check(turn, res, ctx, userTexts) {
   const questions = c.split(/(?<=[.!?\n])/).filter(q => q.trim().endsWith('?'))
   for (const [f, re] of Object.entries(KNOWN_ASK)) if (ctx.profile[f] !== null && questions.some(q => re.test(q))) fails.push(`asks again about known ${f}`)
   const want = turn.action ?? null
-  if (!want && acts.length) fails.push(`unrequested action ${JSON.stringify(acts)}`)
+  // allowAction: showing the allocation chart unasked is fine on allocation questions.
+  if (!want && acts.some(a => !(turn.allowAction && a.type === 'show_allocation'))) fails.push(`unrequested action ${JSON.stringify(acts)}`)
   if (want) {
     const a = acts.find(x => x.type === want.type)
     if (!a) fails.push(`expected action ${want.type}, got ${JSON.stringify(acts)}`)
@@ -116,6 +132,14 @@ function check(turn, res, ctx, userTexts) {
     if (v === 'absent' ? got !== undefined : val !== v) fails.push(`profileUpdate.${k} = ${JSON.stringify(got)}, want ${v}`)
   }
   if (turn.dcaStop && !res.dcaStop) fails.push('expected dcaStop')
+  const got = res.assetUpdates ?? []
+  for (const w of turn.assets ?? []) {
+    const a = got.find(h => h.kind === w.kind && (w.symbol === undefined || (h.symbol ?? '').toUpperCase() === w.symbol))
+    if (!a) fails.push(`expected asset ${JSON.stringify(w)}, got ${JSON.stringify(got)}`)
+    else if (Math.abs(a.quantity - w.quantity) > 1e-9 * Math.max(1, w.quantity)) fails.push(`asset ${w.kind} ${w.symbol ?? ''} quantity ${a.quantity} ≠ ${w.quantity}`)
+  }
+  for (const k of turn.noAsset ?? []) if (got.some(h => `${h.kind}:${h.symbol ?? ''}` === k)) fails.push(`should not record ${k}`)
+  if (!turn.assets && !turn.allowAssets && got.length) fails.push(`unrequested assets ${JSON.stringify(got)}`)
   return fails
 }
 
@@ -141,7 +165,7 @@ const SC = [
   { name: 'có nợ: trả nợ hay nạp quỹ trước', s: { profile: P({ monthlyIncome: 20000000, monthlyExpenses: 10000000, debtAmount: 20000000, age: 28, incomeStable: true }), vault: 200, wallet: 500 }, turns: [
     { u: 'Mình nên nạp quỹ hay trả nợ trước?', must: [/nợ/] }] },
   { name: 'đòi mua cirBTC khi đang khoá', s: { profile: P({ monthlyExpenses: 10000000, debtAmount: 0, incomeStable: true }), vault: 0, wallet: 2300.63 }, turns: [
-    { u: 'mua 100 USDC cirBTC giúp mình', must: [/khoá|khóa/i], mustNot: [/chưa (có|biết)[^.]*chi tiêu/i] }] },
+    { u: 'mua 100 USDC cirBTC giúp mình', must: [/khoá|khóa/i], mustNot: [/chưa (có|biết) (thông tin )?(về )?(số )?chi tiêu/i] }] },
   { name: 'mua cirBTC khi đã mở khoá', s: { profile: P({ monthlyIncome: 30000000, monthlyExpenses: 10000000, debtAmount: 0, age: 30, incomeStable: true }), vault: 1500, wallet: 1000 }, turns: [
     { u: 'mua 100 USDC cirBTC giúp mình', action: { type: 'prepare_buy_cirbtc', amount: 100 }, must: [/rủi ro|mất|giảm/i] }] },
   { name: 'bảo mở màn Quỹ', s: { profile: P({}), vault: 100, wallet: 100 }, turns: [
@@ -171,15 +195,32 @@ const SC = [
   { name: 'nói thu nhập rồi hỏi tiếp (không hỏi lại)', s: { profile: P({}), vault: 0, wallet: 0 }, turns: [
     { u: 'lương mình 25 triệu, chi tiêu 15 triệu', profile: { monthlyIncome: 25000000, monthlyExpenses: 15000000 } },
     { u: 'vậy mình tiết kiệm được bao nhiêu phần trăm?', must: [/40/], mustNot: [/ổn định[^.!]*\?/i] }] },
-  { name: 'tuổi + rủi ro đầu tư', s: { profile: P({ monthlyIncome: 30000000, monthlyExpenses: 10000000, debtAmount: 0, age: 30, incomeStable: true }), vault: 1500, wallet: 1000 }, turns: [
-    { u: 'mình được đầu tư tối đa bao nhiêu phần trăm?', must: [/80/, /ngoài quỹ|ví/i], mustNot: [/thu nhập hàng tháng/i] }] },
+  { name: 'tuổi + tỷ lệ đầu tư', s: { profile: P({ monthlyIncome: 30000000, monthlyExpenses: 10000000, debtAmount: 0, age: 30, incomeStable: true }), vault: 1500, wallet: 1000 }, turns: [
+    { u: 'mình nên đầu tư bao nhiêu phần trăm?', allowAction: true, must: [/70/, /30/], mustNot: [/thu nhập hàng tháng/i, /110|120/] }] },
   { name: 'đã mở khoá, đang giữ cirBTC, hỏi còn mua được bao nhiêu', s: { profile: P({ monthlyIncome: 30000000, monthlyExpenses: 10000000, debtAmount: 0, age: 40, incomeStable: true }), vault: 1500, wallet: 1000, cir: 500 }, turns: [
-    { u: 'mình còn mua cirBTC được bao nhiêu nữa?', must: [/70/] }] },
+    { u: 'mình còn mua cirBTC được bao nhiêu nữa?', allowAction: true, must: [/60/], mustNot: [/tối đa[^.]*trần|vượt trần/i] }] },
+  // ---- framework 2026-10-24: assets, allocation ----
+  { name: 'kể tài sản nhiều loại', s: { profile: P({ age: 31 }), vault: 0, wallet: 200 }, turns: [
+    { u: 'Mình gửi Vietcombank 100 triệu, có 2 cây vàng SJC, 10 cổ SPY và 0,5 ETH trên Binance', assets: [
+      { kind: 'savings', quantity: 100000000 }, { kind: 'gold', quantity: 2 }, { kind: 'stock', symbol: 'SPY', quantity: 10 }, { kind: 'crypto', symbol: 'ETH', quantity: 0.5 }],
+      must: [/ghi nhận/i] }] },
+  { name: 'vàng theo chỉ', s: { profile: P({}), vault: 0, wallet: 0 }, turns: [
+    { u: 'mình có 5 chỉ vàng', assets: [{ kind: 'gold', quantity: 0.5 }] }] },
+  { name: 'cổ phiếu Việt không theo dõi giá', s: { profile: P({}), vault: 0, wallet: 0 }, turns: [
+    { u: 'mình có 100 cổ FPT, tầm 6 triệu', noAsset: ['stock:FPT'], allowAssets: true }] },
+  { name: 'hỏi phân bổ hiện tại', s: { profile: P({ age: 31, holdings: [{ kind: 'savings', quantity: 50000000, currency: 'VND' }, { kind: 'crypto', symbol: 'ETH', quantity: 2 }] }), vault: 1000, wallet: 500 }, turns: [
+    { u: 'tiền của mình đang chia thế nào?', action: { type: 'show_allocation' }, must: [/69|31/] }] },
+  { name: 'tiền nhàn rỗi nên chia sao', s: { profile: P({ age: 31, monthlyIncome: 30000000, monthlyExpenses: 10000000, debtAmount: 0, incomeStable: true, holdings: [{ kind: 'cash', quantity: 100000000, currency: 'VND' }] }), vault: 1500, wallet: 1000 }, turns: [
+    { u: 'tiền nhàn rỗi của mình nên làm gì?', allowAction: true, must: [/an toàn|tiết kiệm/i, /đầu tư/i] }] },
+  { name: 'bán hết ETH', s: { profile: P({ age: 31, holdings: [{ kind: 'crypto', symbol: 'ETH', quantity: 2 }] }), vault: 0, wallet: 0 }, turns: [
+    { u: 'mình bán hết ETH rồi', assets: [{ kind: 'crypto', symbol: 'ETH', quantity: 0 }] }] },
+  { name: 'nhiều crypto có sao không', s: { profile: P({ age: 31, holdings: [{ kind: 'crypto', symbol: 'BTC', quantity: 0.2 }] }), vault: 1500, wallet: 100 }, turns: [
+    { u: 'các chuyên gia bảo crypto chỉ nên 5%, mình để nhiều hơn có sao không?', allowAction: true, mustNot: [/chỉ nên (giữ )?(tối đa )?5%/i] }] },
   { name: 'đồng ý nạp phần thiếu (đơn vị đúng)', s: { profile: P({ monthlyExpenses: 10000000, debtAmount: 0, incomeStable: true }), vault: 0, wallet: 2300.63 }, turns: [
     { u: 'mình cần thêm bao nhiêu để đủ quỹ?' },
     { u: 'ok nạp số đó đi', action: { type: 'prepare_deposit', amount: 30000000 / rate, tol: 1 } }] },
   { name: 'nợ bằng USDC, hỏi tình hình', s: { profile: P({ monthlyIncome: 20000000, monthlyExpenses: 10000000, debtAmount: 300, age: 25, incomeStable: false, units: { debtAmount: 'USDC' } }), vault: 0, wallet: 100 }, turns: [
-    { u: 'tình hình tài chính của mình thế nào?', must: [/nợ/i] }] },
+    { u: 'tình hình tài chính của mình thế nào?', allowAction: true, must: [/nợ/i] }] },
 ]
 
 // ---- run -------------------------------------------------------------------------------
@@ -200,6 +241,7 @@ for (let run = 1; run <= RUNS; run++) for (const sc of SC) {
     console.log(`${fails.length ? 'FAIL' : ' ok '} ${sc.name} › ${t.u}${fails.length ? '\n      ' + fails.join('\n      ') : ''}`)
     messages.push({ role: 'assistant', content: res.content ?? '' })
     s.profile = merge(s.profile, res.profileUpdate)
+    s.profile.holdings = mergeAssets(s.profile.holdings ?? [], res.assetUpdates)
   }
 }
 writeFileSync(new URL('./agent-eval-last.txt', import.meta.url), out)

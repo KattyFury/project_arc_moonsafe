@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { ArrowDownToLine, ArrowRight, ArrowUpFromLine, ExternalLink, Repeat, TrendingUp } from 'lucide-react'
 import { useApp } from '@/state/AppState'
 import { GAS_ESTIMATE_USDC6, GAS_RESERVE_USDC6, txErrorMessage } from '@/hooks/useVault'
-import { investRoom } from '@/lib/invest'
+import { overTargetWarning, spendable } from '@/lib/invest'
 import { formatUsdc } from '@/lib/format'
 import { Btn, GlassCard, IconBox, Notice } from '@/components/ui/kit'
 
@@ -20,7 +20,7 @@ const TITLES = { deposit: 'Nạp vào quỹ', withdraw: 'Rút về ví', buy: 'M
 const ICONS = { deposit: ArrowDownToLine, withdraw: ArrowUpFromLine, buy: TrendingUp, dca: Repeat } as const
 
 export function ActionCard({ action }: { action: ChatAction }) {
-  const { vault, math, cirBtc, profile, money, unit } = useApp()
+  const { vault, math, cirBtc, alloc, money, unit } = useApp()
   const [status, setStatus] = useState<Status>('idle')
   const [error, setError] = useState<string | null>(null)
   const { kind, amount } = action
@@ -29,8 +29,7 @@ export function ActionCard({ action }: { action: ChatAction }) {
   const wb = vault.walletBalance
   const vb = vault.vaultBalance
   const maxDeposit = wb !== null ? (wb > GAS_RESERVE_USDC6 ? wb - GAS_RESERVE_USDC6 : 0n) : null
-  const invested = cirBtc.balance === 0n ? 0n : cirBtc.valueUsdc6
-  const { room } = investRoom(profile.profile?.age ?? 0, 'normal', wb, invested)
+  const room = spendable(wb)
   const q = cirBtc.quote
 
   // What blocks the button, and what the user should know before signing.
@@ -46,8 +45,12 @@ export function ActionCard({ action }: { action: ChatAction }) {
     }
   } else {
     if (!math.investUnlocked) block = 'Đầu tư đang khoá: cần không còn nợ và quỹ dự phòng đủ mốc.'
-    else if (room !== null && amount > room) block = `Vượt hạn mức đầu tư theo tuổi (còn mua được ${formatUsdc(room)}).`
-    else warnings.push('Giá cirBTC có thể giảm sâu. Chỉ đầu tư số tiền sẵn sàng mất. Đây là thông tin tham khảo, không phải tư vấn đầu tư.')
+    else if (kind === 'buy' && room !== null && amount > room) block = `Vượt số USDC trong ví (dùng được tối đa ${formatUsdc(room)}).`
+    else {
+      const over = kind === 'buy' ? overTargetWarning(alloc, amount) : null
+      if (over) warnings.push(over)
+      warnings.push('Giá cirBTC có thể giảm sâu. Chỉ đầu tư số tiền sẵn sàng mất. Đây là thông tin tham khảo, không phải tư vấn đầu tư.')
+    }
   }
 
   const run = async () => {

@@ -2,23 +2,28 @@
 // figure the agent has recorded so far, even before the profile is complete; a ratio
 // that still lacks an input shows "–".
 
+import { useState } from 'react'
 import { CheckCircle2, XCircle } from 'lucide-react'
 import { useApp } from '@/state/AppState'
 import { DASH, formatNumber, formatPercent } from '@/lib/format'
-import { Btn, Caps, Col, GlassCard, Grid, Notice, Row, Screen, Stats, Title } from '@/components/ui/kit'
+import { Btn, Caps, Col, GlassCard, Grid, Notice, Row, Screen, Stats, Title, Toggle } from '@/components/ui/kit'
+import { AllocationPies } from '@/components/ui/AllocationPies'
 
 export function BalanceSheet({ onOpenChat }: { onOpenChat: () => void }) {
-  const { profile, vault, cirBtc, fx, math, money, moneyOfField, fieldUsdc } = useApp()
+  const { profile, vault, cirBtc, fx, math, alloc, money, moneyOfField, fieldUsdc } = useApp()
+  const [view, setView] = useState<'overview' | 'alloc'>('overview')
   const p = profile.profile
-  const known = !!p && (['monthlyIncome', 'monthlyExpenses', 'debtAmount', 'otherAssets', 'age', 'incomeStable'] as const).some(k => p[k] !== null)
+  const known = !!p && ((['monthlyIncome', 'monthlyExpenses', 'debtAmount', 'otherAssets', 'age', 'incomeStable'] as const).some(k => p[k] !== null) || !!p.holdings?.length)
 
   const cirValue = cirBtc.balance === 0n ? 0n : cirBtc.valueUsdc6
   const other = p?.otherAssets ? fieldUsdc(p, 'otherAssets') : 0n
   const debt = fieldUsdc(p, 'debtAmount')
   const vb = vault.vaultBalance
   const wb = vault.walletBalance
+  // Declared holdings at live prices (wallet USDC and cirBTC are counted above, not here).
+  const declared = BigInt(Math.round(alloc.parts.filter(x => x.holding).reduce((s, x) => s + x.usd, 0) * 1_000_000))
 
-  const assets = vb !== null && wb !== null && cirValue !== null && other !== null ? vb + wb + cirValue + other : null
+  const assets = vb !== null && wb !== null && cirValue !== null && other !== null ? vb + wb + cirValue + other + declared : null
   const netWorth = assets !== null && debt !== null ? assets - debt : null
   const liquidMonths = math.monthlyExpUsdc && vb !== null && wb !== null ? Number(vb + wb) / Number(math.monthlyExpUsdc) : null
   const debtRatio = assets !== null && debt !== null ? (assets > 0n ? (Number(debt) / Number(assets)) * 100 : debt > 0n ? null : 0) : null
@@ -47,6 +52,19 @@ export function BalanceSheet({ onOpenChat }: { onOpenChat: () => void }) {
       {known && fx.vndPerUsd === null && <Notice tone="warning">Chưa lấy được tỉ giá, các số quy đổi tạm hiện “–”.</Notice>}
       {known && fx.stale && fx.fetchedAt && <Notice tone="warning">Đang dùng tỉ giá cũ ngày {new Date(fx.fetchedAt).toLocaleDateString('vi-VN')}.</Notice>}
 
+      <Toggle value={view} onChange={setView} options={[{ value: 'overview', label: 'Tổng quan' }, { value: 'alloc', label: 'Phân bổ' }]} />
+
+      {view === 'alloc' ? (
+        <Grid>
+          <Col span={7}><GlassCard className="p-4 lg:p-8"><AllocationPies /></GlassCard></Col>
+          <Col span={5}>
+            <p className="hidden lg:block text-[16px] leading-6" style={{ color: 'var(--subtle)' }}>
+              An toàn là tiền gửi tiết kiệm. Đầu tư là vàng, cổ phiếu, coin, cirBTC. Nhàn rỗi là tiền chưa phân bổ: USDC trong ví và tiền mặt. Kể với agent tài sản bạn đang có, app tự lấy giá.
+            </p>
+            <Btn variant="outline" onClick={onOpenChat}>{chatLabel}</Btn>
+          </Col>
+        </Grid>
+      ) : (
       <Grid>
         <Col span={6} className="lg:order-2">
           <Stats items={[
@@ -74,7 +92,7 @@ export function BalanceSheet({ onOpenChat }: { onOpenChat: () => void }) {
 
         <Col span={6} className="lg:order-1">
           <GlassCard>
-            <Row label="Giá trị ròng" sub="Quỹ + ví + cirBTC + tài sản khác − nợ" value={money(netWorth)} />
+            <Row label="Giá trị ròng" sub="Mọi tài sản − nợ" value={<span className="whitespace-nowrap">{money(netWorth)}</span>} />
             <Row label="Thanh khoản" sub={math.floorMonths ? `Quỹ + ví · sàn ${math.floorMonths} tháng` : 'Quỹ + ví'}
               value={liquidMonths !== null ? withMark(`${formatNumber(liquidMonths)} tháng`, liqOk) : DASH}
               color={liqOk === null ? undefined : liqOk ? good : bad} />
@@ -85,6 +103,7 @@ export function BalanceSheet({ onOpenChat }: { onOpenChat: () => void }) {
           <Btn variant="outline" className="lg:hidden" onClick={onOpenChat}>{chatLabel}</Btn>
         </Col>
       </Grid>
+      )}
     </Screen>
   )
 }

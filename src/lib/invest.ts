@@ -1,15 +1,18 @@
-// Investment cap by age, on money outside the fund (spendable wallet USDC + cirBTC held).
-// Normal = 110 − age %, Risky = 120 − age %. Shared by the Đầu tư screen and the chat cards.
+// Buying cirBTC is the user's call (no cap since 2026-10-24); the app only warns when a buy
+// pushes the invest share above the target by age. Shared by the Đầu tư screen and the chat cards.
 
 import { GAS_RESERVE_USDC6 } from '@/hooks/useVault'
+import type { Allocation } from '@/lib/allocation'
 
-export type Risk = 'normal' | 'risky'
+/** Wallet USDC that can be spent, keeping the gas reserve; null while unknown. */
+export function spendable(wallet: bigint | null): bigint | null {
+  return wallet === null ? null : wallet > GAS_RESERVE_USDC6 ? wallet - GAS_RESERVE_USDC6 : 0n
+}
 
-/** room = how much more cirBTC may be bought (6-dec USDC), null while balances are unknown. */
-export function investRoom(age: number, risk: Risk, wallet: bigint | null, invested: bigint | null): { capPct: number; spendable: bigint | null; room: bigint | null } {
-  const capPct = Math.max(0, Math.min(100, (risk === 'normal' ? 110 : 120) - age))
-  const spendable = wallet !== null ? (wallet > GAS_RESERVE_USDC6 ? wallet - GAS_RESERVE_USDC6 : 0n) : null
-  if (spendable === null || invested === null) return { capPct, spendable, room: null }
-  const r = ((spendable + invested) * BigInt(capPct)) / 100n - invested
-  return { capPct, spendable, room: r <= 0n ? 0n : r > spendable ? spendable : r }
+/** Warning text if buying `amount` (6-dec USDC, moved from idle to invest) ends above the target; null otherwise. */
+export function overTargetWarning(alloc: Allocation, amount: bigint): string | null {
+  if (!alloc.target || alloc.total <= 0) return null
+  const after = ((alloc.invest + Number(amount) / 1_000_000) / alloc.total) * 100
+  if (after <= alloc.target.investPct + 0.5) return null
+  return `Sau khi mua, đầu tư chiếm khoảng ${Math.round(after)}% tiền ngoài quỹ, cao hơn mục tiêu ${alloc.target.investPct}% theo tuổi. Quyết định là của bạn.`
 }

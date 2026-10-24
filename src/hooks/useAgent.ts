@@ -56,14 +56,15 @@ export function clearChatStorage() {
 export interface AgentHooks {
   /** Context the agent sees (declared numbers, fund progress, DCA). */
   getContext: () => Record<string, unknown>
-  onProfileDraft: (draft: Record<string, unknown>) => void
+  /** Numbers and assets the agent recorded this turn, applied in one save (either may be null). */
+  onProfileDraft: (draft: Record<string, unknown> | null, assets?: unknown[] | null) => void
   onDcaStop: () => void
   /** UI actions the agent asked for (open a screen with a prefilled amount). */
   onActions?: (actions: AgentAction[]) => void
 }
 
 export interface AgentAction {
-  type: 'prepare_deposit' | 'prepare_withdraw' | 'prepare_buy_cirbtc' | 'propose_dca' | 'open_screen'
+  type: 'prepare_deposit' | 'prepare_withdraw' | 'prepare_buy_cirbtc' | 'propose_dca' | 'open_screen' | 'show_allocation'
   amount?: { amount: number; currency: 'VND' | 'USDC' }
   intervalDays?: number
   screen?: 'fund' | 'invest' | 'balance' | 'menu'
@@ -98,11 +99,11 @@ export function useAgent(hooks: AgentHooks) {
           context: hooksRef.current.getContext(),
         }),
       })
-      const data = await res.json().catch(() => null) as { content?: string; error?: string; profileUpdate?: Record<string, unknown> | null; dcaStop?: boolean; actions?: AgentAction[] } | null
+      const data = await res.json().catch(() => null) as { content?: string; error?: string; profileUpdate?: Record<string, unknown> | null; assetUpdates?: unknown[] | null; dcaStop?: boolean; actions?: AgentAction[] } | null
       if (!res.ok || !data?.content) throw new Error(data?.error ?? `HTTP ${res.status}`)
 
       let content = data.content
-      if (data.profileUpdate) hooksRef.current.onProfileDraft(data.profileUpdate)
+      if (data.profileUpdate || data.assetUpdates?.length) hooksRef.current.onProfileDraft(data.profileUpdate ?? null, data.assetUpdates ?? null)
       if (data.dcaStop) hooksRef.current.onDcaStop()
       if (data.actions?.length) hooksRef.current.onActions?.(data.actions)
       const pm = content.match(/<profile>([\s\S]*?)<\/profile>/)

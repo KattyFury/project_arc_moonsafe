@@ -1,9 +1,19 @@
 # MoonSafe — HANDOFF
 
 App quỹ dự phòng web3 trên Arc Testnet. Live: https://moonsafe.app (Cloudflare Pages project `moonsafe`, deploy tay — push GitHub KHÔNG tự deploy).
-Spec gốc: user dán trong chat (SPEC.md, 10 mục, màn 1–10). Cập nhật lần cuối: 2026-10-22.
+Spec gốc: user dán trong chat (SPEC.md, 10 mục, màn 1–10). Cập nhật lần cuối: 2026-10-24.
+Khung tài chính đang chạy: **`docs/FRAMEWORK-TAI-CHINH.md`** (ưu tiên hơn mọi ghi chú cũ bên dưới về 110/120 − tuổi).
 
 ## ▶ Làm tiếp từ đây (mới nhất ở trên)
+
+-6. **Phiên 2026-10-24 — khung tài chính mới + biểu đồ phân bổ. ĐÃ COMMIT, CHƯA DEPLOY (chờ user duyệt ảnh ở Desktop\MoonSafe-phan-bo-2026-10-24). Eval 76/76 (`--runs 2`, chạy trên `wrangler pages dev` local).**
+   - User chốt: tiền ngoài quỹ chia **An toàn (gửi tiết kiệm) / Đầu tư (vàng, cổ phiếu Mỹ, coin, cirBTC) / Nhàn rỗi (ví USDC, tiền mặt, stablecoin)**; mục tiêu an toàn = tuổi %, đầu tư = 100 − tuổi %; quỹ đứng riêng; khoá đầu tư giữ (C1); **không chặn mua vượt mục tiêu, chỉ cảnh báo** (H1); vàng giá SJC mua vào (I1); không theo dõi cổ phiếu Việt; **bỏ 110/120, 3 mức, giới hạn 8 USDC** (sắp lên mainnet). Chi tiết: `docs/FRAMEWORK-TAI-CHINH.md`.
+   - Code: `src/lib/allocation.ts` (tính phân bổ, dùng chung app + `chat.ts` qua import tương đối), `functions/api/prices.ts` (vàng vang.today, Yahoo, Coinbase/Binance), `src/hooks/usePrices.ts`, `src/components/ui/AllocationPies.tsx` (2 vòng tròn; bản `compact` ở Đầu tư + chat), `FinancialProfile.holdings`. Agent: tool `record_asset` (ghi tài sản, quantity 0 = xoá) + `show_allocation`; prompt REPLY viết lại ngắn (~88 token ra/câu); chốt chặn mới: thẻ phải khớp động từ (mua ≠ nạp), nêu đủ "an toàn X%, đầu tư Y%", không nhầm phần an toàn với quỹ, không đọc lại bảng khi đã hiện biểu đồ.
+   - Chi phí đo 2026-10-24: PLAN gpt-4o ~2.600 token vào → ~$0,0067; REPLY 4o-mini ~1,1 lượt × 2.300 vào / 88 ra → ~$0,0004. **≈ $0,007 / tin nhắn** (cũ ~$0,0045; tăng do schema 2 tool mới).
+   - Đã đo vừa 1 màn: Cân đối (Tổng quan + Phân bổ), Đầu tư (khoá + mở khoá giả lập số dư quỹ) ở 393×852 và 1440×900.
+   - **Khi deploy:** gọi thử `https://moonsafe.app/api/prices?stocks=SPY&crypto=ETH` — mới thử từ máy Dell, chưa thử từ server Cloudflare (CoinGecko từng 403 từ Workers). Thiếu giá nào thì app hiện "chưa có giá", không sập.
+   - Còn 4 thay đổi cũ (3 mức + 8 USDC) nằm trong `git stash@{0}` trên máy Dell, user đã bỏ; xoá stash khi chắc không cần.
+   - Preview local: `vite.preview.config.ts` (proxy `/api` → `wrangler pages dev dist --port 8788`), đã cho vào `.git/info/exclude`.
 
 -5. **Phiên 2026-10-22 (cuối) — thẻ giao dịch trong chat + tiết kiệm. ĐÃ DEPLOY. Eval 62/62 (`--runs 2`).**
    - **Chat là chính:** nạp / rút / mua cirBTC / DCA từ agent KHÔNG chuyển màn nữa mà hiện **thẻ xác nhận ngay dưới câu trả lời** (`src/components/chat/ActionCard.tsx`): số USDC + ≈ VND, chặn khi vượt số dư (giữ 0,02 USDC phí), cảnh báo rút dưới sàn (nút đỏ "Vẫn ký rút"), mua cirBTC = "Xem báo giá" → "Ký mua" + cảnh báo rủi ro, DCA = "Duyệt DCA". Bấm nút → ví (OKX) bật lên ký. Chỉ "mở màn …" mới chuyển màn. Hạn mức đầu tư dùng chung `src/lib/invest.ts` (`investRoom`). Đã bỏ cơ chế prefill cũ (type `Prefill`, props ở Fund/Invest/AppShell).
@@ -77,7 +87,7 @@ Máy cần `bun` (`npm i -g bun`) và Foundry (`forge`, `cast`).
 ## Agent chat (`functions/api/chat.ts`)
 Luật chi phí & độ tin cậy bắt buộc: `D:\Files\Claude\guide_personal_HF-agents-course\AGENTS.md` — **Part 3**.
 - Mọi thao tác của agent là TOOL. Mỗi tin nhắn = 2 lượt gọi:
-  1. PLAN (**gpt-4o**, `tool_choice: "required"`): bắt buộc chọn tool — `update_profile`, `prepare_deposit`, `prepare_withdraw`, `prepare_buy_cirbtc`, `propose_dca`, `stop_dca`, `open_screen`, `no_action`. Server chặn mua/DCA khi `investUnlocked` = false.
+  1. PLAN (**gpt-4o**, `tool_choice: "required"`): bắt buộc chọn tool — `update_profile`, `record_asset`, `show_allocation`, `prepare_deposit`, `prepare_withdraw`, `prepare_buy_cirbtc`, `propose_dca`, `stop_dca`, `open_screen`, `no_action`. Server chặn mua/DCA khi `investUnlocked` = false.
   2. REPLY (**gpt-4o-mini**, chỉ có `web_search`): chỉ được kể đúng thao tác bước 1 đã làm ("đã mở sẵn", không "đã nạp").
   App nhận `actions` → mở màn, điền sẵn số tiền (VND được app quy đổi). User LUÔN tự ký; agent không ký, không chuyển tiền.
 - Đo 2026-10-22: để gpt-4o-mini tự gọi tool → 0/8 thao tác, còn ghi "nạp 200 USDC" thành nợ; PLAN ép tool trên gpt-4o → 10/10 đúng tool + số tiền. Trích khai báo: gpt-4o 12/12, các bản mini 10/12.

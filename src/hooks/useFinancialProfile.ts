@@ -2,8 +2,9 @@
 // also sent to /api/userdata (src/lib/cloud.ts) so it follows the Privy account.
 
 import { useCallback, useState } from 'react'
-import { EMPTY_PROFILE, MONEY_FIELDS, type Currency, type FinancialProfile, type MoneyField } from '@/types'
+import { EMPTY_PROFILE, MONEY_FIELDS, type Currency, type FinancialProfile, type Holding, type MoneyField } from '@/types'
 import { cloudSave } from '@/lib/cloud'
+import { toHolding } from '@/lib/allocation'
 
 const STORAGE_KEY = 'moonsafe_profile_v1'
 
@@ -39,11 +40,14 @@ export function normalizeProfile(raw: Record<string, unknown> | null | undefined
   }
   // Legacy boolean: "no debt" is a real answer (0); "has debt" without an amount stays unknown.
   if (out.debtAmount === null && (raw.hasExternalDebt === false || raw.hasDebt === false)) out.debtAmount = 0
+  // Only set when present, so a partial update from the agent never wipes the list.
+  const holdings = Array.isArray(raw.holdings) ? raw.holdings.map(toHolding).filter((h): h is Holding => h !== null) : undefined
   return {
     ...out,
     age: num(raw.age),
     incomeStable: typeof raw.incomeStable === 'boolean' ? raw.incomeStable : null,
     units,
+    ...(holdings ? { holdings } : {}),
     savedAt: num(raw.savedAt) ?? undefined,
   }
 }

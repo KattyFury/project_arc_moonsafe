@@ -1,14 +1,16 @@
-// Screens 9 / 9b — Đầu tư, cirBTC only (Figma: locked = conditions 6 col + actions 6 col).
-// Cap by age applies to money outside the vault (wallet USDC + cirBTC held).
+// Screens 9 / 9b — Đầu tư (Figma: locked = conditions 6 col + actions 6 col). The allocation
+// chart (target by age vs now) shows in both states; buying cirBTC has no cap, the app only
+// warns when a buy goes above the target (docs/FRAMEWORK-TAI-CHINH.md).
 
 import { useState } from 'react'
-import { ArrowRight, CheckCircle2, ExternalLink, Lock, TrendingUp, XCircle } from 'lucide-react'
+import { ArrowRight, CheckCircle2, ExternalLink, Lock, XCircle } from 'lucide-react'
 import { useApp } from '@/state/AppState'
-import { investRoom } from '@/lib/invest'
+import { overTargetWarning, spendable } from '@/lib/invest'
 import { dcaNextRun, formatCirBtc } from '@/hooks/useCirBtc'
 import { useNow } from '@/hooks/useNow'
 import { DASH, formatUsdc, parseUsdcInput, usdcToInput } from '@/lib/format'
-import { AmountField, Btn, Chips, Col, GlassCard, Grid, IconBox, Notice, Screen, Sheet, Toggle, glass } from '@/components/ui/kit'
+import { AmountField, Btn, Chips, Col, GlassCard, Grid, IconBox, Notice, Screen, Sheet, Toggle } from '@/components/ui/kit'
+import { AllocationPies } from '@/components/ui/AllocationPies'
 
 const DCA_WEEKS = 12
 const DCA_INTERVAL_DAYS = 7
@@ -63,6 +65,7 @@ export function InvestScreen({ onOpenFund, onOpenChat }: { onOpenFund: () => voi
                 ? <Notice tone="warning">Khi đã trả hết nợ bên ngoài, báo agent một tiếng để mở đầu tư.</Notice>
                 : <Btn onClick={onOpenFund}>Nạp quỹ dự phòng</Btn>}
             <Btn disabled><Lock size={16} />Mua cirBTC</Btn>
+            <GlassCard className="p-4 lg:p-8"><AllocationPies compact /></GlassCard>
           </Col>
         </Grid>
       </Screen>
@@ -72,25 +75,27 @@ export function InvestScreen({ onOpenFund, onOpenChat }: { onOpenFund: () => voi
 }
 
 function InvestOpen() {
-  const { profile, vault, cirBtc, money } = useApp()
+  const { vault, cirBtc, alloc, money } = useApp()
   const now = useNow()
-  const [risk, setRisk] = useState<'normal' | 'risky'>('normal')
   const [amount, setAmount] = useState('')
   const [mode, setMode] = useState<'once' | 'dca'>('once')
-  const age = profile.profile?.age ?? 0
 
-  const wb = vault.walletBalance
-  const invested = cirBtc.balance === 0n ? 0n : cirBtc.valueUsdc6
-  const { capPct, room } = investRoom(age, risk, wb, invested)
+  const room = spendable(vault.walletBalance)
+  // What the chart suggests putting into investments, limited to the wallet.
+  const toTarget = alloc.suggest && room !== null ? (() => {
+    const t = BigInt(Math.floor(alloc.suggest.toInvest * 1_000_000))
+    return t < room ? t : room
+  })() : null
 
   const parsed = parseUsdcInput(amount)
-  const overCap = room !== null && parsed > room
+  const overWallet = room !== null && parsed > room
+  const overTarget = parsed > 0n && !overWallet ? overTargetWarning(alloc, parsed) : null
 
   const dca = cirBtc.dca
   const next = dcaNextRun(dca)
   const due = next !== null && next <= now
   const dcaAmount = dca ? BigInt(dca.amountUsdc) : null
-  const suggest = room !== null ? (room / BigInt(DCA_WEEKS) / 10_000n) * 10_000n : null
+  const suggest = toTarget !== null ? (toTarget / BigInt(DCA_WEEKS) / 10_000n) * 10_000n : null
   const q = cirBtc.quote
 
   const buy = async () => {
@@ -105,47 +110,12 @@ function InvestOpen() {
     <Screen>
       <Grid>
         <Col span={5}>
-          {/* Hero: the one gradient region on this screen. Holds the cap figures so the screen fits without scrolling. */}
-          <section className="p-4 lg:p-8 flex flex-col gap-2" style={glass.hero}>
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <TrendingUp size={20} color="white" />
-                <span className="text-[14px] leading-5 font-semibold text-white">Đầu tư cirBTC</span>
-              </div>
-              <div className="flex gap-2 p-1 rounded-2xl" style={{ background: 'rgba(255,255,255,0.16)' }}>
-                {(['normal', 'risky'] as const).map(r => (
-                  <button key={r} onClick={() => setRisk(r)} className="h-8 px-2 text-[14px] leading-5 font-semibold rounded-2xl"
-                    style={{ background: risk === r ? 'white' : 'transparent', color: risk === r ? 'var(--accent)' : 'white' }}>
-                    {r === 'normal' ? 'Normal' : 'Risky'}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <p className="text-[14px] leading-5 text-white">Số dư trong ví</p>
-              <p className="display font-bold tabular-nums text-white text-[32px] leading-10">{money(wb)}</p>
-            </div>
-            <div className="grid grid-cols-3 gap-2 pt-2">
-              {[
-                { label: `Trần (${risk === 'normal' ? '110' : '120'} − ${age})`, value: `${capPct}%` },
-                { label: 'Đang giữ', value: money(invested) },
-                { label: 'Còn mua được', value: money(room) },
-              ].map(i => (
-                <div key={i.label} className="min-w-0">
-                  <p className="text-[14px] leading-5 text-white truncate">{i.label}</p>
-                  <p className="text-[16px] leading-6 font-semibold text-white tabular-nums break-words">{i.value}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-          <p className="text-[14px] leading-5 -mt-2 lg:-mt-4" style={{ color: 'var(--subtle)' }}>
-            Đang giữ {formatCirBtc(cirBtc.balance)}. Phần còn lại giữ bằng USDC — khuyến nghị, không bắt buộc.
-          </p>
+          <GlassCard className="p-4 lg:p-8"><AllocationPies compact /></GlassCard>
         </Col>
 
         <Col span={7}>
-          {invested === null && (cirBtc.balance ?? 0n) > 0n && (
-            <Notice tone="warning">Chưa lấy được giá BTC nên chưa tính được trần. Thử lại sau ít phút.</Notice>
+          {cirBtc.valueUsdc6 === null && (cirBtc.balance ?? 0n) > 0n && (
+            <Notice tone="warning">Chưa lấy được giá BTC nên phần cirBTC tạm chưa tính vào biểu đồ. Thử lại sau ít phút.</Notice>
           )}
 
           {/* One card: buy once or set a weekly DCA */}
@@ -156,13 +126,15 @@ function InvestOpen() {
             {mode === 'once' ? (
               <>
                 <Chips items={[
-                  { label: '25%', onClick: () => room && setAmount(usdcToInput((room * 25n) / 100n)), disabled: !room },
-                  { label: '50%', onClick: () => room && setAmount(usdcToInput((room * 50n) / 100n)), disabled: !room },
-                  { label: 'Tối đa', onClick: () => room && setAmount(usdcToInput(room)), disabled: !room },
+                  { label: 'Theo mục tiêu', onClick: () => toTarget && setAmount(usdcToInput(toTarget)), disabled: !toTarget },
+                  { label: '50% ví', onClick: () => room && setAmount(usdcToInput((room * 50n) / 100n)), disabled: !room },
+                  { label: 'Hết ví', onClick: () => room && setAmount(usdcToInput(room)), disabled: !room },
                 ]} />
                 <AmountField value={amount} onChange={v => { setAmount(v); cirBtc.clearQuote() }} disabled={cirBtc.busy} />
+                <p className="text-[14px] leading-5 -mt-2" style={{ color: 'var(--subtle)' }}>Ví {money(vault.walletBalance)} · đang giữ {formatCirBtc(cirBtc.balance)}</p>
                 <Notice tone="warning">Giá cirBTC có thể giảm sâu. Chỉ đầu tư số tiền sẵn sàng mất. Đây là thông tin tham khảo, không phải tư vấn đầu tư.</Notice>
-                {overCap && <Notice tone="danger">Vượt trần đầu tư theo tuổi. Tối đa {money(room)}.</Notice>}
+                {overWallet && <Notice tone="danger">Vượt số USDC trong ví. Tối đa {money(room)}.</Notice>}
+                {overTarget && <Notice tone="warning">{overTarget}</Notice>}
                 {cirBtc.error && !q && <Notice tone="danger">{cirBtc.error}</Notice>}
                 {cirBtc.lastTxHash && (
                   <Notice tone="success" title="Đã mua cirBTC">
@@ -170,7 +142,7 @@ function InvestOpen() {
                       href={`https://explorer.testnet.arc.io/tx/${cirBtc.lastTxHash}`}>Xem giao dịch <ExternalLink size={16} /></a>
                   </Notice>
                 )}
-                <Btn loading={cirBtc.busy && !q} disabled={parsed <= 0n || overCap || room === null}
+                <Btn loading={cirBtc.busy && !q} disabled={parsed <= 0n || overWallet || room === null}
                   onClick={() => { void cirBtc.estimate(parsed) }}>
                   {cirBtc.busy && !q ? 'Đang lấy báo giá…' : 'Xem báo giá · Mua cirBTC'}
                 </Btn>
@@ -192,7 +164,7 @@ function InvestOpen() {
                 <Btn onClick={() => cirBtc.startDca(suggest, DCA_INTERVAL_DAYS)}>Duyệt DCA</Btn>
               </>
             ) : (
-              <p className="text-[16px] leading-6" style={{ color: 'var(--subtle)' }}>Chưa đủ hạn mức để chia DCA (tối thiểu {formatUsdc(MIN_DCA)} mỗi kỳ).</p>
+              <p className="text-[16px] leading-6" style={{ color: 'var(--subtle)' }}>Chưa có tiền nhàn rỗi cần đưa vào đầu tư để chia DCA (tối thiểu {formatUsdc(MIN_DCA)} mỗi kỳ). Muốn mua đều số khác thì nói với agent.</p>
             )}
           </GlassCard>
         </Col>

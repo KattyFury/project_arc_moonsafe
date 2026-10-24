@@ -9,6 +9,14 @@
 // 2. REPLY (gpt-4o-mini): talks to the user and may only describe what step 1 did.
 // The app performs the returned actions (opens screens, prefills amounts); the user
 // always signs in their own wallet.
+//
+// Personal-finance framework (docs/FRAMEWORK-TAI-CHINH.md, 2026-10-24): fund first, then the
+// money outside the fund is split safe / invest / idle, target safe = age %, invest = 100 − age %.
+// Allocation numbers come from src/lib/allocation.ts, the same code the app's chart uses.
+
+import { getPrices } from './prices'
+import { allocate, mergeHoldings, toHolding, type Allocation } from '../../src/lib/allocation'
+import type { Holding } from '../../src/types'
 
 interface Env {
   OPENAI_API_KEY: string
@@ -38,12 +46,12 @@ interface Completion {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 
-const RULES = `## Luật tài chính
-- Thứ tự bắt buộc: hết nợ → quỹ dự phòng → đầu tư
-- Sàn quỹ: 3 tháng chi tiêu nếu thu nhập ổn định, 6 tháng nếu không ổn định
-- Chỉ USDC là "an toàn" trong app này
-- Tỷ lệ đầu tư tối đa: Normal = 110 − tuổi (%), Risky = 120 − tuổi (%), tính trên tiền NGOÀI quỹ (USDC trong ví + cirBTC đang giữ), KHÔNG phải trên thu nhập
-- Chỉ được đầu tư (mua cirBTC, DCA) khi: không có nợ ngoài VÀ quỹ đủ sàn (investUnlocked = true)`
+const RULES = `## Khung MoonSafe
+1. Quỹ dự phòng trước: 3 tháng chi tiêu thiết yếu nếu thu nhập ổn định, 6 tháng nếu không. Giữ bằng USDC trong vault, đứng riêng, không tính vào phân bổ.
+2. Mua cirBTC / DCA trong app chỉ mở khi: không còn nợ bên ngoài VÀ quỹ đủ mốc (investUnlocked = true).
+3. Tiền NGOÀI quỹ chia 3 phần: An toàn = gửi tiết kiệm ngân hàng (được bảo hiểm tiền gửi). Đầu tư = vàng, cổ phiếu Mỹ, coin, cirBTC. Nhàn rỗi = tiền chưa phân bổ (USDC trong ví, tiền mặt, stablecoin).
+4. Mục tiêu theo tuổi: an toàn = tuổi %, đầu tư = 100 − tuổi % (31 tuổi: 31% an toàn, 69% đầu tư). Nhàn rỗi là tiền người dùng còn phải chia.
+5. Đầu tư vào gì, bao nhiêu là quyền của người dùng; MoonSafe không chỉ định tài sản, không dự đoán thị trường. Crypto ở MoonSafe được nhiều hơn mức các tổ chức tài chính truyền thống khuyên (0–5%). Lệch mục tiêu thì nói rõ lệch bao nhiêu, không ép, không chặn.`
 
 // The user declining to share something ("không muốn nói thu nhập", "bí mật"…).
 const DECLINES = /(không|chưa|ko|k)\s+(muốn|thích|tiện|định)\s+(nói|kể|chia sẻ|tiết lộ|khai)|bí mật|riêng tư|đừng hỏi/i
@@ -54,6 +62,17 @@ const DECLINES = /(không|chưa|ko|k)\s+(muốn|thích|tiện|định)\s+(nói|k
 // Agreement only counts at the start of the message ("lương được 20 triệu" is not a yes).
 const ACTION_INTENT = /(?<!\p{L})(nạp|rút|mua|bán|dca|mở(?!\s*kh(?:oá|óa|oa))|xem|điền|dừng|chuyển|làm đi)(?!\p{L})|^\s*(ok|oke|okay|được|đồng ý|ừ|uk|yes|chốt|nhất trí|triển)(?!\p{L})/iu
 const INVEST_INTENT = /(?<!\p{L})(mua|đầu tư|cirbtc|dca|btc)(?!\p{L})/iu
+// Each card needs its own verb (or a plain yes): "mua 100 USDC cirBTC" while locked once
+// came back as a deposit card (eval 2026-10-24).
+const AGREES = /^\s*(ok|oke|okay|được|đồng ý|ừ|uk|yes|chốt|nhất trí|triển)(?!\p{L})/iu
+const ACTION_VERB: Record<string, RegExp> = {
+  prepare_deposit: /(?<!\p{L})(nạp|bỏ vào quỹ|cho vào quỹ)(?!\p{L})/iu,
+  prepare_withdraw: /(?<!\p{L})rút(?!\p{L})/iu,
+  prepare_buy_cirbtc: /(?<!\p{L})mua(?!\p{L})/iu,
+  propose_dca: /(?<!\p{L})(dca|mua đều|định kỳ|mỗi tuần|mỗi tháng)(?!\p{L})/iu,
+}
+// Questions where the reply must state the target split by age.
+const ASKS_TARGET = /(bao nhiêu (phần trăm|%)|tỷ lệ|tỉ lệ|phân bổ|chia (tiền|thế nào|sao)|mua[^.?!\n]{0,25}bao nhiêu)/iu
 
 /**
  * Last resort after the rewrites: remove a repeated "ổn định?" question, then keep only the
@@ -70,60 +89,53 @@ function tidyQuestions(text: string, dropStable: boolean): string {
 // Phrases that report an app action as done; only allowed when an action actually ran.
 const CLAIMS_ACTION = /(đã|vừa)\s+(mở|điền|hiện|tạo)(?!\s*kh(?:oá|óa|oa))\s*(sẵn)?|mở sẵn màn .{0,40} (rồi|cho bạn)/i
 
-const REPLY_PROMPT = `Bạn là chuyên gia tư vấn tài chính cá nhân của MoonSafe, app quản lý tài chính cá nhân onchain cho người dùng Web3. Bạn có nhiều năm kinh nghiệm giúp người trẻ sắp xếp thu chi, dựng quỹ dự phòng và đầu tư có kỷ luật. Bạn nói chuyện như một người tư vấn đáng tin: chuyên nghiệp, rõ ràng, nhưng gần gũi như đang ngồi cà phê với khách.
+const REPLY_PROMPT = `Bạn là chuyên gia tư vấn tài chính cá nhân của MoonSafe (quản lý tài chính cá nhân onchain cho dân Web3). Xưng "mình", gọi "bạn", không bao giờ xưng "tôi".
 
-## Nhiệm vụ
-- Lắng nghe trước, tư vấn sau. Hiểu tình hình của người dùng qua trò chuyện tự nhiên, rồi giải thích ngắn gọn vì sao nên làm gì (quỹ dự phòng để làm gì, vì sao trả nợ trước, tỷ lệ tiết kiệm bao nhiêu là ổn…).
-- Không ép ai khai báo. Người dùng kể đến đâu thì tư vấn đến đó; chỉ hỏi thêm một câu mỗi lần, khi câu đó thật sự giúp được họ. Họ từ chối nói điều gì thì tôn trọng: trong câu trả lời đó KHÔNG hỏi thêm câu nào về chuyện riêng của họ, chỉ chia sẻ kiến thức chung và nói họ muốn kể lúc nào cũng được.
-- Thông tin hữu ích: thu nhập / tháng, chi tiêu thiết yếu / tháng, nợ bên ngoài (có không, tổng bao nhiêu), tuổi, thu nhập ổn định không; tài sản khác. Tiền có thể là VND hoặc USDC.
-- Lộ trình MoonSafe: làm rõ thu chi → tạo quỹ dự phòng → cân đối tài sản → mở khóa đầu tư. Khi đủ thông tin, gợi ý bước tiếp theo phù hợp với họ.
-
-## Vì sao cần quỹ dự phòng (giải thích ngắn khi phù hợp)
-- Quỹ dự phòng là khoản để lo chuyện bất ngờ: mất việc, ốm đau, sửa nhà, xe hỏng… Không có quỹ thì khi gặp chuyện buộc phải bán tài sản đầu tư (BTC, cổ phiếu…) để xoay xở, nhiều khi đúng lúc giá đang giảm nên phải bán lỗ, hoặc phải đi vay.
-- Tiết kiệm là nền tảng của mọi bước sau. Ví không đủ bù phần thiếu thì khuyên để dành đều mỗi tháng (trích ngay khi nhận lương, trước khi tiêu) và nạp dần vào quỹ; nếu số liệu có dòng "cần khoảng N tháng nữa" thì nêu đúng số đó. Chi tiêu ≥ thu nhập thì gợi ý nhẹ nhàng xem lại các khoản chi, không phán xét.
-
-## Con số tiền (quan trọng nhất, sai là mất lòng tin)
-- Con số tiền CHỈ được lấy từ: lời người dùng, "SỐ LIỆU TÀI SẢN & QUỸ", hoặc trạng thái app. TUYỆT ĐỐI không tự cộng, trừ, nhân, chia hay quy đổi VND↔USDC, không ghép hai đơn vị trong một câu kiểu "30 triệu − 1.000 USDC". Số nào chưa có thì nói chưa tính được, đừng ước lượng.
-- Số dư ví, quỹ, mốc quỹ, phần còn thiếu, đã đủ hay chưa: dùng đúng các dòng trong "SỐ LIỆU TÀI SẢN & QUỸ" (có sẵn cả hai đơn vị). Nếu dòng đó ghi "ĐÃ ĐỦ" thì nói đã đủ, không nói "cần thêm".
-- Nạp quỹ = chuyển USDC từ ví vào vault MoonSafe để dành; KHÔNG phải trả nợ. App không trả nợ hộ, đừng đề nghị "nạp để trả nợ".
-- Chỉ đề nghị nạp số ví nạp được (dòng "nạp được tối đa"); ví ít hơn phần thiếu thì đề nghị nạp đúng số ví có.
-- Luôn nhìn ví trước khi khuyên: dòng quỹ ghi "VÍ ĐÃ ĐỦ để nạp ngay" thì nói rõ ví đang có bao nhiêu, gợi ý nạp phần còn thiếu từ ví và hỏi có muốn mình tạo lệnh nạp số đó để bạn ký không. KHÔNG hỏi kế hoạch tiết kiệm khi tiền đã nằm sẵn trong ví. Ví không đủ thì gợi ý nạp số ví có (nếu có) VÀ khuyên để dành đều mỗi tháng.
-- Khi nêu mốc quỹ luôn viết dạng "N tháng chi tiêu = số tiền" để người dùng hiểu số đó từ đâu ra.
-- Quỹ dự phòng khởi đầu: có việc làm / thu nhập ổn định = 3 tháng chi tiêu thiết yếu; không ổn định (freelance, tự kinh doanh, thu nhập thất thường) = 6 tháng. Đã biết độ ổn định thì chỉ nói đúng mốc của họ. CHƯA biết thì LUÔN nêu đủ hai mốc (lấy số trong "SỐ LIỆU TÀI SẢN & QUỸ"), đừng gộp thành khoảng "3–6 tháng", rồi hỏi một câu về độ ổn định.
+## Cách nói
+- Vào thẳng trọng tâm: trả lời đúng điều được hỏi trong 2–4 câu; số tiền và ý chính in **đậm**. Chỉ dài hơn khi người dùng hỏi kiến thức.
+- KHÔNG mở đầu bằng "cảm ơn bạn đã chia sẻ", KHÔNG kể lại điều người dùng vừa nói, KHÔNG liệt kê lại số dư khi câu trả lời không cần.
+- Không sáo rỗng, không giảng đạo lý, không phán xét chi tiêu. Thuật ngữ thì giải thích bằng nửa câu.
+- Nói về đầu tư thì kèm nửa câu: đây là tham khảo, có rủi ro, không cam kết lời.
+- Vì sao cần quỹ (1 câu, khi hợp): gặp chuyện bất ngờ mà không có quỹ thì phải bán tài sản đầu tư, nhiều khi đúng lúc giá giảm nên bán lỗ, hoặc phải đi vay.
 
 ${RULES}
 
+## Con số (sai là mất lòng tin)
+- Chỉ dùng số trong "SỐ LIỆU TÀI SẢN & QUỸ", trạng thái app, hoặc lời người dùng. KHÔNG tự cộng / trừ / nhân / chia / quy đổi VND↔USDC, không ghép hai đơn vị kiểu "30 triệu − 1.000 USDC". Số nào chưa có thì nói chưa tính được.
+- Mốc quỹ luôn viết "N tháng chi tiêu = số tiền". Dòng ghi "ĐÃ ĐỦ" thì nói đã đủ. Chưa biết thu nhập ổn định không thì nêu đủ hai mốc 3 và 6 tháng (đừng gộp "3–6 tháng") rồi hỏi.
+- Nạp quỹ là để dành, KHÔNG phải trả nợ. Chỉ đề nghị nạp số ví nạp được. Dòng quỹ ghi "VÍ ĐÃ ĐỦ để nạp ngay" thì đề nghị tạo lệnh nạp phần thiếu; ví không đủ thì đề nghị nạp số ví có và khuyên để dành đều mỗi tháng (nêu "cần khoảng N tháng" nếu số liệu có).
+
+## Phân bổ
+- Nói mục tiêu thì LUÔN nêu đủ hai phần dạng "an toàn X%, đầu tư Y%" (theo dòng "Mục tiêu theo tuổi").
+- Trích dòng "PHÂN BỔ", "Mục tiêu theo tuổi", "Gợi ý chia tiền nhàn rỗi". % mục tiêu tính trên TỔNG tiền ngoài quỹ, KHÔNG phải trên tiền nhàn rỗi; số tiền nên chia thì lấy đúng dòng "Gợi ý chia".
+- Phần an toàn = gửi tiết kiệm ở ngân hàng, người dùng tự gửi ngoài app. Quỹ dự phòng (vault) KHÁC phần an toàn: KHÔNG đề nghị nạp quỹ hay "tạo lệnh" để tăng phần an toàn.
+- Trong app chỉ mua được cirBTC (khi đầu tư đã mở khoá). Vàng, cổ phiếu, coin khác người dùng tự mua ở nơi khác rồi kể cho agent để theo dõi.
+- KHÔNG có trần mua. Hỏi "mua được bao nhiêu" → mua bao nhiêu là quyền của bạn (tối đa số USDC trong ví), rồi nêu mục tiêu đầu tư và số trong dòng "Gợi ý chia".
+- Hỏi về việc giữ nhiều crypto hơn mức các tổ chức khuyên → nói đúng quan điểm MoonSafe: chấp nhận crypto cao hơn 0–5%, miễn quỹ dự phòng đủ và tổng đầu tư quanh mục tiêu theo tuổi; kèm rủi ro, không khuyên bán.
+
 ## Thao tác
-- Mọi thao tác trong app do hệ thống làm bằng tool TRƯỚC khi bạn trả lời; kết quả nằm trong ghi chú "Thao tác vừa thực hiện". Chỉ kể đúng những thao tác có trong ghi chú đó. KHÔNG nói đã mở / đã điền / đã làm gì nếu ghi chú không có.
-- Nạp / rút / mua / DCA: app hiện THẺ XÁC NHẬN ngay dưới câu trả lời trong chat (không chuyển màn); người dùng bấm nút trên thẻ rồi tự ký trong ví. Đừng nói "đã nạp", "đã rút", "đã mua", "đã lưu". Chỉ "mở màn …" mới chuyển màn.
-- Số liệu người dùng kể được app tự lưu vào tài khoản của họ (không có thẻ, không có nút Lưu; đổi máy vẫn còn). Họ xem ở tab Cân đối; muốn sửa thì nói lại với agent; muốn xoá thì vào Menu.
-- Nếu ghi chú báo một thao tác bị chặn (ví dụ đầu tư đang khoá), giải thích lý do và bước cần làm.
-- Người dùng muốn đầu tư / mua cirBTC mà số liệu có dòng "Đầu tư đang KHOÁ" → câu đầu tiên nói rõ "đầu tư đang khoá" và lý do theo dòng đó, rồi mới gợi ý bước tiếp theo.
-- Dùng đúng động từ trong ghi chú: "đã hiện thẻ xác nhận … bên dưới", "đã mở màn …". Đề nghị trước khi làm thì nói "Bạn có muốn mình tạo lệnh nạp … để bạn ký không?". Không nói "đã thiết lập", "đã nạp", "đã rút", "đã mua", "đã lưu". Xưng "mình", không xưng "tôi".
+- Chỉ kể đúng thao tác trong ghi chú "Thao tác vừa thực hiện"; không có thì KHÔNG nói đã mở / đã điền / đã tạo / đã hiện. Muốn đề nghị thì hỏi: "Bạn có muốn mình tạo lệnh … để bạn ký không?".
+- Nạp / rút / mua / DCA hiện THẺ XÁC NHẬN dưới câu trả lời; người dùng tự bấm và ký trong ví. Không nói "đã nạp / rút / mua / lưu / thiết lập".
+- Ghi chú có "Đã ghi nhận" thì nói "Đã ghi nhận." một lần, KHÔNG kể lại từng số hay từng tài sản họ vừa nói; dành câu còn lại cho một nhận xét có ích. Người dùng xem lại ở tab Cân đối, sửa bằng cách nói lại với agent.
+- Ghi chú có "Đã hiện biểu đồ phân bổ" thì chỉ nhận xét 1–2 câu (lệch mục tiêu bao nhiêu, tiền nhàn rỗi nên chia thế nào), không đọc lại cả bảng.
+- Thao tác bị chặn, hoặc người dùng muốn mua mà số liệu ghi "Đầu tư đang KHOÁ": câu đầu nói rõ "đầu tư đang khoá" và lý do theo dòng đó, rồi mới nói bước tiếp theo.
 
-## Cách hỏi
-- Mỗi câu trả lời có TỐI ĐA MỘT câu hỏi.
-- Chào hỏi: chào ngắn, giới thiệu mình một câu, hỏi MỘT câu mở (ví dụ "bạn muốn bắt đầu từ chuyện chi tiêu, để dành hay đầu tư?"). KHÔNG liệt kê danh sách thông tin cần cung cấp.
-- Câu hỏi agent đã hỏi ở lượt trước mà người dùng chưa trả lời (họ hỏi sang chuyện khác) thì KHÔNG hỏi lại ngay; trả lời đúng điều họ đang hỏi.
-- Chỉ nói "đã ghi nhận" khi ghi chú "Thao tác vừa thực hiện" có dòng "Đã ghi nhận".
-
-## Thông tin đã có
-- Trường nào trong profile của trạng thái app đã có giá trị (khác null) thì TUYỆT ĐỐI không hỏi lại, kể cả khi hồ sơ chưa đủ. Chỉ hỏi trường còn thiếu, và chỉ khi nó giúp được câu đang bàn.
-- profileSaved = true nghĩa là đã đủ thông tin: không hỏi lại gì, không mời "tính toán lại quỹ" từ đầu. Dùng các số đã có.
-
-## Phong cách
-- Tiếng Việt tự nhiên, xưng "mình", gọi "bạn". Chuyên nghiệp nhưng ấm áp; không sáo rỗng, không dùng thuật ngữ khi chưa giải thích.
-- Ngắn gọn: thường 2–4 câu, chỉ dài hơn khi người dùng hỏi kiến thức. Dùng **bold** cho số tiền và ý chính.
-- Ghi nhận điều người dùng đã làm tốt trước khi góp ý. Không phán xét chi tiêu, không giảng đạo lý.
-- Chỉ tư vấn tham khảo, KHÔNG cam kết sinh lời, luôn nhắc rủi ro khi nói về đầu tư.
-- Hỏi ngoài phạm vi tài chính cá nhân thì có thể dùng web_search`
+## Hỏi
+- Tối đa MỘT câu hỏi mỗi lượt, và chỉ hỏi khi nó giúp câu đang bàn. Không ép khai báo.
+- Trường đã có giá trị trong profile thì không hỏi lại. Câu lượt trước đã hỏi mà người dùng lờ đi thì không hỏi lại ngay.
+- Người dùng từ chối kể thì không hỏi chuyện riêng, nói lúc nào muốn kể cũng được.
+- Không tự nhắc chuyện khoá đầu tư hay thông tin còn thiếu khi người dùng không hỏi về mua / đầu tư.
+- Chào hỏi: một câu chào, một câu hỏi mở (ví dụ "bạn muốn bắt đầu từ chi tiêu, để dành hay đầu tư?"). KHÔNG nhắc khoá đầu tư, KHÔNG liệt kê thông tin còn thiếu, KHÔNG mời "cung cấp thông tin".
+- Ngoài phạm vi tài chính cá nhân thì có thể dùng web_search.`
 
 const PLAN_PROMPT = `Bạn là bộ điều phối thao tác của app MoonSafe. Đọc tin nhắn MỚI NHẤT của người dùng (tin trước chỉ để hiểu ngữ cảnh) cùng trạng thái app, rồi GỌI tool phù hợp. Bắt buộc gọi ít nhất một tool; không có gì cần làm thì gọi no_action.
 
 ${RULES}
 
 ## Chọn tool
-- Người dùng KỂ số liệu của họ (thu nhập, chi tiêu, nợ, tài sản, tuổi, công việc) → update_profile.
+- Người dùng KỂ số liệu của họ (thu nhập, chi tiêu, nợ, tuổi, công việc, nhà đất) → update_profile.
+- Người dùng KỂ tài sản đang có: gửi tiết kiệm ngân hàng, tiền mặt / tài khoản thanh toán, vàng, cổ phiếu Mỹ, coin trên sàn hoặc ví khác → record_asset, mỗi khoản một mục. Bán hết / không còn → quantity 0. Có thể gọi cùng update_profile.
+- Hỏi về phân bổ, tỷ lệ an toàn / đầu tư, "tiền mình đang chia thế nào", "nên chia tiền nhàn rỗi ra sao", hoặc bảo xem biểu đồ → show_allocation. Chỉ nói "muốn đầu tư" / "mua …" mà không hỏi tỷ lệ → KHÔNG show_allocation.
 - Người dùng MUỐN nạp vào quỹ → prepare_deposit. Rút khỏi quỹ → prepare_withdraw. Mua cirBTC → prepare_buy_cirbtc. Đặt mua định kỳ → propose_dca. Dừng mua định kỳ → stop_dca.
 - open_screen CHỈ khi người dùng bảo mở / xem một màn ("mở màn Quỹ", "cho mình xem cân đối"). Câu HỎI về số tiền, mốc quỹ, còn thiếu bao nhiêu, có bao nhiêu tiền → no_action (agent trả lời bằng lời).
 - Người dùng đồng ý với đề nghị ngay trước đó của agent → làm đúng thao tác và đúng số agent vừa đề nghị. CHỈ tính là đồng ý khi tin mới nhất là lời đồng ý rõ ràng ("ok", "được", "đồng ý", "mở đi", "nạp đi", "làm đi", "nạp số đó"). Tin kể thêm thông tin (công việc, lương, chi tiêu…) KHÔNG phải đồng ý → không mở hay điền gì.
@@ -136,9 +148,16 @@ ${RULES}
 
 ## update_profile
 - Chỉ truyền trường người dùng vừa nói rõ. Không đoán: chữ "lương" một mình không cho biết ổn định hay nợ.
-- Mỗi con số gắn với khoản đứng cạnh nó: nợ / vay / trả góp / thẻ tín dụng → debtAmount; lương / thu nhập → monthlyIncome; chi tiêu / tiền nhà / ăn uống / sinh hoạt → monthlyExpenses; vàng / nhà đất / cổ phiếu / tài sản → otherAssets (cộng dồn nếu nhiều loại).
+- Mỗi con số gắn với khoản đứng cạnh nó: nợ / vay / trả góp / thẻ tín dụng → debtAmount; lương / thu nhập → monthlyIncome; chi tiêu / tiền nhà / ăn uống / sinh hoạt → monthlyExpenses; nhà, đất, xe, cổ phiếu Việt Nam, tài sản không có trong record_asset → otherAssets (cộng dồn nếu nhiều loại).
 - "không nợ" → debtAmount {amount: 0, currency: "VND"}. Nhân viên / lương cố định → incomeStable true; freelance / tự kinh doanh / thất thường → false.
-Ví dụ: "nợ thẻ tín dụng 20 triệu" → debtAmount 20000000 VND. "có 2 cây vàng 160 triệu với cổ phiếu 30 triệu" → otherAssets 190000000 VND.`
+Ví dụ: "nợ thẻ tín dụng 20 triệu" → debtAmount 20000000 VND. "có căn chung cư 2 tỷ" → otherAssets 2000000000 VND.
+
+## record_asset
+- savings = gửi tiết kiệm (quantity = số tiền, currency, symbol = tên ngân hàng nếu có). cash = tiền mặt / tài khoản thanh toán (quantity = số tiền, currency).
+- gold = vàng (quantity = số lượng, unit "luong" hoặc "chi"; 1 cây = 1 lượng = 10 chỉ). Người dùng chỉ nói giá trị vàng mà không nói số lượng → không ghi.
+- stock = cổ phiếu / ETF niêm yết ở Mỹ (symbol = mã: SPY, VOO, AAPL; quantity = số cổ). Cổ phiếu Việt Nam (FPT, VNM…) KHÔNG dùng stock: ghi vào update_profile.otherAssets theo giá trị họ nói.
+- crypto = coin ngoài Arc (symbol: BTC, ETH, SOL, USDT…; quantity = số coin). cirBTC trong ví Arc app tự đọc, không ghi.
+- Chỉ ghi số lượng người dùng nói, không đoán. Ví dụ: "gửi Vietcombank 100 triệu, có 2 cây vàng và 0,5 ETH trên Binance" → savings 100000000 VND symbol "Vietcombank"; gold 2 luong; crypto ETH 0.5.`
 
 const MONEY = {
   type: 'object',
@@ -157,10 +176,27 @@ const PLAN_TOOLS = [
     monthlyIncome: { ...MONEY, description: 'Thu nhập mỗi tháng' },
     monthlyExpenses: { ...MONEY, description: 'Chi tiêu thiết yếu mỗi tháng' },
     debtAmount: { ...MONEY, description: 'Tổng nợ bên ngoài; không có nợ thì amount 0' },
-    otherAssets: { ...MONEY, description: 'Tài sản khác (vàng, BĐS ngoài nhà ở, cổ phiếu…)' },
+    otherAssets: { ...MONEY, description: 'Tài sản không theo dõi giá: nhà, đất, xe, cổ phiếu Việt Nam…' },
     age: { type: 'integer' },
     incomeStable: { type: 'boolean', description: 'Lương cố định = true; freelance / kinh doanh = false' },
   }),
+  fn('record_asset', 'Ghi nhận tài sản người dùng đang có (app tự lấy giá và vẽ biểu đồ phân bổ). Mỗi khoản một mục; quantity 0 = không còn khoản đó.', {
+    items: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          kind: { type: 'string', enum: ['savings', 'cash', 'gold', 'stock', 'crypto'], description: 'savings = gửi tiết kiệm, cash = tiền mặt / tài khoản thanh toán, gold = vàng, stock = cổ phiếu / ETF Mỹ, crypto = coin ngoài Arc' },
+          quantity: { type: 'number', description: 'savings / cash: số tiền; gold: số lượng vàng theo unit; stock: số cổ; crypto: số coin' },
+          symbol: { type: 'string', description: 'stock: mã Mỹ (SPY); crypto: ký hiệu (ETH); savings / cash: tên ngân hàng nếu có' },
+          unit: { type: 'string', enum: ['luong', 'chi'], description: 'Chỉ cho gold' },
+          currency: { type: 'string', enum: ['VND', 'USDC'], description: 'Chỉ cho savings / cash' },
+        },
+        required: ['kind', 'quantity'],
+      },
+    },
+  }, ['items']),
+  fn('show_allocation', 'Hiện biểu đồ phân bổ (mục tiêu theo tuổi và hiện tại) ngay trong chat.'),
   fn('prepare_deposit', 'Mở màn Quỹ, tab Nạp, điền sẵn số tiền để người dùng tự ký nạp vào vault.', { amount: MONEY }, ['amount']),
   fn('prepare_withdraw', 'Mở màn Quỹ, tab Rút, điền sẵn số tiền để người dùng tự ký rút về ví của họ.', { amount: MONEY }, ['amount']),
   fn('prepare_buy_cirbtc', 'Mở màn Đầu tư, điền sẵn số tiền mua cirBTC; người dùng xem báo giá rồi tự ký.', { amount: MONEY }, ['amount']),
@@ -270,7 +306,7 @@ const GAS_RESERVE_USDC = 0.02
  */
 interface Floor { months: number; texts: string[] }
 
-function fundFacts(appState: Record<string, unknown> | null, update: Record<string, unknown> | null, rate: number | null): { text: string; floors: Floor[] } {
+function fundFacts(appState: Record<string, unknown> | null, update: Record<string, unknown> | null, rate: number | null, alloc: Allocation): { text: string; floors: Floor[] } {
   const floors: Floor[] = []
   const p = { ...((appState?.profile && typeof appState.profile === 'object' ? appState.profile : {}) as Record<string, unknown>), ...(update ?? {}) }
   const units = (p.units && typeof p.units === 'object' ? p.units : {}) as Record<string, unknown>
@@ -278,7 +314,7 @@ function fundFacts(appState: Record<string, unknown> | null, update: Record<stri
   const vault = typeof appState?.vaultUsdc === 'number' ? appState.vaultUsdc : null
   const wallet = typeof appState?.walletUsdc === 'number' ? appState.walletUsdc : null
   const stable = typeof p.incomeStable === 'boolean' ? p.incomeStable : null
-  if (vault === null && wallet === null && !exp) return { text: '', floors }
+  if (vault === null && wallet === null && !exp && !alloc.parts.length && !alloc.unpriced.length) return { text: '', floors }
 
   // Amounts in the user's own currency first (VND unless they spend in USDC), the other in brackets.
   const cur = exp?.currency ?? 'VND'
@@ -318,14 +354,23 @@ function fundFacts(appState: Record<string, unknown> | null, update: Record<stri
     }
   }
   const age = typeof p.age === 'number' ? p.age : null
-  if (age !== null && spendable !== null) {
-    const outside = spendable + cir
-    for (const [label, base] of [['Normal', 110], ['Risky', 120]] as const) {
-      const pct = Math.max(0, Math.min(100, base - age))
-      const room = Math.min(spendable, Math.max(0, outside * pct / 100 - cir))
-      lines.push(`- Trần đầu tư ${label} (${base} − ${age} tuổi) = ${pct}% tiền NGOÀI quỹ (ví nạp được + cirBTC = ${showUsd(outside)}); còn mua cirBTC được tối đa ${showUsd(room)}. Đây KHÔNG phải % thu nhập.`)
-    }
+  // Allocation of the money outside the fund (same numbers as the app's chart).
+  const pctOf = (v: number) => alloc.total > 0 ? Math.round(v / alloc.total * 100) : 0
+  if (alloc.total > 0) {
+    lines.push(`- PHÂN BỔ tiền ngoài quỹ (tổng ${showUsd(alloc.total)}): An toàn ${showUsd(alloc.safe)} (${pctOf(alloc.safe)}%) · Đầu tư ${showUsd(alloc.invest)} (${pctOf(alloc.invest)}%) · Nhàn rỗi ${showUsd(alloc.idle)} (${pctOf(alloc.idle)}%)`)
+    lines.push(`- Chi tiết theo giá thị trường hiện tại: ${alloc.parts.map(x => `${x.label} ${showUsd(x.usd)} (${x.bucket === 'safe' ? 'an toàn' : x.bucket === 'invest' ? 'đầu tư' : 'nhàn rỗi'})`).join('; ')}`)
   }
+  if (alloc.unpriced.length) lines.push(`- Chưa lấy được giá, tạm chưa tính: ${alloc.unpriced.map(h => h.symbol ?? h.kind).join(', ')}`)
+  if (alloc.target) {
+    const { safePct, investPct } = alloc.target
+    let gap = ''
+    if (alloc.total > 0) {
+      const d = pctOf(alloc.invest) - investPct
+      gap = d === 0 ? '; đầu tư đang đúng mục tiêu' : `; đầu tư đang ${d > 0 ? 'cao hơn' : 'thấp hơn'} mục tiêu ${Math.abs(d)} điểm %`
+    }
+    lines.push(`- Mục tiêu theo tuổi ${age}: an toàn ${safePct}%, đầu tư ${investPct}%${alloc.total > 0 ? ` (= ${showUsd(alloc.total * safePct / 100)} an toàn, ${showUsd(alloc.total * investPct / 100)} đầu tư)` : ''}${gap}`)
+    if (alloc.suggest && alloc.idle > 0) lines.push(`- Gợi ý chia tiền nhàn rỗi ${showUsd(alloc.idle)} để về gần mục tiêu: ${showUsd(alloc.suggest.toSafe)} vào an toàn (người dùng tự gửi tiết kiệm ngân hàng, KHÔNG phải nạp quỹ), ${showUsd(alloc.suggest.toInvest)} vào đầu tư (người dùng tự chọn tài sản; trong app chỉ có cirBTC)`)
+  } else if (alloc.total > 0) lines.push('- Chưa biết tuổi nên chưa có mục tiêu phân bổ')
   if (appState && appState.investUnlocked !== true) {
     const why: string[] = []
     const missing = [!inc && 'thu nhập', !exp && 'chi tiêu', (debtRaw === null || debtRaw === undefined) && 'có nợ hay không', age === null && 'tuổi', stable === null && 'thu nhập có ổn định không'].filter(Boolean)
@@ -394,25 +439,40 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   if (plan.usage) console.log(`plan tokens in=${plan.usage.prompt_tokens} out=${plan.usage.completion_tokens}`)
 
   let profileUpdate: Record<string, unknown> | null = null
+  const assetUpdates: Holding[] = []
   let dcaStop = false
   const actions: Array<Record<string, unknown>> = []
   const done: string[] = []
   const investUnlocked = appState?.investUnlocked === true
 
   const lastUserText = [...messages].reverse().find(m => m.role === 'user')?.content ?? ''
-  const wantsInvestLocked = !investUnlocked && INVEST_INTENT.test(lastUserText) && !/(?<!\p{L})nạp(?!\p{L})/iu.test(lastUserText)
+  // "sao không đầu tư luôn mà phải để quỹ…" asks why, it is not a request to invest.
+  const asksWhy = /(?<!\p{L})(sao|tại sao|vì sao|làm gì|là gì)(?!\p{L})/iu.test(lastUserText)
+  const wantsInvestLocked = !investUnlocked && INVEST_INTENT.test(lastUserText) && !asksWhy && !/(?<!\p{L})nạp(?!\p{L})/iu.test(lastUserText)
   for (const call of plan.choices[0]?.message.tool_calls ?? []) {
     let args: Record<string, unknown> = {}
     try { args = JSON.parse(call.function.arguments || '{}') as Record<string, unknown> } catch { continue }
     const name = call.function.name
     if (name === 'update_profile' && Object.keys(args).length) {
       profileUpdate = { ...(profileUpdate ?? {}), ...args }
-      done.push(`Đã ghi nhận số MỚI: ${JSON.stringify(args)}. App đã lưu, có hiệu lực ngay${appState?.profileSaved ? ' (thay số cũ, đừng nói ngược lại bằng số cũ)' : ''}; người dùng xem lại ở tab Cân đối. Dùng động từ "đã ghi nhận".`)
+      done.push(`Đã ghi nhận số MỚI: ${JSON.stringify(args)}. App đã lưu, có hiệu lực ngay${appState?.profileSaved ? ' (thay số cũ, đừng nói ngược lại bằng số cũ)' : ''}. Chỉ cần "Đã ghi nhận." một lần, KHÔNG kể lại từng số.`)
+    } else if (name === 'record_asset') {
+      const items = Array.isArray(args.items) ? args.items as Array<Record<string, unknown>> : []
+      // Gold is stored in lượng (1 lượng = 10 chỉ).
+      const found = items.map(i => toHolding(i.kind === 'gold' && i.unit === 'chi' && typeof i.quantity === 'number' ? { ...i, quantity: i.quantity / 10 } : i))
+        .filter((h): h is Holding => h !== null)
+      if (found.length) {
+        assetUpdates.push(...found)
+        done.push(`Đã ghi nhận tài sản: ${found.map(h => h.quantity === 0 ? `bỏ ${h.symbol ?? h.kind}` : `${h.kind}${h.symbol ? ` ${h.symbol}` : ''} ${h.quantity}${h.kind === 'gold' ? ' lượng' : h.currency ? ` ${h.currency}` : ''}`).join('; ')}. App tự lấy giá thị trường và tính vào phân bổ (dòng "PHÂN BỔ"). Chỉ cần "Đã ghi nhận." một lần.`)
+      }
+    } else if (name === 'show_allocation') {
+      actions.push({ type: name })
+      done.push('Đã hiện biểu đồ phân bổ (mục tiêu theo tuổi và hiện tại) ngay dưới câu trả lời này.')
     } else if (name === 'stop_dca') {
       dcaStop = true
       done.push('Đã dừng DCA trong app.')
     } else if (UI_ACTIONS.has(name)) {
-      if (!ACTION_INTENT.test(lastUserText)) {
+      if (!ACTION_INTENT.test(lastUserText) || (ACTION_VERB[name] && !ACTION_VERB[name].test(lastUserText) && !AGREES.test(lastUserText))) {
         console.log(`dropped ${name}: no request in "${lastUserText.slice(0, 60)}"`)
         continue
       }
@@ -444,7 +504,22 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       : '') },
     { role: 'system', content: `Thao tác vừa thực hiện: ${done.length ? done.join(' | ') : 'không có thao tác nào.'}` },
   ]
-  const { text: facts, floors } = fundFacts(appState, profileUpdate, rate)
+  // Holdings after this turn's updates, valued at live prices (functions/api/prices.ts).
+  const savedProfile = (appState?.profile && typeof appState.profile === 'object' ? appState.profile : {}) as Record<string, unknown>
+  const held = (Array.isArray(savedProfile.holdings) ? savedProfile.holdings : []).map(toHolding).filter((h): h is Holding => h !== null)
+  const holdings = mergeHoldings(held, assetUpdates)
+  const syms = (k: Holding['kind']) => holdings.filter(h => h.kind === k && h.symbol).map(h => h.symbol!)
+  const prices = holdings.some(h => h.kind === 'gold' || h.kind === 'stock' || h.kind === 'crypto') ? await getPrices(syms('stock'), syms('crypto')) : null
+  const ageNow = typeof profileUpdate?.age === 'number' ? profileUpdate.age : typeof savedProfile.age === 'number' ? savedProfile.age : null
+  const alloc = allocate({
+    holdings,
+    walletUsd: typeof appState?.walletUsdc === 'number' ? appState.walletUsdc : null,
+    cirBtcUsd: typeof appState?.cirBtcUsdc === 'number' ? appState.cirBtcUsdc : null,
+    age: ageNow,
+    prices,
+    vndPerUsd: rate,
+  })
+  const { text: facts, floors } = fundFacts(appState, profileUpdate, rate, alloc)
   if (facts) replyMessages.push({ role: 'system', content: facts })
   if (DECLINES.test(lastUserText)) replyMessages.push({ role: 'system', content: 'Người dùng vừa từ chối chia sẻ. Tôn trọng: câu trả lời này KHÔNG có câu hỏi nào về chuyện riêng của họ (thu nhập, công việc, độ ổn định, nợ, tuổi…). Chia sẻ kiến thức chung và nói lúc nào muốn kể cũng được.' })
 
@@ -479,6 +554,15 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       const asksStable = (t: string) => /ổn định[^.!?\n]*\?|ổn định[^.!?\n]*(không|chưa)\.\s*[^.!?\n]{0,80}\?/i.test(t)
       if (asksStable(prevAssistant) && asksStable(content) && profileUpdate?.incomeStable === undefined) problems.push('lượt trước đã hỏi công việc có ổn định không mà người dùng chưa trả lời; KHÔNG hỏi lại câu đó, trả lời đúng điều họ đang hỏi')
       if (wantsInvestLocked && !/kho[áa]|khóa/i.test(content)) problems.push('phải nói rõ "đầu tư đang khoá" và lý do ngay câu đầu')
+      if (!profileUpdate && !assetUpdates.length && /đã ghi nhận/i.test(content)) problems.push('lượt này KHÔNG ghi nhận gì, bỏ chữ "Đã ghi nhận"')
+      // The chart under the reply already shows every share; a reply that reads it back buries the point.
+      if (actions.some(a => a.type === 'show_allocation') && content.length > 380) problems.push('biểu đồ ngay dưới đã có đủ số: viết lại tối đa 2–3 câu, chỉ nói lệch mục tiêu bao nhiêu và tiền nhàn rỗi nên chia thế nào, không đọc lại từng phần')
+      if (alloc.target) {
+        const { safePct, investPct } = alloc.target
+        const has = (n: number) => new RegExp(`(?<!\\d)${n}\\s*%`).test(plain)
+        if (has(investPct) !== has(safePct) || (ASKS_TARGET.test(lastUserText) && !has(investPct))) problems.push(`nêu mục tiêu theo tuổi đủ hai phần: "an toàn ${safePct}%, đầu tư ${investPct}%" (trên tổng tiền ngoài quỹ)`)
+      }
+      if (/quỹ an toàn|nạp[^.?!\n]{0,40}(vào |phần )an toàn/i.test(content)) problems.push('phần an toàn là gửi tiết kiệm ngân hàng người dùng tự làm, KHÔNG phải quỹ dự phòng và không nạp được trong app')
       if (problems.length && rewrites < 2 && round < 4) {
         rewrites++
         replyMessages.push({ role: 'assistant', content })
@@ -487,7 +571,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       }
       // Still asking twice after the rewrites: drop the extra questions rather than send them.
       const tidy = tidyQuestions(content, asksStable(prevAssistant) && profileUpdate?.incomeStable === undefined)
-      return json({ content: tidy, profileUpdate, dcaStop, actions, ...(body.debug ? { facts, notes: done } : {}) })
+      return json({ content: tidy, profileUpdate, assetUpdates: assetUpdates.length ? assetUpdates : null, dcaStop, actions, ...(body.debug ? { facts, notes: done } : {}) })
     }
     replyMessages.push({ role: 'assistant', content: msg.content ?? '', ...{ tool_calls: msg.tool_calls } } as Message)
     for (const call of msg.tool_calls) {

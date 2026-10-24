@@ -10,6 +10,8 @@ import { useVaultState, type VaultState } from '@/hooks/useVault'
 import { normalizeProfile, readLocalProfile, useProfileState, type ProfileState } from '@/hooks/useFinancialProfile'
 import { useExchangeRateState, vndToUsdc6, usdc6ToVnd, type FxState } from '@/hooks/useExchangeRate'
 import { useCirBtcState, type CirBtcState } from '@/hooks/useCirBtc'
+import { usePricesState, type PricesState } from '@/hooks/usePrices'
+import { allocate, type Allocation } from '@/lib/allocation'
 import { DASH, formatUsdc, formatVnd } from '@/lib/format'
 import { unitOf } from '@/hooks/useFinancialProfile'
 import type { ChatMessage, FinancialProfile, MoneyField } from '@/types'
@@ -52,6 +54,11 @@ export interface AppState {
   unit: Unit
   setUnit: (u: Unit) => void
   math: FundMath
+  prices: PricesState
+  /** Safe / invest / idle split of the money outside the fund, in USD. */
+  alloc: Allocation
+  /** USD amount (allocation figures) in the chosen unit. */
+  moneyUsd: (usd: number | null | undefined) => string
   /** Money (6-dec USDC) in the chosen unit, "–" when unknown. */
   money: (usdc6: bigint | null | undefined) => string
   /** VND amount in the chosen unit, "–" when unknown. */
@@ -155,7 +162,22 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     return { floorMonths, monthlyExpUsdc, floorUsdc, floorPct, vaultMonths, shortfall, noDebt, fundOk, investUnlocked }
   }, [profile.profile, profile.complete, vault.vaultBalance, fieldUsdc])
 
-  const value: AppState = { vault, profile, fx, cirBtc, unit, setUnit, math, money, moneyFromVnd, vndToUsdc, fieldUsdc, moneyOfField, cloud }
+  const prices = usePricesState(profile.profile?.holdings)
+  const wb = vault.walletBalance
+  const cirUsdc6 = cirBtc.balance === 0n ? 0n : cirBtc.valueUsdc6
+  const alloc = useMemo(() => allocate({
+    holdings: profile.profile?.holdings,
+    walletUsd: wb !== null ? Number(wb) / 1_000_000 : null,
+    cirBtcUsd: cirUsdc6 !== null ? Number(cirUsdc6) / 1_000_000 : null,
+    age: profile.profile?.age ?? null,
+    prices: prices.prices,
+    vndPerUsd: rate,
+  }), [profile.profile, wb, cirUsdc6, prices.prices, rate])
+
+  const moneyUsd = useCallback((usd: number | null | undefined) =>
+    usd === null || usd === undefined || !Number.isFinite(usd) ? DASH : money(BigInt(Math.round(usd * 1_000_000))), [money])
+
+  const value: AppState = { vault, profile, fx, cirBtc, unit, setUnit, math, prices, alloc, moneyUsd, money, moneyFromVnd, vndToUsdc, fieldUsdc, moneyOfField, cloud }
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }
 
