@@ -6,6 +6,15 @@ Khung tài chính đang chạy: **`docs/FRAMEWORK-TAI-CHINH.md`** (ưu tiên hơ
 
 ## ▶ Làm tiếp từ đây (mới nhất ở trên)
 
+-8. **Cuối phiên 2026-10-24 — trạng thái để làm tiếp.**
+   - **Repo đã PUBLIC** (github.com/KattyFury/project_arc_moonsafe). Trước khi đổi đã quét cả 31 commit: không có `.env`/file secret nào từng commit; 39 giá trị thật trong `keys.env` + `.env` không có trong lịch sử, chỉ trùng 3 giá trị vốn công khai (Privy App ID, địa chỉ factory). **Từ giờ mọi thứ commit là ai cũng đọc được**: secret chỉ ở `.env` / `D:\Files\Claude\.secrets\keys.env` / secret của Pages.
+   - **Slogan chốt: "Onchain personal finance for Web3"** — tiêu chí của user: trực quan + chân thật (đã ghi trong CLAUDE.md).
+   - **User test trên moonsafe.app** (sau deploy commit ffa9347). Chưa có phản hồi lỗi. Việc đầu phiên sau: hỏi user kết quả test, sửa theo câu thật user gửi (chạy lại đúng câu đó trước/sau).
+   - **Chưa test bằng đăng nhập thật** (Claude không đăng nhập Privy được): kể tài sản với agent → Balance › Allocation; ký nạp / mua cirBTC qua thẻ trong chat; vàng cũ (đã khai theo lượng) có tự đổi sang ounce đúng không.
+   - Mẹo kiểm agent bằng lệnh: gửi tiếng Việt bằng `node` (fetch), KHÔNG dùng `curl` trong Git Bash — curl làm hỏng dấu nên agent tưởng là English.
+   - Dọn dẹp tuỳ chọn: `git stash@{0}` trên máy Dell (bản 3 mức + 8 USDC đã bỏ) xoá được khi chắc không cần; `server/index.ts` (server dev cũ) vẫn tiếng Việt, không dùng ở production.
+   - Còn treo từ trước: não agent vẫn là OpenAI (gpt-4o + 4o-mini), luật chung muốn Claude qua SDK Anthropic — chờ user quyết.
+
 -7. **Phiên 2026-10-24 (chiều) — app chuyển sang English (thi hackathon). ĐÃ DEPLOY. Eval 86/86 (`--runs 2`, 43 tình huống, có 5 tình huống tiếng Việt).**
    - User chốt: **chỉ English** (1a), agent trả lời theo ngôn ngữ người dùng nhắn, mặc định English (2a), **mặc định USD** (3a), **vàng = giá thế giới** XAU/USD theo ounce (api.gold-api.com, dự phòng Yahoo GC=F). Sau này ổn mới thêm ngôn ngữ.
    - Gác cổng: `node scripts/check-lang.mjs` quét `src/`, `functions/`, `index.html` (bỏ comment), bắt cả chữ có dấu lẫn vài từ không dấu hay gặp ("Mua" từng lọt). Dòng cố ý giữ tiếng Việt (regex đọc tin nhắn tiếng Việt) gắn `lang-ok`. **Chạy trước mỗi lần deploy.**
