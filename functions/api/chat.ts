@@ -2,7 +2,7 @@
 // OPENAI_API_KEY is in Cloudflare environment variables (never in client bundle).
 //
 // Each user message runs two calls:
-// 1. PLAN (gpt-4o, tool_choice "required"): the model MUST pick tools — fill the
+// 1. PLAN (gpt-4o-mini since 2026-10-24 (free OpenAI tokens; gpt-4o before), tool_choice "required"): the model MUST pick tools — fill the
 //    profile (saved by the app), prepare a deposit / withdrawal / cirBTC buy / DCA, open a screen,
 //    stop DCA, or no_action. Letting gpt-4o-mini decide on its own called a tool 0/8
 //    times and once filed "deposit 200 USDC" as debt (measured 2026-10-22).
@@ -87,7 +87,15 @@ const ASKS_OVERVIEW = /how (am i|are my finances|is my (financial )?situation)|m
 const VI_LETTERS = /[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]/i // lang-ok
 
 // The reply asks about job / income stability (directly, or "…is it stable. Could you tell me?").
-const ASKS_STABLE = /(stable|steady|regular)[^.!?\n]*\?|ổn định[^.!?\n]*\?|ổn định[^.!?\n]*(không|chưa)\.\s*[^.!?\n]{0,80}\?/i // lang-ok
+// incomeStable is kept only when the user talked about how their income comes in (or answered
+// the stability question). gpt-4o-mini filled incomeStable=true from "my salary is $2,000" (eval 2026-10-24).
+const STABILITY_WORDS = /(?<!\p{L})(stable|steady|regular|irregular|fixed|employee|employed|full[- ]time|part[- ]time|salaried|freelanc\p{L}*|self[- ]employed|own (a |my )?business|contract|gig|ổn định|cố định|nhân viên|văn phòng|công chức|biên chế|tự do|kinh doanh|bấp bênh|thất thường)(?!\p{L})/iu // lang-ok
+// A zero is recorded only when the user said so; gpt-4o-mini filled monthlyIncome 0 and debtAmount 0
+// from "I work an office job with a fixed salary" (eval 2026-10-24).
+const SAYS_NONE = /(?<!\p{L})(no|none|zero|nothing|don'?t have|do not have|debt[- ]free|paid off|không|chưa có|hết nợ|ko có)(?!\p{L})|(?<![\d.,])0(?![\d.,])/iu // lang-ok
+// Vietnamese stocks are not price-tracked; gpt-4o-mini still filed "FPT on the Vietnam exchange" as a stock.
+const VN_MARKET = /vietnam|(?<!\p{L})(vn|hose|hnx|upcom|vn-?index)(?!\p{L})|việt nam|sàn việt|chứng khoán việt|cổ phiếu việt/iu // lang-ok
+const ASKS_STABLE =/(stable|steady|regular)[^.!?\n]*\?|ổn định[^.!?\n]*\?|ổn định[^.!?\n]*(không|chưa)\.\s*[^.!?\n]{0,80}\?/i // lang-ok
 
 /**
  * Last resort after the rewrites: remove a repeated stability question, then keep only the
@@ -483,7 +491,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
 
   // ---- 1. PLAN: forced tool call --------------------------------------------------
   const plan = await openai(apiKey, {
-    model: 'gpt-4o',
+    model: 'gpt-4o-mini',
     messages: [{ role: 'system', content: PLAN_PROMPT }, ...messages.slice(-4), { role: 'system', content: stateText }],
     tools: PLAN_TOOLS,
     tool_choice: 'required',
@@ -501,11 +509,32 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   const investUnlocked = appState?.investUnlocked === true
 
   const lastUserText = [...messages].reverse().find(m => m.role === 'user')?.content ?? ''
-  const wantsInvestLocked = !investUnlocked && INVEST_INTENT.test(lastUserText) && !ASKS_WHY.test(lastUserText) && !DEPOSIT_WORD.test(lastUserText)
+  const lastUserAt = messages.map(m => m.role).lastIndexOf('user')
+  const prevAssistantText = [...messages.slice(0, lastUserAt)].reverse().find(m => m.role === 'assistant')?.content ?? ''
+  const vnClauses = lastUserText.split(/[.;\n]|,(?!\d)|\band\b/i).filter(c => VN_MARKET.test(c))
+  const vnDropped: string[] = []
+  const wantsInvestLocked =!investUnlocked && INVEST_INTENT.test(lastUserText) && !ASKS_WHY.test(lastUserText) && !DEPOSIT_WORD.test(lastUserText)
   for (const call of plan.choices[0]?.message.tool_calls ?? []) {
     let args: Record<string, unknown> = {}
     try { args = JSON.parse(call.function.arguments || '{}') as Record<string, unknown> } catch { continue }
     const name = call.function.name
+    if (name === 'update_profile' && 'incomeStable' in args && !STABILITY_WORDS.test(lastUserText) && !ASKS_STABLE.test(prevAssistantText)) {
+      console.log(`dropped incomeStable: not stated in "${lastUserText.slice(0, 60)}"`)
+      delete args.incomeStable
+    }
+    if (name === 'update_profile') {
+      const saved = (appState?.profile ?? {}) as Record<string, unknown>
+      const savedUnits = (saved.units && typeof saved.units === 'object' ? saved.units : {}) as Record<string, unknown>
+      for (const [k, v] of Object.entries(args)) {
+        const money = v && typeof v === 'object' ? v as { amount?: unknown; currency?: unknown } : null
+        const amount = money ? money.amount : v
+        const sameUnit = !money || money.currency === (savedUnits[k] ?? 'VND')
+        if ((amount === 0 && k !== 'age' && !SAYS_NONE.test(lastUserText)) || (amount !== undefined && saved[k] === amount && sameUnit)) {
+          console.log(`dropped ${k}=${JSON.stringify(v)}: zero not stated or already saved`)
+          delete args[k]
+        }
+      }
+    }
     if (name === 'update_profile' && Object.keys(args).length) {
       profileUpdate = { ...(profileUpdate ?? {}), ...args }
       done.push(`Recorded NEW figures: ${JSON.stringify(args)}. The app saved them, effective now${appState?.profileSaved ? ' (they replace the old ones, do not contradict them with old numbers)' : ''}. Just say "Noted." once, do NOT read back each number.`)
@@ -514,6 +543,11 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       // toHolding converts gold from any unit to troy ounces.
       const found = items.map(i => toHolding(i.kind === 'gold' ? { ...i, unit: typeof i.unit === 'string' ? i.unit : 'oz' } : i))
         .filter((h): h is Holding => h !== null)
+        .filter(h => {
+          if (h.kind !== 'stock' || !h.symbol || !vnClauses.some(c => c.toUpperCase().includes(h.symbol!))) return true
+          vnDropped.push(h.symbol)
+          return false
+        })
       if (found.length) {
         assetUpdates.push(...found)
         done.push(`Recorded assets: ${found.map(h => h.quantity === 0 ? `removed ${h.symbol ?? h.kind}` : `${h.kind}${h.symbol ? ` ${h.symbol}` : ''} ${h.kind === 'gold' ? `${Math.round(h.quantity * 1000) / 1000} oz` : h.quantity}${h.currency ? ` ${h.currency}` : ''}`).join('; ')}. The app prices them live and counts them in the allocation ("ALLOCATION" line). Just say "Noted." once.`)
@@ -541,6 +575,19 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
         : name === 'prepare_deposit' ? `Showed a confirmation card to ADD ${amt} to the fund under this reply. NOT deposited yet: the user taps "Sign transaction" on the card and confirms in their wallet.`
         : name === 'prepare_withdraw' ? `Showed a confirmation card to WITHDRAW ${amt} to the wallet under this reply. NOT withdrawn yet: the user taps "Sign transaction" on the card and confirms in their wallet; the money goes to their own wallet.`
         : `Showed a card to BUY ${amt} of cirBTC under this reply. NOT bought yet: the user taps "Get a quote" on the card, checks it, then "Sign purchase". Add one sentence: cirBTC can fall sharply, only invest money you can afford to lose.`)
+    }
+  }
+
+  if (vnDropped.length && !(profileUpdate && 'otherAssets' in profileUpdate)) {
+    const stated = [...lastUserText.replace(/ /g, ' ').matchAll(AMOUNT)]
+    const prior = (appState?.profile as Record<string, unknown> | undefined)?.otherAssets
+    if (stated.length === 1 && !prior) {
+      const unit = stated[0][3] ?? '$'
+      const amount = readings(stated[0][1] ?? stated[0][2])[0] * (/^(M|million|triệu)/.test(unit) ? 1e6 : 1) // lang-ok
+      profileUpdate = { ...(profileUpdate ?? {}), otherAssets: { amount, currency: /VND|₫|triệu/.test(unit) ? 'VND' : 'USDC' } } // lang-ok
+      done.push(`Vietnamese stock ${vnDropped.join(', ')} is not price-tracked: its stated value was recorded as other assets (outside the allocation chart). Just say "Noted." once.`)
+    } else {
+      done.push(`Vietnamese stock ${vnDropped.join(', ')} is not price-tracked and was NOT recorded. Ask what it is worth in total; it will count as other assets, outside the allocation chart.`)
     }
   }
 

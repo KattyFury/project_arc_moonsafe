@@ -6,6 +6,18 @@ Khung tài chính đang chạy: **`docs/FRAMEWORK-TAI-CHINH.md`** (ưu tiên hơ
 
 ## ▶ Làm tiếp từ đây (mới nhất ở trên)
 
+-9. **2026-10-24 (tối) — PLAN chuyển sang gpt-4o-mini (cả 2 bước giờ đều mini). ĐÃ DEPLOY.**
+   - User chốt: giữ OpenAI (có token miễn phí), chỉ dùng mini cho rẻ.
+   - Eval `--runs 2` (43 tình huống): mini thuần 82/86 → thêm chốt chặn ở server → **85/86** (lượt lỗi còn lại đều ở REPLY, lúc có lúc không). gpt-4o trước đó 86/86.
+   - Chốt chặn mới trong `functions/api/chat.ts` (mini tự bịa, prompt không cản được):
+     - `incomeStable` chỉ ghi khi người dùng nói về kiểu thu nhập (`STABILITY_WORDS`) hoặc vừa được hỏi "ổn định không" (mini ghi `true` từ "my salary is $2,000").
+     - Số 0 chỉ ghi khi người dùng nói "no / none / không có…" (`SAYS_NONE`); bỏ trường đã lưu y hệt (mini ghi thu nhập 0 + nợ 0 từ "office job with a fixed salary").
+     - Cổ phiếu cùng vế câu với "Vietnam / HOSE / sàn Việt…" (`VN_MARKET`) không ghi thành stock; có đúng 1 số tiền trong câu thì ghi vào otherAssets, không thì hỏi giá trị.
+   - Chi phí đo (86 lượt): PLAN ~2.316 token vào / 22 ra, REPLY ~1,27 lượt × 2.089 vào / 79 ra → **≈ $0,0008 / tin nhắn** theo giá niêm yết 4o-mini ($0,15 / $0,60 mỗi 1M token), cũ ≈ $0,007 (rẻ ~9 lần).
+   - **Lỗi REPLY có từ trước, CHƯA sửa (chờ user):** trả lời tiếng Việt đôi khi chèn chữ English từ bảng số liệu ("3 months of spending", "Noted."); thỉnh thoảng tự trừ ra số (đã có `ungrounded()` viết lại nhưng có lượt vẫn lọt).
+   - Chạy eval local: tạo `.dev.vars` (dòng OPENAI_API_KEY lấy từ `.env`, đã thêm vào .gitignore) → `bunx vite build` → `npx wrangler pages dev dist --port 8788` → `node scripts/agent-eval.mjs http://127.0.0.1:8788 --runs 2`.
+   - Deploy: token trong keys.env tên `CF_API_TOKEN` / `CF_ACCOUNT_ID`, phải export thành `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`.
+
 -8. **Cuối phiên 2026-10-24 — trạng thái để làm tiếp.**
    - **Repo đã PUBLIC** (github.com/KattyFury/project_arc_moonsafe). Trước khi đổi đã quét cả 31 commit: không có `.env`/file secret nào từng commit; 39 giá trị thật trong `keys.env` + `.env` không có trong lịch sử, chỉ trùng 3 giá trị vốn công khai (Privy App ID, địa chỉ factory). **Từ giờ mọi thứ commit là ai cũng đọc được**: secret chỉ ở `.env` / `D:\Files\Claude\.secrets\keys.env` / secret của Pages.
    - **Slogan chốt: "Onchain personal finance for Web3"** — tiêu chí của user: trực quan + chân thật (đã ghi trong CLAUDE.md).
@@ -105,7 +117,7 @@ Máy cần `bun` (`npm i -g bun`) và Foundry (`forge`, `cast`).
 ## Agent chat (`functions/api/chat.ts`)
 Luật chi phí & độ tin cậy bắt buộc: `D:\Files\Claude\guide_personal_HF-agents-course\AGENTS.md` — **Part 3**.
 - Mọi thao tác của agent là TOOL. Mỗi tin nhắn = 2 lượt gọi:
-  1. PLAN (**gpt-4o**, `tool_choice: "required"`): bắt buộc chọn tool — `update_profile`, `record_asset`, `show_allocation`, `prepare_deposit`, `prepare_withdraw`, `prepare_buy_cirbtc`, `propose_dca`, `stop_dca`, `open_screen`, `no_action`. Server chặn mua/DCA khi `investUnlocked` = false.
+  1. PLAN (**gpt-4o-mini** từ 2026-10-24, trước là gpt-4o; `tool_choice: "required"`): bắt buộc chọn tool — `update_profile`, `record_asset`, `show_allocation`, `prepare_deposit`, `prepare_withdraw`, `prepare_buy_cirbtc`, `propose_dca`, `stop_dca`, `open_screen`, `no_action`. Server chặn mua/DCA khi `investUnlocked` = false.
   2. REPLY (**gpt-4o-mini**, chỉ có `web_search`): chỉ được kể đúng thao tác bước 1 đã làm ("đã mở sẵn", không "đã nạp").
   App nhận `actions` → mở màn, điền sẵn số tiền (VND được app quy đổi). User LUÔN tự ký; agent không ký, không chuyển tiền.
 - Đo 2026-10-22: để gpt-4o-mini tự gọi tool → 0/8 thao tác, còn ghi "nạp 200 USDC" thành nợ; PLAN ép tool trên gpt-4o → 10/10 đúng tool + số tiền. Trích khai báo: gpt-4o 12/12, các bản mini 10/12.

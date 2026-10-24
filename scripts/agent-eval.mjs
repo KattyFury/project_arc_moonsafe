@@ -1,7 +1,7 @@
 // Agent eval: plays the user through scripted multi-turn chats against /api/chat and
 // checks every reply. Run after any prompt change (AGENTS.md Part 3):
 //   node scripts/agent-eval.mjs [baseUrl] [--only name] [--runs 2]
-// Default baseUrl https://moonsafe.app. Costs ~ $0.007 per turn (gpt-4o plan + 4o-mini reply).
+// Default baseUrl https://moonsafe.app. Costs ~ $0.0008 per turn (gpt-4o-mini plan + reply, 2026-10-24).
 // Writes the full transcript to scripts/agent-eval-last.txt.
 // The app is English-first (2026-10-24): most scenarios are English; the "vi:" ones check that
 // a Vietnamese message gets a Vietnamese reply. Vietnamese test phrases are marked lang-ok.
