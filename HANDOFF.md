@@ -6,6 +6,11 @@ Khung tài chính đang chạy: **`docs/FRAMEWORK-TAI-CHINH.md`** (ưu tiên hơ
 
 ## ▶ Làm tiếp từ đây (mới nhất ở trên)
 
+-10. **2026-10-24 (tối, tiếp) — lỗi thật user gửi + đổi thứ tự tab. ĐÃ DEPLOY. Eval 90/90 (`--runs 2`, 44 tình huống).**
+   - Lỗi thật: chưa biết chi tiêu, user hỏi "Yes. How much I have to add?" → agent nói "You need to add 2,301 USDC" (= cả ví). Đã thêm tình huống `spending unknown, how much to add` vào eval.
+   - Sửa: chưa biết chi tiêu thì bảng số liệu bỏ "can add up to …", ghi "Fund floor: UNKNOWN"; server bắt viết lại nếu nói "need to add / can add up to + số" (`NEEDS_AMOUNT`); câu hỏi "how much / bao nhiêu" không kèm số không phải lệnh nạp (`ASKS_HOW_MUCH`, mini từng tạo thẻ nạp cả ví); tuổi chỉ nhận 10–120 (mini từng ghi tuổi 0).
+   - Tab: Chat · Fund · **Balance · Invest** · Menu (user yêu cầu Balance trước Invest). Ảnh: Desktop\MoonSafe-navbar-2026-10-24.
+
 -9. **2026-10-24 (tối) — PLAN chuyển sang gpt-4o-mini (cả 2 bước giờ đều mini). ĐÃ DEPLOY.**
    - User chốt: giữ OpenAI (có token miễn phí), chỉ dùng mini cho rẻ.
    - Eval `--runs 2` (43 tình huống): mini thuần 82/86 → thêm chốt chặn ở server → **85/86** (lượt lỗi còn lại đều ở REPLY, lúc có lúc không). gpt-4o trước đó 86/86.

@@ -18,8 +18,8 @@ interface NavBarProps {
 const tabs: Array<{ id: NavTab; label: string; icon: LucideIcon }> = [
   { id: 'chat',    label: 'Chat',    icon: MessageCircle },
   { id: 'fund',    label: 'Fund',    icon: Vault },
-  { id: 'invest',  label: 'Invest',  icon: TrendingUp },
   { id: 'balance', label: 'Balance', icon: BarChart3 },
+  { id: 'invest',  label: 'Invest',  icon: TrendingUp },
   { id: 'menu',    label: 'Menu',    icon: MoreHorizontal },
 ]
 

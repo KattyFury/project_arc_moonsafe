@@ -232,6 +232,10 @@ const SC = [
     { u: 'I sold all my ETH', assets: [{ kind: 'crypto', symbol: 'ETH', quantity: 0 }] }] },
   { name: 'more crypto than experts say', s: { profile: P({ age: 31, holdings: [{ kind: 'crypto', symbol: 'BTC', quantity: 0.2 }] }), vault: 1500, wallet: 100 }, turns: [
     { u: 'experts say crypto should be 5% at most, is it bad that I hold more?', allowAction: true, mustNot: [/should (only )?(be|hold|keep) (at most |no more than )?5%/i] }] },
+  // Real chat 2026-10-24: spending unknown, the agent called the whole wallet "what you need to add".
+  { name: 'spending unknown, how much to add', s: { profile: P({}), vault: 0, wallet: 2301.02 }, turns: [
+    { u: 'I want to start investing', allowAction: true, mustNot: [/2,301/] },
+    { u: 'Yes. How much I have to add?', mustNot: [/2,301/, /need to add \*{0,2}\d/i], must: [/spend/i] }] },
   // ---- vi: Vietnamese messages get Vietnamese replies ----
   { name: 'vi: chào hỏi', s: { profile: P({}), vault: 0, wallet: 0 }, turns: [
     { u: 'chào bạn', mustNot: [/\d/, /khoá|khóa/i] }] }, // lang-ok

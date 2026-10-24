@@ -112,6 +112,10 @@ function tidyQuestions(text: string, dropStable: boolean): string {
 // Phrases that report an app action as done; only allowed when an action actually ran.
 const CLAIMS_ACTION = /\bI(['’]ve| have| just)\s+(opened|filled|created|set up|shown|prepared)\b|(đã|vừa)\s+(mở|điền|hiện|tạo)(?!\s*kh(?:oá|óa|oa))\s*(sẵn)?|mở sẵn màn .{0,40} (rồi|cho bạn)/i // lang-ok
 const SAYS_NOTED = /\b(noted|recorded|got it saved)\b|đã ghi nhận/i // lang-ok
+// "You need to add 2,301 USDC" / "you can add up to 2,301 USDC" while the floor is unknown.
+const NEEDS_AMOUNT = /((need|have|has) to (add|deposit|put)|can (add|deposit|put) up to|to reach (its|the|your) (required )?floor)[^.?!\n]{0,30}\d|(cần|phải|được tối đa) (nạp|thêm)[^.?!\n]{0,30}\d/i // lang-ok
+// "Yes. How much I have to add?" is a question, not an order: gpt-4o-mini prepared a deposit of the whole wallet (2026-10-24).
+const ASKS_HOW_MUCH = /how much|bao nhiêu/i // lang-ok
 const SAYS_LOCKED = /lock|kho[áa]|khóa/i // lang-ok
 // The safe part is bank savings the user makes outside the app; the fund (vault) is something else.
 const SAFE_AS_FUND = /safe fund|(add|deposit|move|put)[^.?!\n]{0,40}(into|to) (the |your )?safe (part|fund|bucket)|quỹ an toàn|nạp[^.?!\n]{0,40}(vào |phần )an toàn/i // lang-ok
@@ -392,9 +396,11 @@ function fundFacts(appState: Record<string, unknown> | null, update: Record<stri
 
   const cir = typeof appState?.cirBtcUsdc === 'number' ? appState.cirBtcUsdc : 0
   const lines = [
-    wallet !== null ? `- User's wallet holds: ${showUsd(wallet)} (can add up to ${showUsd(spendable ?? 0)} to the fund, keeping ${usdc(GAS_RESERVE_USDC)} for fees)` : '- Wallet: balance unknown',
+    wallet !== null ? `- User's wallet holds: ${showUsd(wallet)}${exp ? ` (can add up to ${showUsd(spendable ?? 0)} to the fund, keeping ${usdc(GAS_RESERVE_USDC)} for fees)` : ''}` : '- Wallet: balance unknown',
     vault !== null ? `- Emergency fund holds: ${showUsd(vault)}` : '- Emergency fund: balance unknown',
   ]
+  // Without spending there is no floor: the model once quoted the whole wallet as "what you need to add" (real chat 2026-10-24).
+  if (!exp) lines.push('- Fund floor: UNKNOWN, monthly spending is not known yet. Nobody can say how much the fund needs: never present any amount as needed. If asked how much to add: the fund = 3 months of essential spending (6 if income is irregular), then ask how much they spend a month.')
   // Other amounts the user told the agent, so it never converts them itself.
   const inc = moneyOf(p.monthlyIncome, units.monthlyIncome)
   const debtRaw = p.debtAmount
@@ -529,7 +535,8 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
         const money = v && typeof v === 'object' ? v as { amount?: unknown; currency?: unknown } : null
         const amount = money ? money.amount : v
         const sameUnit = !money || money.currency === (savedUnits[k] ?? 'VND')
-        if ((amount === 0 && k !== 'age' && !SAYS_NONE.test(lastUserText)) || (amount !== undefined && saved[k] === amount && sameUnit)) {
+        if ((k === 'age' && !(typeof amount === 'number' && amount >= 10 && amount <= 120))
+          || (amount === 0 && k !== 'age' && !SAYS_NONE.test(lastUserText)) ||(amount !== undefined && saved[k] === amount && sameUnit)) {
           console.log(`dropped ${k}=${JSON.stringify(v)}: zero not stated or already saved`)
           delete args[k]
         }
@@ -559,7 +566,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       dcaStop = true
       done.push('DCA was stopped in the app.')
     } else if (UI_ACTIONS.has(name)) {
-      if (!ACTION_INTENT.test(lastUserText) || (ACTION_VERB[name] && !ACTION_VERB[name].test(lastUserText) && !AGREES.test(lastUserText))) {
+      if (!ACTION_INTENT.test(lastUserText) || (ASKS_HOW_MUCH.test(lastUserText) && !/\d/.test(lastUserText)) || (ACTION_VERB[name] && !ACTION_VERB[name].test(lastUserText) && !AGREES.test(lastUserText))) {
         console.log(`dropped ${name}: no request in "${lastUserText.slice(0, 60)}"`)
         continue
       }
@@ -669,6 +676,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
         const has = (n: number) => new RegExp(`(?<!\\d)${n}\\s*%`).test(plain)
         if (has(investPct) !== has(safePct) || (ASKS_TARGET.test(lastUserText) && !has(investPct))) problems.push(`give the target by age with both parts: "${safePct}% safe, ${investPct}% invest" (of all money outside the fund)`)
       }
+      if (!floors.length && appState?.fundOk !== true && NEEDS_AMOUNT.test(content)) problems.push('monthly spending is unknown, so nobody knows how much the fund needs: never say an amount is needed or quote the wallet as what to add; say the fund is 3 months of essential spending (6 if income is irregular) and ask how much they spend a month')
       if (SAFE_AS_FUND.test(content)) problems.push('the safe part is bank savings the user makes themselves, NOT the emergency fund, and it cannot be deposited in the app')
       if (problems.length && rewrites < 2 && round < 4) {
         rewrites++
