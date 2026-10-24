@@ -13,7 +13,7 @@ const TARGETS = ['src', 'functions', 'index.html']
 const SKIP = new Set(['src/preview-main.tsx'])
 const VI = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i
 // Vietnamese words with no accent mark ("Mua cirBTC" slipped past the accent check, 2026-10-24).
-const VI_PLAIN = /(Mua|Nap|Rut|Quy|Huy|Xoa|Luu|Dang|khong|duoc|tien|vao)/
+const VI_PLAIN = /\b(Mua|Nap|Rut|Quy|Huy|Xoa|Luu|Dang|khong|duoc|tien|vao)\b/
 
 function files(p) {
   const s = statSync(p)
