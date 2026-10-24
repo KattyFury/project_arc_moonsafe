@@ -72,7 +72,7 @@ Khung tài chính đang chạy: **`docs/FRAMEWORK-TAI-CHINH.md`** (ưu tiên hơ
 - **Hỏi trước** mọi thay đổi code/spec (user sợ phá code). Sửa lỗi user đã yêu cầu thì làm luôn.
 - Sửa thẳng trên `main` + deploy production moonsafe.app, KHÔNG tách nhánh/preview (chốt 2026-10-22).
 - **Giữ giao diện Arc Studio** (kính mờ, gradient xanh, DM Sans, 5 tab trên). Đã thử áp design system nguyen0xhieu → user chê "loạn", đã trả về. Đổi UI lớn thì gửi ảnh cho user duyệt TRƯỚC khi deploy. Không dùng opacity cho trạng thái khoá.
-- Slogan: "Nên đầu tư nhưng phải có đường lui." · Tab title: "MoonSafe" · Logo: Figma `WcPHEwY8xh33OvCFrxgLcQ` node `32:310` → `public/logo.svg`.
+- Slogan (user chốt 2026-10-24): **"Onchain personal finance for Web3"**, thay câu cũ "Nên đầu tư nhưng phải có đường lui.". Tiêu chí của user: slogan phải trực quan + chân thật (nói đúng app làm gì, không hứa hẹn). · Tab title: "MoonSafe" · Logo: Figma `WcPHEwY8xh33OvCFrxgLcQ` node `32:310` → `public/logo.svg`.
 - Mọi thao tác của agent phải là TOOL.
 
 ## Deploy

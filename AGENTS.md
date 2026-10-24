@@ -1,7 +1,7 @@
 # MoonSafe — Project Notes
 
 ## App
-"Nên đầu tư nhưng phải có đường lui." — Personal emergency fund app on Arc Testnet.
+"Onchain personal finance for Web3" — personal finance app with a USDC emergency fund on Arc Testnet.
 
 ## Deployed Contracts (Arc Testnet)
 
