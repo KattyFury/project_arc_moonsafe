@@ -1,10 +1,10 @@
 // Cloudflare Pages Function — MoonSafe agent (OpenAI), every app operation is a tool.
 // OPENAI_API_KEY is in Cloudflare environment variables (never in client bundle).
 //
-// Each user message runs two calls:
-// 1. PLAN (gpt-4o-mini since 2026-10-24 (free OpenAI tokens; gpt-4o before), tool_choice "required"): the model MUST pick tools — fill the
-//    profile (saved by the app), prepare a deposit / withdrawal / cirBTC buy / DCA, open a screen,
-//    stop DCA, or no_action. Letting gpt-4o-mini decide on its own called a tool 0/8
+// Each user message runs two stages:
+// 1. PLAN (gpt-4o-mini since 2026-10-24, free OpenAI tokens; gpt-4o before): a tool loop of at most
+//    10 steps, tool_choice "required" every step: fill the profile (saved by the app), record assets,
+//    prepare a deposit / withdrawal / cirBTC buy / DCA, open a screen, stop DCA; no_action ends it. Letting gpt-4o-mini decide on its own called a tool 0/8
 //    times and once filed "deposit 200 USDC" as debt (measured 2026-10-22).
 // 2. REPLY (gpt-4o-mini): talks to the user and may only describe what step 1 did.
 // The app performs the returned actions (opens screens, prefills amounts); the user
@@ -193,7 +193,7 @@ ${RULES}
 - Greetings: one line of greeting, one open question (e.g. "Where would you like to start: spending, saving or investing?"). No lock, no list of missing details, no "please provide information".
 - Outside personal finance you may use web_search.`
 
-const PLAN_PROMPT = `You are MoonSafe's action planner. Read the user's LATEST message (earlier ones are context only) and the app state, then CALL the right tools. Always call at least one tool; if nothing is needed, call no_action. Users write English or Vietnamese.
+const PLAN_PROMPT = `You are MoonSafe's action planner. Read the user's LATEST message (earlier ones are context only) and the app state, then CALL the right tools. Always call at least one tool; if nothing is needed, call no_action. You work in steps (at most 10): after each call you get its result, and fresh figures after something was recorded. Call the next tool only for something the user's latest message asked for that is not done yet; when it is all done, call no_action. Never add things the user did not ask for. Users write English or Vietnamese.
 
 ${RULES}
 
@@ -364,6 +364,7 @@ function moneyText(v: unknown, rate: number | null): string {
 
 // Money kept in the wallet for gas when filling the fund (= GAS_RESERVE_USDC6 in useVault).
 const GAS_RESERVE_USDC = 0.02
+const MAX_PLAN_STEPS = 10
 
 /**
  * What the user holds (wallet, fund) and, once monthly spending is known, the 3 / 6-month
@@ -495,18 +496,6 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   const rate = await vndPerUsd()
   const stateText = `The user's current app state (real, latest data): ${JSON.stringify(appState ?? {})}`
 
-  // ---- 1. PLAN: forced tool call --------------------------------------------------
-  const plan = await openai(apiKey, {
-    model: 'gpt-4o-mini',
-    messages: [{ role: 'system', content: PLAN_PROMPT }, ...messages.slice(-4), { role: 'system', content: stateText }],
-    tools: PLAN_TOOLS,
-    tool_choice: 'required',
-    temperature: 0,
-    max_tokens: 400,
-  })
-  if (plan instanceof Response) return plan
-  if (plan.usage) console.log(`plan tokens in=${plan.usage.prompt_tokens} out=${plan.usage.completion_tokens}`)
-
   let profileUpdate: Record<string, unknown> | null = null
   const assetUpdates: Holding[] = []
   let dcaStop = false
@@ -519,11 +508,13 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   const prevAssistantText = [...messages.slice(0, lastUserAt)].reverse().find(m => m.role === 'assistant')?.content ?? ''
   const vnClauses = lastUserText.split(/[.;\n]|,(?!\d)|\band\b/i).filter(c => VN_MARKET.test(c))
   const vnDropped: string[] = []
-  const wantsInvestLocked =!investUnlocked && INVEST_INTENT.test(lastUserText) && !ASKS_WHY.test(lastUserText) && !DEPOSIT_WORD.test(lastUserText)
-  for (const call of plan.choices[0]?.message.tool_calls ?? []) {
+  const wantsInvestLocked = !investUnlocked && INVEST_INTENT.test(lastUserText) && !ASKS_WHY.test(lastUserText) && !DEPOSIT_WORD.test(lastUserText)
+  // One tool call → its result for the next PLAN step.
+  const handle = (call: ToolCall): string => {
     let args: Record<string, unknown> = {}
-    try { args = JSON.parse(call.function.arguments || '{}') as Record<string, unknown> } catch { continue }
+    try { args = JSON.parse(call.function.arguments || '{}') as Record<string, unknown> } catch { return 'Could not read the arguments.' }
     const name = call.function.name
+    const before = done.length
     if (name === 'update_profile' && 'incomeStable' in args && !STABILITY_WORDS.test(lastUserText) && !ASKS_STABLE.test(prevAssistantText)) {
       console.log(`dropped incomeStable: not stated in "${lastUserText.slice(0, 60)}"`)
       delete args.incomeStable
@@ -536,7 +527,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
         const amount = money ? money.amount : v
         const sameUnit = !money || money.currency === (savedUnits[k] ?? 'VND')
         if ((k === 'age' && !(typeof amount === 'number' && amount >= 10 && amount <= 120))
-          || (amount === 0 && k !== 'age' && !SAYS_NONE.test(lastUserText)) ||(amount !== undefined && saved[k] === amount && sameUnit)) {
+          || (amount === 0 && k !== 'age' && !SAYS_NONE.test(lastUserText)) || (amount !== undefined && saved[k] === amount && sameUnit)) {
           console.log(`dropped ${k}=${JSON.stringify(v)}: zero not stated or already saved`)
           delete args[k]
         }
@@ -568,11 +559,12 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
     } else if (UI_ACTIONS.has(name)) {
       if (!ACTION_INTENT.test(lastUserText) || (ASKS_HOW_MUCH.test(lastUserText) && !/\d/.test(lastUserText)) || (ACTION_VERB[name] && !ACTION_VERB[name].test(lastUserText) && !AGREES.test(lastUserText))) {
         console.log(`dropped ${name}: no request in "${lastUserText.slice(0, 60)}"`)
-        continue
+        return `Not done: the user did not ask for ${name}.`
       }
+      if (actions.some(a => a.type === name)) return 'Already shown under the reply, not repeated.'
       if (INVEST_ACTIONS.has(name) && !investUnlocked) {
         done.push(`BLOCKED ${name}: investing is locked (needs no debt and a full fund). Nothing was opened.`)
-        continue
+        return done[done.length - 1]
       }
       actions.push({ type: name, ...args })
       const amt = moneyText(args.amount, rate)
@@ -583,7 +575,70 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
         : name === 'prepare_withdraw' ? `Showed a confirmation card to WITHDRAW ${amt} to the wallet under this reply. NOT withdrawn yet: the user taps "Sign transaction" on the card and confirms in their wallet; the money goes to their own wallet.`
         : `Showed a card to BUY ${amt} of cirBTC under this reply. NOT bought yet: the user taps "Get a quote" on the card, checks it, then "Sign purchase". Add one sentence: cirBTC can fall sharply, only invest money you can afford to lose.`)
     }
+    return done.length > before ? done.slice(before).join(' ') : 'Nothing changed.'
   }
+
+  // Holdings after this turn's updates, valued at live prices (functions/api/prices.ts, cached 10 min).
+  const savedProfile = (appState?.profile && typeof appState.profile === 'object' ? appState.profile : {}) as Record<string, unknown>
+  const held = (Array.isArray(savedProfile.holdings) ? savedProfile.holdings : []).map(toHolding).filter((h): h is Holding => h !== null)
+  const currentFacts = async () => {
+    const holdings = mergeHoldings(held, assetUpdates)
+    const syms = (k: Holding['kind']) => holdings.filter(h => h.kind === k && h.symbol).map(h => h.symbol!)
+    const prices = holdings.some(h => h.kind === 'gold' || h.kind === 'stock' || h.kind === 'crypto') ? await getPrices(syms('stock'), syms('crypto')) : null
+    const ageNow = typeof profileUpdate?.age === 'number' ? profileUpdate.age : typeof savedProfile.age === 'number' ? savedProfile.age : null
+    const alloc = allocate({
+      holdings,
+      walletUsd: typeof appState?.walletUsdc === 'number' ? appState.walletUsdc : null,
+      cirBtcUsd: typeof appState?.cirBtcUsdc === 'number' ? appState.cirBtcUsdc : null,
+      age: ageNow,
+      prices,
+      vndPerUsd: rate,
+    })
+    return { alloc, ...fundFacts(appState, profileUpdate, rate, alloc) }
+  }
+
+  // ---- 1. PLAN: tool loop, at most MAX_PLAN_STEPS -------------------------------------
+  // Every step must call a tool (tool_choice "required"); it sees each result, plus fresh
+  // figures after something was recorded, and ends with no_action. Repeats are refused.
+  const planMessages: Message[] = [{ role: 'system', content: PLAN_PROMPT }, ...messages.slice(-4), { role: 'system', content: stateText }]
+  const seen = new Set<string>()
+  let planIn = 0, planOut = 0, planSteps = 0
+  for (let step = 1; step <= MAX_PLAN_STEPS; step++) {
+    const plan = await openai(apiKey, {
+      model: 'gpt-4o-mini',
+      messages: planMessages,
+      tools: PLAN_TOOLS,
+      tool_choice: 'required',
+      temperature: 0,
+      max_tokens: 400,
+    })
+    if (plan instanceof Response) return plan
+    planSteps = step
+    planIn += plan.usage?.prompt_tokens ?? 0
+    planOut += plan.usage?.completion_tokens ?? 0
+    const calls = plan.choices[0]?.message.tool_calls ?? []
+    if (!calls.length) break
+    planMessages.push({ role: 'assistant', content: plan.choices[0].message.content ?? '', tool_calls: calls } as Message)
+    let acted = false, recorded = false
+    for (const call of calls) {
+      const key = call.function.name + call.function.arguments
+      let result = 'Done.'
+      if (call.function.name !== 'no_action') {
+        if (seen.has(key)) result = 'Already done this turn, do not repeat it.'
+        else {
+          seen.add(key)
+          result = handle(call)
+          acted = true
+          if (call.function.name === 'update_profile' || call.function.name === 'record_asset') recorded = true
+        }
+      }
+      planMessages.push({ role: 'tool', content: result, tool_call_id: call.id })
+    }
+    if (!acted) break
+    if (recorded) planMessages.push({ role: 'system', content: `Figures now: ${(await currentFacts()).text}` })
+    else planMessages.push({ role: 'system', content: 'Anything else the user asked for in their latest message? If not, call no_action.' })
+  }
+  console.log(`plan steps=${planSteps} tokens in=${planIn} out=${planOut}`)
 
   if (vnDropped.length && !(profileUpdate && 'otherAssets' in profileUpdate)) {
     const stated = [...lastUserText.replace(/ /g, ' ').matchAll(AMOUNT)]
@@ -611,22 +666,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       : '') },
     { role: 'system', content: `Actions just taken: ${done.length ? done.join(' | ') : 'none.'}` },
   ]
-  // Holdings after this turn's updates, valued at live prices (functions/api/prices.ts).
-  const savedProfile = (appState?.profile && typeof appState.profile === 'object' ? appState.profile : {}) as Record<string, unknown>
-  const held = (Array.isArray(savedProfile.holdings) ? savedProfile.holdings : []).map(toHolding).filter((h): h is Holding => h !== null)
-  const holdings = mergeHoldings(held, assetUpdates)
-  const syms = (k: Holding['kind']) => holdings.filter(h => h.kind === k && h.symbol).map(h => h.symbol!)
-  const prices = holdings.some(h => h.kind === 'gold' || h.kind === 'stock' || h.kind === 'crypto') ? await getPrices(syms('stock'), syms('crypto')) : null
-  const ageNow = typeof profileUpdate?.age === 'number' ? profileUpdate.age : typeof savedProfile.age === 'number' ? savedProfile.age : null
-  const alloc = allocate({
-    holdings,
-    walletUsd: typeof appState?.walletUsdc === 'number' ? appState.walletUsdc : null,
-    cirBtcUsd: typeof appState?.cirBtcUsdc === 'number' ? appState.cirBtcUsdc : null,
-    age: ageNow,
-    prices,
-    vndPerUsd: rate,
-  })
-  const { text: facts, floors } = fundFacts(appState, profileUpdate, rate, alloc)
+  const { alloc, text: facts, floors } = await currentFacts()
   if (facts) replyMessages.push({ role: 'system', content: facts })
   if (ASKS_OVERVIEW.test(lastUserText)) {
     const p = { ...savedProfile, ...(profileUpdate ?? {}) }

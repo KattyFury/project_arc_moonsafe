@@ -236,6 +236,9 @@ const SC = [
   { name: 'spending unknown, how much to add', s: { profile: P({}), vault: 0, wallet: 2301.02 }, turns: [
     { u: 'I want to start investing', allowAction: true, mustNot: [/2,301/] },
     { u: 'Yes. How much I have to add?', mustNot: [/2,301/, /need to add \*{0,2}\d/i], must: [/spend/i] }] },
+  // Several steps in one message (PLAN loop, 2026-10-24): record, then show the chart.
+  { name: 'record then show allocation', s: { profile: P({ age: 31 }), vault: 0, wallet: 200 }, turns: [
+    { u: 'I have $5,000 in savings and 1 ETH. How is my money split now?', assets: [{ kind: 'savings', quantity: 5000 }, { kind: 'crypto', symbol: 'ETH', quantity: 1 }], action: { type: 'show_allocation' } }] },
   // ---- vi: Vietnamese messages get Vietnamese replies ----
   { name: 'vi: chào hỏi', s: { profile: P({}), vault: 0, wallet: 0 }, turns: [
     { u: 'chào bạn', mustNot: [/\d/, /khoá|khóa/i] }] }, // lang-ok

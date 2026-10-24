@@ -6,6 +6,13 @@ Khung tài chính đang chạy: **`docs/FRAMEWORK-TAI-CHINH.md`** (ưu tiên hơ
 
 ## ▶ Làm tiếp từ đây (mới nhất ở trên)
 
+-11. **2026-10-24 (tối, tiếp) — PLAN thành vòng lặp tool tối đa 10 bước (user chọn 1a). ĐÃ DEPLOY. Eval 91/92 (`--runs 2`, 45 tình huống).**
+   - `MAX_PLAN_STEPS = 10` trong `functions/api/chat.ts`. Mỗi bước gpt-4o-mini bắt buộc gọi tool, nhận lại kết quả từng tool (đã làm / bị chặn / "Not done: the user did not ask" / "Already done"), sau khi ghi số liệu thì nhận "Figures now" (cùng `currentFacts()` mà REPLY dùng); gọi `no_action` là dừng. Gọi lại y hệt bị từ chối; mỗi loại thẻ chỉ hiện 1 lần. Mọi chốt chặn cũ giữ nguyên (nằm trong `handle()`).
+   - Ví dụ chạy được giờ: "I have $5,000 in savings and 1 ETH. How is my money split now?" → ghi tài sản → thấy số mới → hiện biểu đồ, trong 1 tin nhắn (tình huống `record then show allocation`).
+   - Đo 92 tin: 38 tin dừng ở bước 1 (chỉ no_action), 50 tin 2 bước, 4 tin 3 bước, chưa tin nào chạm 10. PLAN ~4.071 token vào / 30 ra; REPLY ~2.616 vào / 96 ra → **≈ $0,0011 / tin nhắn** (trước loop $0,0008).
+   - Lượt lỗi còn lại ở REPLY: "fund or debt first?" có lúc quên nhắc khoản nợ (PLAN đúng).
+   - Log mỗi tin: `plan steps=N tokens in=… out=…` trong Cloudflare function logs.
+
 -10. **2026-10-24 (tối, tiếp) — lỗi thật user gửi + đổi thứ tự tab. ĐÃ DEPLOY. Eval 90/90 (`--runs 2`, 44 tình huống).**
    - Lỗi thật: chưa biết chi tiêu, user hỏi "Yes. How much I have to add?" → agent nói "You need to add 2,301 USDC" (= cả ví). Đã thêm tình huống `spending unknown, how much to add` vào eval.
    - Sửa: chưa biết chi tiêu thì bảng số liệu bỏ "can add up to …", ghi "Fund floor: UNKNOWN"; server bắt viết lại nếu nói "need to add / can add up to + số" (`NEEDS_AMOUNT`); câu hỏi "how much / bao nhiêu" không kèm số không phải lệnh nạp (`ASKS_HOW_MUCH`, mini từng tạo thẻ nạp cả ví); tuổi chỉ nhận 10–120 (mini từng ghi tuổi 0).
@@ -121,7 +128,7 @@ Máy cần `bun` (`npm i -g bun`) và Foundry (`forge`, `cast`).
 
 ## Agent chat (`functions/api/chat.ts`)
 Luật chi phí & độ tin cậy bắt buộc: `D:\Files\Claude\guide_personal_HF-agents-course\AGENTS.md` — **Part 3**.
-- Mọi thao tác của agent là TOOL. Mỗi tin nhắn = 2 lượt gọi:
+- Mọi thao tác của agent là TOOL. Mỗi tin nhắn = 2 giai đoạn (PLAN là vòng lặp ≤10 bước từ 2026-10-24):
   1. PLAN (**gpt-4o-mini** từ 2026-10-24, trước là gpt-4o; `tool_choice: "required"`): bắt buộc chọn tool — `update_profile`, `record_asset`, `show_allocation`, `prepare_deposit`, `prepare_withdraw`, `prepare_buy_cirbtc`, `propose_dca`, `stop_dca`, `open_screen`, `no_action`. Server chặn mua/DCA khi `investUnlocked` = false.
   2. REPLY (**gpt-4o-mini**, chỉ có `web_search`): chỉ được kể đúng thao tác bước 1 đã làm ("đã mở sẵn", không "đã nạp").
   App nhận `actions` → mở màn, điền sẵn số tiền (VND được app quy đổi). User LUÔN tự ký; agent không ký, không chuyển tiền.
