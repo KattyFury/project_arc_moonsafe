@@ -20,7 +20,8 @@ for (const [age, want] of Object.entries(TABLE)) {
   if (got.some((g, i) => Math.abs(g - want[i]) > 0.051)) fail(`age ${age}: got ${got.map(g => g.toFixed(1)).join('/')} want ${want.join('/')}`)
   if (Math.abs(got.reduce((a, b) => a + b, 0) - 100) > 1e-9) fail(`age ${age}: shares do not add to 100`)
 }
-for (const age of [18, 50, 100]) if (!(targetMix(age).btc > 0)) fail(`BTC must never be 0 (age ${age})`)
+for (const age of [18, 50, 90, 100]) if (!(targetMix(age).btc > 0)) fail(`BTC must never be 0 (age ${age})`)
+if (Math.abs(targetMix(100).btc - targetMix(90).btc) > 1e-9) fail('ages above 90 must use 90')
 
 // 2. Fund floor (spec 5.1).
 const floors: [boolean | null, number, boolean, number][] = [[true, 0, false, 3], [null, 0, false, 3], [true, 2, false, 6], [false, 0, false, 6], [false, 1, false, 9], [false, 1, true, 12]]
@@ -92,7 +93,8 @@ const personas: [string, Facts, string[]][] = [
   ['money lent, overdue', { overdue_loan_count: 1 }, ['lock_open_surplus', 'loan_overdue']],
   ['adds assets later', { data_changed_this_turn: true }, ['lock_open_surplus', 'data_updated']],
   ['spending unknown: no fund gap claimed', { spending_known: false, fund_met: false, surplus: null, ...locked }, ['collecting']],
-  ['70, still holds BTC', { age: 70, income_active: 0, income_passive: 1600, passive_ratio: 1.07, surplus: 100 }, ['jobless', 'lock_open_surplus', 'financially_free']],
+  ['70, retired on passive income (not jobless)', { age: 70, income_active: 0, income_passive: 1600, passive_ratio: 1.07, surplus: 100 }, ['lock_open_surplus', 'financially_free']],
+  ['retired, passive below spending', { age: 68, income_active: 0, income_passive: 600, passive_ratio: 0.4, surplus: -900 }, ['jobless', 'negative_surplus']],
 ]
 const hit = new Set<string>()
 for (const [name, over, want] of personas) {

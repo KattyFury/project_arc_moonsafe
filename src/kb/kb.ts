@@ -22,7 +22,7 @@ export interface Pattern {
   name: string
   priority: number
   spec: string
-  status?: 'proposed'
+  status?: 'accepted_for_now'
   when: Cond
   agent_does: string
   say: string[]

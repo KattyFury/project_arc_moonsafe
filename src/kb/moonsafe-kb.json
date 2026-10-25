@@ -1,6 +1,6 @@
 {
   "version": "2026-10-25",
-  "source": "docs/SPEC-FRAMEWORK-2026-10-25.md (Hieu's final spec). Build exactly from it; do not extrapolate. Entries marked status=proposed are Claude Code's suggestions waiting for Hieu's approval.",
+  "source": "docs/SPEC-FRAMEWORK-2026-10-25.md (Hieu's final spec). Build exactly from it; do not extrapolate. Entries marked status=accepted_for_now are Claude Code's suggestions Hieu accepted for now (2026-10-25); revisit with real users.",
 
   "params": {
     "priority_debt_rate_pct": { "value": 10, "note": "Debt at or above this yearly rate is priority debt, whatever its type (spec 5.2, 13)" },
@@ -9,14 +9,14 @@
     "dca_share_of_surplus": { "value": 0.5, "note": "Suggested DCA = 50% of the monthly surplus (spec 7, 13)" },
     "default_age": { "value": 30, "note": "Used when the user declines to give an age (spec 4, 13)" },
     "age_min": { "value": 18 },
-    "age_max": { "value": 100 },
+    "age_max": { "value": 90, "note": "Hieu 2026-10-25: nobody invests at 100. Ages above 90 use 90, so BTC never reaches 0 (about 2.9% at 90). Spec 4 said 18 to 100." },
     "stale_self_declared_days": { "value": 30, "note": "Ask to update a self-declared holding after 30 days (spec 10, 13)" },
     "stale_cashflow_days": { "value": 90, "note": "Ask to update income and spending after 90 days (spec 10, 13)" },
-    "altcoin_heavy_share": { "value": 0.3, "status": "proposed", "note": "Spec 9 says 'altcoin share very high' without a number. Proposed: altcoins >= 30% of liquid assets" },
-    "small_liquid_usd": { "value": 1000, "status": "proposed", "note": "Spec 9 'liquid assets very small' without a number. Proposed: liquid assets < 1,000 USD" },
-    "asset_rich_cash_poor_net_worth_months": { "value": 24, "status": "proposed", "note": "Spec 9 'net worth large but fund empty'. Proposed: net worth >= 24 months of spending while the fund is below the starter fund" },
-    "windfall_months_of_spending": { "value": 3, "status": "proposed", "note": "Spec 9 'large unexpected money'. Proposed: one irregular inflow >= 3 months of spending" },
-    "off_target_points": { "value": 10, "status": "proposed", "note": "Spec 7 'off target' without a number. Proposed: a group 10 percentage points or more away from its target" }
+    "altcoin_heavy_share": { "value": 0.3, "status": "accepted_for_now", "note": "Spec 9 says 'altcoin share very high' without a number. Proposed: altcoins >= 30% of liquid assets" },
+    "small_liquid_usd": { "value": 1000, "status": "accepted_for_now", "note": "Spec 9 'liquid assets very small' without a number. Proposed: liquid assets < 1,000 USD" },
+    "asset_rich_cash_poor_net_worth_months": { "value": 24, "status": "accepted_for_now", "note": "Spec 9 'net worth large but fund empty'. Proposed: net worth >= 24 months of spending while the fund is below the starter fund" },
+    "windfall_months_of_spending": { "value": 3, "status": "accepted_for_now", "note": "Spec 9 'large unexpected money'. Proposed: one irregular inflow >= 3 months of spending" },
+    "off_target_points": { "value": 10, "status": "accepted_for_now", "note": "Spec 7 'off target' without a number. Proposed: a group 10 percentage points or more away from its target" }
   },
 
   "principles": [
@@ -92,7 +92,7 @@
     "rules": [
       "BTC never goes to 0 at any age: on purpose, it is held for good.",
       "Nothing but age changes these shares. Irregular income, dependents, risk appetite and debt only change the fund floor, the buy lock and the advice.",
-      "Valid ages 18 to 100. Age unknown: ask for it before talking about shares. Declined: use 30 and say it is the default."
+      "Ages 18 to 90 in the formula (older counts as 90, Hieu 2026-10-25). Age unknown: ask for it before talking about shares. Declined: use 30 and say it is the default."
     ]
   },
 
@@ -224,8 +224,8 @@
       "locks": { "buy_cirbtc": "none" }
     },
     {
-      "id": "jobless", "name": "No active income", "priority": 95, "spec": "9",
-      "when": { "all": [{ "fact": "income_active", "op": "==", "value": 0 }, { "fact": "income_known", "op": "==", "value": true }] },
+      "id": "jobless", "name": "No active income, passive income below spending", "priority": 95, "spec": "9 (+ Hieu 2026-10-25: passive income covering spending is not jobless)",
+      "when": { "all": [{ "fact": "income_active", "op": "==", "value": 0 }, { "fact": "income_known", "op": "==", "value": true }, { "fact": "passive_ratio", "op": "<", "value": 1 }] },
       "agent_does": "Work out how many months the fund lasts.",
       "say": ["Your fund covers about {fund_months} months of spending."],
       "never": ["Pushing any purchase."],
@@ -370,7 +370,7 @@
       "once": true
     },
     {
-      "id": "loan_overdue", "name": "Money lent out, overdue", "priority": 35, "status": "proposed", "spec": "3 #26",
+      "id": "loan_overdue", "name": "Money lent out, overdue", "priority": 35, "status": "accepted_for_now", "spec": "3 #26",
       "when": { "fact": "overdue_loan_count", "op": ">", "value": 0 },
       "agent_does": "Keep it in net worth, tagged overdue; no judging.",
       "say": ["Noted as overdue; it stays in your net worth, outside the split."],
@@ -403,7 +403,7 @@
       "locks": { "buy_cirbtc": "by_lock" }
     },
     {
-      "id": "negative_surplus", "name": "Spending more than income", "priority": 78, "status": "proposed", "spec": "6 (pattern not in spec 9)",
+      "id": "negative_surplus", "name": "Spending more than income", "priority": 78, "status": "accepted_for_now", "spec": "6 (pattern not in spec 9)",
       "when": { "all": [{ "fact": "surplus", "op": "<", "value": 0 }, { "fact": "income_known", "op": "==", "value": true }] },
       "agent_does": "State the monthly gap as a fact; no judging; DCA is not offered.",
       "say": ["You spend about {surplus_abs} more than you earn each month."],
