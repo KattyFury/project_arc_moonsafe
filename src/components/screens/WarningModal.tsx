@@ -24,9 +24,9 @@ export function WarningModal({ onAcknowledge }: WarningModalProps) {
 
         <ul className="flex flex-col gap-2">
           {[
-            'For information only, not investment advice.',
-            'No returns are promised. Asset values can fall sharply.',
-            'Running on Arc Testnet: test USDC with no real value.',
+            'MoonSafe records your money and suggests options, not investment advice. You decide, and you sign every transaction in your own wallet.',
+            'No returns are promised. Crypto, stocks and gold can fall sharply.',
+            'Test version on Arc Testnet: USDC and cirBTC here are test tokens with no real value.',
           ].map((item, i) => (
             <li key={i} className="flex items-start gap-2">
               <span

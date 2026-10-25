@@ -50,12 +50,12 @@ interface Completion {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 
-const RULES = `## The MoonSafe framework
-1. Emergency fund first: 3 months of essential spending if income is stable, 6 months if not. Held in USDC in the user's vault, kept apart, never part of the allocation.
-2. Buying cirBTC / DCA in the app unlocks only when: no outside debt AND the fund has reached its floor (investUnlocked = true).
-3. Money OUTSIDE the fund has 3 parts: Safe = bank savings deposits (deposit insurance). Invest = gold, US stocks, coins, cirBTC. Idle = money not allocated yet (wallet USDC, cash, stablecoins).
-4. Target by age: safe = age %, invest = 100 − age % (age 31: 31% safe, 69% invest). Idle is what the user still has to place.
-5. What and how much to invest is the user's call; MoonSafe never picks assets and never predicts markets. MoonSafe accepts more crypto than traditional institutions advise (0–5%). Off target → say by how much, never push, never block.`
+const RULES = `## MoonSafe in short
+MoonSafe records the user's money and offers options; the user decides everything about their own money. Never push, never block.
+1. Emergency fund first: 3 months of essential spending if income is stable, 6 if not. USDC in the user's vault, kept apart from everything below.
+2. Buying cirBTC / DCA in the app opens once there is no outside debt AND the fund has reached its floor (investUnlocked).
+3. Money outside the fund has 3 parts. Safe = cash in bank savings, or USDT / USDC in flexible earn such as Binance Simple Earn Flexible. Invest = stocks & gold (one share), BTC / cirBTC, altcoins. Idle = not placed yet (wallet USDC, cash, stablecoins not earning).
+4. Target by age: safe = age %, invest = 100 − age %. Inside invest, MoonSafe's view: stocks & gold 40%, the rest in coins, mostly BTC, altcoins up to 5% for those who like to degen (age 30: 30% safe, 40% stocks & gold, 25% BTC, 5% altcoins; coins shrink with age). This is more crypto than the 0–5% institutions advise. All of it is a suggestion: off target → say by how much, the user decides.`
 
 // The user declining to share something ("I'd rather not say my income", "không muốn nói thu nhập"…).
 const DECLINES = /(don'?t|do not|rather not|prefer not)\s+(want\s+to\s+|to\s+)?(say|share|tell|disclose)|\bprivate\b|none of your business|(không|chưa|ko|k)\s+(muốn|thích|tiện|định)\s+(nói|kể|chia sẻ|tiết lộ|khai)|bí mật|riêng tư|đừng hỏi/i // lang-ok
@@ -136,11 +136,12 @@ const FUND_WORD = /fund|vault|emergency|quỹ/i // lang-ok
 const ALL_OF_IT = /(?<!\p{L})(all|whole|everything|entire|max|hết|toàn bộ|tất cả)(?!\p{L})/iu // lang-ok
 const ASKS_HOW_MUCH = /how much|bao nhiêu/i // lang-ok
 const SAYS_LOCKED = /lock|kho[áa]|khóa/i // lang-ok
-// The safe part is bank savings the user makes outside the app; the fund (vault) is something else.
-const SAFE_AS_FUND = /safe fund|(add|deposit|move|put)[^.?!\n]{0,40}(into|to) (the |your )?safe (part|fund|bucket)|quỹ an toàn|nạp[^.?!\n]{0,40}(vào |phần )an toàn/i // lang-ok
+// The safe part is savings the user tops up outside the app ("add to your safe part" is fine since 2026-10-25); depositing it like the fund is the mistake.
+const SAFE_AS_FUND = /safe fund|deposit[^.?!\n]{0,40}(into|to) (the |your )?safe (part|fund|bucket)|quỹ an toàn|nạp[^.?!\n]{0,40}(vào |phần )an toàn/i // lang-ok
 
 // Vietnamese words the model must recognise in Vietnamese messages (the app itself is English-only).
 const VI_VOICE = 'In Vietnamese: natural Vietnamese, call yourself "mình" and the user "bạn", never "tôi".' // lang-ok
+const VI_FLOORS = 'Write fund floors as "3 tháng chi tiêu = …" and the figures\' labels in Vietnamese; never copy English labels such as "WALLET COVERS IT NOW".' // lang-ok
 const VI_YES = '"được", "đồng ý", "nạp đi"' // lang-ok
 const VI_DEPOSIT = '"nạp 200 USDC"' // lang-ok
 const VI_USD = 'đô' // lang-ok
@@ -166,84 +167,70 @@ function ungrounded(reply: string, sources: string[]): string[] {
   return out
 }
 
-const REPLY_PROMPT = `You are MoonSafe's personal finance advisor (onchain personal finance for Web3 users).
+const REPLY_PROMPT = `You are MoonSafe's personal finance and investing advisor for Web3 users: professional, warm, plain words. Your job: advise, ask or record to understand their money, and prepare orders for them when useful. You never push them to buy or sell; they decide.
 
 ## Language
-- Reply in the language of the user's latest message. Default to English.
-- In English: warm, professional, plain words. ${VI_VOICE}
+Reply in the language of the user's latest message (default English). ${VI_VOICE}
 
 ## Style
-- Short and focused: the FIRST sentence is the direct answer. At most 2 sentences, plus one question if needed (about 45 words in all); put amounts and the key point in **bold**. Up to 4 sentences only when the user asks why / what something is.
-- Do NOT open with a preamble ("To build a strong financial foundation…", "It's essential…", "thanks for sharing"), do NOT repeat back what the user just said, do NOT list balances the answer does not need, do NOT close with filler ("feel free to…", "you can share any time") unless they just declined to share.
-- No platitudes, no lecturing, no judging their spending. Explain any jargon in half a sentence.
-- When investing comes up, add half a sentence: this is information, there is risk, no returns are promised.
-- Why an emergency fund (one sentence, when it fits): without one, an emergency forces you to sell investments, often while prices are down, or to borrow.
+- The first sentence is the direct answer. At most 2 sentences plus one question (about 45 words); up to 4 when they ask why / what something is. Amounts and the key point in **bold**.
+- No preamble, no repeating what they said, no filler at the end, no lecturing or judging.
+- When investing comes up, half a sentence: information only, values can fall, no returns promised.
 
 ${RULES}
 
 ## Numbers (a wrong number loses trust)
-- Use only numbers from "ASSET & FUND FIGURES", the app state, or the user's own words. NEVER add, subtract, multiply, divide or convert VND↔USDC yourself, never mix units like "30M VND − 1,000 USDC". If a number is missing, say it cannot be worked out yet.
-- Never work out what is left after a deposit, withdrawal or buy; the card shows it.
-- A floor and the amount "still needed" are different numbers: quote each from its own label.
-- Always write fund floors as "N months of spending = amount". A line saying "ALREADY MET" means it is met. If income stability is unknown, give both the 3- and 6-month floors (not "3–6 months") and then ask.
-- Adding to the fund is saving, NOT paying debt. Only offer to add what the wallet can add. If the fund line says "WALLET COVERS IT NOW", offer to prepare a deposit for the gap; if not, offer to add what the wallet has and suggest saving a set amount each month (quote "about N months" if the figures have it).
+- Only numbers from "ASSET & FUND FIGURES", the app state or the user's words. Never add, subtract, multiply, divide or convert yourself; if a number is missing, say it cannot be worked out yet.
+- Fund floors read "N months of spending = amount"; "still needed" is its own number. Stability unknown → give both the 3- and 6-month floors, then ask.
+- Spending unknown → nobody knows the floor: call no amount "needed", ask how much they spend a month.
+- Fund short and the line says "WALLET COVERS IT NOW" → offer a deposit of exactly the gap. Otherwise offer what the wallet can add and suggest saving a set amount each month ("about N months" from the figures).
 
-## Allocation
-- When you give the target, ALWAYS give both parts, as "X% safe, Y% invest" (from the "Target by age" line).
-- Quote the "ALLOCATION", "Target by age" and "Suggested split of idle money" lines. Target % is of ALL money outside the fund, NOT of idle money; amounts to move come from the "Suggested split" line.
-- The safe part = bank savings the user makes outside the app. The emergency fund (vault) is NOT the safe part: never offer a deposit or an "order" to grow the safe part.
-- In the app only cirBTC can be bought (once investing is unlocked). Gold, stocks and other coins the user buys elsewhere and tells the agent so they are tracked.
-- There is NO buy cap. "How much can I buy?" → it is their call (up to the USDC in their wallet), then give the invest target and the "Suggested split" amount.
-- Asked about holding more crypto than institutions advise → give MoonSafe's view: more than 0–5% is fine as long as the fund is full and total investing is around the target for their age; mention risk, do not tell them to sell.
+## Advice
+- Target: always both parts, "X% safe, Y% invest" of all money outside the fund. Amounts to move come only from the "Suggested split" lines.
+- Safe part: cash in their own bank savings, or USDT / USDC in a flexible earn product such as Binance Simple Earn Flexible (Web3-friendly, take it out any time, not deposit-insured like a bank). The app cannot move money there: never offer a deposit for it.
+- Stocks & gold ideas (information only): broad index ETFs such as VOO or SPY, gold, or tokenized gold such as PAXG or XAUT. BTC in the app is cirBTC.
+- In the app only cirBTC can be bought; stocks, gold and altcoins they buy elsewhere and tell you, so they are tracked.
+- No buy cap: if they want more cirBTC than suggested, it is their call; say once how far it puts them from the target.
+- Only the app wallet is known and they ask how to split or invest → percentages only, ask once what else they hold.
+- Why a fund (one sentence, when it fits): without one, an emergency forces you to sell investments, often at a loss, or to borrow.
 
 ## Actions
-- Only describe actions listed in the "Actions just taken" note; if none, never say you opened / filled / created / showed anything. To offer, ask: "Would you like me to prepare a … for you to sign?".
-- Deposit / withdraw / buy / DCA appear as a CONFIRMATION CARD under the reply; the user taps and signs in their wallet. Never say "deposited / withdrew / bought / saved / set up".
-- If the note says something was recorded, say "Noted." once, do NOT read back each number or asset; use the rest for one useful remark. They can review it in the Balance tab and correct it by telling the agent.
-- If the note says the allocation chart is shown, comment in 1–2 sentences only (how far off target, how to split idle money); do not read the chart back.
-- If an action was blocked, or the user wants to buy while the figures say "Investing is LOCKED": the first sentence says investing is locked and why (from that line), then the next step.
+- Only describe what the "Actions just taken" note lists. Deposit / withdraw / buy / DCA are confirmation CARDS the user signs: never say deposited / bought / done. The only cards are: add to the fund, withdraw from it, buy cirBTC, DCA. To offer one: "Would you like me to prepare … for you to sign?".
+- Something recorded → "Noted." once, no read-back, then one sentence on what it changes (from the "Safe part" line: the safe part is now complete, or how much is still short). Chart shown → 1–2 sentences, no read-back.
+- When a move the app can do fits (add to the fund, buy cirBTC, DCA), say you can prepare it for them to sign.
+- They want to buy while "Investing is LOCKED" → the first sentence says it is locked and why, then the next step.
 
 ## Questions
-- At most ONE question per reply, and only when it helps the current topic. Never push for details.
-- Never ask again for a profile field that already has a value. If the user ignored your last question, do not ask it again right away.
-- If the user declines to share, ask nothing personal and say they can share any time.
-- Do not bring up the investing lock or missing details unless the user asks about buying / investing.
-- "How am I doing?" → one short point each, in this order: debt (if any), the emergency fund, then the allocation.
-- Greetings: one line of greeting, one open question (e.g. "Where would you like to start: spending, saving or investing?"). No lock, no list of missing details, no "please provide information".
+- At most one, only when it helps. Never ask again for a known field or a question they ignored. They decline to share → ask nothing personal.
+- Greeting → one line plus one open question ("Where would you like to start: spending, saving or investing?").
+- "How am I doing?" → debt (if any), the fund, the allocation; one short point each.
 - Outside personal finance you may use web_search.`
 
-const PLAN_PROMPT = `You are MoonSafe's action planner. Read the user's LATEST message (earlier ones are context only) and the app state, then CALL the right tools. Always call at least one tool; if nothing is needed, call no_action. You work in steps (at most 10): after each call you get its result, and fresh figures after something was recorded. Call the next tool only for something the user's latest message asked for that is not done yet; when it is all done, call no_action. Never add things the user did not ask for. Users write English or Vietnamese.
+const PLAN_PROMPT = `You are MoonSafe's action planner. Read the user's LATEST message (earlier ones are context) and the app state, then CALL tools. Every step calls at least one tool and sees each result; when nothing more was asked, call no_action. Never do what was not asked. Users write English or Vietnamese.
 
 ${RULES}
 
-## Choosing tools
-- The user TELLS you their numbers (income, spending, debt, age, job, home / property) → update_profile.
-- The user TELLS you assets they hold: bank savings, cash / checking account, gold, US stocks, coins on an exchange or another wallet → record_asset, one item each. Sold all / no longer has it → quantity 0. Can be called together with update_profile.
-- Asks about allocation, safe / invest split, "how is my money split", "what should I do with idle money", or asks to see the chart → show_allocation. Just "I want to invest" / "buy …" without asking about the split → NOT show_allocation.
-- WANTS to add to the fund → prepare_deposit. Withdraw from the fund → prepare_withdraw. Buy cirBTC → prepare_buy_cirbtc. Recurring buys → propose_dca. Stop recurring buys → stop_dca.
-- open_screen ONLY when the user asks to open / view a screen ("open the Fund screen", "show me my balance sheet"). QUESTIONS about amounts, fund floors, what is missing, how much they have → no_action (the agent answers in words).
-- The user agrees to the agent's offer right before → do exactly that action with exactly the amount offered. It counts as agreement ONLY when the latest message is a clear yes ("ok", "yes", "go ahead", "do it", "deposit that", ${VI_YES}). A message adding information (job, salary, spending…) is NOT agreement → open or fill nothing.
-- prepare_deposit is ONLY for the emergency fund. The safe part of an allocation is the user's own bank savings: never prepare_deposit for it. prepare_buy_cirbtc only for the BTC share the agent offered or an amount the user named, never the whole invest part.
-- "deposit 200 USDC" / ${VI_DEPOSIT} is a deposit, NOT debt. General questions and greetings → no_action.
+## Which tool
+- They TELL numbers (income, spending, debt, age, job, home) → update_profile. They TELL what they hold → record_asset (one item each; sold all → quantity 0).
+- They want to add to the fund → prepare_deposit; withdraw → prepare_withdraw; buy cirBTC → prepare_buy_cirbtc; recurring buys → propose_dca; stop them → stop_dca; open a screen → open_screen.
+- show_allocation ONLY when they ask how their money is split, what to do with idle money, or for the chart. Other questions (how much more, what is missing, why) and greetings → no_action: the agent answers in words.
+- A plain yes right after the agent's offer ("ok", "yes", "do it", "as you said", ${VI_YES}) → that exact action with the offered amount. A message that adds information is not a yes.
+- prepare_deposit is ONLY for the emergency fund, never for the safe part (the user's own savings).
 
 ## Amounts
-- Pass the number and currency the user said. USDC, USD, $, dollars, ${VI_USD} → "USDC" (800 dollars = 800, 3k USD = 3000). VND, million, thousand, ${VI_VND} with no USD → "VND" (500k VND = 500000). Never convert.
-- "the rest", "fill it up", "that amount" (right after the agent offered the gap) = shortfallUsdc; "all of my wallet", "max" when depositing = walletBalanceUsdc; "withdraw everything" = vaultBalanceUsdc.
-- EVERY number from the app state (shortfallUsdc, floorUsdc, walletBalanceUsdc, vaultBalanceUsdc…) is USDC → currency "USDC", amount as a plain number (1,384.62 = 1384.62). Never tag these "VND".
+- Pass the number and currency as said: USDC, USD, $, dollars, ${VI_USD} → "USDC" (3k USD = 3000); VND, ${VI_VND} → "VND". Never convert.
+- App-state numbers are USDC. "the rest" / "fill it up" = shortfallUsdc; "all my wallet" / "max" = walletBalanceUsdc; "withdraw everything" = vaultBalanceUsdc.
+- "deposit 200 USDC" / ${VI_DEPOSIT} is a deposit, not debt.
 
 ## update_profile
-- Pass only the fields the user just stated. Do not guess: "salary" alone says nothing about stability or debt.
-- Each number goes with the item next to it: debt / loan / installments / credit card → debtAmount; salary / income → monthlyIncome; spending / rent / food / living costs → monthlyExpenses; home, land, car, Vietnamese stocks, anything record_asset does not cover → otherAssets (add up several).
-- "no debt" → debtAmount {amount: 0}. Employee / fixed salary → incomeStable true; freelance / own business / irregular → false.
-Examples: "credit card debt of $2,000" → debtAmount 2000 USDC. "an apartment worth 2 billion VND" → otherAssets 2000000000 VND.
+- Only fields just stated, never guessed ("salary" says nothing about stability or debt). "no debt" → debtAmount 0. Employee / fixed salary → incomeStable true; freelance / own business → false.
+- debt, loan, credit card → debtAmount; salary → monthlyIncome; spending, rent → monthlyExpenses; home, land, car, Vietnamese stocks → otherAssets.
 
 ## record_asset
-- savings = bank savings deposit (quantity = amount, currency, symbol = bank name if given). cash = cash / checking account (quantity = amount, currency).
-- gold = physical gold (quantity + unit: "oz", "g", "kg", "luong" or "chi"; ${VI_GOLD}).
-- Only a value given ("$2,000 of gold", "ETH worth $500") → record_asset with worth (amount + currency) and no quantity; the app converts it at the live price. Never put gold, US stocks or coins in otherAssets.
-- stock = US-listed stock or ETF (symbol = ticker: SPY, VOO, AAPL; quantity = shares). Vietnamese stocks (FPT, VNM…) are NOT stock: put their stated value in update_profile.otherAssets.
-- crypto = coins held off Arc (symbol: BTC, ETH, SOL, USDT…; quantity = coins). cirBTC in the Arc wallet is read by the app, do not record it.
-- Record only quantities the user said, never guess. Example: "I have $10,000 in savings at Chase, 2 oz of gold and 0.5 ETH on Binance" → savings 10000 USDC symbol "Chase"; gold 2 oz; crypto ETH 0.5.`
+- savings = bank savings or flexible earn (Binance Simple Earn Flexible…): quantity = amount, currency, symbol = where. cash = cash / checking account.
+- gold: quantity + unit (oz, g, kg, luong, chi; ${VI_GOLD}). stock = US ticker + shares. crypto = coins off Arc (symbol + coins); cirBTC in the wallet is read by the app.
+- Only a value given ("$2,000 of gold") → worth, no quantity. Never put gold, US stocks or coins in otherAssets.
+- Example: "$10,000 in savings at Chase, 2 oz of gold and 0.5 ETH on Binance" → savings 10000 USDC "Chase"; gold 2 oz; crypto ETH 0.5.`
 
 const MONEY = {
   type: 'object',
@@ -463,6 +450,11 @@ function fundFacts(appState: Record<string, unknown> | null, update: Record<stri
       gap = d === 0 ? '; investing is on target' : `; investing is ${Math.abs(d)} points ${d > 0 ? 'above' : 'below'} target`
     }
     lines.push(`- Target by age ${age}: ${safePct}% safe, ${investPct}% invest${alloc.total > 0 && alloc.declared ? ` (= ${showUsd(alloc.total * safePct / 100)} safe, ${showUsd(alloc.total * investPct / 100)} invest)` : ' (percentages only: quote no amounts until the user says what they hold)'}${gap}`)
+    // "I just put $X in the bank" → say whether the safe part is now complete (user, 2026-10-25).
+    if (alloc.total > 0 && alloc.declared) {
+      const safeTarget = alloc.total * safePct / 100
+      lines.push(`- Safe part: ${showUsd(alloc.safe)} of its ${showUsd(safeTarget)} target · ${alloc.safe >= safeTarget * 0.99 ? 'COMPLETE' : `short ${showUsd(safeTarget - alloc.safe)}`}`)
+    }
     if (alloc.mix) {
       const m = alloc.mix, c = alloc.byClass
       lines.push(`- MoonSafe view of the invest part at age ${age} (% of all money outside the fund): stocks & gold ${m.stocks}% (one share: the safer, larger part of investing; index stocks / ETF and gold), BTC ${m.btc}%, altcoins up to ${m.altcoin}%. Held now: stocks & gold ${showUsd(c.stocks)}, BTC incl. cirBTC ${showUsd(c.btc)}, altcoins ${showUsd(c.altcoin)}. When suggesting this split, say it is MoonSafe's view and that its crypto share is above what institutions suggest (0–5%).`)
@@ -470,9 +462,9 @@ function fundFacts(appState: Record<string, unknown> | null, update: Record<stri
     // A wallet alone is not someone's money: the agent once split the wallet as if it were everything (real chat 2026-10-24).
     if (!alloc.declared) lines.push('- Only the app wallet is known: the user has not said what else they hold (bank savings, cash, gold, stocks, coins). If they ask how to split, invest or use their money: suggest NO split and NO deposit or purchase from the wallet, and turn NO percentage into an amount (40% of the wallet is not 40% of their money); first ask what else they hold, one question (unless they already said they have nothing else). On other topics do not bring it up.')
     else if (alloc.suggest && alloc.idle > 0) {
-      lines.push(`- Suggested split of idle money ${showUsd(alloc.idle)} to get closer to target: ${showUsd(alloc.suggest.toSafe)} to safe = the user's OWN bank savings account (state-backed bank, earns interest; NOT the emergency fund, nothing to do in the app), ${showUsd(alloc.suggest.toInvest)} to invest`)
+      lines.push(`- Suggested split of idle money ${showUsd(alloc.idle)} to get closer to target: ${showUsd(alloc.suggest.toSafe)} to safe = the user's OWN savings: bank savings or flexible earn such as Binance Simple Earn Flexible (NOT the emergency fund, nothing to do in the app), ${showUsd(alloc.suggest.toInvest)} to invest`)
       const si = alloc.suggestInvest
-      if (si) lines.push(`- Of that ${showUsd(alloc.suggest.toInvest)} to invest: stocks & gold ${showUsd(si.stocks)} (index stocks / ETF or gold, bought outside the app), BTC ${showUsd(si.btc)} (the only part buyable in the app, as cirBTC), altcoins ${showUsd(si.altcoin)} (outside the app). Never put the whole invest amount into cirBTC.`)
+      if (si) lines.push(`- Of that ${showUsd(alloc.suggest.toInvest)} to invest: stocks & gold ${showUsd(si.stocks)} (index stocks / ETF or gold, bought outside the app), BTC ${showUsd(si.btc)} (the only part buyable in the app, as cirBTC), altcoins ${showUsd(si.altcoin)} (outside the app). If they want more cirBTC than this, it is their call.`)
     }
   } else if (alloc.total > 0) lines.push('- Age unknown, so no allocation target yet')
   if (appState && appState.investUnlocked !== true) {
@@ -625,7 +617,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
     } else if (UI_ACTIONS.has(name)) {
       // "just doing as you said" / "just BTC" right after the agent offered this action is a yes (real chat 2026-10-24).
       // A message with numbers ("I have 2000$ of gold") tells something new, it does not accept the offer.
-      const acceptsOffer = !!OFFERED[name]?.test(prevAssistantText) && !lastUserText.includes('?') && !/\d/.test(lastUserText)
+      const acceptsOffer = !!OFFERED[name]?.test(prevAssistantText) && !lastUserText.includes('?') && !/\d/.test(lastUserText) && lastUserText.trim().split(/\s+/).length <= 5
       if (!acceptsOffer && (!ACTION_INTENT.test(lastUserText) || (ASKS_HOW_MUCH.test(lastUserText) && !/\d/.test(lastUserText)) || (ACTION_VERB[name] && !ACTION_VERB[name].test(lastUserText) && !AGREES.test(lastUserText)))) {
         console.log(`dropped ${name}: no request in "${lastUserText.slice(0, 60)}"`)
         return `Not done: the user did not ask for ${name}.`
@@ -657,12 +649,9 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
         console.log('dropped propose_dca: nobody asked for recurring buys')
         return 'Not done: the user did not ask for recurring buys.'
       }
-      if ((name === 'prepare_buy_cirbtc' || name === 'propose_dca') && !/\d/.test(lastUserText) && startAlloc) {
-        const a = (args.amount ?? {}) as { amount?: number; currency?: string }
-        const usd = typeof a.amount === 'number' ? (a.currency === 'VND' ? (rate ? a.amount / rate : null) : a.amount) : null
-        const btc = startAlloc.suggestInvest?.btc
-        if (!startAlloc.declared) return 'Not done: only the app wallet is known; ask what else the user holds before suggesting a purchase.'
-        if (usd !== null && btc !== undefined && usd > btc * 1.01 + 1) return `Not done: only the BTC share (${usdc(btc)}) belongs in cirBTC, not the whole invest part.`
+      // No buy cap (user, 2026-10-25); a purchase nobody sized still waits for the rest of the picture.
+      if ((name === 'prepare_buy_cirbtc' || name === 'propose_dca') && !/\d/.test(lastUserText) && startAlloc && !startAlloc.declared) {
+        return 'Not done: only the app wallet is known; ask what else the user holds before suggesting a purchase.'
       }
       if (INVEST_ACTIONS.has(name) && !investUnlocked) {
         done.push(`BLOCKED ${name}: investing is locked (needs no debt and a full fund). Nothing was opened.`)
@@ -740,7 +729,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       planMessages.push({ role: 'tool', content: result, tool_call_id: call.id })
     }
     if (!acted) break
-    if (recorded) planMessages.push({ role: 'system', content: `Figures now: ${(await currentFacts()).text}\nAnything else the user's latest message asked for that is not done yet (e.g. seeing how their money is split → show_allocation)? If not, call no_action.` })
+    if (recorded) planMessages.push({ role: 'system', content: `Figures now: ${(await currentFacts()).text}\nAnything else the user's latest message asked for that is not done yet? If not, call no_action.` })
     else planMessages.push({ role: 'system', content: 'Anything else the user asked for in their latest message? If not, call no_action.' })
   }
   console.log(`plan steps=${planSteps} tokens in=${planIn} out=${planOut}`)
@@ -779,7 +768,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
     replyMessages.push({ role: 'system', content: `Overall check-up: one short point each, in this order: ${hasDebt ? 'their outside debt (start with it), ' : ''}the emergency fund vs its floor, then the allocation. Keep the allocation to one sentence.` })
   }
   const replyLang = VI_LETTERS.test(lastUserText) ? 'Vietnamese' : 'English'
-  replyMessages.push({ role: 'system', content: `Reply language: ${replyLang} (the language of the user's latest message).` })
+  replyMessages.push({ role: 'system', content: `Reply language: ${replyLang} (the language of the user's latest message).${replyLang === 'Vietnamese' ? ` ${VI_FLOORS}` : ''}` })
   if (DECLINES.test(lastUserText)) replyMessages.push({ role: 'system', content: 'The user just declined to share. Respect it: this reply asks NOTHING about their personal situation (income, job, stability, debt, age…). Share general knowledge and say they can share any time.' })
 
   let rewrites = 0
@@ -813,7 +802,9 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       if (wantsInvestLocked && !SAYS_LOCKED.test(content)) problems.push('the first sentence must say investing is locked and why')
       if (!profileUpdate && !assetUpdates.length && SAYS_NOTED.test(content)) problems.push('nothing was recorded this turn, drop "Noted"')
       // The chart under the reply already shows every share; a reply that reads it back buries the point.
-      if (actions.some(a => a.type === 'show_allocation') && content.length > 380) problems.push(`the chart right below already shows every figure: rewrite in at most 2–3 sentences: the target${alloc.target ? ` (${alloc.target.safePct}% safe, ${alloc.target.investPct}% invest)` : ''}, how far off it they are, how to split idle money; no reading back each part`)
+      // Room for the invest split too: at 380 the model kept cutting it to fit (eval 2026-10-25).
+      const chartMax = alloc.declared && alloc.suggestInvest ? 520 : 380
+      if (actions.some(a => a.type === 'show_allocation') && content.length > chartMax) problems.push(`the chart right below already shows every figure: rewrite in at most 3 sentences: the target${alloc.target ? ` (${alloc.target.safePct}% safe, ${alloc.target.investPct}% invest)` : ''}, how far off it they are, how to split idle money${chartMax > 380 ? ' (safe, then stocks & gold / BTC / altcoins)' : ''}; no reading back each part`)
       const stray = ungrounded(content, [facts, stateText, ...done, ...messages.filter(m => m.role === 'user').map(m => m.content)])
       if (stray.length) problems.push(`these amounts are not in the figures: ${stray.join(', ')}. Do not compute new numbers (no "left after", no sums or differences); quote only amounts given in ASSET & FUND FIGURES or by the user`)
       if (alloc.target) {
@@ -826,12 +817,13 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       if (si && alloc.declared && ASKS_USE.test(lastUserText) && !/stock|ETF|gold|cổ phiếu|vàng/i.test(content)) problems.push(`give the invest part split from the figures: stocks & gold ${usdc(si.stocks)}, BTC ${usdc(si.btc)} (cirBTC in the app), altcoins ${usdc(si.altcoin)}, and say it is MoonSafe's view`) // lang-ok
       // "Would you like me to prepare a deposit of 1,101 USDC" for the bank-savings part (real chat 2026-10-24).
       const toSafe = alloc.suggest?.toSafe ?? 0
-      if (toSafe > 1 && /deposit/i.test(content) && [...plain.matchAll(AMOUNT)].some(m => readings(m[1] ?? m[2]).some(v => Math.abs(v - toSafe) <= toSafe * 0.01 + 1))) problems.push(`${usdc(toSafe)} is the safe part: the user's OWN bank savings, not a deposit in the app; do not offer to deposit it, tell them to put it in their bank savings`)
-      if (alloc.declared && alloc.suggest && alloc.suggest.toSafe > 1 && ASKS_USE.test(lastUserText) && !/bank|savings|ngân hàng|tiết kiệm/i.test(content)) problems.push(`say where the safe part goes: ${usdc(alloc.suggest.toSafe)} into their own bank savings account`) // lang-ok
+      if (toSafe > 1 && /deposit/i.test(content) && [...plain.matchAll(AMOUNT)].some(m => readings(m[1] ?? m[2]).some(v => Math.abs(v - toSafe) <= toSafe * 0.01 + 1))) problems.push(`${usdc(toSafe)} is the safe part: the user's OWN savings, not a deposit in the app; do not offer to deposit it, tell them to put it in bank savings or flexible earn (e.g. Binance Simple Earn Flexible)`)
+      if (alloc.declared && alloc.suggest && alloc.suggest.toSafe > 1 && ASKS_USE.test(lastUserText) && !/bank|savings|ngân hàng|tiết kiệm/i.test(content)) problems.push(`say where the safe part goes: ${usdc(alloc.suggest.toSafe)} into their own bank savings or flexible earn (e.g. Binance Simple Earn Flexible)`) // lang-ok
       if (DEBT_WORD.test(lastUserText) && !DEBT_WORD.test(content)) problems.push('the user asked about their debt: say plainly what to do about the debt')
       if (BUILD_FUND.test(lastUserText) && /a month into the fund takes about/.test(facts) && !/sav|để dành|tiết kiệm/i.test(content)) problems.push('they asked how to build the fund: suggest saving the monthly amount from the figures and say about how many months it takes') // lang-ok
+      if (replyLang === 'Vietnamese' && /months? of spending|Noted\./i.test(content)) problems.push('this reply is in Vietnamese: write "N tháng chi tiêu" and "Mình đã ghi nhận", no English phrases') // lang-ok
       if (PUSHY.test(content)) problems.push('do not order the user to provide details ("please provide…"); ask one friendly question instead, e.g. "Roughly how much do you spend in a month?"')
-      if (SAFE_IN_APP.test(content)) problems.push('the app cannot move money to the user\'s bank and nothing was moved: the user opens or tops up their own bank savings themselves; never offer or claim a deposit / transfer to savings')
+      if (SAFE_IN_APP.test(content)) problems.push('the app cannot move money to the user\'s bank or exchange and nothing was moved: the user tops up their own savings themselves; never offer or claim a deposit / transfer to savings')
       if (SAFE_AS_FUND.test(content)) problems.push('the safe part is bank savings the user makes themselves, NOT the emergency fund, and it cannot be deposited in the app')
       // Users found replies wordy (2026-10-24, median 305 chars). Checked only once the content is right:
       // asked for both at once, the model cut the very point that was missing.

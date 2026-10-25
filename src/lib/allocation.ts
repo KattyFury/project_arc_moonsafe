@@ -27,14 +27,16 @@ export const INVEST_CLASS_LABEL: Record<InvestClass, string> = { stocks: 'Stocks
 
 /**
  * MoonSafe's view of the invest part, in % of ALL money outside the fund (docs/FRAMEWORK-TAI-CHINH.md,
- * original 23/10, user chose it 2026-10-24): age 30 → stocks & gold 40, BTC 20, altcoins 10. Older:
- * altcoins go first (none from 40), then BTC (none from 60), stocks & gold last.
+ * user 2026-10-25): stocks & gold 40, coins the rest of invest, of which altcoins up to 5 and BTC the
+ * bulk. Age 30 → 40 / BTC 25 / altcoins 5. Older, coins shrink first (age 50 → 40 / BTC 8 / alt 2);
+ * from 60 it is all stocks & gold.
  */
 export function investMix(age: number): Record<InvestClass, number> {
   const invest = Math.max(0, 100 - Math.round(age))
-  const altcoin = Math.min(invest, Math.max(0, Math.min(10, 40 - Math.round(age))))
-  const btc = Math.min(invest - altcoin, Math.max(0, Math.min(20, 60 - Math.round(age))))
-  return { stocks: invest - altcoin - btc, btc, altcoin }
+  const stocks = Math.min(40, invest)
+  const coins = invest - stocks
+  const altcoin = Math.min(5, Math.floor(coins / 5))
+  return { stocks, btc: coins - altcoin, altcoin }
 }
 
 export const bucketOf = (h: Holding): Bucket =>

@@ -17,6 +17,8 @@ import { GlassCard, Notice } from '@/components/ui/kit'
 import { ActionCard, type ChatAction } from '@/components/chat/ActionCard'
 import { AllocationPies } from '@/components/ui/AllocationPies'
 
+const FADE_TOP = { maskImage: 'linear-gradient(to bottom, transparent 0, #000 48px)', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0, #000 48px)' }
+
 function renderContent(text: string): ReactNode {
   return text.split('\n').map((line, i, arr) => (
     <span key={i}>
@@ -107,12 +109,15 @@ export function ChatScreen({ onError, onOpenInvest, onActions }: { onError: (m: 
     inputRef.current?.focus()
   }, [input, loading, sendMessage, onError])
 
+  const [scrolled, setScrolled] = useState(false)
   const dcaDue = math.investUnlocked && cirBtc.dca !== null && (dcaNextRun(cirBtc.dca) ?? Infinity) <= now
 
   return (
     <div className="flex flex-col flex-1 min-h-0 w-full lg:max-w-[840px] lg:mx-auto lg:px-6 lg:py-12">
       <div className="flex flex-col flex-1 min-h-0 lg:rounded-2xl lg:shadow-[0_2px_8px_0_rgba(0,0,0,0.32)] lg:overflow-hidden" style={{ background: 'var(--bg)' }}>
-        <div className="flex-1 overflow-y-auto no-scrollbar px-4 py-4 lg:p-6 flex flex-col gap-4 [&>*]:flex-shrink-0">
+        {/* Messages above the fold fade out under the nav bar, so it reads as "there is more". */}
+        <div className="flex-1 overflow-y-auto no-scrollbar px-4 py-4 lg:p-6 flex flex-col gap-4 [&>*]:flex-shrink-0"
+          onScroll={e => setScrolled(e.currentTarget.scrollTop > 0)} style={scrolled ? FADE_TOP : undefined}>
           {messages.map((msg, i) => (
             <Fragment key={i}>
               <div className={`flex gap-2 items-end ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>

@@ -5,17 +5,21 @@ Bản gốc user chốt 23/10/2026; mục **"Chốt 24/10"** bên dưới là ph
 
 ## Chốt 24/10/2026 (đang chạy trong code)
 
+**Vai trò AI (user, 2026-10-25):** tư vấn đầu tư; hỏi hoặc ghi nhận để nắm tình hình; không ép mua bán, nhưng tạo lệnh hộ (thẻ nạp quỹ / mua cirBTC / DCA) và cho người dùng biết mình làm được. Người dùng kể "vừa gửi ngân hàng X$" → ghi nhận + nói phần an toàn đã đủ hay còn thiếu.
+
+**Nguyên tắc (user, 2026-10-25):** MoonSafe ghi nhận tiền của người dùng và đưa ra lựa chọn; người dùng toàn quyền quyết định tiền của họ. Không ép, không chặn.
+
 1. **Quỹ dự phòng trước.** 3 tháng chi tiêu thiết yếu nếu thu nhập ổn định, 6 tháng nếu không. Giữ bằng USDC trong vault. Quỹ **đứng riêng**, không tính vào phân bổ.
 2. **Khoá đầu tư giữ như cũ:** chỉ mua cirBTC / DCA trong app khi không còn nợ ngoài và quỹ đủ mốc.
 3. **Tiền ngoài quỹ chia 3 phần** (biểu đồ tròn):
    | Phần | Gồm | Nguồn số |
    |---|---|---|
-   | An toàn | Gửi tiết kiệm ngân hàng (bảo hiểm tiền gửi) | Người dùng kể → agent ghi |
+   | An toàn | Gửi tiết kiệm ngân hàng (bảo hiểm tiền gửi) hoặc gửi linh hoạt kiểu Binance Simple Earn Flexible (Web3, rút lúc nào cũng được, không có bảo hiểm tiền gửi) | Người dùng kể → agent ghi (`savings`, symbol = nơi gửi) |
    | Đầu tư | Vàng, cổ phiếu / ETF Mỹ, coin, cirBTC | Kể → agent ghi; cirBTC app tự đọc |
    | Nhàn rỗi | Tiền chưa phân bổ: USDC trong ví, tiền mặt / tài khoản thanh toán, stablecoin | Ví app tự đọc; còn lại kể |
 4. **Mục tiêu theo tuổi:** an toàn = tuổi %, đầu tư = 100 − tuổi %. Ví dụ 31 tuổi: 31% an toàn, 69% đầu tư. Nhàn rỗi không có mục tiêu: là tiền người dùng còn phải chia. App gợi ý chia tiền nhàn rỗi để lấp phần thiếu của mỗi bên.
-5. **Gợi ý chia phần đầu tư (user chọn 2a, 2026-10-24)** theo bản gốc 23/10, tính trên % TOÀN BỘ tiền ngoài quỹ: altcoin = min(10, 40 − tuổi) (hết ở 40), BTC = min(20, 60 − tuổi) (hết ở 60), **cổ phiếu + vàng** = phần đầu tư còn lại. Ví dụ 31 tuổi: cổ phiếu + vàng 40%, BTC 20%, altcoin 9%. **Vàng và cổ phiếu là CÙNG MỘT khoản** (user chốt 2026-10-24): đầu tư nhưng an toàn, là phần lớn nhất của đầu tư; vàng đang có được tính vào khoản này. Code: `investMix()` trong `src/lib/allocation.ts`. Agent luôn nói đây là quan điểm MoonSafe, crypto cao hơn mức các tổ chức khuyên (0–5%). Trong app chỉ mua được phần BTC (cirBTC); thẻ mua cirBTC không vượt phần BTC; cổ phiếu, altcoin người dùng mua ở nơi khác. Người dùng vẫn được tự mua theo ý (không chặn, chỉ cảnh báo).
-   - **Phần an toàn = tài khoản tiết kiệm ngân hàng của chính người dùng** (ngân hàng nhà nước, có bảo hiểm tiền gửi, có lãi). App không chuyển tiền vào ngân hàng; agent không bao giờ tạo thẻ nạp quỹ cho phần này.
+5. **Gợi ý chia phần đầu tư (user chốt 2026-10-25, thay bản 24/10)**, tính trên % TOÀN BỘ tiền ngoài quỹ: **cổ phiếu + vàng 40%** (một khoản, phần đầu tư an toàn hơn, lớn nhất), **coin = phần đầu tư còn lại**, trong đó **altcoin ≤ 5%** (cho người thích "degen"), **BTC phần lớn**. Ví dụ 30 tuổi: 30% an toàn / 40% cổ phiếu + vàng / 25% BTC / 5% altcoin. Lớn tuổi thì phần coin co lại trước (50 tuổi: 40 / BTC 8 / alt 2; từ 60 tuổi hết coin) — quy tắc theo tuổi do Claude suy ra từ ví dụ 30 tuổi, user chưa duyệt riêng. Gợi ý cụ thể cho cổ phiếu + vàng (chỉ là thông tin): ETF chỉ số VOO / SPY, vàng, vàng token hoá PAXG / XAUT. Code: `investMix()` trong `src/lib/allocation.ts`. Agent luôn nói đây là quan điểm MoonSafe, crypto cao hơn mức các tổ chức khuyên (0–5%). Trong app chỉ mua được phần BTC (cirBTC); **không giới hạn mua** (bỏ trần "phần BTC" 2026-10-25): muốn mua cirBTC nhiều hơn gợi ý là quyền người dùng, agent chỉ nói lệch mục tiêu bao nhiêu; cổ phiếu, altcoin người dùng mua ở nơi khác. Người dùng vẫn được tự mua theo ý (không chặn, chỉ cảnh báo).
+   - **Phần an toàn = tiền tiết kiệm của chính người dùng**: gửi ngân hàng, hoặc gửi linh hoạt trên Binance (Simple Earn Flexible), cách Web3 và tiện hơn (user chốt 2026-10-25). App không chuyển tiền vào đó; agent không bao giờ tạo thẻ nạp quỹ cho phần này.
    - **Chưa biết tài sản ngoài app thì chưa chia.** Chỉ thấy USDC trong ví thì agent hỏi người dùng còn gì (tiết kiệm, tiền mặt, vàng, cổ phiếu, coin) trước; chỉ nói %, không quy ra tiền theo số dư ví.
 6. **Ghi tài sản = tool `record_asset` của agent** (không có form). Người dùng nói số lượng, app tự lấy giá:
    - Vàng: **giá vàng thế giới** (XAU/USD theo troy ounce, chốt 2026-10-24 khi app chuyển sang English; trước đó là giá SJC mua vào). Lưu theo ounce; agent nhận oz, g, kg, lượng, chỉ (1 lượng = 37,5 g). Vàng đã khai theo lượng trước 10-24 được tự quy đổi.

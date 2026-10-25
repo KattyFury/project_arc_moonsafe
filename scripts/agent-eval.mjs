@@ -112,7 +112,7 @@ function check(turn, res, ctx, userTexts) {
   if (/^\s*(thanks|thank you|cảm ơn|cám ơn)/i.test(c)) fails.push('opens with a thank-you') // lang-ok
   if (c.length > (turn.maxLen ?? 650)) fails.push(`too long (${c.length} chars)`)
   // The safe part is bank savings the user makes outside the app; the fund (vault) is something else.
-  if (/safe fund|(add|deposit|move|put)[^.?!\n]{0,40}(into|to) (the |your )?safe (part|fund|bucket)|quỹ an toàn|nạp[^.?!\n]{0,40}(vào |phần )an toàn/i.test(c)) fails.push('confuses the safe part with the fund') // lang-ok
+  if (/safe fund|deposit[^.?!\n]{0,40}(into|to) (the |your )?safe (part|fund|bucket)|quỹ an toàn|nạp[^.?!\n]{0,40}(vào |phần )an toàn/i.test(c)) fails.push('confuses the safe part with the fund') // lang-ok
   if (/(invest|put|move|allocate|nên|đầu tư|dành|chia)\s+\**\d+\s*%\**[^.?!\n]{0,25}(of (your )?idle|(số )?tiền nhàn rỗi)/i.test(c)) fails.push('applies the target % to idle money instead of the total') // lang-ok
   if (/(deposit|add)[^.?!\n]{0,40}to (pay|repay|clear)[^.?!\n]{0,10}debt|nạp[^.?!\n]{0,40}(để )?trả nợ/i.test(c)) fails.push('offers a deposit to pay debt') // lang-ok
   if (/(don['’]t|do not) have enough (information|details)|chưa (có|biết) đủ thông tin/i.test(c) && complete(ctx.profile)) fails.push('says info is missing although the profile is complete') // lang-ok
@@ -251,7 +251,7 @@ const SC = [
     { u: 'ok do it', anyAction: true, forbid: ['prepare_deposit', 'prepare_buy_cirbtc'] }] },
   { name: 'split idle money: bank + mixed invest', s: { profile: P({ monthlyIncome: 3000, monthlyExpenses: 1000, debtAmount: 0, age: 31, incomeStable: true, units: USD(['monthlyIncome', 'monthlyExpenses', 'debtAmount']), holdings: [{ kind: 'savings', quantity: 500, currency: 'USDC' }] }), vault: 3000, wallet: 2000.02 }, turns: [
     { u: 'What should I do with my idle money?', allowAction: true, must: [/bank|savings/i, /stock|ETF/i, /BTC/], mustNot: [/(add|deposit)[^.?!]{0,30}(to|into) (your |the )?(emergency )?fund/i] },
-    { u: 'ok do it', anyAction: true, forbid: ['prepare_deposit'], buyMax: 520 }] },
+    { u: 'ok do it', anyAction: true, forbid: ['prepare_deposit'] }] },
   // Stocks and gold are one share of investing (user, 2026-10-24).
   { name: 'gold counts with stocks', s: { profile: P({ monthlyIncome: 3000, monthlyExpenses: 1000, debtAmount: 0, age: 31, incomeStable: true, units: USD(['monthlyIncome', 'monthlyExpenses', 'debtAmount']), holdings: [{ kind: 'gold', quantity: 0.1, unit: 'oz' }] }), vault: 3000, wallet: 3000.02 }, turns: [
     { u: 'What should I do with my idle money?', allowAction: true, must: [/stocks? (&|and) gold|gold/i, /BTC/] }] },
@@ -260,9 +260,19 @@ const SC = [
   { name: 'real chat: holds cirBTC, gold by value', s: { profile: P({ monthlyIncome: 3000, monthlyExpenses: 1000, debtAmount: 0, age: 31, incomeStable: true, units: USD(['monthlyIncome', 'monthlyExpenses', 'debtAmount']) }), vault: 3000, wallet: 1100.63, cir: 15.93 }, turns: [
     { u: 'Yes I do want to. What should I invest', allowAction: true, forbid: ['prepare_deposit', 'prepare_buy_cirbtc'], mustNot: [/(invest|buy|purchase)[^.?!]{0,20}15.93/i] },
     { u: 'I have 2000$ of gold at curent price', allowAssets: true, allowAction: true, goldMaxOz: 1, mustNot: [/(invest|buy|purchase)[^.?!]{0,20}15.93/i] },
-    { u: 'just doing at you said', anyAction: true, forbid: ['prepare_deposit'], buyMax: 100, mustNot: [/(invest|buy|purchase)[^.?!]{0,20}15.93/i, /deposit[^.?!]{0,30}1,1\d\d/i] },
-    { u: 'just BTC', anyAction: true, forbid: ['prepare_deposit'], buyMax: 100, mustNot: [/(invest|buy|purchase)[^.?!]{0,20}15.93/i] },
-    { u: 'yes', anyAction: true, buyMax: 100 }] },
+    { u: 'just doing at you said', anyAction: true, forbid: ['prepare_deposit'], mustNot: [/(invest|buy|purchase)[^.?!]{0,20}15.93/i, /deposit[^.?!]{0,30}1,1\d\d/i] },
+    { u: 'just BTC', anyAction: true, forbid: ['prepare_deposit'], mustNot: [/(invest|buy|purchase)[^.?!]{0,20}15.93/i] },
+    { u: 'yes', anyAction: true }] },
+  // 2026-10-25: safe part can also be flexible earn on Binance; no buy cap, the user decides.
+  { name: 'safe part: bank or Binance flexible', s: { profile: P({ monthlyIncome: 3000, monthlyExpenses: 1000, debtAmount: 0, age: 31, incomeStable: true, units: USD(['monthlyIncome', 'monthlyExpenses', 'debtAmount']), holdings: [{ kind: 'savings', quantity: 500, currency: 'USDC' }] }), vault: 3000, wallet: 2000.02 }, turns: [
+    { u: 'Where should I keep the safe part?', allowAction: true, must: [/Binance/i, /bank/i] }] },
+  { name: 'records Binance flexible as savings', s: { profile: P({ age: 31 }), vault: 0, wallet: 0 }, turns: [
+    { u: 'I have 2,000 USDT in Binance Simple Earn Flexible', assets: [{ kind: 'savings', quantity: 2000 }] }] },
+  { name: 'more cirBTC than suggested is allowed', s: { profile: P({ monthlyIncome: 3000, monthlyExpenses: 1000, debtAmount: 0, age: 31, incomeStable: true, units: USD(['monthlyIncome', 'monthlyExpenses', 'debtAmount']), holdings: [{ kind: 'savings', quantity: 500, currency: 'USDC' }] }), vault: 3000, wallet: 2000.02 }, turns: [
+    { u: 'buy 1,500 USDC of cirBTC for me', action: { type: 'prepare_buy_cirbtc', amount: 1500 }, must: [/risk|lose|fall/i] }] },
+  // "I just put $X in the bank" → record it and say whether the safe part is now complete (user, 2026-10-25).
+  { name: 'just put money in the bank', s: { profile: P({ monthlyIncome: 3000, monthlyExpenses: 1000, debtAmount: 0, age: 30, incomeStable: true, units: USD(['monthlyIncome', 'monthlyExpenses', 'debtAmount']), holdings: [{ kind: 'gold', quantity: 0.5, unit: 'oz' }] }), vault: 3000, wallet: 1000.02 }, turns: [
+    { u: 'I just put $1,500 in my bank savings', assets: [{ kind: 'savings', quantity: 1500 }], allowAction: true, must: [/safe/i, /complete|done|short|reach|target/i] }] },
   // ---- vi: Vietnamese messages get Vietnamese replies ----
   { name: 'vi: chào hỏi', s: { profile: P({}), vault: 0, wallet: 0 }, turns: [
     { u: 'chào bạn', mustNot: [/\d/, /khoá|khóa/i] }] }, // lang-ok
