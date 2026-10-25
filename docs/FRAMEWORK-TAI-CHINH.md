@@ -1,4 +1,6 @@
 # Frame tài chính cá nhân — MoonSafe
+> **⚠ Đã được thay thế (2026-10-25).** Nguồn chuẩn mới: [`docs/SPEC-FRAMEWORK-2026-10-25.md`](SPEC-FRAMEWORK-2026-10-25.md) (spec Hiếu chốt) và database [`src/kb/moonsafe-kb.json`](../src/kb/moonsafe-kb.json) (framework + mẫu hình, kiểm bằng `bun scripts/kb-check.ts`). Nội dung bên dưới là khung cũ đang chạy trong code cho tới khi build xong theo spec mới.
+
 
 Nguồn chuẩn cho agent (`functions/api/chat.ts`) và phần tính phân bổ (`src/lib/allocation.ts`).
 Bản gốc user chốt 23/10/2026; mục **"Chốt 24/10"** bên dưới là phần đang chạy trong code, ưu tiên hơn bản gốc khi khác nhau.
