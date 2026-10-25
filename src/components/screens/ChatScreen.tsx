@@ -1,21 +1,19 @@
 // Screen 6 — chat with the agent. There is no declaration form: what the user tells the
-// agent (income, spending, debt…) is saved straight to the profile in this browser; they
-// can read it in Cân đối, correct it by telling the agent, or clear it in Menu.
+// agent (income, spending, debts, holdings…) is saved straight to the profile; they can read it
+// in Balance, correct it by telling the agent, or clear it in Menu.
 
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { Loader2, Send } from 'lucide-react'
 import { toast } from 'sonner'
 import { useApp } from '@/state/AppState'
 import { WELCOME, WELCOME_BACK, useAgent, type AgentAction } from '@/hooks/useAgent'
-import { normalizeProfile, unitOf } from '@/hooks/useFinancialProfile'
 import { dcaNextRun } from '@/hooks/useCirBtc'
 import { useNow } from '@/hooks/useNow'
 import { formatUsdc } from '@/lib/format'
-import { EMPTY_PROFILE, MONEY_FIELDS, type FinancialProfile, type Holding, type MoneyField } from '@/types'
-import { mergeHoldings, toHolding } from '@/lib/allocation'
 import { GlassCard, Notice } from '@/components/ui/kit'
 import { ActionCard, type ChatAction } from '@/components/chat/ActionCard'
 import { AllocationPies } from '@/components/ui/AllocationPies'
+import { CashflowCard } from '@/components/ui/CashflowCard'
 
 const FADE_TOP = { maskImage: 'linear-gradient(to bottom, transparent 0, #000 48px)', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0, #000 48px)' }
 
@@ -34,16 +32,17 @@ export function ChatScreen({ onError, onOpenInvest, onActions }: { onError: (m: 
   const { profile, vault, math, cirBtc, vndToUsdc } = useApp()
   // Deposit / withdraw / buy / DCA from the agent become cards under its reply (index = anchor).
   const [cards, setCards] = useState<ChatAction[]>([])
-  // Allocation charts the agent showed, by the index of the reply they follow.
-  const [charts, setCharts] = useState<number[]>([])
+  // Charts the agent showed (allocation / cash flow), by the index of the reply they follow.
+  const [charts, setCharts] = useState<{ at: number; kind: 'allocation' | 'cashflow' }[]>([])
   const countRef = useRef(0)
   const handleActions = (actions: AgentAction[]) => {
     const screens = actions.filter(a => a.type === 'open_screen')
     if (screens.length) onActions(screens)
-    if (actions.some(a => a.type === 'show_allocation')) setCharts(c => [...c, countRef.current])
+    const shown = actions.filter(a => a.type === 'show_allocation' || a.type === 'show_cashflow')
+    if (shown.length) setCharts(c => [...c, ...shown.map(a => ({ at: countRef.current, kind: a.type === 'show_cashflow' ? 'cashflow' as const : 'allocation' as const }))])
     const next: ChatAction[] = []
     for (const a of actions) {
-      if (a.type === 'open_screen' || a.type === 'show_allocation' || !a.amount) continue
+      if (a.type === 'open_screen' || a.type === 'show_allocation' || a.type === 'show_cashflow' || !a.amount) continue
       const amount = a.amount.currency === 'USDC' ? BigInt(Math.round(a.amount.amount * 1_000_000)) : vndToUsdc(a.amount.amount)
       if (amount === null || amount <= 0n) { toast.error('Could not convert the amount (no exchange rate). Please say it in USDC.'); continue }
       // The reply is appended right after this call, at the current message count.
@@ -60,38 +59,15 @@ export function ChatScreen({ onError, onOpenInvest, onActions }: { onError: (m: 
   const inputRef = useRef<HTMLInputElement>(null)
 
   const { messages, loading, sendMessage } = useAgent({
+    // The server recomputes every figure and the buy lock from these (src/lib/allocation.ts computeBalance).
     getContext: () => ({
       profile: profile.profile,
-      profileSaved: profile.complete,
-      vaultBalanceUsdc: vault.vaultBalance !== null ? formatUsdc(vault.vaultBalance) : null,
-      // Plain number so the server can compute fund gaps (functions/api/chat.ts fundFacts).
       vaultUsdc: vault.vaultBalance !== null ? Number(vault.vaultBalance) / 1_000_000 : null,
-      walletBalanceUsdc: vault.walletBalance !== null ? formatUsdc(vault.walletBalance) : null,
       walletUsdc: vault.walletBalance !== null ? Number(vault.walletBalance) / 1_000_000 : null,
       cirBtcUsdc: cirBtc.balance === 0n ? 0 : cirBtc.valueUsdc6 !== null ? Number(cirBtc.valueUsdc6) / 1_000_000 : null,
-      floorMonths: math.floorMonths,
-      floorUsdc: math.floorUsdc !== null ? formatUsdc(math.floorUsdc) : null,
-      shortfallUsdc: math.shortfall !== null ? formatUsdc(math.shortfall) : null,
-      floorReachedPct: math.floorPct !== null ? Math.round(math.floorPct) : null,
-      vaultMonths: math.vaultMonths !== null ? Math.round(math.vaultMonths * 10) / 10 : null,
-      investUnlocked: math.investUnlocked,
-      fundOk: math.fundOk,
       dca: cirBtc.dca ? { amountUsdc: formatUsdc(BigInt(cirBtc.dca.amountUsdc)), everyDays: cirBtc.dca.intervalDays } : null,
     }),
-    onProfileDraft: (raw, assets) => {
-      const found = normalizeProfile(raw ?? {})
-      const base = profile.profile ?? EMPTY_PROFILE
-      const next: FinancialProfile = { ...base, units: { ...base.units } }
-      const updates = (assets ?? []).map(toHolding).filter((h): h is Holding => h !== null)
-      if (updates.length) next.holdings = mergeHoldings(base.holdings, updates)
-      for (const k of Object.keys(found) as (keyof FinancialProfile)[]) {
-        if (k === 'savedAt' || k === 'units' || k === 'holdings' || found[k] === null || found[k] === undefined) continue
-        ;(next as unknown as Record<string, unknown>)[k] = found[k]
-        // Keep the currency the agent heard (USDC salary) next to the number.
-        if ((MONEY_FIELDS as readonly string[]).includes(k)) next.units = { ...next.units, [k]: unitOf(found, k as MoneyField) }
-      }
-      profile.saveProfile(next)
-    },
+    onOps: profile.apply,
     onDcaStop: () => { cirBtc.stopDca(); toast('DCA stopped') },
     onActions: handleActions,
   })
@@ -128,11 +104,11 @@ export function ChatScreen({ onError, onOpenInvest, onActions }: { onError: (m: 
                     : msg.error
                       ? { background: '#FDE8EB', color: 'var(--danger)' }
                       : { background: 'var(--surface-muted)', color: 'var(--ink)' }}>
-                  {renderContent(msg.timestamp === 0 ? (profile.complete ? WELCOME_BACK : WELCOME.content) : msg.content)}
+                  {renderContent(msg.timestamp === 0 ? (profile.known ? WELCOME_BACK : WELCOME.content) : msg.content)}
                 </div>
               </div>
               {cards.filter(c => c.anchor === i).map(c => <ActionCard key={c.id} action={c} />)}
-              {charts.includes(i) && <GlassCard className="ml-10 p-4"><AllocationPies compact /></GlassCard>}
+              {charts.filter(c => c.at === i).map((c, k) => <GlassCard key={k} className="ml-10 p-4">{c.kind === 'cashflow' ? <CashflowCard compact /> : <AllocationPies compact />}</GlassCard>)}
             </Fragment>
           ))}
 

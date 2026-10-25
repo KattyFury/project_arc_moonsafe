@@ -1,19 +1,20 @@
-// Two donuts: the target split by age and what the user holds now, for the money outside the
-// emergency fund. The invest part shows its three kinds (stocks & gold, BTC, altcoins; the
-// MoonSafe view by age, docs/FRAMEWORK-TAI-CHINH.md). Used on Balance, Invest and in the chat.
-// Colours follow the entity (dataviz skill, validated 2026-10-24 on white in this ring order:
-// worst adjacent CVD ΔE 27.3); every slice also has a text label + share, so colour is never alone.
+// Two donuts: the target split by the MoonSafe framework (spec 4) and what the user holds now,
+// in six groups (Safe, Traditional, BTC, Large caps, Altcoins, Idle) plus a grey slice for items
+// that cannot be rebalanced (spec 3: rental, business, loans given, insurance). Shares are of
+// liquid assets (the base of every %, spec 2); the full version also shows each group's share of
+// net worth (spec 11). Used on Balance, Invest and in the chat.
+// Colours follow the entity (dataviz skill, validated 2026-10-25 on white in this ring order:
+// worst adjacent CVD ΔE 9.8, normal-vision 16.2; grey is a neutral on purpose); every slice also
+// has a text label + share, so colour is never alone.
 
 import { useApp } from '@/state/AppState'
-import { formatPercent } from '@/lib/format'
-import { INVEST_CLASS_LABEL } from '@/lib/allocation'
+import { GROUP_LABEL, GROUPS, shareOfLiquid, shareOfNetWorth, type Group } from '@/lib/allocation'
 
-type Segment = 'safe' | 'stocks' | 'btc' | 'altcoin' | 'idle'
+type Segment = Group | 'grey'
 
-const SEG_COLOR: Record<Segment, string> = { safe: '#1baf7a', stocks: '#1E6DF7', btc: '#eb6834', altcoin: '#6250d6', idle: '#eda100' }
-const SEG_NAME: Record<Segment, string> = { safe: 'Safe', stocks: INVEST_CLASS_LABEL.stocks, btc: INVEST_CLASS_LABEL.btc, altcoin: INVEST_CLASS_LABEL.altcoin, idle: 'Idle' }
-const ORDER: Segment[] = ['safe', 'stocks', 'btc', 'altcoin', 'idle']
-const SUGGEST_NAME = { stocks: 'stocks & gold', btc: 'BTC', altcoin: 'altcoins' } as const
+const SEG_COLOR: Record<Segment, string> = { safe: '#1baf7a', traditional: '#1E6DF7', btc: '#eb6834', large_cap: '#c2389b', altcoin: '#6250d6', idle: '#eda100', grey: '#a3a39d' }
+const SEG_NAME: Record<Segment, string> = { ...GROUP_LABEL, grey: 'Not rebalanced' }
+const ORDER: Segment[] = [...GROUPS, 'grey']
 
 function arc(cx: number, cy: number, r: number, from: number, to: number): string {
   const p = (a: number) => [cx + r * Math.sin(a * 2 * Math.PI), cy - r * Math.cos(a * 2 * Math.PI)]
@@ -48,96 +49,107 @@ function Donut({ slices, size, center, sub, label }: { slices: { seg: Segment; s
             )
           })}
         {sub ? <>
-          <text x={c} y={c - 2} textAnchor="middle" className="font-bold tabular-nums" style={{ fontSize: Math.round(size * 0.18), fill: 'var(--ink)' }}>{center}</text>
+          <text x={c} y={c - 2} textAnchor="middle" className="font-bold tabular-nums" style={{ fontSize: Math.round(size * 0.16), fill: 'var(--ink)' }}>{center}</text>
           <text x={c} y={c + Math.round(size * 0.14)} textAnchor="middle" style={{ fontSize: 14, fill: 'var(--subtle)' }}>{sub}</text>
-        </> : <text x={c} y={c} dy="0.35em" textAnchor="middle" className="font-bold tabular-nums" style={{ fontSize: 16, fill: 'var(--ink)' }}>{center}</text>}
+        </> : <text x={c} y={c} dy="0.35em" textAnchor="middle" className="font-bold tabular-nums" style={{ fontSize: 14, fill: 'var(--ink)' }}>{center}</text>}
       </svg>
-      <figcaption className="text-[14px] leading-5 font-semibold" style={{ color: 'var(--subtle)' }}>{label}</figcaption>
+      <figcaption className="text-[14px] leading-5 font-semibold text-center" style={{ color: 'var(--subtle)' }}>{label}</figcaption>
     </figure>
   )
 }
 
 /**
- * compact = one row of two small donuts + a share legend (Invest and the chat). The full
- * version (Balance) adds amounts and the idle-money suggestion; its per-asset list shows on
- * desktop only, so the screen still fits 393×852 without scrolling.
+ * compact = one row of two small donuts + a share legend (Invest and the chat). The full version
+ * (Balance) adds amounts, the share of net worth and how to place idle money.
  */
 export function AllocationPies({ compact = false }: { compact?: boolean }) {
-  const { alloc, moneyUsd, prices, profile } = useApp()
-  const { target, total, suggest, unpriced, mix, byClass, suggestInvest, declared } = alloc
-  const size = compact ? 72 : 128
-  const pct = (v: number) => total > 0 ? (v / total) * 100 : 0
-  const held: Record<Segment, number> = { safe: alloc.safe, stocks: byClass.stocks, btc: byClass.btc, altcoin: byClass.altcoin, idle: alloc.idle }
-  const goalPct: Partial<Record<Segment, number>> = target && mix ? { safe: target.safePct, ...mix } : {}
-  const now = ORDER.map(s => ({ seg: s, share: total > 0 ? held[s] / total : 0, title: `${SEG_NAME[s]} ${formatPercent(pct(held[s]))}` }))
-  const goal = ORDER.filter(s => goalPct[s] !== undefined).map(s => ({ seg: s, share: goalPct[s]! / 100, title: `${SEG_NAME[s]} ${goalPct[s]}%` }))
-  // Now / target; compact drops the spaces and the first % so five rows fit beside the donuts.
+  const { balance: b, moneyUsd, prices } = useApp()
+  const { target, liquid, grey, byGroup, suggest, unpriced, declared } = b
+  const size = compact ? 72 : 112
+  const held: Record<Segment, number> = { ...byGroup, grey }
+  const goalPct: Partial<Record<Segment, number>> = target ? { ...target, idle: 0 } : {}
+  // The "now" ring shows liquid assets plus the grey slice, so the grey part is visible beside them.
+  const ring = liquid + grey
+  const now = ORDER.map(s => ({ seg: s, share: ring > 0 ? held[s] / ring : 0, title: `${SEG_NAME[s]} ${moneyUsd(held[s])}` }))
+  const goal = ORDER.filter(s => goalPct[s] !== undefined).map(s => ({ seg: s, share: goalPct[s]! / 100, title: `${SEG_NAME[s]} ${Math.round(goalPct[s]! * 10) / 10}%` }))
+  const r = (n: number) => Math.round(n)
+  // % of liquid now / target; grey has no % of liquid (it is outside the base).
   const share = (s: Segment) => {
-    const n = total > 0 ? Math.round(pct(held[s])) : null
+    if (s === 'grey') return '–'
+    const n = liquid > 0 ? r(shareOfLiquid(b, held[s])) : null
     const t = goalPct[s]
-    if (compact) return t !== undefined ? `${n ?? '–'}/${t}%` : `${n ?? '–'}%`
-    return `${n !== null ? `${n}%` : '–'}${t !== undefined ? ` / ${t}%` : ''}`
+    if (compact) return t !== undefined ? `${n ?? '–'}/${r(t)}%` : `${n ?? '–'}%`
+    return `${n !== null ? `${n}%` : '–'}${t !== undefined ? ` / ${r(t)}%` : ''}`
   }
-  // Without what the user holds elsewhere, the wallet is not the whole picture.
-  const walletOnly = !declared && <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>Only your app wallet is counted. Tell the agent what else you hold (savings, cash, gold, stocks, coins).</p>
-
-  const legend = (
-    // Full version on desktop: two columns, so Balance fits 1440×900.
-    <ul className={compact ? 'flex flex-col gap-1' : 'grid grid-cols-1 lg:grid-cols-2 lg:grid-rows-3 lg:grid-flow-col gap-x-8 gap-y-1'}>
-      {ORDER.map(s => (
-        <li key={s} className="flex items-center gap-2 text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>
-          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: SEG_COLOR[s] }} />
-          <span className="truncate">{SEG_NAME[s]}</span>
-          {!compact && <span className="tabular-nums whitespace-nowrap">{moneyUsd(held[s])}</span>}
-          <span className="ml-auto font-semibold tabular-nums whitespace-nowrap" style={{ color: 'var(--ink)' }}>{share(s)}</span>
-        </li>
-      ))}
-    </ul>
-  )
+  const ofNetWorth = (s: Segment) => { const v = shareOfNetWorth(b, held[s]); return v === null ? '–' : `${r(v)}%` }
+  const rows = ORDER.filter(s => s !== 'grey' || grey > 0)
+  const targetLabel = target ? `Target, age ${b.age}${b.ageIsDefault ? ' (default)' : ''}` : 'Target (needs your age)'
+  const walletOnly = !declared && <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>Only your app wallet is counted. Tell the agent what else you hold.</p>
 
   if (compact) return (
-    // One row: target donut, current donut, legend (centre shows the invest share). In a narrow
-    // place (the chat bubble column) the legend wraps under the donuts instead of truncating.
+    // One row: target donut, current donut, legend. In a narrow place (the chat bubble column)
+    // the legend wraps under the donuts instead of truncating.
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
-        <Donut slices={goal} size={size} label="Target" center={target ? `${target.investPct}%` : '–'} />
-        <Donut slices={now} size={size} label="Now" center={total > 0 ? formatPercent(pct(alloc.invest), 0) : '–'} />
-        <div className="flex-1 min-w-[144px]" title="Share now / target. Centre: % invested">{legend}</div>
+        <Donut slices={goal} size={size} label="Target" center={target ? `${r(target.safe)}%` : '–'} />
+        <Donut slices={now} size={size} label="Now" center={liquid > 0 ? `${r(shareOfLiquid(b, byGroup.safe))}%` : '–'} />
+        <ul className="flex-1 min-w-[160px] flex flex-col" title="% of liquid assets now / target. Centre: Safe share">
+          {rows.map(s => (
+            <li key={s} className="flex items-center gap-2 text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>
+              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: SEG_COLOR[s] }} />
+              <span className="truncate">{SEG_NAME[s]}</span>
+              <span className="ml-auto font-semibold tabular-nums whitespace-nowrap" style={{ color: 'var(--ink)' }}>{s === 'grey' ? moneyUsd(grey) : share(s)}</span>
+            </li>
+          ))}
+        </ul>
       </div>
       {walletOnly}
     </div>
   )
 
+  const place = suggest && (['safe', 'traditional', 'btc', 'large_cap', 'altcoin'] as const).filter(g => suggest.to[g] >= 0.01)
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-4">
-        <Donut slices={goal} size={size} label={target ? `Target at age ${profile.profile?.age}` : 'Target (needs your age)'}
-          center={target ? `${target.investPct}%` : '–'} sub="invested" />
-        <Donut slices={now} size={size} label="Now" center={total > 0 ? formatPercent(pct(alloc.invest), 0) : '–'} sub="invested" />
+        <Donut slices={goal} size={size} label={targetLabel} center={target ? `${r(target.safe)}%` : '–'} sub="safe" />
+        <Donut slices={now} size={size} label="Now" center={liquid > 0 ? `${r(shareOfLiquid(b, byGroup.safe))}%` : '–'} sub="safe" />
       </div>
 
-      {/* Legend: colour + name + amount + share now / target, so no slice relies on colour alone. */}
-      {legend}
+      {/* Legend: colour + name + amount + % of liquid now / target + % of net worth, so no slice relies on colour alone. */}
+      <table className="w-full text-[14px] leading-5 tabular-nums" style={{ color: 'var(--subtle)' }}>
+        <thead>
+          <tr className="text-left" style={{ color: 'var(--muted)' }}>
+            <th className="font-normal pb-1">Group</th>
+            <th className="font-normal pb-1 text-right">Amount</th>
+            <th className="font-normal pb-1 text-right" title="Share of liquid assets now / MoonSafe target">Liquid / target</th>
+            <th className="font-normal pb-1 text-right" title="Share of net worth">Net worth</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(s => (
+            <tr key={s}>
+              <td className="py-[2px]"><span className="inline-flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ background: SEG_COLOR[s] }} />{SEG_NAME[s]}</span></td>
+              <td className="text-right whitespace-nowrap">{moneyUsd(held[s])}</td>
+              <td className="text-right font-semibold whitespace-nowrap" style={{ color: 'var(--ink)' }}>{share(s)}</td>
+              <td className="text-right whitespace-nowrap">{ofNetWorth(s)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
-      {walletOnly || (suggest && (suggest.toSafe >= 0.01 || suggest.toInvest >= 0.01) && (
+      {walletOnly || (place && place.length > 0 && (
         <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>
-          To reach the target with idle money: <strong style={{ color: 'var(--ink)' }}>{moneyUsd(suggest.toSafe)}</strong> to your bank savings
-          {suggestInvest
-            ? <>{(['stocks', 'btc', 'altcoin'] as const).filter(c => suggestInvest[c] >= 0.01).map(c => <span key={c}>, <strong style={{ color: 'var(--ink)' }}>{moneyUsd(suggestInvest[c])}</strong> {SUGGEST_NAME[c]}</span>)}.</>
-            : <>, <strong style={{ color: 'var(--ink)' }}>{moneyUsd(suggest.toInvest)}</strong> to invest.</>}
+          Idle money, keeping {moneyUsd(suggest!.keep)} for daily spending:
+          {suggest!.toFund >= 0.01 && <> <strong style={{ color: 'var(--ink)' }}>{moneyUsd(suggest!.toFund)}</strong> to the fund,</>}
+          {suggest!.toDebt >= 0.01 && <> <strong style={{ color: 'var(--ink)' }}>{moneyUsd(suggest!.toDebt)}</strong> to priority debt,</>}
+          {place.map((g, i) => <span key={g}> <strong style={{ color: 'var(--ink)' }}>{moneyUsd(suggest!.to[g])}</strong> {g === 'safe' ? 'to your own savings' : GROUP_LABEL[g].toLowerCase()}{i < place.length - 1 ? ',' : '.'}</span>)}
         </p>
       ))}
-      {alloc.parts.length > 0 && (
-        <p className="hidden lg:block text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>
-          {alloc.parts.map(p => `${p.label} ${moneyUsd(p.usd)}`).join(' · ')}
-        </p>
-      )}
       {unpriced.length > 0 && (
         <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>
-          No price yet{prices.error ? ' (price source failing)' : ''}, left out for now: {unpriced.map(h => h.symbol ?? h.kind).join(', ')}.
+          No price yet{prices.error ? ' (price source failing)' : ''}, left out for now: {unpriced.map(h => h.name).join(', ')}.
         </p>
       )}
-      <p className="text-[14px] leading-5" style={{ color: 'var(--muted)' }}>Money outside the emergency fund (it stays separate). Invest split by age is MoonSafe's view; its crypto share is above what institutions suggest (0–5%).</p>
     </div>
   )
 }

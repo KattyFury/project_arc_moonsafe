@@ -1,0 +1,45 @@
+// Cash flow by the MoonSafe framework (spec 6): income (active / passive / irregular), spending
+// (fixed incl. debt payments / variable) per month, the monthly surplus and the "Passive / Spending" bar;
+// 100% is financial freedom. Used on Balance and in the chat (show_cashflow).
+
+import { useApp } from '@/state/AppState'
+
+export function CashflowCard({ compact = false }: { compact?: boolean }) {
+  const { balance, moneyUsd } = useApp()
+  const cf = balance.cashflow
+  const ratio = cf.passiveRatio
+  const free = ratio !== null && ratio >= 1
+  const row = (label: string, value: string, strong = false) => (
+    <div className="flex justify-between gap-2 text-[14px] leading-5">
+      <span className="whitespace-nowrap" style={{ color: 'var(--subtle)' }}>{label}</span>
+      <span className={`tabular-nums whitespace-nowrap ${strong ? 'font-semibold' : ''}`} style={{ color: 'var(--ink)' }}>{value}</span>
+    </div>
+  )
+  if (cf.income === null && cf.spending === null) return <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>Tell the agent what you earn and spend in a month.</p>
+  return (
+    <div className="flex flex-col gap-2">
+      <div className={compact ? 'flex flex-col gap-1' : 'grid grid-cols-1 lg:grid-cols-2 gap-x-4 gap-y-1'}>
+        <div className="flex flex-col gap-1">
+          {row('Income', cf.income === null ? '–' : moneyUsd(cf.income), true)}
+          {!compact && <>{row('Active', moneyUsd(cf.active))}{row('Passive', moneyUsd(cf.passive))}{row('Irregular', moneyUsd(cf.irregular))}</>}
+        </div>
+        <div className="flex flex-col gap-1">
+          {row('Spending', cf.spending === null ? '–' : moneyUsd(cf.spending), true)}
+          {!compact && <>{row('Fixed, incl. debt', moneyUsd(cf.fixed))}{row('Variable', moneyUsd(cf.variable))}</>}
+        </div>
+      </div>
+      {row('Surplus / month', cf.surplus === null ? '–' : moneyUsd(cf.surplus), true)}
+      {ratio !== null && (
+        <div className="flex flex-col gap-1">
+          <div className="flex justify-between text-[14px] leading-5">
+            <span style={{ color: 'var(--subtle)' }}>Passive / Spending</span>
+            <span className="font-semibold tabular-nums" style={{ color: free ? 'var(--success)' : 'var(--ink)' }}>{Math.round(ratio * 100)}%{free ? ' · financial freedom' : ''}</span>
+          </div>
+          <div className="h-2 rounded-full" style={{ background: 'var(--surface-muted)' }} role="img" aria-label={`Passive income covers ${Math.round(ratio * 100)}% of spending`}>
+            <div className="h-full rounded-full" style={{ width: `${Math.min(100, ratio * 100)}%`, background: free ? 'var(--success)' : 'var(--accent)' }} />
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

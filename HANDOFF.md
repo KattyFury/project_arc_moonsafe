@@ -1,10 +1,27 @@
 # MoonSafe — HANDOFF
 
 App quỹ dự phòng web3 trên Arc Testnet. Live: https://moonsafe.app (Cloudflare Pages project `moonsafe`, deploy tay — push GitHub KHÔNG tự deploy).
-Spec gốc: user dán trong chat (SPEC.md, 10 mục, màn 1–10). Cập nhật lần cuối: 2026-10-24.
-Khung tài chính đang chạy: **`docs/FRAMEWORK-TAI-CHINH.md`** (ưu tiên hơn mọi ghi chú cũ bên dưới về 110/120 − tuổi).
+Spec gốc: user dán trong chat (SPEC.md, 10 mục, màn 1–10). Cập nhật lần cuối: 2026-10-25.
+Khung tài chính: **`docs/SPEC-FRAMEWORK-2026-10-25.md`** (dữ liệu: `src/kb/`; code từ mục -18 chạy theo spec này, `docs/FRAMEWORK-TAI-CHINH.md` đã bị thay thế).
 
 ## ▶ Làm tiếp từ đây (mới nhất ở trên)
+
+-18. **2026-10-25 (cloud) — BUILD PLAN -17 bước 1–7 ĐÃ CODE XONG. CHƯA chạy eval thật, CHƯA deploy** (cloud không có OPENAI_API_KEY / Cloudflare token). Code nằm trên nhánh `claude/magical-curie-mk753a` (phiên cloud bắt buộc nhánh này) → máy Dell: `git fetch && git checkout main && git merge origin/claude/magical-curie-mk753a`.
+   - **Việc máy Dell làm tiếp (theo thứ tự):** (1) `bun install`; (2) `wrangler pages dev` + `.dev.vars` có OPENAI_API_KEY; (3) **`bun scripts/agent-eval.mjs http://localhost:8788 --runs 3`** (giờ chạy bằng bun, không phải node: dùng chung `applyOps` với app; 46 tình huống / 54 lượt, ca spec 14.6 gắn nhãn "14.6"); mục tiêu ≥ 98% lượt sạch, lỗi lặp → sửa prompt / chốt chặn trong `functions/api/chat.ts`, chạy lại đúng ca (`--only`); ghi chi phí / tin; (4) xem ảnh duyệt UI (Hiếu duyệt trước deploy); (5) `node scripts/check-lang.mjs` + deploy.
+   - **Đã kiểm trên cloud:** `tsc` sạch (trừ lỗi có sẵn compass-deploy / PagesFunction), `bun scripts/kb-check.ts` OK (thêm 14 hồ sơ thật chạy qua computeBalance → computeFacts → matchPatterns + ca khoá mua spec 14.6 + mốc 3/6/9/12), `check-lang` English only, `oxlint` không lỗi mới, `vite build` OK. Đường ống agent chạy thử với OpenAI giả lập (harness tạm, không commit): ghi tài sản, vàng theo giá trị → oz, FPT → vn_stock tự khai, số không có trong câu bị bỏ, "vừa bỏ 1.000$ vào tiết kiệm" → không ghi + hỏi nguồn → `move`, thẻ tín dụng chặn mua, hết nợ + đủ quỹ → mở. Đo `scrollHeight`: Balance (3 nút gạt), Balance rỗng, Invest khoá, Before you start, thẻ chat — vừa 393×852; Balance + Invest vừa 1440×900.
+   - **Đã làm:** (1) `src/types.ts` hồ sơ v2 (holdings theo 28 loại KB, debts[], incomes[], expenses[], dependents, soleEarner, ageDeclined, debtsComplete) + `src/lib/profile.ts` (migrate v1 khi đọc, ghi lại ngay để id không đổi; `ProfileOp` + `applyOps` dùng chung app / server / eval). (2) `src/lib/allocation.ts` viết lại: `computeBalance` = thanh khoản, tài sản ròng, 6 nhóm + lát xám, dòng tiền, quỹ / mốc, nợ ưu tiên, **khoá mua (1 hàm cho app `math.investUnlocked` và server)** + câu "To open cirBTC buying: …" đúng số. (3) `src/kb/facts.ts` `computeFacts` đủ facts_reference (intent EN + VI). (4) Tool mới spec 10 (update_profile, add/set/remove_holding, move, add/update/remove_debt, set/remove_income, set/remove_expense, show_allocation, show_cashflow + thẻ cũ), app áp `ops`. (5) Prompt viết lại 1 lần từ KB (principles / voice / rebalance), khối MATCHING SITUATIONS (patternBrief) + "Next question" theo luồng hỏi mỗi lượt, kiểm `never_say` + disclaimer trong chat → viết lại; ghi xong đọc lại "Noted: … Right?". (6) Balance spec 11 (Net worth / Liquid / Fund; nút gạt Allocation / Cash flow / Debts & other trên mobile, desktop hiện hết), biểu đồ 6 nhóm + xám (màu Large caps `#c2389b`, validator dataviz: CVD ΔE kề nhau thấp nhất 9,8, normal 16,2), thẻ dòng tiền + thanh "Passive / Spending", Invest khoá = 1 câu, Before you start = 3 ý spec 8.4. (7) `scripts/agent-eval.mjs` viết lại.
+   - **Chờ Hiếu chốt (Claude tự chọn tạm, chỗ spec chưa nói — sửa được ở 1 chỗ):**
+     1. Nợ **chưa rõ loại hoặc chưa rõ lãi** (kể cả vay nhà chưa nói lãi) coi là nợ ưu tiên → chặn mua tới khi agent hỏi ra (`debtIsPriority`, allocation.ts).
+     2. Khoá mở cần thêm: biết chi tiêu, biết thu nhập ổn định hay không, và người dùng đã trả lời câu hỏi nợ cuối (`debtsComplete`). Người phụ thuộc chưa biết = 0.
+     3. Gợi ý chia tiền nhàn rỗi: chừa 1 tháng chi tiêu → quỹ khởi điểm → nợ ưu tiên → phần còn lại của quỹ → lấp An toàn → các nhóm đầu tư theo phần thiếu.
+     4. "Lệch mục tiêu" đo trên tiền đã đặt (thanh khoản trừ Nhàn rỗi), để tiền nhàn rỗi nhiều không bị tính là lệch.
+     5. Danh sách coin lớn cố định: BNB, SOL, XRP, DOGE, ADA, TRX, TON, AVAX (+ ETH). Coin v1 migrate thẳng theo danh sách này, không hỏi lại.
+     6. Món "other" chưa rõ bản chất → ngoài cơ sở % (như tài sản tiêu dùng).
+     7. Đọc lại "Noted: … Right?" là câu hỏi duy nhất của lượt đó → câu hỏi tiếp theo của luồng thu thập để lượt sau (đúng chữ spec 10, nhưng thu thập chậm hơn 1 lượt mỗi lần ghi).
+     8. Chi tiêu = các dòng chi + tiền trả nợ hằng tháng (spec 5.1). Nếu người dùng nói "tiêu 1.500$" đã gồm cả tiền trả thẻ thì bị tính 2 lần; agent được dặn ghi tiền trả nợ trên khoản nợ, chưa có chốt chặn.
+     9. Before you start: 3 ý spec + giữ 1 dòng nhỏ "Arc Testnet, token test" bên dưới. Balance desktop bỏ nút "Update with the agent" (tab Chat luôn ở thanh trên) để vừa 900.
+     10. Mẫu "chỉ nói 1 lần" (altcoin, DeFi, DCA) nhận ra bằng câu agent đã nói trước đó trong chat (regex), không lưu thêm dữ liệu.
+   - **Bẫy:** `src/kb/facts.ts` có regex tiếng Việt (gắn `// lang-ok`). Preview UI: dùng `preview.html` + `src/preview-main.tsx` (đã exclude) — bản cloud đổ dữ liệu mẫu thẳng vào `AppStateContext`, không cần Privy.
 
 -17. **▶▶ BUILD PLAN cho phiên Claude Code trên cloud (Hiếu giao 2026-10-25). Làm theo đúng thứ tự, mỗi bước có tiêu chí xong.**
 

@@ -1,4 +1,8 @@
+// "Before you start" (spec 8.4): the three points from the KB, the only place besides the order
+// cards where the disclaimer lives (never repeated in chat). Testnet note kept under them.
+
 import { AlertTriangle } from 'lucide-react'
+import { KB } from '@/kb/kb'
 
 interface WarningModalProps { onAcknowledge: () => void }
 
@@ -23,11 +27,7 @@ export function WarningModal({ onAcknowledge }: WarningModalProps) {
         </div>
 
         <ul className="flex flex-col gap-2">
-          {[
-            'MoonSafe records your money and suggests options, not investment advice. You decide, and you sign every transaction in your own wallet.',
-            'No returns are promised. Crypto, stocks and gold can fall sharply.',
-            'Test version on Arc Testnet: USDC and cirBTC here are test tokens with no real value.',
-          ].map((item, i) => (
+          {KB.voice.before_you_start.map((item, i) => (
             <li key={i} className="flex items-start gap-2">
               <span
                 className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[14px] font-bold"
@@ -39,6 +39,7 @@ export function WarningModal({ onAcknowledge }: WarningModalProps) {
             </li>
           ))}
         </ul>
+        <p className="text-[14px] leading-5 -mt-2" style={{ color:'var(--muted)' }}>Test version on Arc Testnet: USDC and cirBTC here are test tokens with no real value. You sign every transaction in your own wallet.</p>
 
         <button
           onClick={onAcknowledge}

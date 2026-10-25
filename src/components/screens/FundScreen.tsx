@@ -11,7 +11,7 @@ import { AmountField, Btn, Chips, Col, GlassCard, Grid, IconBox, Notice, Screen,
 type Tab = 'deposit' | 'withdraw'
 
 export function FundScreen({ onOpenChat }: { onOpenChat: () => void }) {
-  const { vault, math, money, unit, profile } = useApp()
+  const { vault, math, money, unit, balance } = useApp()
   const [tab, setTab] = useState<Tab>('deposit')
   const [amount, setAmount] = useState('')
   const [sheet, setSheet] = useState(false)
@@ -81,7 +81,7 @@ export function FundScreen({ onOpenChat }: { onOpenChat: () => void }) {
               </>
             ) : (
               <button onClick={onOpenChat} className="text-left text-[16px] leading-6 text-white underline">
-                {profile.complete ? 'No exchange rate yet to work out the floor' : 'Tell the agent your monthly spending to see how big the fund should be'}
+                {balance.cashflow.spending !== null ? 'No exchange rate yet to work out the floor' : 'Tell the agent your monthly spending to see how big the fund should be'}
               </button>
             )}
           </section>
@@ -127,7 +127,7 @@ export function FundScreen({ onOpenChat }: { onOpenChat: () => void }) {
             <div className="flex flex-col gap-2">
               <p className="font-semibold text-[20px] leading-7" style={{ color: 'var(--ink)' }}>Withdraw below the floor</p>
               <p className="text-[16px] leading-6" style={{ color: 'var(--subtle)' }}>
-                After this, the fund holds {formatUsdc(vb !== null ? vb - parsed : null)}, below the {math.floorMonths}-month floor ({formatUsdc(math.floorUsdc)}). Investing locks until you top it back up.
+                After this, the fund holds {formatUsdc(vb !== null ? vb - parsed : null)}, below the {math.floorMonths}-month floor ({formatUsdc(math.floorUsdc)}). cirBTC buying locks until you top it back up.
               </p>
             </div>
           </div>

@@ -1,12 +1,13 @@
 // Chat with the MoonSafe agent (/api/chat). History lives in localStorage and is synced
 // to /api/userdata (src/lib/cloud.ts) so it follows the Privy account.
-// Values the agent extracts (profileUpdate / <profile>…</profile>) are handed to
-// onProfileDraft and saved to the profile in this browser; there is no form to confirm.
+// What the agent recorded comes back as a list of operations (src/lib/profile.ts ProfileOp),
+// applied to the profile in one save; there is no form to confirm.
 // If the agent is down we say so — no canned replies, no made-up profile.
 
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import type { ChatMessage } from '@/types'
 import { cloudSave } from '@/lib/cloud'
+import { readOps, type ProfileOp } from '@/lib/profile'
 
 const STORAGE_KEY = 'moonsafe_chat_v2'
 const MAX_KEEP = 80
@@ -56,15 +57,15 @@ export function clearChatStorage() {
 export interface AgentHooks {
   /** Context the agent sees (declared numbers, fund progress, DCA). */
   getContext: () => Record<string, unknown>
-  /** Numbers and assets the agent recorded this turn, applied in one save (either may be null). */
-  onProfileDraft: (draft: Record<string, unknown> | null, assets?: unknown[] | null) => void
+  /** What the agent recorded this turn (profile, holdings, debts, incomes, expenses), applied in one save. */
+  onOps: (ops: ProfileOp[]) => void
   onDcaStop: () => void
   /** UI actions the agent asked for (open a screen with a prefilled amount). */
   onActions?: (actions: AgentAction[]) => void
 }
 
 export interface AgentAction {
-  type: 'prepare_deposit' | 'prepare_withdraw' | 'prepare_buy_cirbtc' | 'propose_dca' | 'open_screen' | 'show_allocation'
+  type: 'prepare_deposit' | 'prepare_withdraw' | 'prepare_buy_cirbtc' | 'propose_dca' | 'open_screen' | 'show_allocation' | 'show_cashflow'
   amount?: { amount: number; currency: 'VND' | 'USDC' }
   intervalDays?: number
   screen?: 'fund' | 'invest' | 'balance' | 'menu'
@@ -99,19 +100,14 @@ export function useAgent(hooks: AgentHooks) {
           context: hooksRef.current.getContext(),
         }),
       })
-      const data = await res.json().catch(() => null) as { content?: string; error?: string; profileUpdate?: Record<string, unknown> | null; assetUpdates?: unknown[] | null; dcaStop?: boolean; actions?: AgentAction[] } | null
+      const data = await res.json().catch(() => null) as { content?: string; error?: string; ops?: unknown; dcaStop?: boolean; actions?: AgentAction[] } | null
       if (!res.ok || !data?.content) throw new Error(data?.error ?? `HTTP ${res.status}`)
 
-      let content = data.content
-      if (data.profileUpdate || data.assetUpdates?.length) hooksRef.current.onProfileDraft(data.profileUpdate ?? null, data.assetUpdates ?? null)
+      const content = data.content.trim()
+      const ops = readOps(data.ops)
+      if (ops.length) hooksRef.current.onOps(ops)
       if (data.dcaStop) hooksRef.current.onDcaStop()
       if (data.actions?.length) hooksRef.current.onActions?.(data.actions)
-      const pm = content.match(/<profile>([\s\S]*?)<\/profile>/)
-      if (pm) {
-        try { hooksRef.current.onProfileDraft(JSON.parse(pm[1]) as Record<string, unknown>) } catch { /* ignore bad JSON */ }
-      }
-      if (/<dca\s+action="stop"\s*\/>/.test(content)) hooksRef.current.onDcaStop()
-      content = content.replace(/<profile>[\s\S]*?<\/profile>/g, '').replace(/<dca[^>]*\/>/g, '').trim()
 
       const final = [...history, { role: 'assistant' as const, content, timestamp: Date.now() }]
       setMessages(final)

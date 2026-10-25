@@ -33,6 +33,12 @@ export interface Pattern {
 
 export interface DebtType { key: string; label: string; group: string; blocks_buy: boolean | string; note?: string }
 
+/** One row of the spec 3 table. */
+export interface AssetTypeRow {
+  n: number; key: string; label: string; category: string; subgroup?: string
+  net_worth: boolean; liquid_base: boolean | string; rebalanceable?: boolean; pricing: string; note?: string
+}
+
 export const KB = kbJson as unknown as {
   version: string
   params: Record<string, { value: number; status?: string; note?: string }>
@@ -40,9 +46,18 @@ export const KB = kbJson as unknown as {
   allocation: { rest_split: Record<'traditional' | 'crypto', [number, number]>; crypto_split: Record<'btc' | 'large_cap' | 'altcoin', [number, number]> }
   fund_floor: { rules: { when: string; months: number }[] }
   debt_types: DebtType[]
+  asset_types: AssetTypeRow[]
+  facts_reference: string[]
+  collection: Record<string, string>
+  rebalance: string[]
+  priority_order: string[]
+  priority_rules: string[]
   voice: { style: string; may_say: string[]; never_say: string[]; web3_view: string; before_you_start: string[] }
   patterns: Pattern[]
 }
+
+/** The spec 3 row for an asset type key; undefined for an unknown key. */
+export const assetTypeRow = (key: string): AssetTypeRow | undefined => KB.asset_types.find(t => t.key === key)
 
 export const param = (name: string): number => {
   const p = KB.params[name]

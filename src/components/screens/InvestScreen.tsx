@@ -1,9 +1,9 @@
 // Screens 9 / 9b — Đầu tư (Figma: locked = conditions 6 col + actions 6 col). The allocation
 // chart (target by age vs now) shows in both states; buying cirBTC has no cap, the app only
-// warns when a buy goes above the target (docs/FRAMEWORK-TAI-CHINH.md).
+// warns when a buy goes above the BTC target (docs/SPEC-FRAMEWORK-2026-10-25.md 5.3, 7).
 
 import { useState } from 'react'
-import { ArrowRight, CheckCircle2, ExternalLink, Lock, XCircle } from 'lucide-react'
+import { ArrowRight, ExternalLink, Lock } from 'lucide-react'
 import { useApp } from '@/state/AppState'
 import { overTargetWarning, spendable } from '@/lib/invest'
 import { dcaNextRun, formatCirBtc } from '@/hooks/useCirBtc'
@@ -17,14 +17,12 @@ const DCA_INTERVAL_DAYS = 7
 const MIN_DCA = 1_000_000n
 
 export function InvestScreen({ onOpenFund, onOpenChat }: { onOpenFund: () => void; onOpenChat: () => void }) {
-  const { math, profile, money } = useApp()
+  const { math, balance: b, profile } = useApp()
 
   if (!math.investUnlocked) {
-    const checks = [
-      { ok: profile.complete, label: profile.complete ? 'The agent knows your cash flow' : 'The agent does not know your cash flow yet' },
-      { ok: math.noDebt === true, label: math.noDebt === false ? 'You still have outside debt' : 'No outside debt' },
-      { ok: math.fundOk, label: math.fundOk ? 'Emergency fund at its floor' : 'Emergency fund below its floor' },
-    ]
+    // Spec 5.3: one sentence, what is missing and how much. Only the in-app cirBTC buy is blocked.
+    const p = profile.profile
+    const needsAgent = b.cashflow.spending === null || p?.incomeStable === null || p?.incomeStable === undefined || (!p?.debtsComplete && !b.debts.priorityCount)
     return (
       <Screen>
         <Grid>
@@ -32,37 +30,22 @@ export function InvestScreen({ onOpenFund, onOpenChat }: { onOpenFund: () => voi
             <GlassCard className="p-4 lg:p-8 flex flex-col gap-4">
               <div className="flex items-center gap-4">
                 <IconBox><Lock size={24} style={{ color: 'var(--accent)' }} /></IconBox>
-                <div>
-                  <p className="font-semibold text-[20px] leading-7" style={{ color: 'var(--ink)' }}>Investing is locked</p>
-                  <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>Order: clear debt → emergency fund → invest</p>
-                </div>
+                <p className="font-semibold text-[20px] leading-7" style={{ color: 'var(--ink)' }}>cirBTC buying is locked</p>
               </div>
-              <div className="flex flex-col gap-2">
-                {checks.map(({ ok, label }) => (
-                  <div key={label} className="min-h-12 flex items-center gap-2 px-4 py-2 rounded-2xl" style={{ background: ok ? '#E3F5EC' : '#FDE8EB' }}>
-                    {ok ? <CheckCircle2 size={20} style={{ color: 'var(--success)', flexShrink: 0 }} /> : <XCircle size={20} style={{ color: 'var(--danger)', flexShrink: 0 }} />}
-                    <span className="text-[16px] leading-6 font-semibold" style={{ color: ok ? 'var(--success)' : 'var(--danger)' }}>{label}</span>
-                  </div>
-                ))}
-              </div>
+              <p className="text-[16px] leading-6" style={{ color: 'var(--ink)' }}>{b.lock.text}</p>
               {math.floorUsdc !== null && (
-                <div className="h-2 rounded-full" style={{ background: 'var(--surface-muted)' }}>
+                <div className="h-2 rounded-full" style={{ background: 'var(--surface-muted)' }} role="img" aria-label={`Emergency fund at ${Math.round(math.floorPct ?? 0)}% of its floor`}>
                   <div className="h-full rounded-full" style={{ width: `${Math.min(math.floorPct ?? 0, 100)}%`, background: 'var(--accent)' }} />
                 </div>
               )}
-              {math.shortfall !== null && math.shortfall > 0n && (
-                <div className="p-4 rounded-2xl" style={{ background: 'var(--surface-muted)' }}>
-                  <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>Still needed in the fund</p>
-                  <p className="display font-bold text-[24px] leading-8 tabular-nums" style={{ color: 'var(--ink)' }}>{money(math.shortfall)}</p>
-                </div>
-              )}
+              <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>Only the in-app cirBTC buy waits. What you buy elsewhere is your call.</p>
             </GlassCard>
           </Col>
           <Col span={6}>
-            {!profile.complete
+            {needsAgent
               ? <Btn onClick={onOpenChat}>Talk to the agent</Btn>
-              : math.noDebt === false
-                ? <Notice tone="warning">Once your outside debt is paid off, tell the agent to unlock investing.</Notice>
+              : b.debts.priorityCount
+                ? <Notice tone="warning">Once your priority debt is paid off, tell the agent.</Notice>
                 : <Btn onClick={onOpenFund}>Add to emergency fund</Btn>}
             <Btn disabled><Lock size={16} />Buy cirBTC</Btn>
             <GlassCard className="p-4 lg:p-8"><AllocationPies compact /></GlassCard>
@@ -75,21 +58,21 @@ export function InvestScreen({ onOpenFund, onOpenChat }: { onOpenFund: () => voi
 }
 
 function InvestOpen() {
-  const { vault, cirBtc, alloc, money } = useApp()
+  const { vault, cirBtc, balance, money } = useApp()
   const now = useNow()
   const [amount, setAmount] = useState('')
   const [mode, setMode] = useState<'once' | 'dca'>('once')
 
   const room = spendable(vault.walletBalance)
-  // What the chart suggests putting into investments, limited to the wallet.
-  const toTarget = alloc.suggest && room !== null ? (() => {
-    const t = BigInt(Math.floor(alloc.suggest.toInvest * 1_000_000))
+  // What the split suggests putting into BTC (cirBTC is the BTC part buyable here), limited to the wallet.
+  const toTarget = balance.suggest && room !== null ? (() => {
+    const t = BigInt(Math.floor(balance.suggest.to.btc * 1_000_000))
     return t < room ? t : room
   })() : null
 
   const parsed = parseUsdcInput(amount)
   const overWallet = room !== null && parsed > room
-  const overTarget = parsed > 0n && !overWallet ? overTargetWarning(alloc, parsed) : null
+  const overTarget = parsed > 0n && !overWallet ? overTargetWarning(balance, parsed) : null
 
   const dca = cirBtc.dca
   const next = dcaNextRun(dca)

@@ -7,14 +7,14 @@ import { usePrivy } from '@privy-io/react-auth'
 import { cloudLoad, cloudSave, readOwner, setCloudAuth, writeOwner } from '@/lib/cloud'
 import { hydrateChat, readLocalChat } from '@/hooks/useAgent'
 import { useVaultState, type VaultState } from '@/hooks/useVault'
-import { normalizeProfile, readLocalProfile, useProfileState, type ProfileState } from '@/hooks/useFinancialProfile'
+import { readLocalProfile, useProfileState, type ProfileState } from '@/hooks/useFinancialProfile'
+import { normalizeProfile } from '@/lib/profile'
 import { useExchangeRateState, vndToUsdc6, usdc6ToVnd, type FxState } from '@/hooks/useExchangeRate'
 import { useCirBtcState, type CirBtcState } from '@/hooks/useCirBtc'
 import { usePricesState, type PricesState } from '@/hooks/usePrices'
-import { allocate, type Allocation } from '@/lib/allocation'
+import { computeBalance, type Balance } from '@/lib/allocation'
 import { DASH, formatUsdc, formatVnd } from '@/lib/format'
-import { unitOf } from '@/hooks/useFinancialProfile'
-import type { ChatMessage, FinancialProfile, MoneyField } from '@/types'
+import type { ChatMessage } from '@/types'
 
 export type Unit = 'VND' | 'USD'
 const UNIT_KEY = 'moonsafe_unit_v1'
@@ -28,9 +28,10 @@ function readUnit(): Unit {
   return 'USD'
 }
 
+/** The fund figures in 6-dec USDC for the Fund screen and the chat cards (from Balance.fund). */
 export interface FundMath {
   floorMonths: number | null
-  /** Essential spending per month in USDC (6-dec), null if not declared or no rate. */
+  /** Spending per month in USDC (6-dec): fixed + variable + debt payments; null if not declared or no rate. */
   monthlyExpUsdc: bigint | null
   floorUsdc: bigint | null
   /** 0–100, null if unknown. */
@@ -38,8 +39,8 @@ export interface FundMath {
   /** Vault balance / monthly spending, in months. */
   vaultMonths: number | null
   shortfall: bigint | null
-  noDebt: boolean | null
   fundOk: boolean
+  /** The cirBTC buy lock is open (Balance.lock, the same rule as the agent). */
   investUnlocked: boolean
 }
 
@@ -52,18 +53,14 @@ export interface AppState {
   setUnit: (u: Unit) => void
   math: FundMath
   prices: PricesState
-  /** Safe / invest / idle split of the money outside the fund, in USD. */
-  alloc: Allocation
+  /** The whole picture by the MoonSafe framework, in USD (src/lib/allocation.ts). */
+  balance: Balance
   /** USD amount (allocation figures) in the chosen unit. */
   moneyUsd: (usd: number | null | undefined) => string
   /** Money (6-dec USDC) in the chosen unit, "–" when unknown. */
   money: (usdc6: bigint | null | undefined) => string
   /** VND amount in the chosen unit, "–" when unknown. */
   moneyFromVnd: (vnd: number | null | undefined) => string
-  /** A declared money field (typed in VND or USDC) as 6-dec USDC; null if unknown. */
-  fieldUsdc: (p: FinancialProfile | null | undefined, f: MoneyField) => bigint | null
-  /** A declared money field shown in the chosen display unit. */
-  moneyOfField: (p: FinancialProfile | null | undefined, f: MoneyField) => string
   vndToUsdc: (vnd: number | null | undefined) => bigint | null
   /** Server copy of profile + chat: ready once loaded (or failed and fell back to this browser). */
   cloud: { ready: boolean; error: boolean }
@@ -96,8 +93,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       try {
         const data = await cloudLoad()
         if (!alive) return
-        if (data?.profile && typeof data.profile === 'object') hydrate(normalizeProfile(data.profile as Record<string, unknown>))
-        else { const local = readLocalProfile(); if (local) cloudSave({ profile: local }) }
+        if (data?.profile && typeof data.profile === 'object') {
+          const raw = data.profile as Record<string, unknown>
+          const p = normalizeProfile(raw)
+          hydrate(p)
+          // A v1 record is migrated once and saved back, so its new ids stay the same.
+          if (raw.v !== 2) cloudSave({ profile: p })
+        } else { const local = readLocalProfile(); if (local) cloudSave({ profile: local }) }
         if (Array.isArray(data?.chat) && data.chat.length) hydrateChat(data.chat as ChatMessage[])
         else { const local = readLocalChat(); if (local.length) cloudSave({ chat: local }) }
         setCloud({ ready: true, error: false })
@@ -132,49 +134,40 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     return rate ? formatUsdc(vndToUsdc6(vnd, rate)) : DASH
   }, [unit, rate])
 
-  const fieldUsdc = useCallback((p: FinancialProfile | null | undefined, f: MoneyField): bigint | null => {
-    const v = p?.[f]
-    if (v === null || v === undefined) return null
-    return unitOf(p, f) === 'USDC' ? BigInt(Math.round(v * 1_000_000)) : vndToUsdc(v)
-  }, [vndToUsdc])
-
-  const moneyOfField = useCallback((p: FinancialProfile | null | undefined, f: MoneyField): string => {
-    const v = p?.[f]
-    if (v === null || v === undefined) return DASH
-    return unitOf(p, f) === 'USDC' ? money(BigInt(Math.round(v * 1_000_000))) : moneyFromVnd(v)
-  }, [money, moneyFromVnd])
-
-  const math = useMemo<FundMath>(() => {
-    const p = profile.profile
-    const floorMonths = p?.incomeStable === null || p?.incomeStable === undefined ? null : p.incomeStable ? 3 : 6
-    const monthlyExpUsdc = p?.monthlyExpenses ? fieldUsdc(p, 'monthlyExpenses') : null
-    const floorUsdc = monthlyExpUsdc !== null && floorMonths !== null ? monthlyExpUsdc * BigInt(floorMonths) : null
-    const vb = vault.vaultBalance
-    const floorPct = floorUsdc && vb !== null ? Math.min(100, Number((vb * 10_000n) / floorUsdc) / 100) : null
-    const vaultMonths = monthlyExpUsdc && vb !== null ? Number(vb) / Number(monthlyExpUsdc) : null
-    const shortfall = floorUsdc !== null && vb !== null ? (floorUsdc > vb ? floorUsdc - vb : 0n) : null
-    const noDebt = p?.debtAmount === null || p?.debtAmount === undefined ? null : p.debtAmount === 0
-    const fundOk = floorUsdc !== null && floorUsdc > 0n && vb !== null && vb >= floorUsdc
-    const investUnlocked = profile.complete && noDebt === true && fundOk
-    return { floorMonths, monthlyExpUsdc, floorUsdc, floorPct, vaultMonths, shortfall, noDebt, fundOk, investUnlocked }
-  }, [profile.profile, profile.complete, vault.vaultBalance, fieldUsdc])
-
   const prices = usePricesState(profile.profile?.holdings)
   const wb = vault.walletBalance
+  const vb = vault.vaultBalance
   const cirUsdc6 = cirBtc.balance === 0n ? 0n : cirBtc.valueUsdc6
-  const alloc = useMemo(() => allocate({
-    holdings: profile.profile?.holdings,
+  const balance = useMemo(() => computeBalance({
+    profile: profile.profile,
     walletUsd: wb !== null ? Number(wb) / 1_000_000 : null,
+    vaultUsd: vb !== null ? Number(vb) / 1_000_000 : null,
     cirBtcUsd: cirUsdc6 !== null ? Number(cirUsdc6) / 1_000_000 : null,
-    age: profile.profile?.age ?? null,
     prices: prices.prices,
     vndPerUsd: rate,
-  }), [profile.profile, wb, cirUsdc6, prices.prices, rate])
+  }), [profile.profile, wb, vb, cirUsdc6, prices.prices, rate])
+
+  const math = useMemo<FundMath>(() => {
+    const f = balance.fund
+    const u6 = (n: number | null) => n === null ? null : BigInt(Math.round(n * 1_000_000))
+    const spending = balance.cashflow.spending
+    const floorUsdc = u6(f.floorUsd)
+    return {
+      floorMonths: spending !== null ? f.floorMonths : null,
+      monthlyExpUsdc: u6(spending),
+      floorUsdc,
+      floorPct: f.floorUsd && vb !== null ? Math.min(100, Number(vb) / 1_000_000 / f.floorUsd * 100) : null,
+      vaultMonths: f.months,
+      shortfall: u6(f.gap),
+      fundOk: f.met,
+      investUnlocked: balance.lock.open,
+    }
+  }, [balance, vb])
 
   const moneyUsd = useCallback((usd: number | null | undefined) =>
     usd === null || usd === undefined || !Number.isFinite(usd) ? DASH : money(BigInt(Math.round(usd * 1_000_000))), [money])
 
-  const value: AppState = { vault, profile, fx, cirBtc, unit, setUnit, math, prices, alloc, moneyUsd, money, moneyFromVnd, vndToUsdc, fieldUsdc, moneyOfField, cloud }
+  const value: AppState = { vault, profile, fx, cirBtc, unit, setUnit, math, prices, balance, moneyUsd, money, moneyFromVnd, vndToUsdc, cloud }
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }
 

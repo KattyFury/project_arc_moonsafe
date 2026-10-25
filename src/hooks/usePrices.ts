@@ -4,17 +4,18 @@
 
 import { useEffect, useState } from 'react'
 import type { Holding } from '@/types'
-import type { Prices } from '@/lib/allocation'
+import { symbolOf, type Prices } from '@/lib/allocation'
+import { priceKindOf } from '@/lib/profile'
 
 const POLL_MS = 5 * 60_000
 
 export interface PricesState { prices: Prices | null; error: boolean }
 
 export function usePricesState(holdings: Holding[] | undefined): PricesState {
-  const list = holdings ?? []
-  const needed = (k: Holding['kind']) => [...new Set(list.filter(h => h.kind === k && h.symbol).map(h => h.symbol!.toUpperCase()))].sort().join(',')
+  const list = (holdings ?? []).filter(h => h.priceSource === 'market' && h.quantity !== undefined)
+  const needed = (k: 'stock' | 'crypto') => [...new Set(list.filter(h => priceKindOf(h.type) === k).map(symbolOf).filter((s): s is string => !!s))].sort().join(',')
   const stocks = needed('stock'), crypto = needed('crypto')
-  const any = list.some(h => h.kind === 'gold' || h.kind === 'stock' || h.kind === 'crypto')
+  const any = list.some(h => ['gold', 'stock', 'crypto'].includes(priceKindOf(h.type)))
   const [state, setState] = useState<PricesState>({ prices: null, error: false })
 
   useEffect(() => {

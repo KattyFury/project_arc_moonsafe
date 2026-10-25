@@ -20,7 +20,7 @@ const TITLES = { deposit: 'Add to fund', withdraw: 'Withdraw to wallet', buy: 'B
 const ICONS = { deposit: ArrowDownToLine, withdraw: ArrowUpFromLine, buy: TrendingUp, dca: Repeat } as const
 
 export function ActionCard({ action }: { action: ChatAction }) {
-  const { vault, math, cirBtc, alloc, money, unit } = useApp()
+  const { vault, math, cirBtc, balance, money, unit } = useApp()
   const [status, setStatus] = useState<Status>('idle')
   const [error, setError] = useState<string | null>(null)
   const { kind, amount } = action
@@ -41,13 +41,13 @@ export function ActionCard({ action }: { action: ChatAction }) {
     if (vb !== null && amount > vb) block = `More than the fund holds (${formatUsdc(vb)}).`
     else if (wb !== null && wb < GAS_ESTIMATE_USDC6) block = `The wallet needs about ${formatUsdc(GAS_ESTIMATE_USDC6)} to pay the withdrawal fee.`
     else if (math.floorUsdc !== null && vb !== null && vb - amount < math.floorUsdc) {
-      warnings.push(`After this, the fund holds ${formatUsdc(vb - amount)}, below the ${math.floorMonths}-month floor (${formatUsdc(math.floorUsdc)}). Investing locks until you top it back up.`)
+      warnings.push(`After this, the fund holds ${formatUsdc(vb - amount)}, below the ${math.floorMonths}-month floor (${formatUsdc(math.floorUsdc)}). cirBTC buying locks until you top it back up.`)
     }
   } else {
-    if (!math.investUnlocked) block = 'Investing is locked: it needs no outside debt and a full emergency fund.'
+    if (!math.investUnlocked) block = balance.lock.text
     else if (kind === 'buy' && room !== null && amount > room) block = `More than the USDC in your wallet (up to ${formatUsdc(room)}).`
     else {
-      const over = kind === 'buy' ? overTargetWarning(alloc, amount) : null
+      const over = kind === 'buy' ? overTargetWarning(balance, amount) : null
       if (over) warnings.push(over)
       warnings.push('cirBTC can fall sharply. Only invest money you can afford to lose. For information only, not investment advice.')
     }

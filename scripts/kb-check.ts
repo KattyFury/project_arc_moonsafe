@@ -1,9 +1,15 @@
 // Checks the knowledge base (src/kb) against the spec: the age formula against the spec table,
 // fund floors, priority debt, every pattern's facts and params, and ~25 user personas that must
 // match exactly the expected patterns (every pattern is hit at least once).
+// Then real profiles (src/types.ts v2, and a v1 record migrated) run through computeBalance →
+// computeFacts → matchPatterns, with the buy-lock cases spec 14.6 requires.
 //   bun scripts/kb-check.ts        → exit 1 on any mismatch
 
 import { KB, targetMix, fundFloorMonths, isPriorityDebt, matchPatterns, patternBrief, type Cond, type Facts } from '../src/kb/kb'
+import { computeFacts, displayFacts } from '../src/kb/facts'
+import { computeBalance } from '../src/lib/allocation'
+import { normalizeProfile } from '../src/lib/profile'
+import { EMPTY_PROFILE, type Debt, type FinancialProfile, type Holding } from '../src/types'
 
 let fails = 0
 const fail = (m: string) => { fails++; console.log('FAIL', m) }
@@ -105,10 +111,64 @@ for (const [name, over, want] of personas) {
   if (missing.length || extra.length) fail(`${name}: missing [${missing}] extra [${extra}] (got ${got.join(', ')})`)
   else console.log(' ok ', name.padEnd(42), got.join(', '))
 }
-for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never matched by any persona`)
+
+// 6. Real profiles → computeBalance → computeFacts → patterns (and the lock, spec 5.3 / 14.6).
+const NOW = Date.UTC(2026, 9, 25)
+const h = (o: Partial<Holding> & Pick<Holding, 'type' | 'name'>): Holding => ({ id: `h${Math.random()}`, updatedAt: NOW, priceSource: o.quantity !== undefined ? 'market' : 'self', rebalanceable: true, currency: 'USDC', ...o })
+const debt = (o: Partial<Debt> & Pick<Debt, 'type' | 'balance'>): Debt => ({ id: `d${Math.random()}`, name: o.type, currency: 'USDC', ratePct: null, monthlyPayment: null, updatedAt: NOW, ...o })
+const prices = { goldUsdPerOz: 4000, usd: { 'crypto:BTC': 100000, 'crypto:ETH': 4000, 'stock:VOO': 600 } }
+const healthy: FinancialProfile = {
+  ...EMPTY_PROFILE, age: 30, incomeStable: true, dependents: 0, soleEarner: false, debtsComplete: true,
+  incomes: [{ id: 'i1', name: 'Salary', monthly: 3000, currency: 'USDC', kind: 'active', updatedAt: NOW }],
+  expenses: [{ id: 'e1', name: 'Rent and food', monthly: 1500, currency: 'USDC', kind: 'fixed', updatedAt: NOW }],
+  holdings: [h({ type: 'savings', name: 'Savings', value: 6000 }), h({ type: 'us_stock', name: 'VOO', symbol: 'VOO', quantity: 13 }), h({ type: 'btc', name: 'BTC', quantity: 0.04 }),
+    h({ type: 'eth', name: 'ETH', quantity: 0.25 }), h({ type: 'altcoin', name: 'Alts', value: 1000 })],
+}
+type Real = { name: string; p: FinancialProfile; vault?: number; wallet?: number; msg?: string; open?: boolean; want: string[] }
+const reals: Real[] = [
+  { name: 'healthy, fund full, no debt', p: healthy, vault: 4500, open: true, want: ['lock_open_surplus'] },
+  { name: 'credit card blocks', p: { ...healthy, debts: [debt({ type: 'credit_card', balance: 2000, ratePct: 24, monthlyPayment: 200 })] }, vault: 6000, open: false, want: ['priority_debt'] },
+  { name: 'family, no interest, does not block', p: { ...healthy, debts: [debt({ type: 'family_no_interest', balance: 5000, ratePct: 0, monthlyPayment: 200, lender: 'Mom' })] }, vault: 6000, open: true, want: ['family_debt_no_interest', 'lock_open_surplus'] },
+  { name: 'mortgage 8% does not block', p: { ...healthy, debts: [debt({ type: 'mortgage', balance: 80000, ratePct: 8, monthlyPayment: 600 })] }, vault: 6300, open: true, want: ['lock_open_surplus'] },
+  { name: 'mortgage 10% blocks', p: { ...healthy, debts: [debt({ type: 'mortgage', balance: 80000, ratePct: 10, monthlyPayment: 600 })] }, vault: 6300, open: false, want: ['priority_debt'] },
+  { name: 'fund short blocks, says the gap', p: healthy, vault: 1000, open: false, want: ['fund_short'] },
+  { name: 'age not known: ask it', p: { ...healthy, age: null }, vault: 4500, open: true, want: ['age_unknown', 'lock_open_surplus'] },
+  { name: 'age declined: default 30', p: { ...healthy, age: null, ageDeclined: true }, vault: 4500, open: true, want: ['age_declined', 'lock_open_surplus'] },
+  { name: 'passive covers spending: free', p: { ...healthy, incomes: [...healthy.incomes, { id: 'i2', name: 'Rent', monthly: 1600, currency: 'USDC', kind: 'passive', updatedAt: NOW }] }, vault: 4500, open: true, want: ['financially_free', 'lock_open_surplus'] },
+  { name: '"just put 1,000 into safe"', p: healthy, vault: 4500, msg: 'I just put $1,000 into my savings', open: true, want: ['added_to_safe', 'lock_open_surplus'] },
+  { name: 'says where it came from: no question', p: healthy, vault: 4500, msg: 'I just moved $1,000 from my wallet into my savings', open: true, want: ['lock_open_surplus'] },
+  { name: 'wants to go all in altcoins', p: healthy, vault: 4500, msg: 'I want to go all in on memecoins', open: true, want: ['altcoin_heavy', 'lock_open_surplus'] },
+  { name: 'nothing declared', p: EMPTY_PROFILE, vault: 0, wallet: 50, open: false, want: ['age_unknown', 'collecting', 'new_starter'] },
+  { name: 'v1 record migrated (debt type unknown)', p: normalizeProfile({ monthlyIncome: 3000, monthlyExpenses: 1500, debtAmount: 500, age: 30, incomeStable: true, units: { monthlyIncome: 'USDC', monthlyExpenses: 'USDC', debtAmount: 'USDC' }, holdings: [{ kind: 'savings', quantity: 9000, currency: 'USDC' }] }, NOW), vault: 4500, open: false, want: ['priority_debt', 'collecting', 'off_target'] },
+]
+const floorCases: [Partial<FinancialProfile>, number][] = [[{ incomeStable: true, dependents: 0 }, 3], [{ incomeStable: true, dependents: 1 }, 6], [{ incomeStable: false, dependents: 0 }, 6], [{ incomeStable: false, dependents: 2, soleEarner: false }, 9], [{ incomeStable: false, dependents: 2, soleEarner: true }, 12]]
+for (const [over, months] of floorCases) {
+  const b = computeBalance({ profile: { ...healthy, ...over }, walletUsd: 0, vaultUsd: 4500, cirBtcUsd: 0, prices, vndPerUsd: 25000 })
+  if (b.fund.floorMonths !== months || b.fund.floorUsd !== months * 1500) fail(`floor ${JSON.stringify(over)}: ${b.fund.floorMonths} months ≠ ${months}`)
+  if (b.lock.open !== (months === 3)) fail(`lock with floor ${months} months and 3 months in the fund should be ${months === 3 ? 'open' : 'closed'}`)
+}
+for (const r of reals) {
+  const b = computeBalance({ profile: r.p, walletUsd: r.wallet ?? 0, vaultUsd: r.vault ?? 0, cirBtcUsd: 0, prices, vndPerUsd: 25000 })
+  const facts = computeFacts({ balance: b, profile: r.p, prices, vndPerUsd: 25000, message: r.msg ?? '', now: NOW })
+  const got = matchPatterns(facts).map(x => x.id)
+  got.forEach(id => hit.add(id))
+  const missing = r.want.filter(w => !got.includes(w)), extra = got.filter(g => !r.want.includes(g))
+  if (missing.length || extra.length) fail(`real ${r.name}: missing [${missing}] extra [${extra}] (got ${got.join(', ')})`)
+  else if (r.open !== undefined && b.lock.open !== r.open) fail(`real ${r.name}: lock ${b.lock.open ? 'open' : 'closed'} (${b.lock.text})`)
+  else console.log(' ok ', `real: ${r.name}`.padEnd(42), got.join(', ') || '—', '·', b.lock.text)
+  for (const k of known) if (!(k in facts)) fail(`computeFacts misses fact ${k}`)
+}
+const shortB = computeBalance({ profile: healthy, walletUsd: 0, vaultUsd: 1000, cirBtcUsd: 0, prices, vndPerUsd: 25000 })
+if (!/add 3,500 USDC to the emergency fund/.test(shortB.lock.text)) fail(`lock text must say the exact gap: ${shortB.lock.text}`)
+const declined = computeBalance({ profile: { ...healthy, age: null, ageDeclined: true }, walletUsd: 0, vaultUsd: 0, cirBtcUsd: 0, prices, vndPerUsd: 25000 })
+if (declined.target?.btc !== 20 || !declined.ageIsDefault) fail('declined age must use the age-30 split (BTC 20%)')
+const realBrief = patternBrief(matchPatterns(computeFacts({ balance: shortB, profile: healthy, prices, vndPerUsd: 25000, now: NOW })), displayFacts(computeFacts({ balance: shortB, profile: healthy, prices, vndPerUsd: 25000, now: NOW })))
+if (/\{\w+\}/.test(realBrief)) fail(`placeholder left in the brief: ${realBrief}`)
+console.log(`\nReal brief, fund short:\n${realBrief}`)
 
 // What the model would receive for one persona (token budget check).
 const sample = patternBrief(matchPatterns({ ...base, income_stable: false, dependents: 2, sole_earner: true, fund_floor_months: 12, fund_met: false, fund_gap: '6,000 USD', ...locked }), { ...base, fund_floor_months: 12, fund_gap: '6,000 USD' })
 console.log(`\nSample brief (${sample.length} chars, ~${Math.round(sample.length / 4)} tokens):\n${sample}`)
-console.log(fails ? `\n${fails} problem(s).` : `\nKB OK: ${KB.patterns.length} patterns, ${personas.length} personas, formula matches the spec table.`)
+for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never matched by any persona`)
+console.log(fails ? `\n${fails} problem(s).` : `\nKB OK: ${KB.patterns.length} patterns, ${personas.length} personas + ${reals.length} real profiles, formula matches the spec table.`)
 process.exit(fails ? 1 : 0)
