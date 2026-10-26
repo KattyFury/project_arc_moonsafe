@@ -6,6 +6,12 @@ Khung tài chính: **`docs/SPEC-FRAMEWORK-2026-10-25.md`** (dữ liệu: `src/kb
 
 ## ▶ Làm tiếp từ đây (mới nhất ở trên)
 
+-25. **2026-10-26 — lấy phần tốt của bản Arc Studio build lại (Desktop\New folder, từ spec 3 phần), ĐÃ DEPLOY** (8a37000, ca3530f6). Không gộp cả bản; dấu vết + kế hoạch Arc Studio: `docs/arc-studio-rebuild-2026-10-26.md`.
+   - `/api/chat` bắt đăng nhập Privy (`functions/_lib/privyAuth.ts`, dùng chung với `/api/userdata`; app gửi token qua `authHeader()` trong `src/lib/cloud.ts`). Trước đó ai cũng gọi được và tiêu OpenAI credit. Đã kiểm trên moonsafe.app: không token / token giả → 401, đăng nhập thật → agent trả lời bình thường. `scripts/agent-eval.mjs` giờ cần token mới chạy được.
+   - `wrangler.toml` khớp cấu hình Pages thật (KV `USERDATA` f5f9…a952, compat 2025-01-01; secret OPENAI_API_KEY vẫn ở Cloudflare) + script `bun run cf:deploy` (check-lang → vite build → wrangler deploy). Cần export `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` từ keys.env trước.
+   - Contract bản mới (trần phí 10 USDC, ReentrancyGuard, cấm renounce, chặn chuyển tiền thẳng vào vault, khoá implementation) + 86 test Foundry (`forge test` qua hết, evm paris). ABI app dùng không đổi. Hiếu cho viết lại contract vì đã rút hết tiền; on-chain đã kiểm: factory 0x7E0f chưa có vault nào, 0x358e chỉ có vault 0x5c38 của Hiếu, số dư 0.
+   - **CHỜ HIẾU KÝ:** deploy factory mới bằng `scripts/deploy-factory/index.html` (2 giao dịch: vault mẫu rồi factory; owner = nhận phí = 0xEb2D, phí 1 USDC). Đã chạy thử đúng 2 giao dịch này trên anvil: tạo factory, mở vault, nạp, rút OK. Có địa chỉ → đổi `VITE_FACTORY_ADDRESS` trong `.env` (máy kia sửa tay), bỏ 0x358e khỏi `LEGACY_FACTORIES` (useVault.ts) để mọi ví mở vault trên contract mới, deploy, đọc on-chain owner / fee / implementation.
+
 -24. **2026-10-26 — Hiếu chốt: phân bổ theo tuổi chỉ là GỢI Ý để cân nhắc, CHỈ quỹ dự phòng là bắt buộc; khoá mua cirBTC GIỮ NGUYÊN (quỹ đủ mốc + không nợ ưu tiên). ĐÃ DEPLOY** (ea7d191d).
    - KB: thêm principle "emergency fund is the only must, split = reference"; rebalance / voice / mẫu `off_target` nói "you could consider", cấm "recommended / you need to / you must" (chốt chặn `SPLIT_AS_MUST`, có cả "nên/cần/phải … %").
    - Muốn nhiều BTC (kể cả 50%) → tôn trọng, hợp Web3, không cảnh báo. Server tính sẵn "Their wish: N% of liquid = X USDC" (`wishLine`); thẻ mua cirBTC tối đa bằng ví app (chặn thẻ 7.500 khi ví 2.000).
