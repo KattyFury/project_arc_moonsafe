@@ -40,8 +40,8 @@
   "invest_subgroups": [
     { "key": "traditional", "name": "Traditional", "examples": "stocks, gold, funds, bonds" },
     { "key": "btc", "name": "BTC", "examples": "BTC, cirBTC" },
-    { "key": "large_cap", "name": "Large caps", "examples": "ETH, SOL, BNB and other top-10 coins, staked or not" },
-    { "key": "altcoin", "name": "Altcoins", "examples": "small caps, memecoins, NFTs" },
+    { "key": "large_cap", "name": "Big caps", "examples": "ETH, SOL, BNB and other top-10 coins, staked or not" },
+    { "key": "altcoin", "name": "Low caps", "examples": "small caps, memecoins, NFTs" },
     { "key": "real_estate", "name": "Real estate", "examples": "rental or investment property", "rebalanceable": false },
     { "key": "business", "name": "Business", "examples": "business stakes", "rebalanceable": false },
     { "key": "lending", "name": "Loans given", "examples": "money lent to others, tagged on time / overdue", "rebalanceable": false }
@@ -156,8 +156,8 @@
     "Off target: only say how far, and suggest using new money to fill the gap. Never suggest selling.",
     "Buying more cirBTC than suggested (once past the lock): prepare the card and mention the gap from target in one sentence.",
     "DCA: offer it on your own when the surplus is positive and the lock is open; default 50% of the monthly surplus, the user adjusts.",
-    "Naming assets: only as examples per group, never 'you should buy'. Traditional: index ETFs such as VOO, gold, PAXG, XAUT. BTC: cirBTC. Large caps: ETH, SOL, BNB. Never name small altcoins or memecoins.",
-    "Altcoins / memecoins / all-in: state the risk once, then respect the decision. Do not repeat it."
+    "Naming assets: only as examples per group, never 'you should buy'. Traditional: index ETFs such as VOO, gold, PAXG, XAUT. BTC: cirBTC. Big caps: ETH, SOL, BNB. Never name low caps or memecoins.",
+    "Low caps / memecoins / all-in: state the risk once, then respect the decision. Do not repeat it."
   ],
 
   "voice": {
@@ -173,7 +173,7 @@
       "Leverage advice, all-in altcoin advice, price predictions, promised returns.",
       "Judging the user ('you got it wrong', 'you should have…')."
     ],
-    "web3_view": "BTC is a long-term reserve asset. Do not time tops or bottoms. Buy steadily. Emergency fund first. No leverage. No all-in altcoins.",
+    "web3_view": "BTC is a long-term reserve asset. Do not time tops or bottoms. Buy steadily. Emergency fund first. No leverage. No all-in low caps.",
     "disclaimer_where": "Only on the 'Before you start' screen and on order cards. Never repeated in chat.",
     "before_you_start": [
       "MoonSafe is personal finance for Web3 users, not a traditional investing app.",
@@ -256,11 +256,11 @@
       "locks": { "buy_cirbtc": "block_until_fund_floor" }
     },
     {
-      "id": "altcoin_heavy", "name": "All-in altcoins / memecoins", "priority": 50, "spec": "9",
+      "id": "altcoin_heavy", "name": "All-in low caps / memecoins", "priority": 50, "spec": "9",
       "when": { "any": [{ "fact": "share_altcoin", "op": ">=", "value": { "param": "altcoin_heavy_share" } }, { "fact": "intent_all_in_alt", "op": "==", "value": true }] },
       "agent_does": "State the risk once, then respect the decision. Never repeat it.",
-      "say": ["Altcoins can lose most of their value fast; it is your call."],
-      "never": ["Repeating the warning.", "Naming small altcoins or memecoins."],
+      "say": ["Low caps and memecoins can lose most of their value fast; it is your call."],
+      "never": ["Repeating the warning.", "Naming low caps or memecoins."],
       "locks": { "buy_cirbtc": "none" },
       "once": true
     },

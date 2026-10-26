@@ -17,7 +17,7 @@ export const DEBT_TYPES: DebtType[] = ['credit_card', 'consumer_loan', 'payday_l
 export const STABLECOINS = new Set(['USDT', 'USDC', 'DAI', 'FDUSD', 'USDE'])
 /** BTC and its wrapped forms. */
 export const BTC_SYMBOLS = new Set(['BTC', 'WBTC', 'CBBTC', 'CIRBTC'])
-/** Large caps besides ETH (spec 1: ETH, SOL, BNB and other top-10 coins). Anything else is an altcoin. */
+/** Big caps besides ETH (spec 1: ETH, SOL, BNB and other top-10 coins). Anything else is an altcoin. */
 export const TOP10_SYMBOLS = new Set(['BNB', 'SOL', 'XRP', 'DOGE', 'ADA', 'TRX', 'TON', 'AVAX'])
 
 /** How a type is valued: live price by quantity (gold / stock / crypto), 1:1 dollars, or the declared value. */

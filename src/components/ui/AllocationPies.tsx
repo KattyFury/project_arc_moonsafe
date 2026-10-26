@@ -1,5 +1,5 @@
 // Two donuts: the target split by the MoonSafe framework (spec 4) and what the user holds now,
-// in six groups (Safe, Traditional, BTC, Large caps, Altcoins, Idle) plus a grey slice for items
+// in six groups (Safe, Traditional, BTC, Big caps, Low caps, Idle) plus a grey slice for items
 // that cannot be rebalanced (spec 3: rental, business, loans given, insurance). Shares are of
 // liquid assets (the base of every %, spec 2); the full version also shows each group's share of
 // net worth (spec 11). Used on Balance, Invest and in the chat.

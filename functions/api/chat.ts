@@ -60,7 +60,7 @@ const json = (body: unknown, status = 200) =>
 const RULES = `## MoonSafe principles
 ${KB.principles.map(p => `- ${p}`).join('\n')}
 ## Framework (by age, only age changes it)
-- Shares of LIQUID assets (Safe + rebalanceable Invest + Idle): Safe = age %; the rest 4/7 Traditional (stocks, gold, funds) and 3/7 crypto: BTC 2/3, Large caps (ETH, SOL, BNB, top-10) 1/6, Altcoins 1/6. Age 30: Safe 30, Traditional 40, BTC 20, Large caps 5, Altcoins 5. BTC never goes to 0.
+- Shares of LIQUID assets (Safe + rebalanceable Invest + Idle): Safe = age %; the rest 4/7 Traditional (stocks, gold, funds) and 3/7 crypto: BTC 2/3, Big caps (ETH, SOL, BNB, top-10) 1/6, Low caps (smaller coins, memecoins) 1/6. Age 30: Safe 30, Traditional 40, BTC 20, Big caps 5, Low caps 5. BTC never goes to 0.
 - The emergency fund (USDC in the MoonSafe vault) stands apart. Floor in months of spending (fixed + essential variable + debt payments): 3 stable income; 6 stable with dependents or irregular without; 9 irregular with dependents; 12 if also the sole earner.
 - Priority debt: credit card, consumer / payday loan, crypto margin, or any debt at ${param('priority_debt_rate_pct')}%/year or more. Interest-free debt never blocks.
 - cirBTC buying in the app opens only with no priority debt AND the fund at its floor. Nothing else is ever blocked.
@@ -160,7 +160,7 @@ const SAFE_AS_FUND = /safe fund|deposit[^.?!\n]{0,40}(into|to) (the |your )?safe
 const NEVER_SAY = /world standards?|international standards?|experts? (say|suggest|recommend|advise)|according to experts|financial experts|fidelity|vanguard|you should (buy|sell)|(you (could|should|can|might)|consider|I('d)? suggest|try) (selling|to sell|sell)\b|sell (some|part|half|a bit) of|(use|try|add|take on) (some )?leverage|guaranteed (returns?|profit)|will (go up|moon|rise) |chuẩn (thế giới|quốc tế)|theo (các )?chuyên gia|nên (mua|bán) ngay|(nên|hãy|có thể) bán (bớt|một phần|đi)|dùng đòn bẩy|lợi nhuận đảm bảo/i // lang-ok
 // The disclaimer lives on the cards and "Before you start" only (spec 8.4).
 const DISCLAIMER = /not (financial|investment) advice|only invest (money )?(what |that )?you can afford to lose|không phải lời khuyên đầu tư|chỉ đầu tư số tiền/i // lang-ok
-const CAUTION_ALT = /(altcoin|memecoin|meme coin)[^.?!\n]{0,80}(lose|risk|drop|fall|crash|mất|rủi ro)|(lose|risk|mất|rủi ro)[^.?!\n]{0,80}(altcoin|memecoin|meme coin)/i // lang-ok
+const CAUTION_ALT = /(altcoin|low[- ]caps?|memecoin|meme coin)[^.?!\n]{0,80}(lose|risk|drop|fall|crash|mất|rủi ro)|(lose|risk|mất|rủi ro)[^.?!\n]{0,80}(altcoin|low[- ]caps?|memecoin|meme coin)/i // lang-ok
 
 // Vietnamese words the model must recognise in Vietnamese messages (the app itself is English-only).
 const VI_VOICE = 'In Vietnamese: natural Vietnamese, call yourself "mình" and the user "bạn", never "tôi", never "boss".' // lang-ok
@@ -1038,7 +1038,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       if (stray.length) problems.push(`these amounts are not in the figures: ${stray.join(', ')}. Do not compute new numbers (no "left after", no sums or differences); quote only amounts given in ASSET & FUND FIGURES or by the user`)
       if (NEVER_SAY.test(content)) problems.push('never say "world standards", "experts say", Fidelity / Vanguard, "you should buy", never suggest selling or leverage, never promise returns: speak "by the MoonSafe framework", give the facts, they decide')
       if (DISCLAIMER.test(content)) problems.push('no disclaimer in chat (it is on the cards and the "Before you start" screen): drop it')
-      if (balance.target && ASKS_TARGET.test(lastUserText) && !new RegExp(`(?<!\\d)${Math.round(balance.target.safe)}\\s*%`).test(plain)) problems.push(`give the target by the MoonSafe framework: Safe ${pct(balance.target.safe)}, Traditional ${pct(balance.target.traditional)}, BTC ${pct(balance.target.btc)}, Large caps ${pct(balance.target.large_cap)}, Altcoins ${pct(balance.target.altcoin)} of liquid assets`)
+      if (balance.target && ASKS_TARGET.test(lastUserText) && !new RegExp(`(?<!\\d)${Math.round(balance.target.safe)}\\s*%`).test(plain)) problems.push(`give the target by the MoonSafe framework: Safe ${pct(balance.target.safe)}, Traditional ${pct(balance.target.traditional)}, BTC ${pct(balance.target.btc)}, Big caps ${pct(balance.target.large_cap)}, Low caps ${pct(balance.target.altcoin)} of liquid assets`)
       if (!balance.target && !facts.age_declined && /(?<!\d)\d{1,2}\s*%/.test(plain) && ASKS_TARGET.test(lastUserText)) problems.push('the age is unknown: quote no share yet, ask the age first')
       if (balance.cashflow.spending === null && !balance.fund.met && NEEDS_AMOUNT.test(content)) problems.push('monthly spending is unknown, so nobody knows how much the fund needs: never say an amount is needed or quote the wallet as what to add; ask how much they spend a month')
       // "Would you like me to prepare a deposit of 1,101 USDC" for the bank-savings part (real chat 2026-10-24).

@@ -15,7 +15,7 @@ import { BTC_SYMBOLS, categoryOf, priceKindOf, STABLECOINS, subgroupOf } from '.
 export type Group = 'safe' | 'traditional' | 'btc' | 'large_cap' | 'altcoin' | 'idle'
 export const GROUPS: Group[] = ['safe', 'traditional', 'btc', 'large_cap', 'altcoin', 'idle']
 export const TARGET_GROUPS: MixKey[] = ['safe', 'traditional', 'btc', 'large_cap', 'altcoin']
-export const GROUP_LABEL: Record<Group, string> = { safe: 'Safe', traditional: 'Traditional', btc: 'BTC', large_cap: 'Large caps', altcoin: 'Altcoins', idle: 'Idle' }
+export const GROUP_LABEL: Record<Group, string> = { safe: 'Safe', traditional: 'Traditional', btc: 'BTC', large_cap: 'Big caps', altcoin: 'Low caps', idle: 'Idle' }
 
 export { STABLECOINS, BTC_SYMBOLS }
 

@@ -6,6 +6,8 @@ Khung tài chính: **`docs/SPEC-FRAMEWORK-2026-10-25.md`** (dữ liệu: `src/kb
 
 ## ▶ Làm tiếp từ đây (mới nhất ở trên)
 
+-22. **2026-10-26 — đổi tên nhóm coin: "Large caps" → "Big caps", "Altcoins" → "Low caps" (Hiếu chọn 1b), ĐÃ DEPLOY** (e8bcb0a8). Lý do Hiếu: altcoin = big caps + low caps, chia "Large caps / Altcoin" là sai. Chỉ đổi chữ hiển thị (`GROUP_LABEL` trong allocation.ts, tên nhóm + câu say/never trong KB, RULES + chốt chặn target trong chat.ts, `CAUTION_ALT` nhận cả "low cap"); key nội bộ `large_cap` / `altcoin` và tỉ lệ giữ nguyên. Đã xem Balance trên moonsafe.app: hiện Big caps / Low caps.
+
 -21. **2026-10-26 — sửa agent theo chat thật của Hiếu, ĐÃ DEPLOY** (be2b4440). Chạy lại đúng 14 câu của chat đó bằng script tạm (không commit) trên `wrangler pages dev`, trước/sau. Đã sửa trong `functions/api/chat.ts`:
    - "tiêu 600 gồm 400 + 200 trả nợ" → chỉ ghi chi tiêu 400; số trả nợ (`PAYMENT_NUM`) không bao giờ thành tổng nợ (trước bịa nợ 200 ưu tiên → khoá mua sai + cộng trả nợ 2 lần → quỹ 2.400). Chưa biết tổng nợ → hỏi "how much do you still owe, and to whom?". Nợ unknown trùng tiền trả/tháng với nợ mới → gộp.
    - "2300$ in this wallet" = ví app (đọc onchain) → không ghi (`APP_WALLET`).
