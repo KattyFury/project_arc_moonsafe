@@ -6,6 +6,8 @@ Khung tài chính: **`docs/SPEC-FRAMEWORK-2026-10-25.md`** (dữ liệu: `src/kb
 
 ## ▶ Làm tiếp từ đây (mới nhất ở trên)
 
+**▶ Phiên sau (Hiếu: "mai build tiếp", 2026-10-26 tối):** chưa có việc mới nào được giao, hỏi Hiếu muốn làm gì. Trạng thái: main = moonsafe.app (deploy 29b65f15, commit ae2cc2b), không có thay đổi chưa commit. Ví 0xEb2D đã mở vault mới `0x90435A68C7adfE131207AA42CE6C72e2de318067` trên factory 0xAd06 (owner 0xEb2D, số dư 0). Máy kia: sửa `.env` `VITE_FACTORY_ADDRESS=0xAd064AdD8d4C6C36964981d1f1aeBFF697e3941b` trước khi build. Việc còn treo từ trước: dữ liệu thật trên trình duyệt của Hiếu còn lỗi cũ (-21), nhà / xe không kèm giá thì agent chưa hỏi giá trị (-21). Deploy giờ: export `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` từ keys.env rồi `bun run cf:deploy`.
+
 -25. **2026-10-26 — lấy phần tốt của bản Arc Studio build lại (Desktop\New folder, từ spec 3 phần), ĐÃ DEPLOY** (8a37000, ca3530f6). Không gộp cả bản; dấu vết + kế hoạch Arc Studio: `docs/arc-studio-rebuild-2026-10-26.md`.
    - `/api/chat` bắt đăng nhập Privy (`functions/_lib/privyAuth.ts`, dùng chung với `/api/userdata`; app gửi token qua `authHeader()` trong `src/lib/cloud.ts`). Trước đó ai cũng gọi được và tiêu OpenAI credit. Đã kiểm trên moonsafe.app: không token / token giả → 401, đăng nhập thật → agent trả lời bình thường. `scripts/agent-eval.mjs` giờ cần token mới chạy được.
    - `wrangler.toml` khớp cấu hình Pages thật (KV `USERDATA` f5f9…a952, compat 2025-01-01; secret OPENAI_API_KEY vẫn ở Cloudflare) + script `bun run cf:deploy` (check-lang → vite build → wrangler deploy). Cần export `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` từ keys.env trước.
