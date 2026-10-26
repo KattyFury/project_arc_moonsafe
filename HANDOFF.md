@@ -6,6 +6,18 @@ Khung tài chính: **`docs/SPEC-FRAMEWORK-2026-10-25.md`** (dữ liệu: `src/kb
 
 ## ▶ Làm tiếp từ đây (mới nhất ở trên)
 
+-21. **2026-10-26 — sửa agent theo chat thật của Hiếu, ĐÃ DEPLOY** (be2b4440). Chạy lại đúng 14 câu của chat đó bằng script tạm (không commit) trên `wrangler pages dev`, trước/sau. Đã sửa trong `functions/api/chat.ts`:
+   - "tiêu 600 gồm 400 + 200 trả nợ" → chỉ ghi chi tiêu 400; số trả nợ (`PAYMENT_NUM`) không bao giờ thành tổng nợ (trước bịa nợ 200 ưu tiên → khoá mua sai + cộng trả nợ 2 lần → quỹ 2.400). Chưa biết tổng nợ → hỏi "how much do you still owe, and to whom?". Nợ unknown trùng tiền trả/tháng với nợ mới → gộp.
+   - "2300$ in this wallet" = ví app (đọc onchain) → không ghi (`APP_WALLET`).
+   - "$1000 on exchange" → stable_wallet; coin top10/altcoin không tên → không ghi.
+   - Món sở hữu giá 0 (nhà, xe) → không ghi, hỏi giá trị (`toAsk`).
+   - "I'm not yet investing" không còn bật câu khoá mua (`NOT_INVESTING`).
+   - Ổn định thu nhập chỉ ghi khi có từ ổn định / yes-no (`YES_NO`).
+   - Người dùng hỏi / nghi số → bỏ câu hỏi thu thập lượt đó, giải thích cách ra số (dòng "Spending per month = spending lines + debt payments", "FLOOR = N × spending"); cấm "You are right" khi không đổi gì. Câu nợ cuối chỉ hỏi 1 lần.
+   - Báo lại 1 lần mỗi món / lượt; nói lại số cũ không ghi lại; update_debt bỏ trường không đổi. Ví làm tròn XUỐNG (trước mời nạp 2.301 khi ví 2.300,6).
+   - **Dữ liệu thật của Hiếu trên trình duyệt vẫn mang lỗi cũ** (nợ 200, Wallet USDC 2.300, nhà/xe 0): xoá ở Menu hoặc nói lại với agent.
+   - Còn thấy: nhà / xe không kèm giá thì agent bỏ qua, chưa hỏi giá trị (model không gọi tool).
+
 -20. **2026-10-26 — thêm bộ icon, ĐÃ DEPLOY.** `public/`: `favicon.ico` (16/32/48, logo tròn nền trong), `apple-touch-icon.png` 180, `icon-192.png` / `icon-512.png` (nền xanh #1E6DF7 phủ kín + dấu trắng, iOS / Android tự bo góc; dấu nằm trong vùng an toàn maskable), `manifest.webmanifest`; thẻ trong `index.html`. Vẽ từ đúng path của `logo.svg` bằng Chrome headless + Pillow (không có script trong repo). Đã curl kiểm cả 6 file 200 trên moonsafe.app.
 
 -19. **2026-10-25 (máy Dell) — bản -18 ĐÃ DEPLOY moonsafe.app** (merge `claude/magical-curie-mk753a` vào main, commit 3ce0317; deploy e97c44c7.moonsafe.pages.dev). Trước deploy: `check-lang` English only, `kb-check` OK (26 mẫu, 27 chân dung + 14 hồ sơ thật), `vite build` OK. Wrangler cần `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` lấy từ `keys.env` (`CF_API_TOKEN` / `CF_ACCOUNT_ID`), không thì báo lỗi non-interactive.

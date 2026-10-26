@@ -84,6 +84,14 @@ const AGE_WORD = /(?<!\p{L})(age|old|tuổi)(?!\p{L})/iu // lang-ok
 const AGREES = /^\s*(ok|okay|oke|sure|yes|yeah|yep|go ahead|do it|sounds good|please do|được|đồng ý|ừ|uk|chốt|nhất trí|triển)(?!\p{L})/iu // lang-ok
 const ACTION_INTENT = new RegExp(`(?<!\\p{L})(deposit|add|top up|put|withdraw|take out|buy|purchase|sell|dca|open|show|fill|stop|move|transfer|nạp|rút|mua|bán|mở(?!\\s*kh(?:oá|óa|oa))|xem|điền|dừng|chuyển|làm đi)(?!\\p{L})|${AGREES.source}`, 'iu') // lang-ok
 const INVEST_INTENT = /(?<!\p{L})(buy|invest|investing|cirbtc|dca|btc|mua|đầu tư)(?!\p{L})/iu // lang-ok
+// "I'm not yet investing" (answer to the coins question) once got the buy-lock sentence (real chat 2026-10-26).
+const NOT_INVESTING = /(not|never|don'?t|do not|no)\s+(yet\s+)?(invest|investing|buy|buying)|(chưa|không|ko)\s+(đầu tư|mua)/iu // lang-ok
+// A number paid per month or towards a debt: never the total owed ("200$ to repay my debt" became a 200 debt, real chat 2026-10-26).
+const PAYMENT_NUM = /(\d[\d.,]*\d|\d)\s*k?\s*(?:\$|usdc?|usdt|dollars?|đô)?\s*(?:a month|per month|\/\s*month|monthly|each month|every month|to repay|to pay (?:it )?(?:back|off)|for (?:my |the )?(?:debt|loan)|mỗi tháng|một tháng|\/\s*tháng|trả nợ|trả góp)/giu // lang-ok
+const APP_WALLET = /(this|the app|my app|moonsafe)\s+wallet|in (the|this) app|ví (này|app|moonsafe)/i // lang-ok
+const QUESTIONS_US = /\?|(?<!\p{L})(why|you mean|wrong|how come|sao|tại sao|sai)(?!\p{L})/iu // lang-ok
+const YES_NO = /^\W*(yes|yeah|yep|yup|no|nope|not really|sure|mostly|kind of|có|không|ko|ừ|uh|đúng)(?!\p{L})/iu // lang-ok
+const YOU_ARE_RIGHT =/^\W*(you('| a)re (right|correct)|that'?s (right|correct)|bạn nói đúng|đúng rồi)/i // lang-ok
 // Each card needs its own verb (or a plain yes): "buy 100 USDC of cirBTC" while locked once
 // came back as a deposit card (eval 2026-10-24).
 const ACTION_VERB: Record<string, RegExp> = {
@@ -216,6 +224,7 @@ ${RULES}
 - Collecting: when "Next question" is given and they did not ask something else, ask exactly that one.
 - Greeting → one line plus one open question.
 - "How am I doing?" → priority debt (if any), the fund, the split; one short point each.
+- They question a number ("why 2,400?", "you mean 6 months?") → answer that first: show how it is made from the figures (spending lines + debt payments = spending a month, × months = floor). Never say they are right unless the figures agree with them.
 - Outside personal finance you may use web_search.`
 
 const ASSET_TYPES_TEXT = KB.asset_types.filter(t => t.key !== 'moonsafe_fund' && t.key !== 'cirbtc').map(t => `${t.key} (${t.label})`).join('; ')
@@ -228,7 +237,8 @@ const PLAN_PROMPT = `You are MoonSafe's action planner. Read the user's LATEST m
 - Money moved between their own places ("I moved 1,000 from my wallet into savings") → move. "I just put X into savings / safe" WITHOUT saying where it came from → record nothing, call no_action (the agent asks first). When they answer where it came from: their idle money, cash or the app wallet → move; new money from outside → add_holding.
 - Each debt → add_debt (type, balance, yearly rate and monthly payment if said, lender for family). Changes → update_debt; paid off → remove_debt. Unknown type → type "unknown".
 - Each income source → set_income: active (salary, side jobs, content), passive (interest, staking, rent, dividends, interest on loans given), irregular (airdrops, trading, bonuses). A new number for a listed one → same tool with its id.
-- Spending → set_expense: fixed (rent, bills, subscriptions, school fees) or variable (food, transport, other essentials). One total ("I spend 1,000 a month") → one fixed line named "Monthly spending". Debt payments belong on the debt (monthly_payment), never as an expense.
+- Spending → set_expense: fixed (rent, bills, subscriptions, school fees) or variable (food, transport, other essentials). One total ("I spend 1,000 a month") → one fixed line named "Monthly spending". Debt payments belong on the debt (monthly_payment), never as an expense. A total that includes debt payments ("600 in all: 400 must-pay and 200 to repay my debt") → set_expense with ONLY the non-debt part (400), once. A payment on a debt whose total owed was not said → record no debt (the agent asks how much is still owed).
+- USDC in THIS app wallet ("in this wallet", "in the app") is read by the app: never record it.
 - show_allocation ONLY when they ask how their money is split, what to do with idle money, or for the chart. show_cashflow ONLY when they ask about income vs spending, how much they save, or financial freedom.
 - They want to add to the fund → prepare_deposit; withdraw → prepare_withdraw; buy cirBTC → prepare_buy_cirbtc; recurring buys → propose_dca; stop them → stop_dca; open a screen → open_screen.
 - A plain yes right after the agent's offer ("ok", "yes", "do it", "as you said", ${VI_YES}) → that exact action with the offered amount. A message that adds information is not a yes.
@@ -237,7 +247,7 @@ const PLAN_PROMPT = `You are MoonSafe's action planner. Read the user's LATEST m
 ## Asset types
 ${ASSET_TYPES_TEXT}.
 - BTC on an exchange / cold wallet = btc (cirBTC in the app wallet is read by the app: never record it). ETH = eth; BNB, SOL, XRP and other top-10 coins = top10; staked ETH / SOL = staked_large_cap; other coins and memecoins = altcoin (with symbol).
-- USDC / USDT in a wallet or on an exchange spot account = stable_wallet; in Binance Simple Earn Flexible or similar = flexible_earn; locked earn = locked_earn; lent in DeFi = defi_stable.
+- USDC / USDT, or dollars with no coin named ("$1,000 on an exchange"), in a wallet or on an exchange spot account = stable_wallet; in Binance Simple Earn Flexible or similar = flexible_earn; locked earn = locked_earn; lent in DeFi = defi_stable.
 - Vietnamese stocks = vn_stock (worth only). Gold bars / rings = gold_physical with quantity + unit (oz, g, kg, luong, chi; ${VI_GOLD}).
 
 ## Amounts
@@ -452,16 +462,19 @@ function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: nu
   const show = (n: number) => usesVnd && rate ? `${usdc(n)} (≈ ${vnd(n * rate)})` : usdc(n)
   const lines: string[] = []
   const floors: { months: number; texts: string[] }[] = []
-  const spendable = wallet !== null ? Math.max(0, wallet - GAS_RESERVE_USDC) : null
+  // Rounded down to whole USDC: 2,300.58 shown as "2,301" was offered as a deposit above the wallet (real chat 2026-10-26).
+  const spendable = wallet !== null ? Math.max(0, Math.floor(wallet - GAS_RESERVE_USDC)) : null
   const cf = b.cashflow
-  lines.push(wallet !== null ? `- App wallet: ${show(wallet)} (idle money; can add up to ${show(spendable ?? 0)} to the fund, keeping ${usdc(GAS_RESERVE_USDC)} for fees)` : '- App wallet: balance unknown')
+  lines.push(wallet !== null ? `- App wallet: ${show(Math.floor(wallet))} (idle money; can add up to ${show(spendable ?? 0)} to the fund, keeping ${usdc(GAS_RESERVE_USDC)} for fees)` : '- App wallet: balance unknown')
   lines.push(b.fundUsd !== null ? `- Emergency fund: ${show(b.fundUsd)}${b.fund.months !== null ? ` = ${Math.round(b.fund.months * 10) / 10} months of spending` : ''}` : '- Emergency fund: balance unknown')
   if (cir > 0) lines.push(`- cirBTC already held: ${show(cir)} (owned, NOT an amount to buy or invest)`)
 
   // Fund floor (spec 5.1). Stability unknown → both floors, so the agent can ask.
   if (cf.spending === null) lines.push('- Fund floor: UNKNOWN, monthly spending is not known yet. Nobody can say how much the fund needs: never present any amount as needed. If asked: the floor is 3 months of spending (more with irregular income or dependents), then ask how much they spend a month.')
   else {
-    lines.push(`- Spending per month: ${show(cf.spending)} (fixed ${show(cf.fixed)} incl. debt payments ${show(cf.debtPayments)}, variable ${show(cf.variable)})`)
+    // Spelled out so the agent can show how the floor is made when asked "why 2,400?" (real chat 2026-10-26).
+    const lineSum = cf.fixed - cf.debtPayments + cf.variable
+    lines.push(`- Spending per month: ${show(cf.spending)} = spending lines ${show(lineSum)}${cf.debtPayments > 0 ? ` + debt payments ${show(cf.debtPayments)} (${b.debts.lines.filter(l => l.monthlyUsd).map(l => `${l.debt.name} ${show(l.monthlyUsd!)}`).join(', ')})` : ''}`)
     const irregularFloor = fundFloorMonths({ income_stable: false, dependents: p.dependents ?? 0, sole_earner: p.soleEarner ?? false })
     const cases = p.incomeStable === null ? [{ months: b.fund.floorMonths, who: 'If income is stable' }, { months: irregularFloor, who: 'If income is irregular' }] : [{ months: b.fund.floorMonths, who: `Floor (income ${p.incomeStable ? 'stable' : 'irregular'}, dependents ${p.dependents ?? 0}${p.soleEarner ? ', sole earner' : ''})` }]
     for (const c of cases) {
@@ -476,7 +489,7 @@ function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: nu
         const rest = need - (spendable ?? 0)
         if (rest > 0 && cf.surplus !== null) status += cf.surplus > 0 ? `; saving ${show(cf.surplus)} a month into the fund takes about ${Math.ceil(rest / cf.surplus)} more months` : '; no monthly surplus to save yet (spending ≥ income)'
       }
-      lines.push(`- ${c.who}: FLOOR ${c.months} months of spending = ${show(floor)} · ${status}`)
+      lines.push(`- ${c.who}: FLOOR ${c.months} months of spending = ${c.months} × ${show(cf.spending)} = ${show(floor)} · ${status}`)
       floors.push({ months: c.months, texts: [usdc(floor)] })
     }
     if (b.fund.starterUsd !== null) lines.push(`- Starter fund (1 month of spending): ${show(b.fund.starterUsd)} · ${b.fund.starterMet ? 'met' : 'not met yet'}`)
@@ -531,9 +544,18 @@ const TOPICS: { key: string; ask: string; asked: RegExp; known: (p: FinancialPro
 ]
 const ASSET_TOPICS = new Set(['bank', 'stables', 'crypto', 'traditional', 'property', 'lending'])
 
-function nextQuestion(p: FinancialProfile, assistantTexts: string[], userSaidNothingElse: boolean, vi: boolean): string | null {
+const OWED_Q = /still owe|còn nợ bao nhiêu/i // lang-ok
+
+function nextQuestion(p: FinancialProfile, assistantTexts: string[], userTexts: string[], userSaidNothingElse: boolean, vi: boolean): string | null {
   const questions = assistantTexts.flatMap(t => t.split(/(?<=[.!?])\s+/).filter(s => s.trim().endsWith('?')))
+  // They mentioned paying a debt but it is not recorded: ask about it once, before the asset questions.
+  const knownSoFar = p.incomes.length > 0 && p.expenses.length > 0
+  if (knownSoFar && !p.debts.length && !p.debtsComplete && userTexts.some(t => DEBT_WORD.test(t) || /repay|pay (it )?back|trả nợ/i.test(t)) && !questions.some(q => OWED_Q.test(q))) // lang-ok
+    return 'You mentioned paying back a debt: how much do you still owe, and to whom?'
+  // The last debt question is asked once; asked again it reads like the agent was not listening (real chat 2026-10-26).
+  const lastDebtAsked = questions.some(q => q.includes(KB.collection.last_debt_question.slice(0, 40)) || q.includes(VI_DEBT_Q.slice(0, 30)))
   for (const t of TOPICS) {
+    if (t.key === 'debt' && p.debts.length && lastDebtAsked) continue
     if (t.known(p)) continue
     if (t.key === 'age' && p.ageDeclined) continue
     if (ASSET_TOPICS.has(t.key) && (userSaidNothingElse || questions.some(q => t.asked.test(q)))) continue
@@ -603,13 +625,21 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   const balanceOf = async (p: FinancialProfile) => computeBalance({ profile: p, walletUsd: wallet, vaultUsd: vault, cirBtcUsd: cir, prices: await loadPrices(p), vndPerUsd: rate })
   const startBalance = await balanceOf(profile)
   const investUnlocked = startBalance.lock.open
-  const wantsInvestLocked = !investUnlocked && INVEST_INTENT.test(lastUserText) && !ASKS_WHY.test(lastUserText) && !DEPOSIT_WORD.test(lastUserText)
+  const wantsInvestLocked = !investUnlocked && INVEST_INTENT.test(lastUserText) && !NOT_INVESTING.test(lastUserText) && !ASKS_WHY.test(lastUserText) && !DEPOSIT_WORD.test(lastUserText)
+  const paymentNums = [...lastUserText.matchAll(PAYMENT_NUM)].flatMap(m => readings(m[1]))
   const startFacts = computeFacts({ balance: startBalance, profile, prices, vndPerUsd: rate, message: lastUserText })
 
-  const record = (op: ProfileOp, text: string) => {
+  // The same item recorded twice in one turn is read back once, with its last value ("600…, 400…", real chat 2026-10-26).
+  const readbackOf = new Map<string, number>()
+  const record = (op: ProfileOp, text: string, key?: string) => {
     ops.push(op)
     profile = applyOps(profile, [op])
-    readback.push(text)
+    const at = key !== undefined ? readbackOf.get(key) : undefined
+    if (at !== undefined) readback[at] = text
+    else {
+      if (key !== undefined) readbackOf.set(key, readback.length)
+      readback.push(text)
+    }
   }
   const describe = (h: Holding) => `${h.name} ${h.quantity !== undefined && h.priceSource === 'market' ? `${qty(h.quantity)}${h.unit ? ` ${h.unit}` : ''}` : h.value !== undefined ? moneyText({ amount: h.value, currency: h.currency ?? 'USDC' }) : ''}`.trim()
 
@@ -628,6 +658,8 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
     }
     if (type === 'btc') sym ??= 'BTC'
     if (type === 'eth') sym ??= 'ETH'
+    // "$1000 on exchange" became 1,000 coins of an unnamed top-10 coin (real chat 2026-10-26).
+    if ((type === 'top10' || type === 'altcoin' || type === 'staked_large_cap') && !sym) return 'Not recorded: no coin was named. Dollars with no coin named are stable_wallet; otherwise ask which coin.'
     const name = typeof a.name === 'string' && a.name.trim() ? a.name.trim() : sym ?? KB.asset_types.find(t => t.key === type)!.label
     const worth = moneyArg(a.worth)
     let quantity = typeof a.quantity === 'number' && a.quantity >= 0 ? a.quantity : undefined
@@ -644,8 +676,13 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
     if (kind === 'stable') {
       const amount = w ?? (quantity !== undefined ? { amount: quantity, currency: 'USDC' as Currency } : null)
       if (!amount || !stated(amount.amount)) return 'Not recorded: the amount is not in the user\'s words.'
+      // "2300$ in this wallet" is the app wallet, already read onchain: recording it counted it twice (real chat 2026-10-26).
+      const usd = toUsd(amount.amount, amount.currency, rate)
+      if (wallet !== null && usd !== null && APP_WALLET.test(lastUserText) && Math.abs(usd - wallet) <= Math.max(1, wallet * 0.05)) return 'Not recorded: that is the app wallet, which the app reads onchain by itself.'
       return { ...base, value: amount.amount, currency: amount.currency, priceSource: 'market' }
     }
+    // A home or a motorbike "worth 0" (real chat 2026-10-26): an owned thing needs its value.
+    if (w && w.amount === 0) return `Not recorded: ${name} needs what it is worth; ask the value.`
     if (kind === 'self') {
       const amount = w
       if (!amount) return `Not recorded: ${name} needs what it is worth; ask the value (it will be self-declared).`
@@ -685,7 +722,8 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       const f: Record<string, unknown> = {}
       if (typeof a.age === 'number' && a.age >= 10 && a.age <= 120 && stated(a.age) && a.age !== profile.age) f.age = Math.round(a.age)
       if (a.age_declined === true && !profile.ageDeclined && profile.age === null && (DECLINES.test(lastUserText) || AGE_WORD.test(prevAssistantText))) f.ageDeclined = true
-      if (typeof a.income_stable === 'boolean' && a.income_stable !== profile.incomeStable && (STABILITY_WORDS.test(lastUserText) || ASKS_STABLE.test(prevAssistantText))) f.incomeStable = a.income_stable
+      // An answer about something else ("I bring it all onchain") once became "income stable" (real chat 2026-10-26): it needs a yes / no or a stability word.
+      if (typeof a.income_stable === 'boolean' && a.income_stable !== profile.incomeStable && (STABILITY_WORDS.test(lastUserText) || (ASKS_STABLE.test(prevAssistantText) && YES_NO.test(lastUserText)))) f.incomeStable = a.income_stable
       if (typeof a.dependents === 'number' && a.dependents >= 0 && a.dependents !== profile.dependents && (a.dependents === 0 ? SAYS_NONE.test(lastUserText) : stated(a.dependents) || DEPENDENT_WORDS.test(lastUserText))) f.dependents = Math.round(a.dependents)
       if (typeof a.sole_earner === 'boolean' && a.sole_earner !== profile.soleEarner) f.soleEarner = a.sole_earner
       if (a.debts_complete === true && !profile.debtsComplete && SAYS_NONE.test(lastUserText)) f.debtsComplete = true
@@ -699,8 +737,8 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       if (typeof h === 'string') { console.log(`dropped add_holding ${call.function.arguments}: ${h}`); return h }
       // The same item again (type + symbol + place) replaces it instead of doubling it.
       const same = profile.holdings.find(x => x.type === h.type && (x.symbol ?? '') === (h.symbol ?? '') && (x.where ?? '').toLowerCase() === (h.where ?? '').toLowerCase() && (h.symbol || x.name.toLowerCase() === h.name.toLowerCase()))
-      if (same) record({ op: 'set_holding', id: same.id, patch: { quantity: h.quantity, value: h.value, currency: h.currency, unit: h.unit, priceSource: h.priceSource } }, describe({ ...same, ...h }))
-      else record({ op: 'add_holding', holding: h }, describe(h))
+      if (same) record({ op: 'set_holding', id: same.id, patch: { quantity: h.quantity, value: h.value, currency: h.currency, unit: h.unit, priceSource: h.priceSource } }, describe({ ...same, ...h }), same.id)
+      else record({ op: 'add_holding', holding: h }, describe(h), h.id)
       done.push(`Recorded ${describe(h)}${h.priceSource === 'self' ? ' (self-declared)' : ''}.`)
     } else if (name === 'set_holding') {
       const h = findH(a.id)
@@ -766,6 +804,11 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
     } else if (name === 'add_debt') {
       const bal = moneyArg(a.balance)
       if (!bal || !stated(bal.amount)) return 'Not recorded: the balance is not in the user\'s words.'
+      const payArg = moneyArg(a.monthly_payment)
+      if ((payArg && payArg.amount === bal.amount) || paymentNums.some(n => n > 0 && Math.abs(n - bal.amount) <= n * 0.01)) {
+        console.log(`dropped add_debt ${call.function.arguments}: the number is a payment, not the total owed`)
+        return 'Not recorded: that number is what they pay, not the total owed. Record no debt; the agent asks how much is still owed and to whom.'
+      }
       const type = DEBT_TYPES.includes(a.type as DebtType) ? a.type as DebtType : 'unknown'
       const rateArg = typeof a.rate_pct === 'number' && a.rate_pct >= 0 && (a.rate_pct === 0 ? SAYS_NONE.test(lastUserText) || /interest[- ]free|no interest|không lãi/i.test(lastUserText) || type === 'family_no_interest' : stated(a.rate_pct)) ? a.rate_pct : null // lang-ok
       const pay = moneyArg(a.monthly_payment)
@@ -776,11 +819,13 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
         ...(a.term === 'short' || a.term === 'long' ? { term: a.term } : {}),
         ...(typeof a.required === 'boolean' ? { required: a.required } : {}),
       }
-      const same = profile.debts.find(x => x.type === d.type && x.name.toLowerCase() === d.name.toLowerCase()) ?? profile.debts.find(x => x.type === 'unknown' && Math.abs(x.balance - d.balance) <= x.balance * 0.01)
+      // An unknown debt with the same balance or the same monthly payment is this one, now told in full.
+      const same = profile.debts.find(x => x.type === d.type && x.name.toLowerCase() === d.name.toLowerCase())
+        ?? profile.debts.find(x => x.type === 'unknown' && (Math.abs(x.balance - d.balance) <= x.balance * 0.01 || (x.monthlyPayment !== null && x.monthlyPayment === d.monthlyPayment)))
       const text = `${d.name} ${moneyText(bal)}${d.ratePct !== null ? ` at ${d.ratePct}%` : ''}${d.monthlyPayment !== null ? `, ${moneyText({ amount: d.monthlyPayment, currency: d.currency })} a month` : ''}`
       const { id: _id, ...fields } = d
-      if (same) record({ op: 'update_debt', id: same.id, patch: fields }, text)
-      else record({ op: 'add_debt', debt: d }, text)
+      if (same) record({ op: 'update_debt', id: same.id, patch: fields }, text, same.id)
+      else record({ op: 'add_debt', debt: d }, text, d.id)
       done.push(`Recorded debt: ${text}.`)
     } else if (name === 'update_debt') {
       const d = findD(a.id)
@@ -795,6 +840,8 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       if (typeof a.lender === 'string' && a.lender.trim()) patch.lender = a.lender.trim()
       if (typeof a.required === 'boolean') patch.required = a.required
       if ((patch.type ?? d.type) === 'family_no_interest') patch.ratePct = 0
+      // Same values again read back as "Noted: Loan from Mom: ratePct 0" (real chat 2026-10-26).
+      for (const k of Object.keys(patch) as (keyof Debt)[]) if (patch[k] === d[k]) delete patch[k]
       if (!Object.keys(patch).length) return 'Not changed: nothing new in the user\'s words.'
       record({ op: 'update_debt', id: d.id, patch }, `${d.name}: ${Object.entries(patch).map(([k, v]) => `${k} ${v}`).join(', ')}`)
       done.push(`Updated debt ${d.name}.`)
@@ -815,10 +862,12 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       // Same id, else the same name, else a single migrated v1 line ("Income" / "Spending") is the one being corrected.
       const old = listItems.find(x => x.id === a.id) ?? listItems.find(x => x.name.toLowerCase() === nm.toLowerCase())
         ?? (listItems.length === 1 && ['income', 'spending', 'monthly spending'].includes(listItems[0].name.toLowerCase()) && listItems[0].kind === kind ? listItems[0] : undefined)
+      // Told again with the same number ("2 sources bring me 600 a month"): nothing to record or read back.
+      if (old && old.monthly === m.amount && old.currency === m.currency && old.kind === kind && !ops.some(o => (o.op === 'set_income' && o.income.id === old.id) || (o.op === 'set_expense' && o.expense.id === old.id))) return 'Already recorded with this amount, nothing changed.'
       const item = { id: old?.id ?? newId(isIncome ? 'i' : 'e'), name: old && ['income', 'spending'].includes(old.name.toLowerCase()) ? nm : old?.name ?? nm, monthly: m.amount, currency: m.currency, kind, updatedAt: Date.now() }
       const text = `${item.name} ${moneyText(m)} a month (${kind})`
-      if (isIncome) record({ op: 'set_income', income: item as Income }, text)
-      else record({ op: 'set_expense', expense: item as Expense }, text)
+      if (isIncome) record({ op: 'set_income', income: item as Income }, text, item.id)
+      else record({ op: 'set_expense', expense: item as Expense }, text, item.id)
       done.push(`Recorded ${isIncome ? 'income' : 'spending'}: ${text}.`)
     } else if (name === 'remove_income' || name === 'remove_expense') {
       const isIncome = name === 'remove_income'
@@ -893,6 +942,8 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   const stateText = () => `Profile and app state (real, latest; ids in brackets):\n${listing(profile, startBalance, prices, rate)}`
   const planMessages: Message[] = [{ role: 'system', content: PLAN_PROMPT }, ...messages.slice(-4), { role: 'system', content: stateText() }]
   const seen = new Set<string>()
+  // What the user told but could not be recorded yet (a home without its value, a debt payment without the total owed).
+  const toAsk: string[] = []
   let planIn = 0, planOut = 0, planSteps = 0
   for (let step = 1; step <= MAX_PLAN_STEPS; step++) {
     const plan = await openai(apiKey, { model: 'gpt-4o-mini', messages: planMessages, tools: PLAN_TOOLS, tool_choice: 'required', temperature: 0, max_tokens: 500 })
@@ -912,6 +963,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
         else {
           seen.add(key)
           result = await handle(call)
+          if (/^Not recorded:.*\bask/.test(result)) toAsk.push(result.replace(/^Not recorded: /, ''))
           acted = true
           if (RECORDING.has(call.function.name)) recorded = true
         }
@@ -937,7 +989,9 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   const brief = patternBrief(matched, displayFacts(facts))
   const { text: figs, floors } = figures(balance, profile, wallet, cir, rate, usesVnd, !usedOnce.has('lock_open_surplus'))
   const collecting = matched.some(p => p.id === 'collecting' || p.id === 'age_unknown')
-  const next = collecting && !DECLINES.test(lastUserText) ? nextQuestion(profile, assistantTexts, userSaidNothingElse, vi) : null
+  // A question or a doubt from the user is answered first; the collection flow waits a turn.
+  const userAsks = QUESTIONS_US.test(lastUserText)
+  const next = collecting && !DECLINES.test(lastUserText) && !userAsks && !toAsk.length ? nextQuestion(profile, assistantTexts, messages.filter(m => m.role === 'user').map(m => m.content), userSaidNothingElse, vi) : null
 
   const replyMessages: Message[] = [
     { role: 'system', content: REPLY_PROMPT },
@@ -946,6 +1000,9 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
     { role: 'system', content: figs },
     { role: 'system', content: `MATCHING SITUATIONS (most important first):\n${brief || '- none'}${next ? `\nNext question (collection flow, one per message): ${next}` : ''}` },
   ]
+  // A read-back's "Right?" is the turn's one question (spec 10), so this waits for the next turn.
+  if (toAsk.length && !userAsks && !readback.length) replyMessages.push({ role: 'system', content: `Told but not recorded yet: ${[...new Set(toAsk)].join(' ')} Your one question is about this.` })
+  if (userAsks) replyMessages.push({ role: 'system', content: 'The user is asking or doubting something: answer it first and plainly. If it is about the fund amount, show how it is made from the figures: "Spending per month" (its spending lines + debt payments) × the months = the floor. Do not say they are right unless the figures agree.' })
   if (ASKS_OVERVIEW.test(lastUserText)) replyMessages.push({ role: 'system', content: `Overall check-up: one short point each, in this order: ${balance.debts.priorityCount ? 'their priority debt (start with it), ' : ''}the emergency fund vs its floor, then the split. Keep the split to one sentence.` })
   const replyLang = vi ? 'Vietnamese' : 'English'
   replyMessages.push({ role: 'system', content: `Reply language: ${replyLang} (the language of the user's latest message).${vi ? ` ${VI_FLOORS}` : ''}` })
@@ -972,6 +1029,8 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       if (ASKS_STABLE.test(prevAssistant) && ASKS_STABLE.test(content) && !recordedStable) problems.push('the last reply already asked whether their income is stable and they did not answer; do NOT ask it again, answer what they are asking')
       if (wantsInvestLocked && !SAYS_LOCKED.test(content)) problems.push(`say in one sentence that cirBTC buying is locked and what is missing: "${balance.lock.text}"`)
       if (!ops.length && SAYS_NOTED.test(content)) problems.push('nothing was recorded this turn, drop "Noted"')
+      if (userAsks && !ops.length && YOU_ARE_RIGHT.test(content)) problems.push('do not say they are right: nothing changed. Answer their question by showing how the number is made from ASSET & FUND FIGURES (spending lines + debt payments = spending a month; months × spending = floor)')
+      if (userAsks && !ops.length && content.trim() === prevAssistant.trim()) problems.push('they asked something: answer it, do not repeat your last message')
       if (ops.length && !SAYS_NOTED.test(content)) problems.push(`start with the read-back: "Noted: ${readback.join(', ')}." then "Right?"`)
       const chartMax = 520
       if (actions.some(x => x.type === 'show_allocation' || x.type === 'show_cashflow') && content.length > chartMax) problems.push('the card right below already shows every figure: rewrite in at most 3 sentences, no reading back each part')
