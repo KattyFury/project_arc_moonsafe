@@ -64,6 +64,7 @@ ${KB.principles.map(p => `- ${p}`).join('\n')}
 - The emergency fund (USDC in the MoonSafe vault) stands apart. Floor in months of spending (fixed + essential variable + debt payments): 3 stable income; 6 stable with dependents or irregular without; 9 irregular with dependents; 12 if also the sole earner.
 - Priority debt: credit card, consumer / payday loan, crypto margin, or any debt at ${param('priority_debt_rate_pct')}%/year or more. Interest-free debt never blocks.
 - cirBTC buying in the app opens only with no priority debt AND the fund at its floor. Nothing else is ever blocked.
+- The emergency fund is the only must. The split above is a reference the user MAY consider: "you could consider", never "recommended" / "you need to".
 - When money is short, the order is a suggestion: ${KB.priority_order.join(' → ')}. ${KB.priority_rules.slice(1).join(' ')}
 ## Voice
 - ${KB.voice.style}
@@ -163,9 +164,10 @@ const SAYS_LOCKED = /lock|kho[áa]|khóa|(to open|để mở)/i // lang-ok
 const SAFE_AS_FUND = /safe fund|deposit[^.?!\n]{0,40}(into|to) (the |your )?safe (part|fund|bucket)|quỹ an toàn|nạp[^.?!\n]{0,40}(vào |phần )an toàn/i // lang-ok
 // never_say (spec 8.2): world standards / experts / Fidelity / Vanguard, "you should buy", selling, leverage, promised returns.
 const NEVER_SAY = /world standards?|international standards?|experts? (say|suggest|recommend|advise)|according to experts|financial experts|fidelity|vanguard|you should (buy|sell)|(you (could|should|can|might)|consider|I('d)? suggest|try) (selling|to sell|sell)\b|sell (some|part|half|a bit) of|(use|try|add|take on) (some )?leverage|guaranteed (returns?|profit)|will (go up|moon|rise) |chuẩn (thế giới|quốc tế)|theo (các )?chuyên gia|nên (mua|bán) ngay|(nên|hãy|có thể) bán (bớt|một phần|đi)|dùng đòn bẩy|lợi nhuận đảm bảo/i // lang-ok
+const SPLIT_AS_MUST = /(recommended|you need to|you must|you have to|you should)[^.?!\n]{0,60}(split|allocation|target|rebalanc|diversif|%)|(\d\s*%|target|split|allocation)[^.?!\n]{0,40}recommended|(nên|cần|phải)\s+(là|chia|có|giữ)[^.?!\n]{0,30}%/iu // lang-ok
 // The disclaimer lives on the cards and "Before you start" only (spec 8.4).
 const DISCLAIMER = /not (financial|investment) advice|only invest (money )?(what |that )?you can afford to lose|không phải lời khuyên đầu tư|chỉ đầu tư số tiền/i // lang-ok
-const CAUTION_ALT = /(altcoin|low[- ]caps?|memecoin|meme coin)[^.?!\n]{0,80}(lose|risk|drop|fall|crash|mất|rủi ro)|(lose|risk|mất|rủi ro)[^.?!\n]{0,80}(altcoin|low[- ]caps?|memecoin|meme coin)/i // lang-ok
+const CAUTION_ALT = /(altcoin|low[- ]caps?|memecoin|meme coin)[^.?!\n]{0,80}(lose|risk|drop|fall|crash|down|shrink|mất|rủi ro)|(lose|risk|mất|rủi ro)[^.?!\n]{0,80}(altcoin|low[- ]caps?|memecoin|meme coin)/i // lang-ok
 
 // Vietnamese words the model must recognise in Vietnamese messages (the app itself is English-only).
 const VI_VOICE = 'In Vietnamese: natural Vietnamese, call yourself "mình" and the user "bạn", never "tôi", never "boss".' // lang-ok
@@ -222,6 +224,7 @@ ${RULES}
 - Only describe what the "Actions just taken" note lists. Cards (add to the fund, withdraw, buy cirBTC, DCA) are confirmation CARDS the user signs: never say deposited / bought / done. To offer one: "Would you like me to prepare … for you to sign?".
 - Something recorded → start with the read-back from the notes, one short sentence ending "Right?" (that is your one question). Never mention what they said before or that it changed.
 - The app cannot move money to a bank or an exchange; the Safe part is their own savings or flexible earn (e.g. Binance Simple Earn Flexible), never the emergency fund.
+- They want a big BTC share (even 50%) → understand and respect it, Web3 thinking is heavy on BTC; only the fund comes first. They want a big low-cap / memecoin share → the reality check from the matching situation, once.
 - They want to buy cirBTC while it is locked → one sentence: what is missing and how much (the "Buy lock" line). No lecture.
 - Buying is OPEN and they agree to invest without an amount → offer the BTC amount from "Suggested use of idle money" as a cirBTC card for them to sign; never ask the same yes / no again.
 
@@ -644,6 +647,10 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   const wantsInvestLocked = !investUnlocked && INVEST_INTENT.test(lastUserText) && !NOT_INVESTING.test(lastUserText) && !ASKS_WHY.test(lastUserText) && !DEPOSIT_WORD.test(lastUserText)
   const paymentNums = [...lastUserText.matchAll(PAYMENT_NUM)].flatMap(m => readings(m[1]))
   const startFacts = computeFacts({ balance: startBalance, profile, prices, vndPerUsd: rate, message: lastUserText })
+  // "I want 50% in BTC": that share of liquid assets in USDC, so neither the card nor the reply computes it.
+  const wishPct = Number(lastUserText.match(/(?<!\d)(\d{1,3})\s*%/)?.[1] ?? NaN)
+  const wishGroup = !(wishPct > 0 && wishPct <= 100) ? null : startFacts.intent_all_in_alt || /alt|meme|low[- ]?cap|small[- ]?cap/i.test(lastUserText) ? 'low caps' : /btc|bitcoin|cirbtc/i.test(lastUserText) ? 'BTC' : null
+  const wishLine = wishGroup ? `\n- Their wish: ${wishPct}% of liquid assets in ${wishGroup} = ${usdc(startBalance.liquid * wishPct / 100)}${wishGroup === 'low caps' ? ' (bought outside the app; never offer a card for it)' : `; fine by Web3 thinking, respect it. A cirBTC card can use at most the app wallet: ${usdc(Math.max(0, Math.floor((wallet ?? 0) - GAS_RESERVE_USDC)))} now; the rest comes from their other money, moved to the wallet first`}` : ''
 
   // The same item recorded twice in one turn is read back once, with its last value ("600…, 400…", real chat 2026-10-26).
   const readbackOf = new Map<string, number>()
@@ -964,6 +971,11 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
         done.push(`BLOCKED ${name}: cirBTC buying is locked. ${startBalance.lock.text} Nothing was opened.`)
         return done[done.length - 1]
       }
+      // A 7,500 USDC buy card with 2,000 in the wallet (test 2026-10-26): the card spends the app wallet only.
+      const canSpend = Math.max(0, Math.floor((wallet ?? 0) - GAS_RESERVE_USDC))
+      if (name === 'prepare_buy_cirbtc' && amtUsd !== null && amtUsd > canSpend + 0.5) {
+        return `Not done: the app wallet holds ${usdc(canSpend)}; a card can buy at most that now. Offer ${usdc(canSpend)} and say the rest needs money moved to the wallet first.`
+      }
       actions.push({ type: name, ...a })
       const amt = amt0 ? moneyText(amt0) : 'an unclear amount'
       done.push(
@@ -971,7 +983,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
         : name === 'propose_dca' ? `Showed a DCA PROPOSAL card for ${amt} every ${String(a.intervalDays ?? 7)} days under this reply. NOT set up yet: the user taps "Approve DCA" on the card, then reviews a quote and signs each round.`
         : name === 'prepare_deposit' ? `Showed a confirmation card to ADD ${amt} to the fund under this reply. NOT deposited yet: the user taps "Sign transaction" on the card and confirms in their wallet.`
         : name === 'prepare_withdraw' ? `Showed a confirmation card to WITHDRAW ${amt} to the wallet under this reply. NOT withdrawn yet: the user taps "Sign transaction" on the card and confirms in their wallet; the money goes to their own wallet.`
-        : `Showed a card to BUY ${amt} of cirBTC under this reply. NOT bought yet: the user taps "Get a quote" on the card, checks it, then "Sign purchase". If it is above the BTC target, say so in one sentence.`)
+        : `Showed a card to BUY ${amt} of cirBTC under this reply. NOT bought yet: the user taps "Get a quote" on the card, checks it, then "Sign purchase". More BTC than the framework is their call and fits the Web3 view: no warning; at most one short mention that the framework is a reference.`)
     }
     return done.length > before ? done.slice(before).join(' ') : 'Nothing changed.'
   }
@@ -980,7 +992,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   // Every step must call a tool (tool_choice "required"); it sees each result, plus the fresh
   // listing after something was recorded, and ends with no_action. Repeats are refused.
   const stateText = () => `Profile and app state (real, latest; ids in brackets):\n${listing(profile, startBalance, prices, rate)}`
-  const planMessages: Message[] = [{ role: 'system', content: PLAN_PROMPT }, ...messages.slice(-4), { role: 'system', content: stateText() }]
+  const planMessages: Message[] = [{ role: 'system', content: PLAN_PROMPT }, ...messages.slice(-4), { role: 'system', content: `${stateText()}${wishLine}` }]
   const seen = new Set<string>()
   // What the user told but could not be recorded yet (a home without its value, a debt payment without the total owed).
   const toAsk: string[] = []
@@ -1039,18 +1051,21 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
     { role: 'system', content: REPLY_PROMPT },
     ...messages,
     { role: 'system', content: `Actions just taken: ${done.length ? done.join(' | ') : 'none.'}${readback.length ? `\nRead-back to start with (one sentence, then "Right?"): "Noted: ${readback.join(', ')}."` : ''}` },
-    { role: 'system', content: figs },
+    { role: 'system', content: `${figs}${wishLine}` },
     { role: 'system', content: `MATCHING SITUATIONS (most important first):\n${brief || '- none'}${next ? `\nNext question (collection flow, one per message): ${next}` : ''}` },
   ]
   // A read-back's "Right?" is the turn's one question (spec 10), so this waits for the next turn.
   if (toAsk.length && !userAsks && !readback.length) replyMessages.push({ role: 'system', content: `Told but not recorded yet: ${[...new Set(toAsk)].join(' ')} Your one question is about this.` })
+  // A big low-cap wish gets the reality check once, as the turn's question (Hieu, 2026-10-26).
+  const altCheck = wishGroup === 'low caps' || (startFacts.intent_all_in_alt && !usedOnce.has('altcoin_heavy'))
+  if (altCheck && !usedOnce.has('altcoin_heavy')) replyMessages.push({ role: 'system', content: `They want a big share in low caps / memecoins. Once, a vivid reality check as your one question: most low caps end up down 90-99%; would they dare put ${wishGroup ? `${wishPct}% of their assets` : 'that much'} in and watch it shrink to 1%? Then it is their call. No card (the app cannot buy them), no "should".` })
   if (userAsks) replyMessages.push({ role: 'system', content: 'The user is asking or doubting something: answer it first and plainly. If it is about the fund amount, show how it is made from the figures: "Spending per month" (its spending lines + debt payments) × the months = the floor. Do not say they are right unless the figures agree.' })
   if (ASKS_OVERVIEW.test(lastUserText)) replyMessages.push({ role: 'system', content: `Overall check-up: one short point each, in this order: ${balance.debts.priorityCount ? 'their priority debt (start with it), ' : ''}the emergency fund vs its floor, then the split. Keep the split to one sentence.` })
   const replyLang = vi ? 'Vietnamese' : 'English'
   replyMessages.push({ role: 'system', content: `Reply language: ${replyLang} (the language of the user's latest message).${vi ? ` ${VI_FLOORS}` : ''}` })
   if (DECLINES.test(lastUserText)) replyMessages.push({ role: 'system', content: 'The user just declined to share. Respect it: this reply asks NOTHING about their personal situation. Use the defaults (age 30 if the age is missing) and say the picture is an estimate; they can share any time.' })
 
-  const grounding = [figs, brief, ...done, readback.join(', '), ...messages.filter(m => m.role === 'user').map(m => m.content)]
+  const grounding = [figs, wishLine, brief, ...done, readback.join(', '), ...messages.filter(m => m.role === 'user').map(m => m.content)]
   const prevAssistant = assistantTexts[assistantTexts.length - 1] ?? ''
   const recordedStable = ops.some(o => o.op === 'update_profile' && o.fields.incomeStable !== undefined)
   let rewrites = 0
@@ -1088,6 +1103,9 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       const stray = ungrounded(content, grounding)
       if (stray.length) problems.push(`these amounts are not in the figures: ${stray.join(', ')}. Do not compute new numbers (no "left after", no sums or differences); quote only amounts given in ASSET & FUND FIGURES or by the user`)
       if (NEVER_SAY.test(content)) problems.push('never say "world standards", "experts say", Fidelity / Vanguard, "you should buy", never suggest selling or leverage, never promise returns: speak "by the MoonSafe framework", give the facts, they decide')
+      // The split is a reference to consider; only the fund is a must (Hieu, 2026-10-26).
+      if (altCheck && !usedOnce.has('altcoin_heavy') && (!/99\s*%/.test(plain) || !/(?<![\d.,])1\s*%/.test(plain))) problems.push('give the reality check once: most low caps end up down 90-99%; would they dare put that share in and watch it shrink to 1%?')
+      if (SPLIT_AS_MUST.test(plain)) problems.push('the split by age is only a reference they may consider: say "you could consider" / "the framework suggests", never "recommended", "you need to" or "you must"')
       if (DISCLAIMER.test(content)) problems.push('no disclaimer in chat (it is on the cards and the "Before you start" screen): drop it')
       if (balance.target && ASKS_TARGET.test(lastUserText) && !new RegExp(`(?<!\\d)${Math.round(balance.target.safe)}\\s*%`).test(plain)) problems.push(`give the target by the MoonSafe framework: Safe ${pct(balance.target.safe)}, Traditional ${pct(balance.target.traditional)}, BTC ${pct(balance.target.btc)}, Big caps ${pct(balance.target.large_cap)}, Low caps ${pct(balance.target.altcoin)} of liquid assets`)
       if (!balance.target && !facts.age_declined && /(?<!\d)\d{1,2}\s*%/.test(plain) && ASKS_TARGET.test(lastUserText)) problems.push('the age is unknown: quote no share yet, ask the age first')
@@ -1114,7 +1132,9 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
         continue
       }
       // Still asking twice after the rewrites: drop the extra questions rather than send them.
-      const tidy = tidyQuestions(content, ASKS_STABLE.test(prevAssistant) && !recordedStable)
+      // A read-back with nothing recorded survived the rewrites once ("Mình ghi: Bạn muốn mua…"): drop it.
+      const noFalseNote = ops.length ? content : content.replace(/^\s*(\*\*)?(Noted|Mình ghi)(\*\*)?:\s*/i, '').replace(/\s*(Right\?|Đúng chưa\?)\s*$/i, '') // lang-ok
+      const tidy = tidyQuestions(noFalseNote, ASKS_STABLE.test(prevAssistant) && !recordedStable)
       return json({ content: tidy, ops, dcaStop, actions, ...(body.debug ? { facts: figs, notes: done, patterns: matched.map(p => p.id), next, readback, profile } : {}) })
     }
     replyMessages.push({ role: 'assistant', content: msg.content ?? '', ...{ tool_calls: msg.tool_calls } } as Message)

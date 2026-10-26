@@ -16,7 +16,7 @@ export const RECOVER_LOSS = /(win|make|get|earn) (it|my money|that|the money|thi
 // "I just put 1,000 into safe" without saying where it came from (spec 10: ask, then move or add).
 const ADDED_TO_SAFE = /(?<!\p{L})(put|added|moved|deposited|transferred|placed|saved)\s[^.?!\n]{0,30}\d[^.?!\n]{0,30}(into|in|to)\s+(my\s+|the\s+)?(safe|savings|bank|term deposit|flexible|simple earn)|(vừa|đã|mới)\s+(bỏ|gửi|chuyển|cho|nạp|để)[^.?!\n]{0,30}\d[^.?!\n]{0,30}(vào|sang)\s+(phần\s+|quỹ\s+)?(an toàn|safe|tiết kiệm|ngân hàng)/iu // lang-ok
 const SAYS_SOURCE = /(?<!\p{L})(from|out of|new money|salary|bonus|từ|lấy từ|tiền mới|lương)(?!\p{L})/iu // lang-ok
-const ALL_IN_ALT = /all[- ]?in\b[^.?!\n]{0,30}(alt|meme|small[- ]cap|shitcoin)|(alt|meme)\p{L}*[^.?!\n]{0,30}all[- ]?in|(everything|all my money) (in|into) (alt|meme)|tất tay|dồn hết[^.?!\n]{0,20}(alt|meme)/iu // lang-ok
+const ALL_IN_ALT = /all[- ]?in\b[^.?!\n]{0,30}(alt|meme|small[- ]cap|shitcoin)|(alt|meme)\p{L}*[^.?!\n]{0,30}all[- ]?in|(everything|all my money) (in|into) (alt|meme)|tất tay|dồn hết[^.?!\n]{0,20}(alt|meme)|(?<!\d)(3\d|[4-9]\d|100)\s*%[^.?!\n]{0,30}(alt|meme|low[- ]?cap|small[- ]?cap|shitcoin)|(alt|meme|low[- ]?cap|small[- ]?cap|shitcoin)\p{L}*[^.?!\n]{0,30}(?<!\d)(3\d|[4-9]\d|100)\s*%/iu // lang-ok
 const WHAT_TO_INVEST = /what (should|can|do) i (invest|buy)|where (should|do|can) i invest|what to invest|invest in what|nên (đầu tư|mua) (gì|vào đâu|cái gì)|đầu tư (gì|vào đâu|cái gì)/i // lang-ok
 const TOTAL_SAID = /(?<!\p{L})(in total|altogether|all together|total(?:ly)?|tổng (cộng|cộng lại|tài sản|là)?|tất cả là)(?!\p{L})/iu // lang-ok
 const WINDFALL = /(?<!\p{L})(airdrop|bonus|windfall|inheritance|jackpot|thưởng|trúng|thừa kế)(?!\p{L})/iu // lang-ok

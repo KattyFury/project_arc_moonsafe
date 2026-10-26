@@ -6,6 +6,12 @@ Khung tài chính: **`docs/SPEC-FRAMEWORK-2026-10-25.md`** (dữ liệu: `src/kb
 
 ## ▶ Làm tiếp từ đây (mới nhất ở trên)
 
+-24. **2026-10-26 — Hiếu chốt: phân bổ theo tuổi chỉ là GỢI Ý để cân nhắc, CHỈ quỹ dự phòng là bắt buộc; khoá mua cirBTC GIỮ NGUYÊN (quỹ đủ mốc + không nợ ưu tiên). ĐÃ DEPLOY** (ea7d191d).
+   - KB: thêm principle "emergency fund is the only must, split = reference"; rebalance / voice / mẫu `off_target` nói "you could consider", cấm "recommended / you need to / you must" (chốt chặn `SPLIT_AS_MUST`, có cả "nên/cần/phải … %").
+   - Muốn nhiều BTC (kể cả 50%) → tôn trọng, hợp Web3, không cảnh báo. Server tính sẵn "Their wish: N% of liquid = X USDC" (`wishLine`); thẻ mua cirBTC tối đa bằng ví app (chặn thẻ 7.500 khi ví 2.000).
+   - Muốn nhiều low caps / memecoin (≥ 30% hoặc all-in, `ALL_IN_ALT` nhận cả "50% altcoin") → 1 lần câu thực tế kiểu Hiếu: "most low caps end up down 90-99%: would you dare put 50% in and watch it shrink to 1%?", rồi tôn trọng; không thẻ.
+   - Câu "Noted / Mình ghi … Right? / Đúng chưa?" khi không ghi gì bị cắt ở bước cuối.
+
 -23. **2026-10-26 — sửa agent theo chat thật #2 của Hiếu, ĐÃ DEPLOY** (fe848a5d). Chạy lại bằng script tạm (không commit) theo kiểu "khoá lịch sử": mỗi lượt gửi đúng câu hỏi thật của agent, chỉ dữ liệu do code mới ghi. Đã sửa:
    - Ví app ("2300$ in this wallet") chặn ở cả add / set / move (trước lọt qua `move` ở lượt sau nhờ số của tin trước); `move` chỉ được lấy số tin trước khi agent vừa hỏi "where did it come from"; báo lại cho người dùng "đó là ví app, đã tính".
    - Nợ chưa rõ lãi: câu khoá mua giờ là "say whether "X" charges interest" (allocation.ts), agent hỏi ngay câu lãi (`nextQuestion`), cấm gọi là "priority debt" / "pay it off first" khi chỉ thiếu lãi suất. "mom not using interest" → 0% (`NO_INTEREST` rộng hơn). Vay người thân không nói lãi → family_interest không rate.
