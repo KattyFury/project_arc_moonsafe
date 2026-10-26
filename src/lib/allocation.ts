@@ -239,7 +239,12 @@ export function computeBalance(input: BalanceInput): Balance {
   if (spending === null) missing.push('tell the agent your monthly spending')
   if (p?.incomeStable === null || p?.incomeStable === undefined) missing.push('say whether your income is stable')
   if (!p?.debtsComplete && !pri.length) missing.push('say whether you have any debt')
-  if (pri.length) missing.push(`pay off ${usd(debts.priorityTotal)} of priority debt`)
+  // A debt that is priority only because its type or rate is not told: the missing step is telling it,
+  // not paying it off ("pay off the 20,000 loan from Mom" for an interest-free family loan, real chat 2026-10-26).
+  const untold = pri.filter(l => l.debt.type === 'unknown' || l.debt.ratePct === null)
+  const known = pri.filter(l => !untold.includes(l))
+  if (untold.length) missing.push(`say whether ${untold.map(l => `"${l.debt.name}"`).join(' and ')} charges interest, and how much a year`)
+  if (known.length) missing.push(`pay off ${usd(sumBy(known, l => l.usd ?? 0))} of priority debt`)
   if (fund.gap !== null && fund.gap > 0.005) missing.push(`add ${usd(fund.gap)} to the emergency fund (${floorMonths} months of spending)`)
   if (spending !== null && vault === null) missing.push('load your fund balance')
   const open = missing.length === 0 && fund.met

@@ -238,7 +238,7 @@ export function applyOps(p: FinancialProfile, ops: ProfileOp[], now = Date.now()
   return out
 }
 
-const HOLDING_PATCH = ['name', 'symbol', 'where', 'quantity', 'unit', 'value', 'currency', 'priceSource', 'rebalanceable', 'category', 'loanStatus']
+const HOLDING_PATCH = ['type', 'name', 'symbol', 'where', 'quantity', 'unit', 'value', 'currency', 'priceSource', 'rebalanceable', 'category', 'loanStatus']
 const DEBT_PATCH = ['name', 'type', 'lender', 'balance', 'currency', 'ratePct', 'term', 'monthlyPayment', 'required']
 /** Only the named fields, each a number ≥ 0, a string, a boolean or null. */
 function pick(raw: unknown, keys: string[]): Record<string, unknown> {
@@ -276,6 +276,7 @@ export function readOps(raw: unknown, now = Date.now()): ProfileOp[] {
       case 'set_holding':
       case 'update_debt': {
         const patch = pick(o.patch, o.op === 'set_holding' ? HOLDING_PATCH : DEBT_PATCH)
+        if (o.op === 'set_holding' && 'type' in patch && !isAssetType(patch.type)) delete patch.type
         if (id && Object.keys(patch).length) out.push({ op: o.op, id, patch } as ProfileOp)
         break
       }

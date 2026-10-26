@@ -90,8 +90,13 @@ const NOT_INVESTING = /(not|never|don'?t|do not|no)\s+(yet\s+)?(invest|investing
 const PAYMENT_NUM = /(\d[\d.,]*\d|\d)\s*k?\s*(?:\$|usdc?|usdt|dollars?|đô)?\s*(?:a month|per month|\/\s*month|monthly|each month|every month|to repay|to pay (?:it )?(?:back|off)|for (?:my |the )?(?:debt|loan)|mỗi tháng|một tháng|\/\s*tháng|trả nợ|trả góp)/giu // lang-ok
 const APP_WALLET = /(this|the app|my app|moonsafe)\s+wallet|in (the|this) app|ví (này|app|moonsafe)/i // lang-ok
 const QUESTIONS_US = /\?|(?<!\p{L})(why|you mean|wrong|how come|sao|tại sao|sai)(?!\p{L})/iu // lang-ok
+// "my mom not using interest on me" was not read as 0% (real chat 2026-10-26).
+const NO_INTEREST = /interest[- ]free|(no|not|never|without|zero|0%?)\s+(\p{L}+\s+){0,3}interest|(doesn'?t|does not|don'?t|do not|won'?t)\s+(\p{L}+\s+){0,2}(charge|take|ask|use)\s+(\p{L}+\s+){0,2}interest|(không|ko|chẳng)\s+(tính\s+|lấy\s+)?lãi/iu // lang-ok
+const DEBT_PAY_NAME = /loan|debt|repay|mortgage|installment|credit card|(?<!\p{L})(mom|dad|mother|father)(?!\p{L})|nợ|trả góp/iu // lang-ok
+const OFFERS_DEPOSIT = /prepare[^.?!\n]{0,60}(card|deposit)|card to (add|deposit)/i
+const IDLE_AMOUNT = /(\d[\d,.]*\d|\d)\s*USDC\s*(?:of|in)\s*idle|idle money[^.?!\n]{0,30}?(\d[\d,.]*\d|\d)\s*USDC/gi
 const YES_NO = /^\W*(yes|yeah|yep|yup|no|nope|not really|sure|mostly|kind of|có|không|ko|ừ|uh|đúng)(?!\p{L})/iu // lang-ok
-const YOU_ARE_RIGHT =/^\W*(you('| a)re (right|correct)|that'?s (right|correct)|bạn nói đúng|đúng rồi)/i // lang-ok
+const YOU_ARE_RIGHT = /^\W*(you('| a)re (right|correct)|that'?s (right|correct)|bạn nói đúng|đúng rồi)/i // lang-ok
 // Each card needs its own verb (or a plain yes): "buy 100 USDC of cirBTC" while locked once
 // came back as a deposit card (eval 2026-10-24).
 const ACTION_VERB: Record<string, RegExp> = {
@@ -134,7 +139,7 @@ function tidyQuestions(text: string, dropStable: boolean): string {
 }
 
 // Phrases that report an app action as done; only allowed when an action actually ran.
-const CLAIMS_ACTION = /\bI(['’]ve| have| just)\s+(opened|filled|created|set up|shown|prepared)\b|(đã|vừa)\s+(mở|điền|hiện|tạo)(?!\s*kh(?:oá|óa|oa))\s*(sẵn)?|mở sẵn màn .{0,40} (rồi|cho bạn)/i // lang-ok
+const CLAIMS_ACTION = /\bI(['’]ve| have| just)\s+(opened|filled|created|set up|shown|prepared)\b|here(['’]s| is) (the|your) card|(đã|vừa)\s+(mở|điền|hiện|tạo)(?!\s*kh(?:oá|óa|oa))\s*(sẵn)?|mở sẵn màn .{0,40} (rồi|cho bạn)/i // lang-ok
 const SAYS_NOTED = /\b(noted|recorded|got it saved)\b|(đã |mình )ghi( nhận)?/i // lang-ok
 // "You need to add 2,301 USDC" / "you can add up to 2,301 USDC" while the floor is unknown.
 const NEEDS_AMOUNT = /((need|have|has) to (add|deposit|put)|can (add|deposit|put) up to|to reach (its|the|your) (required )?floor)[^.?!\n]{0,30}\d|(cần|phải|được tối đa) (nạp|thêm)[^.?!\n]{0,30}\d/i // lang-ok
@@ -218,11 +223,13 @@ ${RULES}
 - Something recorded → start with the read-back from the notes, one short sentence ending "Right?" (that is your one question). Never mention what they said before or that it changed.
 - The app cannot move money to a bank or an exchange; the Safe part is their own savings or flexible earn (e.g. Binance Simple Earn Flexible), never the emergency fund.
 - They want to buy cirBTC while it is locked → one sentence: what is missing and how much (the "Buy lock" line). No lecture.
+- Buying is OPEN and they agree to invest without an amount → offer the BTC amount from "Suggested use of idle money" as a cirBTC card for them to sign; never ask the same yes / no again.
 
 ## Questions
 - At most one, only when it helps. Never ask again for something known or a question they ignored. They decline to share → ask nothing personal, use the defaults and say the picture is an estimate.
 - Collecting: when "Next question" is given and they did not ask something else, ask exactly that one.
 - Greeting → one line plus one open question.
+- They are angry or swear → one short apology, then fix or ask what is wrong in their numbers; never repeat your last message.
 - "How am I doing?" → priority debt (if any), the fund, the split; one short point each.
 - They question a number ("why 2,400?", "you mean 6 months?") → answer that first: show how it is made from the figures (spending lines + debt payments = spending a month, × months = floor). Never say they are right unless the figures agree with them.
 - Outside personal finance you may use web_search.`
@@ -232,13 +239,16 @@ const ASSET_TYPES_TEXT = KB.asset_types.filter(t => t.key !== 'moonsafe_fund' &&
 const PLAN_PROMPT = `You are MoonSafe's action planner. Read the user's LATEST message (earlier ones are context), the profile list (each item has an [id]) and the app state, then CALL tools. Every step calls at least one tool and sees each result; when nothing more was asked or told, call no_action. Never do what was not asked or told. Users write English or Vietnamese.
 
 ## Which tool
+- A bare answer ("400$", "Maybe 1000$", "No") answers the agent's LAST question: after "how much do you spend?" it is spending, after "how much in the bank?" it is savings, after "any other debt?" a "No" is no other debt.
 - Age, income stability, number of dependents, sole earner, declining to give the age, "no (other) debt" → update_profile. Only what was just said ("salary" says nothing about stability).
 - Something they hold → add_holding, one call per item, with the right type. A new amount for an item already listed → set_holding with its id. Sold everything / closed it → remove_holding.
 - Money moved between their own places ("I moved 1,000 from my wallet into savings") → move. "I just put X into savings / safe" WITHOUT saying where it came from → record nothing, call no_action (the agent asks first). When they answer where it came from: their idle money, cash or the app wallet → move; new money from outside → add_holding.
 - Each debt → add_debt (type, balance, yearly rate and monthly payment if said, lender for family). Changes → update_debt; paid off → remove_debt. Unknown type → type "unknown".
 - Each income source → set_income: active (salary, side jobs, content), passive (interest, staking, rent, dividends, interest on loans given), irregular (airdrops, trading, bonuses). A new number for a listed one → same tool with its id.
 - Spending → set_expense: fixed (rent, bills, subscriptions, school fees) or variable (food, transport, other essentials). One total ("I spend 1,000 a month") → one fixed line named "Monthly spending". Debt payments belong on the debt (monthly_payment), never as an expense. A total that includes debt payments ("600 in all: 400 must-pay and 200 to repay my debt") → set_expense with ONLY the non-debt part (400), once. A payment on a debt whose total owed was not said → record no debt (the agent asks how much is still owed).
-- USDC in THIS app wallet ("in this wallet", "in the app") is read by the app: never record it.
+- USDC in THIS app wallet ("in this wallet", "in the app") is read by the app: never record it, never move it.
+- Money "in the bank" without saying checking / current account → savings (it is their Safe part). They say an item is in the wrong place ("I told you I have 1000$ in the bank" while it shows as idle) → set_holding with its id and the right type.
+- A loan from family / friends: family_no_interest when they say there is no interest, family_interest when there is; not said → family_interest without rate_pct (the agent asks).
 - show_allocation ONLY when they ask how their money is split, what to do with idle money, or for the chart. show_cashflow ONLY when they ask about income vs spending, how much they save, or financial freedom.
 - They want to add to the fund → prepare_deposit; withdraw → prepare_withdraw; buy cirBTC → prepare_buy_cirbtc; recurring buys → propose_dca; stop them → stop_dca; open a screen → open_screen.
 - A plain yes right after the agent's offer ("ok", "yes", "do it", "as you said", ${VI_YES}) → that exact action with the offered amount. A message that adds information is not a yes.
@@ -290,8 +300,9 @@ const PLAN_TOOLS = [
     category: { type: 'string', enum: ['safe', 'invest', 'idle', 'lifestyle'], description: 'Type "other" only: what it is by nature' },
     loan_status: { type: 'string', enum: ['on_time', 'overdue'], description: 'loan_given only' },
   }, ['type', 'name']),
-  fn('set_holding', 'Change the amount of an item already listed (by id).', {
+  fn('set_holding', 'Change the amount, or the type, of an item already listed (by id).', {
     id: { type: 'string' },
+    type: { type: 'string', enum: ASSET_TYPE_KEYS, description: 'Only when the user says it is a different kind of item (bank checking → savings)' },
     quantity: { type: 'number' },
     worth: MONEY,
     loan_status: { type: 'string', enum: ['on_time', 'overdue'] },
@@ -449,7 +460,7 @@ function listing(p: FinancialProfile, b: Balance, prices: Prices | null, rate: n
     `Debts: ${p.debts.map(d => `[${d.id}] ${d.type} "${d.name}"${d.lender ? ` from ${d.lender}` : ''} ${moneyText({ amount: d.balance, currency: d.currency })}, rate ${d.ratePct === null ? 'unknown' : `${d.ratePct}%`}, pays ${d.monthlyPayment === null ? 'unknown' : moneyText({ amount: d.monthlyPayment, currency: d.currency })}/month`).join('; ') || 'none'}`,
     `Incomes: ${p.incomes.map(i => `[${i.id}] ${i.kind} "${i.name}" ${moneyText({ amount: i.monthly, currency: i.currency })}/month`).join('; ') || 'none'}`,
     `Expenses: ${p.expenses.map(e => `[${e.id}] ${e.kind} "${e.name}" ${moneyText({ amount: e.monthly, currency: e.currency })}/month`).join('; ') || 'none'}`,
-    `App: wallet ${b.items.find(i => i.label === 'Wallet USDC') ? usdc(b.items.find(i => i.label === 'Wallet USDC')!.usd) : '0 USDC'}, emergency fund ${b.fundUsd !== null ? usdc(b.fundUsd) : 'unknown'}, fund gap ${b.fund.gap !== null ? usdc(b.fund.gap) : 'unknown'}, cirBTC buying ${b.lock.open ? 'OPEN' : 'LOCKED'}`,
+    `App: wallet ${b.items.find(i => i.label === 'Wallet USDC') ? usdc(Math.floor(b.items.find(i => i.label === 'Wallet USDC')!.usd)) : '0 USDC'} (read onchain, never record it), emergency fund ${b.fundUsd !== null ? usdc(b.fundUsd) : 'unknown'}, fund gap ${b.fund.gap !== null ? usdc(b.fund.gap) : 'unknown'}, cirBTC buying ${b.lock.open ? 'OPEN' : 'LOCKED'}`,
   ].join('\n')
 }
 
@@ -458,7 +469,8 @@ function listing(p: FinancialProfile, b: Balance, prices: Prices | null, rate: n
  * when the user uses VND). The model mixed VND and USDC in one subtraction when it had to convert
  * itself (2026-10-22).
  */
-function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: number, rate: number | null, usesVnd: boolean, surplusDca: boolean): { text: string; floors: { months: number; texts: string[] }[] } {
+function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: number, rate: number | null, usesVnd: boolean, surplusDca: boolean): { text: string; floors: { months: number; texts: string[] }[]; cover: number | null } {
+  let cover: number | null = null
   const show = (n: number) => usesVnd && rate ? `${usdc(n)} (≈ ${vnd(n * rate)})` : usdc(n)
   const lines: string[] = []
   const floors: { months: number; texts: string[] }[] = []
@@ -483,7 +495,7 @@ function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: nu
       if (b.fundUsd !== null) {
         const need = floor - b.fundUsd
         if (need <= 0.005) status = 'the fund has ALREADY MET this floor'
-        else if (spendable !== null && spendable >= need) status = `still needed: ${show(need)}; WALLET COVERS IT NOW (offer exactly this amount, not the whole wallet)`
+        else if (spendable !== null && spendable >= need) { status = `still needed: ${show(need)}; WALLET COVERS IT NOW (offer exactly this amount, not the whole wallet)`; if (cases.length === 1) cover = need }
         else if (spendable !== null && spendable > 0) status = `still needed: ${show(need)}; even after adding the whole wallet (${show(spendable)}), still needed: ${show(need - spendable)}`
         else status = `still needed: ${show(need)}; the wallet has nothing to add`
         const rest = need - (spendable ?? 0)
@@ -525,7 +537,7 @@ function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: nu
   }
   lines.push(`- Buy lock: ${b.lock.open ? 'cirBTC buying is OPEN' : `LOCKED. ${b.lock.text}`}`)
   if (surplusDca && b.lock.open && cf.surplus !== null && cf.surplus > 0) lines.push(`- DCA suggestion: ${show(cf.surplus * param('dca_share_of_surplus'))} a month into cirBTC (50% of the surplus; the user adjusts)`)
-  return { text: `ASSET & FUND FIGURES (computed by the server at live prices; quote them VERBATIM, never add, subtract, multiply, divide or convert):\n${lines.join('\n')}`, floors }
+  return { text: `ASSET & FUND FIGURES (computed by the server at live prices; quote them VERBATIM, never add, subtract, multiply, divide or convert):\n${lines.join('\n')}`, floors, cover }
 }
 
 // ---- Collection flow (spec 10): the next topic not known and not asked yet ------------------
@@ -545,6 +557,7 @@ const TOPICS: { key: string; ask: string; asked: RegExp; known: (p: FinancialPro
 const ASSET_TOPICS = new Set(['bank', 'stables', 'crypto', 'traditional', 'property', 'lending'])
 
 const OWED_Q = /still owe|còn nợ bao nhiêu/i // lang-ok
+const INTEREST_Q = /interest|lãi/i // lang-ok
 
 function nextQuestion(p: FinancialProfile, assistantTexts: string[], userTexts: string[], userSaidNothingElse: boolean, vi: boolean): string | null {
   const questions = assistantTexts.flatMap(t => t.split(/(?<=[.!?])\s+/).filter(s => s.trim().endsWith('?')))
@@ -552,6 +565,9 @@ function nextQuestion(p: FinancialProfile, assistantTexts: string[], userTexts: 
   const knownSoFar = p.incomes.length > 0 && p.expenses.length > 0
   if (knownSoFar && !p.debts.length && !p.debtsComplete && userTexts.some(t => DEBT_WORD.test(t) || /repay|pay (it )?back|trả nợ/i.test(t)) && !questions.some(q => OWED_Q.test(q))) // lang-ok
     return 'You mentioned paying back a debt: how much do you still owe, and to whom?'
+  // A debt without its rate keeps cirBTC buying locked (allocation.ts debtIsPriority): ask it right away, once per debt.
+  const untold = p.debts.find(d => (d.ratePct === null || d.type === 'unknown') && d.type !== 'family_no_interest' && !questions.some(q => INTEREST_Q.test(q) && q.includes(d.name)))
+  if (untold) return `Does "${untold.name}" charge you any interest? If yes, roughly how much a year?`
   // The last debt question is asked once; asked again it reads like the agent was not listening (real chat 2026-10-26).
   const lastDebtAsked = questions.some(q => q.includes(KB.collection.last_debt_question.slice(0, 40)) || q.includes(VI_DEBT_Q.slice(0, 30)))
   for (const t of TOPICS) {
@@ -717,6 +733,11 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
     if ((name === 'add_holding' || name === 'move') && startFacts.intent_added_to_safe) {
       return 'Not done: they did not say where the money came from. Record nothing; the agent asks "where did it come from?" first.'
     }
+    // The app wallet is read onchain: "2300$ in this wallet" reached the profile through add, set and move (real chats 2026-10-26).
+    if ((name === 'add_holding' || name === 'set_holding' || name === 'move') && wallet !== null && APP_WALLET.test(lastUserText)) {
+      const amts = [moneyArg(a.worth), moneyArg(a.amount), typeof a.quantity === 'number' ? { amount: a.quantity, currency: 'USDC' as Currency } : null]
+      if (amts.some(m => m && Math.abs((toUsd(m.amount, m.currency, rate) ?? -1) - wallet) <= Math.max(1, wallet * 0.05))) return 'Not recorded: that is the app wallet, which the app reads onchain by itself.'
+    }
 
     if (name === 'update_profile') {
       const f: Record<string, unknown> = {}
@@ -761,6 +782,14 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
         }
       }
       if (a.loan_status === 'on_time' || a.loan_status === 'overdue') patch.loanStatus = a.loan_status
+      // Same way of pricing only (a bank balance → savings), so the stored amount keeps its meaning.
+      const byValue = (t: AssetType) => priceKindOf(t) === 'self' || priceKindOf(t) === 'stable'
+      if (isAssetType(a.type) && a.type !== h.type && (priceKindOf(a.type) === priceKindOf(h.type) || (byValue(a.type) && byValue(h.type) && h.value !== undefined))) {
+        if (priceKindOf(a.type) !== priceKindOf(h.type)) patch.priceSource = priceKindOf(a.type) === 'self' ? 'self' : 'market'
+        patch.type = a.type
+        patch.name = KB.asset_types.find(t => t.key === a.type)!.label
+        patch.rebalanceable = defaultRebalanceable(a.type)
+      }
       if (!Object.keys(patch).length) return 'Not changed: the new amount is not in the user\'s words.'
       record({ op: 'set_holding', id: h.id, patch }, describe({ ...h, ...patch }))
       done.push(`Updated ${describe({ ...h, ...patch })}.`)
@@ -772,11 +801,18 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       done.push(`Removed ${h.name}.`)
     } else if (name === 'move') {
       const m = moneyArg(a.amount)
-      if (!m || !(stated(m.amount) || stated(m.amount, saidBefore))) return 'Not done: the amount is not in the user\'s words.'
+      // The amount of the previous message only counts when the agent just asked where that money came from;
+      // otherwise "only 2300$ in this wallet" was moved into a stablecoin item one turn later (real chat 2026-10-26).
+      const answersWhere = /where did|came from|come from|từ đâu/i.test(prevAssistantText) // lang-ok
+      if (!m || !(stated(m.amount) || (answersWhere && stated(m.amount, saidBefore)))) return 'Not done: the amount is not in the user\'s words.'
       const usd = toUsd(m.amount, m.currency, rate)
       // Source: a listed item is reduced; the app wallet changes onchain by itself; "idle" = the one idle item if there is one.
       const idle = profile.holdings.filter(h => categoryOf(h) === 'idle')
       const src = a.from === 'wallet' ? null : findH(a.from) ?? (a.from === 'idle' && idle.length === 1 ? idle[0] : null)
+      // "Bank account −1,000, Bank account +1,000" (real chat 2026-10-26): a move needs two different places,
+      // and an item recorded this turn already holds what was said.
+      if (src && a.to_id === src.id) return 'Not done: from and to are the same item. To change what kind of item it is, use set_holding with type.'
+      if (a.to_id && ops.some(o => o.op === 'add_holding' && o.holding.id === a.to_id)) return 'Not done: that item was just recorded with this amount.'
       if (src) {
         if (src.quantity === undefined || src.priceSource === 'self') {
           const inSrc = src.currency === m.currency ? m.amount : src.currency === 'VND' ? (usd !== null && rate ? usd * rate : null) : usd
@@ -810,7 +846,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
         return 'Not recorded: that number is what they pay, not the total owed. Record no debt; the agent asks how much is still owed and to whom.'
       }
       const type = DEBT_TYPES.includes(a.type as DebtType) ? a.type as DebtType : 'unknown'
-      const rateArg = typeof a.rate_pct === 'number' && a.rate_pct >= 0 && (a.rate_pct === 0 ? SAYS_NONE.test(lastUserText) || /interest[- ]free|no interest|không lãi/i.test(lastUserText) || type === 'family_no_interest' : stated(a.rate_pct)) ? a.rate_pct : null // lang-ok
+      const rateArg = typeof a.rate_pct === 'number' && a.rate_pct >= 0 && (a.rate_pct === 0 ? SAYS_NONE.test(lastUserText) || NO_INTEREST.test(lastUserText) || type === 'family_no_interest' : stated(a.rate_pct)) ? a.rate_pct : null // lang-ok
       const pay = moneyArg(a.monthly_payment)
       const d: Debt = {
         id: newId('d'), name: typeof a.name === 'string' && a.name.trim() ? a.name.trim() : 'Debt', type, balance: bal.amount, currency: bal.currency,
@@ -834,7 +870,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       if (DEBT_TYPES.includes(a.type as DebtType) && a.type !== d.type) patch.type = a.type as DebtType
       const bal = moneyArg(a.balance)
       if (bal && stated(bal.amount)) { patch.balance = bal.amount; patch.currency = bal.currency }
-      if (typeof a.rate_pct === 'number' && (a.rate_pct === 0 ? SAYS_NONE.test(lastUserText) || /interest[- ]free|no interest|không lãi/i.test(lastUserText) : stated(a.rate_pct))) patch.ratePct = a.rate_pct // lang-ok
+      if (typeof a.rate_pct === 'number' && (a.rate_pct === 0 ? SAYS_NONE.test(lastUserText) || NO_INTEREST.test(lastUserText) : stated(a.rate_pct))) patch.ratePct = a.rate_pct // lang-ok
       const pay = moneyArg(a.monthly_payment)
       if (pay && stated(pay.amount)) patch.monthlyPayment = pay.amount
       if (typeof a.lender === 'string' && a.lender.trim()) patch.lender = a.lender.trim()
@@ -855,7 +891,11 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       const m = moneyArg(a.monthly)
       if (!m || !stated(m.amount)) return 'Not recorded: the amount is not in the user\'s words.'
       const isIncome = name === 'set_income'
-      const kinds = isIncome ? ['active', 'passive', 'irregular'] : ['fixed', 'variable']
+      // "I have to pay my mom 200$ a month" became a spending line next to the same debt payment (real chat 2026-10-26).
+      if (!isIncome && (DEBT_PAY_NAME.test(String(a.name ?? '')) || profile.debts.some(d => d.monthlyPayment !== null && Math.abs(d.monthlyPayment - m.amount) <= 0.01 && d.currency === m.currency))) {
+        return 'Not recorded: a debt payment belongs on the debt (update_debt monthly_payment), never as spending; it already counts in spending.'
+      }
+      const kinds =isIncome ? ['active', 'passive', 'irregular'] : ['fixed', 'variable']
       const kind = kinds.includes(String(a.kind)) ? String(a.kind) : kinds[0]
       const nm = typeof a.name === 'string' && a.name.trim() ? a.name.trim() : isIncome ? 'Income' : 'Monthly spending'
       const listItems: (Income | Expense)[] = isIncome ? profile.incomes : profile.expenses
@@ -964,6 +1004,8 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
           seen.add(key)
           result = await handle(call)
           if (/^Not recorded:.*\bask/.test(result)) toAsk.push(result.replace(/^Not recorded: /, ''))
+          // "Only 2300$ in this wallet" got an unrelated reply (real chat 2026-10-26): say why nothing was recorded.
+          if (result.includes('that is the app wallet') && !done.some(d => d.includes('app wallet'))) done.push('Nothing recorded: the money they mention is the app wallet, which the app already counts (read onchain). Say so in a few words.')
           acted = true
           if (RECORDING.has(call.function.name)) recorded = true
         }
@@ -987,7 +1029,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   // A recorded fact is not "missing" any more; recording itself is not a reason to bring up every pattern.
   const matched = matchPatterns(facts, usedOnce)
   const brief = patternBrief(matched, displayFacts(facts))
-  const { text: figs, floors } = figures(balance, profile, wallet, cir, rate, usesVnd, !usedOnce.has('lock_open_surplus'))
+  const { text: figs, floors, cover } = figures(balance, profile, wallet, cir, rate, usesVnd, !usedOnce.has('lock_open_surplus'))
   const collecting = matched.some(p => p.id === 'collecting' || p.id === 'age_unknown')
   // A question or a doubt from the user is answered first; the collection flow waits a turn.
   const userAsks = QUESTIONS_US.test(lastUserText)
@@ -1030,7 +1072,16 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       if (wantsInvestLocked && !SAYS_LOCKED.test(content)) problems.push(`say in one sentence that cirBTC buying is locked and what is missing: "${balance.lock.text}"`)
       if (!ops.length && SAYS_NOTED.test(content)) problems.push('nothing was recorded this turn, drop "Noted"')
       if (userAsks && !ops.length && YOU_ARE_RIGHT.test(content)) problems.push('do not say they are right: nothing changed. Answer their question by showing how the number is made from ASSET & FUND FIGURES (spending lines + debt payments = spending a month; months × spending = floor)')
-      if (userAsks && !ops.length && content.trim() === prevAssistant.trim()) problems.push('they asked something: answer it, do not repeat your last message')
+      // Offered 600 while 1,800 was missing and the wallet covered it (real chat 2026-10-26).
+      const offerSentence = plain.split(/(?<=[.?!])\s+/).find(x => OFFERS_DEPOSIT.test(x))
+      if (cover !== null && offerSentence && !offerSentence.replace(/\*\*/g, '').includes(usdc(cover))) problems.push(`the deposit to offer is exactly ${usdc(cover)} (what the fund still needs; the wallet covers it)`)
+      // Gold and bank savings were called idle money (real chat 2026-10-26).
+      const idleSaid = [...plain.matchAll(IDLE_AMOUNT)].flatMap(m => readings(m[1] ?? m[2]))
+      if (idleSaid.length && !idleSaid.some(v => Math.abs(v - balance.byGroup.idle) <= Math.max(1, balance.byGroup.idle * 0.01))) problems.push(`idle money is ${usdc(balance.byGroup.idle)} (only the items marked Idle); gold is Traditional and bank savings are Safe`)
+      // "The loan from your mom is priority debt because you pay 200 a month" while only its rate was unknown (real chat 2026-10-26).
+      const priLines = balance.debts.lines.filter(l => l.priority)
+      if (priLines.length && priLines.every(l => l.debt.type === 'unknown' || l.debt.ratePct === null) && /priority debt|pay (it )?off (this|that|the) (debt|loan) first/i.test(plain)) problems.push(`it is not known yet whether this debt costs interest, so do not call it priority debt or say to pay it off first: ask whether ${priLines.map(l => `"${l.debt.name}"`).join(' and ')} charges interest, and how much a year`)
+      if (!ops.length && content.trim() === prevAssistant.trim()) problems.push('do not repeat your last message: answer what they just said')
       if (ops.length && !SAYS_NOTED.test(content)) problems.push(`start with the read-back: "Noted: ${readback.join(', ')}." then "Right?"`)
       const chartMax = 520
       if (actions.some(x => x.type === 'show_allocation' || x.type === 'show_cashflow') && content.length > chartMax) problems.push('the card right below already shows every figure: rewrite in at most 3 sentences, no reading back each part')

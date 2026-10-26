@@ -6,6 +6,14 @@ Khung tài chính: **`docs/SPEC-FRAMEWORK-2026-10-25.md`** (dữ liệu: `src/kb
 
 ## ▶ Làm tiếp từ đây (mới nhất ở trên)
 
+-23. **2026-10-26 — sửa agent theo chat thật #2 của Hiếu, ĐÃ DEPLOY** (fe848a5d). Chạy lại bằng script tạm (không commit) theo kiểu "khoá lịch sử": mỗi lượt gửi đúng câu hỏi thật của agent, chỉ dữ liệu do code mới ghi. Đã sửa:
+   - Ví app ("2300$ in this wallet") chặn ở cả add / set / move (trước lọt qua `move` ở lượt sau nhờ số của tin trước); `move` chỉ được lấy số tin trước khi agent vừa hỏi "where did it come from"; báo lại cho người dùng "đó là ví app, đã tính".
+   - Nợ chưa rõ lãi: câu khoá mua giờ là "say whether "X" charges interest" (allocation.ts), agent hỏi ngay câu lãi (`nextQuestion`), cấm gọi là "priority debt" / "pay it off first" khi chỉ thiếu lãi suất. "mom not using interest" → 0% (`NO_INTEREST` rộng hơn). Vay người thân không nói lãi → family_interest không rate.
+   - Tiền "in the bank" không nói checking → savings (phần An toàn). `set_holding` đổi được type (cùng cách định giá, hoặc giữa self ↔ stable); profile.ts cho phép `type` trong patch.
+   - Tiền trả nợ không được thành dòng chi tiêu (`DEBT_PAY_NAME` hoặc trùng monthly payment của nợ). `move` cấm từ = tới, cấm cộng vào món vừa thêm trong lượt.
+   - Câu trả lời: mời nạp đúng số "WALLET COVERS IT NOW" (kiểm trong đúng câu mời), cấm "here is the card" khi không có thẻ, "idle money" phải đúng số nhóm Idle, chửi → xin lỗi ngắn + sửa, không lặp tin trước, câu số trần ("400$") hiểu theo câu hỏi vừa hỏi, đồng ý đầu tư khi đã mở khoá → đề xuất số BTC trong "Suggested use of idle money".
+   - Thấy nhưng để vậy (đúng luật đã chốt): đủ quỹ + nợ mẹ 0% mà nhàn rỗi chỉ 501 (< 1 tháng chi tiêu 600 chừa lại) → agent nói chưa có gì để đầu tư.
+
 -22. **2026-10-26 — đổi tên nhóm coin: "Large caps" → "Big caps", "Altcoins" → "Low caps" (Hiếu chọn 1b), ĐÃ DEPLOY** (e8bcb0a8). Lý do Hiếu: altcoin = big caps + low caps, chia "Large caps / Altcoin" là sai. Chỉ đổi chữ hiển thị (`GROUP_LABEL` trong allocation.ts, tên nhóm + câu say/never trong KB, RULES + chốt chặn target trong chat.ts, `CAUTION_ALT` nhận cả "low cap"); key nội bộ `large_cap` / `altcoin` và tỉ lệ giữ nguyên. Đã xem Balance trên moonsafe.app: hiện Big caps / Low caps.
 
 -21. **2026-10-26 — sửa agent theo chat thật của Hiếu, ĐÃ DEPLOY** (be2b4440). Chạy lại đúng 14 câu của chat đó bằng script tạm (không commit) trên `wrangler pages dev`, trước/sau. Đã sửa trong `functions/api/chat.ts`:
