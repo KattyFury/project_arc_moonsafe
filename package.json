@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "build": "vite build",
+    "cf:deploy": "node scripts/check-lang.mjs && vite build && bunx wrangler pages deploy dist --project-name moonsafe --branch main",
     "server": "bun run server/index.ts",
     "start": "bun run server/index.ts",
     "deploy:self": "bun run ./scripts/self-deploy.ts",

@@ -20,6 +20,7 @@
 // below therefore read both; lines holding Vietnamese are marked lang-ok for scripts/check-lang.mjs.
 
 import { getPrices } from './prices'
+import { privyUserId } from '../_lib/privyAuth'
 import { KB, fundFloorMonths, matchPatterns, patternBrief, param } from '../../src/kb/kb'
 import { computeFacts, displayFacts, amountsUsd } from '../../src/kb/facts'
 import { computeBalance, holdingUsd, priceKey, symbolOf, toUsd, GOLD_UNITS_TO_OZ, GROUP_LABEL, TARGET_GROUPS, type Balance, type Prices } from '../../src/lib/allocation'
@@ -31,6 +32,7 @@ import type { AssetType, Currency, Debt, DebtType, Expense, FinancialProfile, Ho
 
 interface Env {
   OPENAI_API_KEY: string
+  PRIVY_APP_ID?: string
 }
 
 interface Message {
@@ -596,6 +598,8 @@ const ONCE_SEEN: Record<string, RegExp> = {
 export async function onRequestPost(context: { request: Request; env: Env }): Promise<Response> {
   const apiKey = context.env.OPENAI_API_KEY
   if (!apiKey) return json({ error: 'The agent has no AI key configured' }, 503)
+  // Signed-in users only, so nobody else can spend the OpenAI credit.
+  if (!await privyUserId(context.request, context.env)) return json({ error: 'Please sign in again' }, 401)
 
   let body: RequestBody
   try {

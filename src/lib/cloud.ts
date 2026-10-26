@@ -10,6 +10,12 @@ let timer: ReturnType<typeof setTimeout> | null = null
 
 export function setCloudAuth(g: TokenGetter | null) { getToken = g }
 
+/** Authorization header for our own API (/api/chat needs a signed-in user too). */
+export async function authHeader(): Promise<Record<string, string>> {
+  const token = await getToken?.()
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
 async function call(method: 'GET' | 'PUT', body?: unknown): Promise<Record<string, unknown> | null> {
   const token = await getToken?.()
   if (!token) return null

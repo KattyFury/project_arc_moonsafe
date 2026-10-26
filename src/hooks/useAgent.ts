@@ -6,7 +6,7 @@
 
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import type { ChatMessage } from '@/types'
-import { cloudSave } from '@/lib/cloud'
+import { authHeader, cloudSave } from '@/lib/cloud'
 import { readOps, type ProfileOp } from '@/lib/profile'
 
 const STORAGE_KEY = 'moonsafe_chat_v2'
@@ -92,7 +92,7 @@ export function useAgent(hooks: AgentHooks) {
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...await authHeader() },
         signal: ctrl.signal,
         body: JSON.stringify({
           // The greeting (timestamp 0) is UI-only: sending it made the model re-ask questions already answered.

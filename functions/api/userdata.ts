@@ -2,40 +2,22 @@
  * Cloudflare Pages Function — /api/userdata
  * Keeps each user's financial profile and agent chat in KV (binding USERDATA), keyed by
  * their Privy user id, so the data survives a new device, browser or wallet.
- * Every request must carry the Privy access token (Authorization: Bearer …); it is
- * verified against the app's JWKS (ES256, iss "privy.io", aud = app id).
+ * Every request must carry the Privy access token (Authorization: Bearer …), checked in
+ * functions/_lib/privyAuth.ts.
  */
 
-import { createRemoteJWKSet, jwtVerify } from 'jose'
+import { privyUserId } from '../_lib/privyAuth'
 
 interface Env {
   USERDATA: KVNamespace
   PRIVY_APP_ID?: string
 }
 
-// Public value, already shipped in the client bundle.
-const DEFAULT_APP_ID = 'cmvhlli8900mk0gjmwdeypxh2'
 const MAX_BYTES = 256_000
 const MAX_CHAT = 80
 
-let jwks: ReturnType<typeof createRemoteJWKSet> | null = null
-
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } })
-
-async function userId(request: Request, env: Env): Promise<string | null> {
-  const auth = request.headers.get('Authorization') ?? ''
-  const token = auth.startsWith('Bearer ') ? auth.slice(7) : ''
-  if (!token) return null
-  const appId = env.PRIVY_APP_ID ?? DEFAULT_APP_ID
-  jwks ??= createRemoteJWKSet(new URL(`https://auth.privy.io/api/v1/apps/${appId}/jwks.json`))
-  try {
-    const { payload } = await jwtVerify(token, jwks, { issuer: 'privy.io', audience: appId })
-    return typeof payload.sub === 'string' && payload.sub ? payload.sub : null
-  } catch {
-    return null
-  }
-}
 
 interface Stored { profile: Record<string, unknown> | null; chat: unknown[] | null; updatedAt: number }
 
@@ -46,7 +28,7 @@ async function read(env: Env, id: string): Promise<Stored> {
 
 export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   if (!env.USERDATA) return json({ error: 'Data storage is not configured' }, 503)
-  const id = await userId(request, env)
+  const id = await privyUserId(request, env)
   if (!id) return json({ error: 'Invalid sign-in session' }, 401)
   return json(await read(env, id))
 }
@@ -54,7 +36,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
 /** Body: { profile?: object | null, chat?: array | null }. Fields left out are kept. */
 export const onRequestPut: PagesFunction<Env> = async ({ request, env }) => {
   if (!env.USERDATA) return json({ error: 'Data storage is not configured' }, 503)
-  const id = await userId(request, env)
+  const id = await privyUserId(request, env)
   if (!id) return json({ error: 'Invalid sign-in session' }, 401)
 
   const text = await request.text()

@@ -1,0 +1,11 @@
+# Cloudflare Pages project "moonsafe": static site (dist) + Pages Functions (functions/).
+# Deploy: bun run cf:deploy (pushing to GitHub does NOT deploy).
+# Mirrors the project's dashboard settings; secrets (OPENAI_API_KEY) stay in Cloudflare.
+name = "moonsafe"
+pages_build_output_dir = "dist"
+compatibility_date = "2025-01-01"
+
+# Per-user data (profile, chat), functions/api/userdata.ts.
+[[kv_namespaces]]
+binding = "USERDATA"
+id = "f5f9fd482e3b4810898171fa71dca952"
