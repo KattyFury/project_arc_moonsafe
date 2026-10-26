@@ -13,12 +13,11 @@ import { ensureArcChain } from '@/lib/chain'
 const CHAIN_ID = arcTestnet.id // 5042002
 export const FACTORY_ADDRESS = (import.meta.env.VITE_FACTORY_ADDRESS ?? '') as `0x${string}`
 /**
- * Earlier factories. Vaults opened there keep working (a vault is its own contract),
- * so the app still finds them: the first factory (Arc Studio build, fee set wrong)
- * holds real user vaults. New vaults are always created on FACTORY_ADDRESS.
+ * Earlier factories whose vaults the app should still find (optional, comma-separated env).
+ * Empty since the 2026-10-26 factory: the old ones (0x358e, 0x7E0f) held no funds, so every
+ * wallet opens a vault on FACTORY_ADDRESS.
  */
 export const LEGACY_FACTORIES = [
-  '0x358e6669347cdda814efca51657b7a97cbf2576f',
   ...String(import.meta.env.VITE_LEGACY_FACTORY_ADDRESSES ?? '').split(',').map(a => a.trim()).filter(Boolean),
 ].filter(a => a.toLowerCase() !== FACTORY_ADDRESS.toLowerCase()) as `0x${string}`[]
 
