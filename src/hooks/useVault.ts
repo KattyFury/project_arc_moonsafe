@@ -11,7 +11,8 @@ import { nativeToUsdc6, usdc6ToNative } from '@/lib/format'
 import { ensureArcChain } from '@/lib/chain'
 
 const CHAIN_ID = arcTestnet.id // 5042002
-export const FACTORY_ADDRESS = (import.meta.env.VITE_FACTORY_ADDRESS ?? '') as `0x${string}`
+// Current factory (HANDOFF -25, public); VITE_FACTORY_ADDRESS overrides it.
+export const FACTORY_ADDRESS = (import.meta.env.VITE_FACTORY_ADDRESS || '0xAd064AdD8d4C6C36964981d1f1aeBFF697e3941b') as `0x${string}`
 /**
  * Earlier factories whose vaults the app should still find (optional, comma-separated env).
  * Empty since the 2026-10-26 factory: the old ones (0x358e, 0x7E0f) held no funds, so every
