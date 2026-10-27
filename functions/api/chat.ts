@@ -136,7 +136,7 @@ const VN_MARKET = /vietnam|(?<!\p{L})(vn|hose|hnx|upcom|vn-?index)(?!\p{L})|vi�
 function tidyQuestions(text: string, dropStable: boolean): string {
   const lines = text.split('\n').map(line => line.split(/(?<=[.!?])\s+/))
   if (dropStable) for (const parts of lines) for (let i = parts.length - 1; i >= 0; i--) if (ASKS_STABLE.test(parts[i].trim())) parts.splice(i, 1)
-  const questions = lines.flatMap((parts, li) => parts.map((p, pi) => ({ li, pi, q: p.trim().endsWith('?') }))).filter(x => x.q)
+  const questions = lines.flatMap((parts, li) => parts.map((p, pi) => ({ li, pi, q: p.replace(/\*+$/, '').trim().endsWith('?') }))).filter(x => x.q)
   for (const x of questions.slice(0, -1)) lines[x.li][x.pi] = ''
   return lines.map(parts => parts.filter(Boolean).join(' ')).join('\n').replace(/\n{3,}/g, '\n\n').trim()
 }
@@ -150,6 +150,15 @@ const ASKS_USE = /idle|what (should|can) i do with|how (should|do) i (split|inve
 const BUILD_FUND = /(?<!\p{L})(build|grow|save|saving|reach|xây|để dành|tiết kiệm)(?!\p{L})/iu // lang-ok
 const DEBT_WORD = /(?<!\p{L})(debts?|loans?|nợ|khoản vay)(?!\p{L})/iu // lang-ok
 const PUSHY = /(you need to|you must|please) (declare|provide|fill in)|(bạn cần|vui lòng|hãy|bạn phải)\s+khai báo/i // lang-ok
+// Advice read as orders with no reason (Hieu, 2026-10-27): suggestions say what they do for the user.
+const BOSSY = /\byou (need|have) to\b|\byou must\b|(?<!\p{L})(bạn cần|bạn phải|hãy)(?!\p{L})/iu // lang-ok
+const OTHER_SCRIPT = /[\u0400-\u04FF\u0590-\u06FF\u0E00-\u0E7F\u3040-\u30FF\u4E00-\u9FFF\uAC00-\uD7AF]/ // Cyrillic, Hebrew, Arabic, Thai, Japanese, Chinese, Korean
+const RIGHT_Q = /(Right|Đúng chưa)\?/i // lang-ok
+const NEED_TO_KNOW = /I need to know|(?<!\p{L})mình cần (biết|bạn cho biết)(?!\p{L})/iu // lang-ok
+const ROTE_WHY = /(this|that|it) is (important|crucial|essential) because|(điều|điểm) (này|đó) (rất )?quan trọng (vì|để)/i // lang-ok
+const DEBT_CARD = /(prepare|set up|chuẩn bị|tạo)[^.?!\n]{0,40}(trả nợ|pay (off |down |back )?(the |your |this )?(debt|loan|credit))/i // lang-ok
+const UNLOCKS =/(open|unlock|mở( khóa| khoá)?)[^.;?!\n]{0,30}cirBTC|cirBTC[^.;?!\n]{0,20}(will|sẽ)[^.;?!\n]{0,10}(open|unlock|mở)/iu // lang-ok
+const GIVES_REASON = /because|\bso (that )?(I|you|we|the)\b|which (means|lets|protects|covers|shows)|this (protects|lets|means|way|tells|shows)|that way|(?<!\p{L})(to|helps? (me|you)) (protect|cover|keep|make sure|work out|tell|see|know|figure|plan|decide|set)\b|depends on|(?<!\p{L})(vì|để (mình|bạn|biết|tính|xem|quyết)|nhờ đó|như vậy|giúp (mình|bạn)|phụ thuộc)(?!\p{L})/iu // lang-ok
 const OFFERED: Record<string, RegExp> = {
   prepare_buy_cirbtc: /(prepare|set up|proceed|go ahead)[^.?!\n]{0,40}(buy|purchase|invest)|(buy|purchase|cirBTC)[^.?!\n]{0,40}\?/i,
   prepare_deposit: /(prepare|set up)[^.?!\n]{0,30}deposit/i,
@@ -173,7 +182,7 @@ const CAUTION_ALT = /(altcoin|low[- ]caps?|memecoin|meme coin)[^.?!\n]{0,80}(los
 
 // Vietnamese words the model must recognise in Vietnamese messages (the app itself is English-only).
 const VI_VOICE = 'In Vietnamese: natural Vietnamese, call yourself "mình" and the user "bạn", never "tôi", never "boss".' // lang-ok
-const VI_FLOORS = 'Write fund floors as "3 tháng chi tiêu = …" and the figures\' labels in Vietnamese; never copy English labels such as "WALLET COVERS IT NOW". Read-back starts with "Mình ghi:" and ends with "Đúng chưa?".' // lang-ok
+const VI_FLOORS = 'Write fund floors as "3 tháng chi tiêu = …" and the figures\' labels in Vietnamese; the emergency fund is "quỹ dự phòng", never "quỹ an toàn"; never copy English labels such as "WALLET COVERS IT NOW". Read-back starts with "Mình ghi:" and ends with "Đúng chưa?".' // lang-ok
 const VI_YES = '"được", "đồng ý", "nạp đi"' // lang-ok
 const VI_DEPOSIT = '"nạp 200 USDC"' // lang-ok
 const VI_USD = 'đô' // lang-ok
@@ -201,14 +210,21 @@ function ungrounded(reply: string, sources: string[]): string[] {
   return out
 }
 
+const REPLY_MODEL = 'gpt-5.4-mini'
+
 const REPLY_PROMPT = `You are MoonSafe's personal finance advisor for Web3 users: professional, warm, plain words. You advise, ask one question at a time to understand their money, record what they tell you, and prepare cards for them to sign when useful. You never push them to buy or sell; they decide.
 
 ## Language
 Reply in the language of the user's latest message (default English). ${VI_VOICE}
 
 ## Style
-- The first sentence is the direct answer. At most 2 sentences plus one question (about 45 words); up to 4 when they ask why / what something is. Amounts and the key point in **bold**.
-- No preamble, no repeating what they said, no filler at the end, no lecturing or judging.
+- Talk like a friend who knows money well, sitting next to them: warm, concrete, never preachy. Advise first, ask after.
+- Make every reason tangible with THEIR numbers and a real-life picture ("if your income stopped next month, **500 USDC** covers about two weeks"). Never the empty "this is important because…": say what actually happens to them.
+- The FIRST time a reply uses a MoonSafe idea (emergency fund, fund floor, cirBTC lock, split by age, idle money, priority debt), explain in one plain sentence what it is and why, with their numbers.
+- Greeting: one sentence on what you can do for them (sort out spending, an emergency fund, how to split their money), then your question with why you ask.
+- Options, never orders ("you could…", "one option is…"; never "you need to" / "you must"). At most one question, saying why you ask.
+- About 3-4 sentences (about 70 words); up to 6 when they ask why. Amounts and the key point in **bold**.
+- No preamble, no repeating what they said, no filler, no judging.
 - No disclaimer in chat ("not investment advice", "only invest what you can afford to lose"): it is on the cards and the "Before you start" screen.
 
 ${RULES}
@@ -224,15 +240,15 @@ ${RULES}
 
 ## Actions and recording
 - Only describe what the "Actions just taken" note lists. Cards (add to the fund, withdraw, buy cirBTC, DCA) are confirmation CARDS the user signs: never say deposited / bought / done. To offer one: "Would you like me to prepare … for you to sign?".
-- Something recorded → start with the read-back from the notes, one short sentence ending "Right?" (that is your one question). Never mention what they said before or that it changed.
+- Something recorded → start with the read-back from the notes, then at most one sentence on what the new number means for them, then end with "Right?" (that is your one question). When a "Next question" is given, ask it instead of "Right?" (with why you ask). Never mention what they said before or that it changed.
 - The app cannot move money to a bank or an exchange; the Safe part is their own savings or flexible earn (e.g. Binance Simple Earn Flexible), never the emergency fund.
 - They want a big BTC share (even 50%) → understand and respect it, Web3 thinking is heavy on BTC; only the fund comes first. They want a big low-cap / memecoin share → the reality check from the matching situation, once.
-- They want to buy cirBTC while it is locked → one sentence: what is missing and how much (the "Buy lock" line). No lecture.
+- They want to buy cirBTC while it is locked → what is missing and how much (the "Buy lock" line), then why the lock exists in one sentence: without the cushion, if BTC drops right when they need cash, they would have to sell at a loss. No longer lecture.
 - Buying is OPEN and they agree to invest without an amount → offer the BTC amount from "Suggested use of idle money" as a cirBTC card for them to sign; never ask the same yes / no again.
 
 ## Questions
 - At most one, only when it helps. Never ask again for something known or a question they ignored. They decline to share → ask nothing personal, use the defaults and say the picture is an estimate.
-- Collecting: when "Next question" is given and they did not ask something else, ask exactly that one.
+- Collecting: when "Next question" is given and they did not ask something else, first give one useful point from what is already known (the figures), then ask exactly that one, saying briefly why it matters for their advice.
 - Greeting → one line plus one open question.
 - They are angry or swear → one short apology, then fix or ask what is wrong in their numbers; never repeat your last message.
 - "How am I doing?" → priority debt (if any), the fund, the split; one short point each.
@@ -1034,7 +1050,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   console.log(`plan steps=${planSteps} tokens in=${planIn} out=${planOut} ops=${ops.length}`)
 
   if (wantsInvestLocked && !done.some(d => d.startsWith('BLOCKED'))) {
-    done.push(`The user wants to invest but cirBTC buying is LOCKED: one sentence, what is missing and how much ("${startBalance.lock.text}"), then the next step.`)
+    done.push(`The user wants to invest but cirBTC buying is LOCKED: what is missing and how much ("${startBalance.lock.text}"), why the lock protects them (no forced selling at a loss if BTC drops when they need cash), then the option they have.`)
   }
 
   // ---- 2. REPLY ---------------------------------------------------------------------
@@ -1054,9 +1070,9 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   const replyMessages: Message[] = [
     { role: 'system', content: REPLY_PROMPT },
     ...messages,
-    { role: 'system', content: `Actions just taken: ${done.length ? done.join(' | ') : 'none.'}${readback.length ? `\nRead-back to start with (one sentence, then "Right?"): "Noted: ${readback.join(', ')}."` : ''}` },
+    { role: 'system', content: `Actions just taken: ${done.length ? done.join(' | ') : 'none.'}${readback.length ? `\nRead-back to start with (one sentence; then "Right?", or the Next question if one is given): "Noted: ${readback.join(', ')}."` : ''}` },
     { role: 'system', content: `${figs}${wishLine}` },
-    { role: 'system', content: `MATCHING SITUATIONS (most important first):\n${brief || '- none'}${next ? `\nNext question (collection flow, one per message): ${next}` : ''}` },
+    { role: 'system', content: `MATCHING SITUATIONS (most important first):\n${brief || '- none'}${next ? `\nNext question (collection flow, one per message): ${next}\nThis is your one question: ask exactly it (same meaning), as a real question ending in "?", not "I need to know…". Before it, one useful point from what is already known (if any); after it, a few words on why it matters for their advice. No "Right?" this turn.` : ''}` },
   ]
   // A read-back's "Right?" is the turn's one question (spec 10), so this waits for the next turn.
   if (toAsk.length && !userAsks && !readback.length) replyMessages.push({ role: 'system', content: `Told but not recorded yet: ${[...new Set(toAsk)].join(' ')} Your one question is about this.` })
@@ -1064,7 +1080,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   const altCheck = wishGroup === 'low caps' || (startFacts.intent_all_in_alt && !usedOnce.has('altcoin_heavy'))
   if (altCheck && !usedOnce.has('altcoin_heavy')) replyMessages.push({ role: 'system', content: `They want a big share in low caps / memecoins. Once, a vivid reality check as your one question: most low caps end up down 90-99%; would they dare put ${wishGroup ? `${wishPct}% of their assets` : 'that much'} in and watch it shrink to 1%? Then it is their call. No card (the app cannot buy them), no "should".` })
   if (userAsks) replyMessages.push({ role: 'system', content: 'The user is asking or doubting something: answer it first and plainly. If it is about the fund amount, show how it is made from the figures: "Spending per month" (its spending lines + debt payments) × the months = the floor. Do not say they are right unless the figures agree.' })
-  if (ASKS_OVERVIEW.test(lastUserText)) replyMessages.push({ role: 'system', content: `Overall check-up: one short point each, in this order: ${balance.debts.priorityCount ? 'their priority debt (start with it), ' : ''}the emergency fund vs its floor, then the split. Keep the split to one sentence.` })
+  if (ASKS_OVERVIEW.test(lastUserText)) replyMessages.push({ role: 'system', content: `Overall check-up, as an advisor: one short point each, in this order: ${balance.debts.priorityCount ? 'their priority debt (start with it), ' : ''}the emergency fund vs its floor, then the split. For each, why it matters for them and one option they could take (an option, not an order). Keep the split to one sentence.` })
   const replyLang = vi ? 'Vietnamese' : 'English'
   replyMessages.push({ role: 'system', content: `Reply language: ${replyLang} (the language of the user's latest message).${vi ? ` ${VI_FLOORS}` : ''}` })
   if (DECLINES.test(lastUserText)) replyMessages.push({ role: 'system', content: 'The user just declined to share. Respect it: this reply asks NOTHING about their personal situation. Use the defaults (age 30 if the age is missing) and say the picture is an estimate; they can share any time.' })
@@ -1074,7 +1090,9 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   const recordedStable = ops.some(o => o.op === 'update_profile' && o.fields.incomeStable !== undefined)
   let rewrites = 0
   for (let round = 1; round <= 5; round++) {
-    const reply = await openai(apiKey, { model: 'gpt-4o-mini', messages: replyMessages, tools: REPLY_TOOLS, tool_choice: round >= 3 ? 'none' : 'auto', max_tokens: 800, temperature: 0.5 })
+    // gpt-5.4-mini replies like an advisor (reasons tied to the user's numbers); gpt-4o-mini read as orders (Hieu, 2026-10-27, 3 test rounds).
+    // Function tools need reasoning_effort 'none' on chat/completions.
+    const reply = await openai(apiKey, { model: REPLY_MODEL, messages: replyMessages, tools: REPLY_TOOLS, tool_choice: round >= 3 ? 'none' : 'auto', max_completion_tokens: 1200, reasoning_effort: 'none' })
     if (reply instanceof Response) return reply
     const msg = reply.choices[0]?.message
     if (reply.usage) console.log(`reply tokens in=${reply.usage.prompt_tokens} out=${reply.usage.completion_tokens} round=${round}`)
@@ -1088,7 +1106,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       }
       if ((content.match(/\?/g) ?? []).length > 1) problems.push('only ONE question is allowed, drop the others')
       if (ASKS_STABLE.test(prevAssistant) && ASKS_STABLE.test(content) && !recordedStable) problems.push('the last reply already asked whether their income is stable and they did not answer; do NOT ask it again, answer what they are asking')
-      if (wantsInvestLocked && !SAYS_LOCKED.test(content)) problems.push(`say in one sentence that cirBTC buying is locked and what is missing: "${balance.lock.text}"`)
+      if (wantsInvestLocked && !SAYS_LOCKED.test(content)) problems.push(`say that cirBTC buying is locked, what is missing ("${balance.lock.text}") and why the lock protects them`)
       if (!ops.length && SAYS_NOTED.test(content)) problems.push('nothing was recorded this turn, drop "Noted"')
       if (userAsks && !ops.length && YOU_ARE_RIGHT.test(content)) problems.push('do not say they are right: nothing changed. Answer their question by showing how the number is made from ASSET & FUND FIGURES (spending lines + debt payments = spending a month; months × spending = floor)')
       // Offered 600 while 1,800 was missing and the wallet covered it (real chat 2026-10-26).
@@ -1101,7 +1119,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       const priLines = balance.debts.lines.filter(l => l.priority)
       if (priLines.length && priLines.every(l => l.debt.type === 'unknown' || l.debt.ratePct === null) && /priority debt|pay (it )?off (this|that|the) (debt|loan) first/i.test(plain)) problems.push(`it is not known yet whether this debt costs interest, so do not call it priority debt or say to pay it off first: ask whether ${priLines.map(l => `"${l.debt.name}"`).join(' and ')} charges interest, and how much a year`)
       if (!ops.length && content.trim() === prevAssistant.trim()) problems.push('do not repeat your last message: answer what they just said')
-      if (ops.length && !SAYS_NOTED.test(content)) problems.push(`start with the read-back: "Noted: ${readback.join(', ')}." then "Right?"`)
+      if (ops.length && !SAYS_NOTED.test(content)) problems.push(`start with the read-back: "Noted: ${readback.join(', ')}."`)
       const chartMax = 520
       if (actions.some(x => x.type === 'show_allocation' || x.type === 'show_cashflow') && content.length > chartMax) problems.push('the card right below already shows every figure: rewrite in at most 3 sentences, no reading back each part')
       const stray = ungrounded(content, grounding)
@@ -1122,13 +1140,31 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       if (BUILD_FUND.test(lastUserText) && /a month into the fund takes about/.test(figs) && !/sav|để dành|tiết kiệm/i.test(content)) problems.push('they asked how to build the fund: suggest saving the monthly amount from the figures and say about how many months it takes') // lang-ok
       if (vi && /months? of spending|Noted[.:]|Right\?/i.test(content)) problems.push('this reply is in Vietnamese: write "N tháng chi tiêu", "Mình ghi: …", "Đúng chưa?", no English phrases') // lang-ok
       if (PUSHY.test(content)) problems.push('do not order the user to provide details ("please provide…"); ask one friendly question instead')
+      // Advisor replies (2026-10-27 tests): a stray "Right?" after the real question, "I need to know…" instead of asking,
+      // the rote "this is important because", and "adding to the fund opens cirBTC" while priority debt still locks it.
+      if (!readback.length && RIGHT_Q.test(plain)) problems.push('nothing was recorded this turn: drop "Right?" / "Đúng chưa?"') // lang-ok
+      // The Next question is written in English and was once pasted as is into a Vietnamese reply.
+      if (vi && /(?<!\p{L})(how much|how old|do you|are you|is your|what is|roughly)(?!\p{L})/iu.test(plain)) problems.push('this reply is in Vietnamese: ask the question in Vietnamese, no English sentence') // lang-ok
+      else if (next && RIGHT_Q.test(plain)) problems.push('a Next question is given: ask it as a real question and drop "Right?" / "Đúng chưa?"') // lang-ok
+      if (NEED_TO_KNOW.test(plain)) problems.push('ask a real friendly question instead of "I need to know…"')
+      if (ROTE_WHY.test(plain)) problems.push('drop "this is important because": say what actually happens to them')
+      if (vi && /(?<!\p{L})(floor|options?)(?!\p{L})/iu.test(plain)) problems.push('this reply is in Vietnamese: write "mức tối thiểu" for floor and "lựa chọn" for option') // lang-ok
+      if (!balance.lock.open && balance.lock.missing.some(m => m.startsWith('pay off')) && plain.split(/(?<=[.;!?])\s+/).some(x => UNLOCKS.test(x) && !DEBT_WORD.test(x))) problems.push(`cirBTC stays locked while there is priority debt: adding to the fund alone does not open it (${balance.lock.text})`)
+      if (!balance.lock.open && /(prepare|chuẩn bị|tạo)[^.?!\n]{0,60}cirBTC/i.test(plain)) problems.push(`cirBTC buying is locked, so there is no cirBTC card to offer (${balance.lock.text})`) // lang-ok
+      if (DEBT_CARD.test(plain)) problems.push('the app has no card to pay a debt: they pay it themselves; only offer cards for the fund, withdraw, cirBTC or DCA')
+      // gpt-5.4-mini once dropped a Persian word into a Vietnamese reply (test 2026-10-27).
+      if (OTHER_SCRIPT.test(content)) problems.push(`write only in ${replyLang}: a word in another script slipped in`)
+      if (BOSSY.test(content)) problems.push(`suggest, do not order: no "you need to" / "you must"${vi ? ' / "bạn cần" / "bạn phải" / "hãy"' : ''}; say what the option does for them and let them choose`) // lang-ok
+      if (ASKS_OVERVIEW.test(lastUserText) && !GIVES_REASON.test(content)) problems.push('this is a check-up from an advisor: for each point say why it matters for them and one option they could take')
+      if (next && content.includes('?') && !GIVES_REASON.test(content)) problems.push('say in a few words why you ask (what the answer lets you work out for them); if something useful is already known from the figures, give that one point before the question')
       if (SAFE_IN_APP.test(content)) problems.push('the app cannot move money to the user\'s bank or exchange and nothing was moved: the user tops up their own savings themselves; never offer or claim a deposit / transfer to savings')
-      if (SAFE_AS_FUND.test(content)) problems.push('the safe part is savings the user makes themselves, NOT the emergency fund, and it cannot be deposited in the app')
+      if (SAFE_AS_FUND.test(content)) problems.push('if you meant the emergency fund, call it "emergency fund" / "quỹ dự phòng" and add no explanation about the safe part; the safe part is the user\'s own savings, NOT the emergency fund, and cannot be deposited in the app') // lang-ok
       if (startFacts.intent_added_to_safe && !ops.length && !/(?<!\p{L})(where|from|từ đâu|ở đâu)(?!\p{L})/iu.test(content)) problems.push('ask exactly one question: where did the money come from (their idle money / the app wallet, or new money)?') // lang-ok
       if (usedOnce.has('altcoin_heavy') && CAUTION_ALT.test(content)) problems.push('the altcoin risk was already said once in this chat: do not repeat it, respect their decision')
-      // Users found replies wordy (2026-10-24, median 305 chars). Checked only once the content is right.
-      const maxChars = ASKS_WHY.test(lastUserText) ? 520 : readback.length ? 420 : 340
-      if (!problems.length && content.replace(/\*\*/g, '').length > maxChars && !actions.some(x => x.type === 'show_allocation' || x.type === 'show_cashflow')) problems.push(`too long (${content.length} chars): cut to at most ${maxChars === 520 ? '4' : '2'} short sentences plus one question; first sentence = the direct answer; keep every point it makes now (key numbers, advice on debt or saving), drop only preambles, repeats and filler`)
+      // Users found replies wordy (2026-10-24, median 305 chars), then found them bossy with no reasons (Hieu, 2026-10-27):
+      // room for one "why" sentence. Checked only once the content is right.
+      const maxChars = ASKS_WHY.test(lastUserText) ? 680 : readback.length ? 520 : 480
+      if (!problems.length && content.replace(/\*\*/g, '').length > maxChars && !actions.some(x => x.type === 'show_allocation' || x.type === 'show_cashflow')) problems.push(`too long (${content.length} chars): cut to at most ${maxChars === 680 ? '5' : '4'} short sentences including one question; first sentence = the direct answer; keep every point it makes now (key numbers, the reason why, advice on debt or saving), drop only preambles, repeats and filler`)
       if (problems.length && rewrites < 3 && round < 5) {
         rewrites++
         replyMessages.push({ role: 'assistant', content })
@@ -1138,7 +1174,8 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       // Still asking twice after the rewrites: drop the extra questions rather than send them.
       // A read-back with nothing recorded survived the rewrites once ("Mình ghi: Bạn muốn mua…"): drop it.
       const noFalseNote = ops.length ? content : content.replace(/^\s*(\*\*)?(Noted|Mình ghi)(\*\*)?:\s*/i, '').replace(/\s*(Right\?|Đúng chưa\?)\s*$/i, '') // lang-ok
-      const tidy = tidyQuestions(noFalseNote, ASKS_STABLE.test(prevAssistant) && !recordedStable)
+      const oneAsk = (noFalseNote.match(/\?/g) ?? []).length > 1 ? noFalseNote.replace(/\s*(Right\?|Đúng chưa\?)\s*$/i, '') : noFalseNote // lang-ok
+      const tidy = tidyQuestions(oneAsk, ASKS_STABLE.test(prevAssistant) && !recordedStable)
       return json({ content: tidy, ops, dcaStop, actions, ...(body.debug ? { facts: figs, notes: done, patterns: matched.map(p => p.id), next, readback, profile } : {}) })
     }
     replyMessages.push({ role: 'assistant', content: msg.content ?? '', ...{ tool_calls: msg.tool_calls } } as Message)
