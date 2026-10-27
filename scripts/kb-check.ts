@@ -205,3 +205,21 @@ console.log(`\nSample brief (${sample.length} chars, ~${Math.round(sample.length
 for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never matched by any persona`)
 console.log(fails ? `\n${fails} problem(s).` : `\nKB OK: ${KB.patterns.length} patterns, ${personas.length} personas + ${reals.length} real profiles, formula matches the spec table.`)
 process.exit(fails ? 1 : 0)
+
+// 8. The daily token cap: counts per user and for everyone, blocks at the limit, off without KV.
+{
+  const { addUsage, overBudget } = await import('../functions/_lib/budget')
+  const store = new Map<string, string>()
+  const kv = { get: async (k: string) => store.get(k) ?? null, put: async (k: string, v: string) => { store.set(k, v) } }
+  const env = { USERDATA: kv, USER_DAILY_TOKEN_BUDGET: '1000', DAILY_TOKEN_BUDGET: '1500' }
+  if (await overBudget(env, 'a')) fail('budget: a fresh day must be open')
+  await addUsage(env, 'a', 600)
+  if (await overBudget(env, 'a')) fail('budget: 600 of 1000 is still open')
+  await addUsage(env, 'a', 500)
+  if (!(await overBudget(env, 'a'))?.includes('daily limit')) fail('budget: one user over 1000 must be blocked')
+  if (await overBudget(env, 'b')) fail('budget: another user must still be open')
+  await addUsage(env, 'b', 450)
+  if (!(await overBudget(env, 'b'))?.includes('for everyone')) fail('budget: everyone over 1500 must be blocked')
+  if (await overBudget({}, 'a')) fail('budget: without KV the cap is off')
+  if (fails) process.exit(1)
+}

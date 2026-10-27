@@ -21,6 +21,7 @@
 
 import { getPrices } from './prices'
 import { privyUserId } from '../_lib/privyAuth'
+import { addUsage, overBudget, type BudgetEnv, type Meter } from '../_lib/budget'
 import { KB, fundFloorMonths, matchPatterns, patternBrief, param } from '../../src/kb/kb'
 import { computeFacts, displayFacts, amountsUsd } from '../../src/kb/facts'
 import { computeBalance, holdingUsd, priceKey, symbolOf, toUsd, GOLD_UNITS_TO_OZ, GROUP_LABEL, type Balance, type Prices } from '../../src/lib/allocation'
@@ -31,7 +32,7 @@ import {
 import { bucketLabel, detectPlacement } from '../../src/lib/record'
 import type { AssetType, Currency, Debt, DebtType, Expense, FinancialProfile, Holding, Income, NearGoal } from '../../src/types'
 
-interface Env {
+interface Env extends BudgetEnv {
   OPENAI_API_KEY: string
   PRIVY_APP_ID?: string
 }
@@ -459,14 +460,16 @@ async function openAiError(res: Response): Promise<Response> {
   return json({ error: `OpenAI error ${res.status}` }, 502)
 }
 
-async function openai(apiKey: string, body: Record<string, unknown>): Promise<Completion | Response> {
+async function openai(apiKey: string, body: Record<string, unknown>, meter: Meter): Promise<Completion | Response> {
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify(body),
   })
   if (!res.ok) return openAiError(res)
-  return await res.json() as Completion
+  const completion = await res.json() as Completion
+  meter.tokens += (completion.usage?.prompt_tokens ?? 0) + (completion.usage?.completion_tokens ?? 0)
+  return completion
 }
 
 async function webSearch(query: string): Promise<string> {
@@ -696,7 +699,20 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   const apiKey = context.env.OPENAI_API_KEY
   if (!apiKey) return json({ error: 'The agent has no AI key configured' }, 503)
   // Signed-in users only, so nobody else can spend the OpenAI credit.
-  if (!await privyUserId(context.request, context.env)) return json({ error: 'Please sign in again' }, 401)
+  const userId = await privyUserId(context.request, context.env)
+  if (!userId) return json({ error: 'Please sign in again' }, 401)
+  // A daily cap on tokens (functions/_lib/budget.ts) so one busy day cannot use up the credit.
+  const limit = await overBudget(context.env, userId)
+  if (limit) return json({ error: limit }, 429)
+  const meter: Meter = { tokens: 0 }
+  try {
+    return await handleChat(context, apiKey, meter)
+  } finally {
+    await addUsage(context.env, userId, meter.tokens)
+  }
+}
+
+async function handleChat(context: { request: Request; env: Env }, apiKey: string, meter: Meter): Promise<Response> {
 
   let body: RequestBody
   try {
@@ -1153,7 +1169,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   // A signed card (ChatScreen hidden message) records nothing: the balances already come from the chain.
   const appEvent = lastUserText.startsWith('[app event]')
   for (let step = 1; step <= (appEvent ? 0 : MAX_PLAN_STEPS); step++) {
-    const plan = await openai(apiKey, { model: MODEL, messages: planMessages, tools: PLAN_TOOLS, tool_choice: 'required', max_completion_tokens: 1500, reasoning_effort: 'none' })
+    const plan = await openai(apiKey, { model: MODEL, messages: planMessages, tools: PLAN_TOOLS, tool_choice: 'required', max_completion_tokens: 1500, reasoning_effort: 'none' }, meter)
     if (plan instanceof Response) return plan
     planSteps = step
     planIn += plan.usage?.prompt_tokens ?? 0
@@ -1292,7 +1308,7 @@ ${ending}` })
   for (let round = 1; round <= 5; round++) {
     // gpt-5.4-mini replies like an advisor (reasons tied to the user's numbers); gpt-4o-mini read as orders (Hieu, 2026-10-27, 3 test rounds).
     // Function tools need reasoning_effort 'none' on chat/completions.
-    const reply = await openai(apiKey, { model: MODEL, messages: replyMessages, tools: REPLY_TOOLS, tool_choice: round >= 3 ? 'none' : 'auto', max_completion_tokens: 1200, reasoning_effort: 'none' })
+    const reply = await openai(apiKey, { model: MODEL, messages: replyMessages, tools: REPLY_TOOLS, tool_choice: round >= 3 ? 'none' : 'auto', max_completion_tokens: 1200, reasoning_effort: 'none' }, meter)
     if (reply instanceof Response) return reply
     const msg = reply.choices[0]?.message
     if (reply.usage) console.log(`reply tokens in=${reply.usage.prompt_tokens} out=${reply.usage.completion_tokens} round=${round}`)
