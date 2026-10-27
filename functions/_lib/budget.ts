@@ -20,7 +20,7 @@ export interface BudgetEnv {
 }
 
 /** Tokens used by one request, filled in by every model call. */
-export interface Meter { tokens: number }
+export interface Meter { tokens: number; /** Set once a request has moved to the standby model. */ provider?: 'gemini' }
 
 const DEFAULT_ALL = 1_500_000
 const DEFAULT_USER = 250_000

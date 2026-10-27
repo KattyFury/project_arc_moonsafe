@@ -22,6 +22,7 @@
 import { getPrices } from './prices'
 import { privyUserId } from '../_lib/privyAuth'
 import { addUsage, overBudget, type Meter } from '../_lib/budget'
+import { callModel as openai, DEFAULT_GEMINI_MODEL, type Keys, type ToolCall } from '../_lib/llm'
 import { powerState, takeTurn, type PowerEnv } from '../_lib/quota'
 import { KB, fundFloorMonths, matchPatterns, patternBrief, param } from '../../src/kb/kb'
 import { computeFacts, displayFacts, amountsUsd } from '../../src/kb/facts'
@@ -34,7 +35,10 @@ import { bucketLabel, detectPlacement } from '../../src/lib/record'
 import type { AssetType, Currency, Debt, DebtType, Expense, FinancialProfile, Holding, Income, NearGoal } from '../../src/types'
 
 interface Env extends PowerEnv {
-  OPENAI_API_KEY: string
+  OPENAI_API_KEY?: string
+  /** Standby model, used when OpenAI cannot answer (functions/_lib/llm.ts). */
+  GEMINI_API_KEY?: string
+  GEMINI_MODEL?: string
   PRIVY_APP_ID?: string
 }
 
@@ -50,12 +54,6 @@ interface RequestBody {
   context?: Record<string, unknown> | null
   /** Eval harness: also return the computed figures, notes and patterns (no secrets in them). */
   debug?: boolean
-}
-
-interface ToolCall { id: string; function: { name: string; arguments: string } }
-interface Completion {
-  choices: Array<{ message: { role: string; content: string | null; tool_calls?: ToolCall[] } }>
-  usage?: { prompt_tokens?: number; completion_tokens?: number }
 }
 
 const json = (body: unknown, status = 200) =>
@@ -451,27 +449,6 @@ const UI_ACTIONS = new Set(['prepare_deposit', 'prepare_withdraw', 'prepare_buy_
 const INVEST_ACTIONS = new Set(['prepare_buy_cirbtc', 'propose_dca'])
 const RECORDING = new Set(['update_profile', 'add_holding', 'set_holding', 'remove_holding', 'move', 'add_debt', 'update_debt', 'remove_debt', 'set_income', 'remove_income', 'set_expense', 'remove_expense'])
 
-/** Map OpenAI failures to a clear message (AGENTS.md Part 3, rule 4: fail loudly). */
-async function openAiError(res: Response): Promise<Response> {
-  const err = await res.text()
-  console.error('OpenAI error:', res.status, err)
-  if (res.status === 401) return json({ error: 'invalid OpenAI key' }, 502)
-  if (res.status === 429 && /insufficient_quota/.test(err)) return json({ error: 'the OpenAI account is out of credit' }, 502)
-  if (res.status === 429) return json({ error: 'OpenAI is rate limiting, try again in a few minutes' }, 502)
-  return json({ error: `OpenAI error ${res.status}` }, 502)
-}
-
-async function openai(apiKey: string, body: Record<string, unknown>, meter: Meter): Promise<Completion | Response> {
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify(body),
-  })
-  if (!res.ok) return openAiError(res)
-  const completion = await res.json() as Completion
-  meter.tokens += (completion.usage?.prompt_tokens ?? 0) + (completion.usage?.completion_tokens ?? 0)
-  return completion
-}
 
 async function webSearch(query: string): Promise<string> {
   // DuckDuckGo Instant Answer API (no key needed)
@@ -701,8 +678,8 @@ const MAX_BODY_CHARS = 64_000
 const MAX_MESSAGE_CHARS = 2_000
 
 export async function onRequestPost(context: { request: Request; env: Env }): Promise<Response> {
-  const apiKey = context.env.OPENAI_API_KEY
-  if (!apiKey) return json({ error: 'The agent has no AI key configured' }, 503)
+  const apiKey: Keys = { openai: context.env.OPENAI_API_KEY, gemini: context.env.GEMINI_API_KEY, geminiModel: context.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL }
+  if (!apiKey.openai && !apiKey.gemini) return json({ error: 'The agent has no AI key configured' }, 503)
   // Signed-in users only, so nobody else can spend the OpenAI credit.
   const userId = await privyUserId(context.request, context.env)
   if (!userId) return json({ error: 'Please sign in again' }, 401)
@@ -735,7 +712,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   }
 }
 
-async function handleChat(context: { request: Request; env: Env }, apiKey: string, meter: Meter, body: RequestBody): Promise<Response> {
+async function handleChat(context: { request: Request; env: Env }, apiKey: Keys, meter: Meter, body: RequestBody): Promise<Response> {
 
   const messages = (Array.isArray(body.messages) ? body.messages : [])
     .filter(m => (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
@@ -1322,11 +1299,16 @@ ${ending}` })
   const prevAssistant = assistantTexts[assistantTexts.length - 1] ?? ''
   const recordedStable = ops.some(o => o.op === 'update_profile' && o.fields.incomeStable !== undefined)
   let rewrites = 0
+  // The first draft that failed a check: if the model cannot be reached for the rewrite, this is sent rather than an error.
+  let lastDraft = ''
   for (let round = 1; round <= 4; round++) {
     // gpt-5.4-mini replies like an advisor (reasons tied to the user's numbers); gpt-4o-mini read as orders (Hieu, 2026-10-27, 3 test rounds).
     // Function tools need reasoning_effort 'none' on chat/completions.
     const reply = await openai(apiKey, { model: MODEL, messages: replyMessages, tools: REPLY_TOOLS, tool_choice: round >= 3 ? 'none' : 'auto', max_completion_tokens: 1200, reasoning_effort: 'none' }, meter)
-    if (reply instanceof Response) return reply
+    if (reply instanceof Response) {
+      if (lastDraft) return json({ content: lastDraft, ops, dcaStop, actions })
+      return reply
+    }
     const msg = reply.choices[0]?.message
     if (reply.usage) console.log(`reply tokens in=${reply.usage.prompt_tokens} out=${reply.usage.completion_tokens} round=${round}`)
     if (!msg?.tool_calls?.length) {
@@ -1427,6 +1409,7 @@ ${ending}` })
       if (!problems.length && content.replace(/\*\*/g, '').length > maxChars && !actions.some(x => x.type === 'show_allocation' || x.type === 'show_cashflow')) problems.push(`too long (${content.length} chars): cut to at most ${maxChars === 800 ? '7' : '5'} short sentences including one question; first sentence = the direct answer; keep every point it makes now (key numbers, the reason why, advice on debt or saving), drop only preambles, repeats and filler`)
       if (problems.length && rewrites < 2 && round < 4) {
         rewrites++
+        lastDraft = content
         replyMessages.push({ role: 'assistant', content })
         replyMessages.push({ role: 'system', content: `That reply needs fixing: ${problems.join('; ')}. Rewrite the whole reply in ${replyLang}, keeping the correct figures.` })
         continue

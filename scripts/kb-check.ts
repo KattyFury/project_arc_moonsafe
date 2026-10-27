@@ -263,5 +263,44 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
 }
 
 
+// 10. Model call: OpenAI first, Gemini as the standby (fetch is faked, nothing leaves this machine).
+{
+  const { callModel } = await import('../functions/_lib/llm')
+  const realFetch = globalThis.fetch
+  const calls: string[] = []
+  let openaiStatus = 401
+  const ok = (text: string) => new Response(JSON.stringify({ choices: [{ message: { role: 'assistant', content: text } }], usage: { prompt_tokens: 10, completion_tokens: 5 } }), { status: 200 })
+  globalThis.fetch = (async (url: string, init?: { body?: string }) => {
+    const u = String(url)
+    calls.push(u.includes('openai.com') ? 'openai' : u.includes('googleapis') ? 'gemini' : 'other')
+    if (u.includes('openai.com')) return openaiStatus === 200 ? ok('from openai') : new Response(JSON.stringify({ error: { code: openaiStatus === 429 ? 'insufficient_quota' : 'x' } }), { status: openaiStatus })
+    const sent = JSON.parse(init?.body ?? '{}') as { model: string; messages: Array<{ role: string }> }
+    if (sent.messages[sent.messages.length - 1].role === 'system') return new Response('{"error":"ends with a system note"}', { status: 400 })
+    return ok('from gemini')
+  }) as typeof fetch
+  const body = { model: 'gpt-x', messages: [{ role: 'system', content: 'a' }, { role: 'user', content: 'hi' }, { role: 'system', content: 'late note' }] }
+  const text = (r: unknown) => (r as { choices: Array<{ message: { content: string } }> }).choices[0].message.content
+  try {
+    let meter: { tokens: number; provider?: 'gemini' } = { tokens: 0 }
+    const both = { openai: 'k1', gemini: 'k2', geminiModel: 'gemini-test' }
+    let r = await callModel(both, body, meter)
+    if (text(r) !== 'from gemini' || meter.provider !== 'gemini' || meter.tokens !== 15) fail('llm: a 401 from OpenAI must fall back to Gemini and count its tokens')
+    if (calls.join() !== 'openai,gemini') fail(`llm: expected openai then gemini, got ${calls.join()}`)
+    calls.length = 0
+    r = await callModel(both, body, meter)
+    if (calls.join() !== 'gemini') fail('llm: once on Gemini, the same request stays there')
+    calls.length = 0
+    meter = { tokens: 0 }
+    r = await callModel(both, body, meter)
+    if (calls.join() !== 'gemini') fail('llm: after a key problem OpenAI is skipped for a few minutes')
+    if (JSON.stringify({}) && text(r) !== 'from gemini') fail('llm: a late system note must not end the Gemini request (it becomes a user message)')
+    calls.length = 0
+    const onlyOpenAi = await callModel({ openai: 'k1', geminiModel: 'g' }, body, { tokens: 0 })
+    if (!(onlyOpenAi instanceof Response) || onlyOpenAi.status !== 502) fail('llm: with no standby, an OpenAI failure is an error response')
+    const none = await callModel({ geminiModel: 'g' }, body, { tokens: 0 })
+    if (!(none instanceof Response) || none.status !== 503) fail('llm: with no key at all the answer is 503')
+  } finally { globalThis.fetch = realFetch }
+}
+
 console.log(fails ? `\n${fails} problem(s).` : `\nKB OK: ${KB.patterns.length} patterns, ${personas.length} personas + ${reals.length} real profiles, formula matches the spec table.`)
 process.exit(fails ? 1 : 0)
