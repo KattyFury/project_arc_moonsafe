@@ -8,6 +8,7 @@ import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import type { ChatMessage } from '@/types'
 import { authHeader, cloudSave } from '@/lib/cloud'
 import { readOps, type ProfileOp } from '@/lib/profile'
+import type { RecordRequest } from '@/lib/record'
 
 const STORAGE_KEY = 'moonsafe_chat_v2'
 const MAX_KEEP = 80
@@ -58,7 +59,10 @@ export function clearChatStorage() {
 // Cards and charts under the agent's replies, by reply timestamp. Kept in localStorage: they used to live in
 // component state and vanished when the chat remounted mid-signature (real chat 2026-10-27).
 const EXTRAS_KEY = 'moonsafe_chat_extras_v1'
-export interface StoredCard { id: number; at: number; kind: 'deposit' | 'withdraw' | 'buy' | 'dca'; amount: string; intervalDays?: number; status?: 'done' | 'cancelled' }
+export type StoredCard =
+  | { id: number; at: number; kind: 'deposit' | 'withdraw' | 'buy' | 'dca'; amount: string; intervalDays?: number; status?: 'done' | 'cancelled' }
+  /** A reported placement waiting for the user's confirmation (src/lib/record.ts). */
+  | { id: number; at: number; kind: 'record'; record: RecordRequest; status?: 'done' | 'cancelled' }
 export interface StoredChart { at: number; kind: 'allocation' | 'cashflow' }
 export function readChatExtras(): { cards: StoredCard[]; charts: StoredChart[] } {
   try {
@@ -82,7 +86,11 @@ export interface AgentHooks {
 }
 
 export interface AgentAction {
-  type: 'prepare_deposit' | 'prepare_withdraw' | 'prepare_buy_cirbtc' | 'propose_dca' | 'open_screen' | 'show_allocation' | 'show_cashflow'
+  type: 'prepare_deposit' | 'prepare_withdraw' | 'prepare_buy_cirbtc' | 'propose_dca' | 'open_screen' | 'show_allocation' | 'show_cashflow' | 'confirm_record'
+  /** confirm_record: where the money went and what the user already said about its source. */
+  holdingType?: string
+  name?: string
+  source?: 'wallet' | 'new' | null
   amount?: { amount: number; currency: 'VND' | 'USDC' }
   intervalDays?: number
   screen?: 'fund' | 'invest' | 'balance' | 'menu'

@@ -28,6 +28,7 @@ import {
   applyOps, categoryOf, defaultRebalanceable, hasAnyData, isAssetType, newId, normalizeProfile, priceKindOf, BTC_SYMBOLS, DEBT_TYPES, STABLECOINS, TOP10_SYMBOLS,
   type ProfileOp,
 } from '../../src/lib/profile'
+import { bucketLabel, detectPlacement } from '../../src/lib/record'
 import type { AssetType, Currency, Debt, DebtType, Expense, FinancialProfile, Holding, Income, NearGoal } from '../../src/types'
 
 interface Env {
@@ -744,6 +745,13 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   const wantsInvestLocked = !investUnlocked && INVEST_INTENT.test(lastUserText) && !NOT_INVESTING.test(lastUserText) && !ASKS_WHY.test(lastUserText) && !DEPOSIT_WORD.test(lastUserText)
   const paymentNums = [...lastUserText.matchAll(PAYMENT_NUM)].flatMap(m => readings(m[1]))
   const startFacts = computeFacts({ balance: startBalance, profile, prices, vndPerUsd: rate, message: lastUserText })
+  // "I put 1,000 in my bank as Safety": the app shows a confirmation box (source + Confirm) and saves it itself;
+  // the agent neither asks where it came from nor records it (real chat 2026-10-27: the destination was lost, then the loop).
+  const placement = detectPlacement(lastUserText, rate)
+  if (placement) {
+    actions.push({ type: 'confirm_record', amount: { amount: placement.amountUsd, currency: 'USDC' }, holdingType: placement.holdingType, name: placement.name, source: placement.source })
+    done.push(`Showed a confirmation box under this reply to RECORD ${usdc(placement.amountUsd)} in ${placement.name} (${bucketLabel(placement.holdingType)}). NOT saved yet: in the box the user picks where the money came from (the app wallet, a listed place or new money) and taps Confirm. Do NOT ask where it came from in text and do NOT say it is saved.`)
+  }
   // "I want 50% in BTC": that share of liquid assets in USDC, so neither the card nor the reply computes it.
   const wishPct = Number(lastUserText.match(/(?<!\d)(\d{1,3})\s*%/)?.[1] ?? NaN)
   const wishGroup = !(wishPct > 0 && wishPct <= 100) ? null : startFacts.intent_all_in_alt || /alt|meme|low[- ]?cap|small[- ]?cap/i.test(lastUserText) ? 'low caps' : /btc|bitcoin|cirbtc/i.test(lastUserText) ? 'BTC' : null
@@ -833,6 +841,13 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
     const before = done.length
     const findH = (id: unknown) => profile.holdings.find(h => h.id === id)
     const findD = (id: unknown) => profile.debts.find(d => d.id === id)
+    // A reported placement is saved by the confirmation box, never by a tool: the amount would be counted twice.
+    if (placement && (name === 'add_holding' || name === 'move' || name === 'set_holding')) {
+      const amts = [moneyArg(a.worth), moneyArg(a.amount), typeof a.quantity === 'number' ? { amount: a.quantity, currency: 'USDC' as Currency } : null]
+      if (amts.some(m => m && Math.abs((toUsd(m.amount, m.currency, rate) ?? -1) - placement.amountUsd) <= Math.max(1, placement.amountUsd * 0.01))) {
+        return 'Not recorded: a confirmation box is shown to the user for this amount; they pick the source and confirm, and the app saves it. Record nothing for it.'
+      }
+    }
     // "I just put X into safe" without a source: ask first (spec 10).
     if ((name === 'add_holding' || name === 'move') && startFacts.intent_added_to_safe) {
       return 'Not done: they did not say where the money came from. Record nothing; the agent asks "where did it come from?" first.'
@@ -1179,7 +1194,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   const pending = (collecting || v2Missing) && !toAsk.length ? nextQuestion(profile, assistantTexts, messages.filter(m => m.role === 'user').map(m => m.content), userSaidNothingElse, vi) : null
   // "What else do you need to know?" invites the next question; it is not a question to answer first (v2 test 2026-10-27).
   const invitesNext = /what else|anything else|what (else )?do you need|next question|ask me/i.test(lastUserText)
-  const next = !DECLINES.test(lastUserText) && (!userAsks || invitesNext) ? pending : null
+  const next = !placement && !DECLINES.test(lastUserText) && (!userAsks || invitesNext) ? pending : null
   // The advice path (Hieu, 2026-10-27): collect → the plan, once → start with the emergency fund.
   const planGiven = assistantTexts.some(a => PLAN_GIVEN.test(a))
   const phase: 'collect' | 'plan' | 'start' = pending || toAsk.length ? 'collect' : !planGiven && balance.target ? 'plan' : 'start'
@@ -1210,9 +1225,9 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   if (!assistantTexts.length && !hasAnyData(profile)) replyMessages.push({ role: 'system', content: `This is their first message; they already saw MoonSafe's welcome, so do not welcome them again. Answer what they said first, in plain words, then in one or two plain sentences how this works: a few questions about their money (they can skip any), then a plan (how big an emergency fund they need and how to divide the rest of their money for their age), then they decide when to start. No balances, no percentages, no labels in this reply. Then your one question with why you ask.` })
   else if (KNOWS_NOTHING.test(lastUserText)) replyMessages.push({ role: 'system', content: 'They feel lost: give the big picture in plain words (know your monthly spending → emergency fund → expensive debt → then invest), say which step they are on, and the one next step.' })
   if (ASKS_OVERVIEW.test(lastUserText)) replyMessages.push({ role: 'system', content: `Overall check-up, as an advisor: one short point each, in this order: ${balance.debts.priorityCount ? 'their priority debt (start with it), ' : ''}the emergency fund vs its floor, then the split. For each, why it matters for them and one option they could take (an option, not an order). Keep the split to one sentence.` })
-  if (phase === 'collect' && assistantTexts.length) replyMessages.push({ role: 'system', content: `PHASE 1, COLLECTING. Acknowledge what they told you in a few words, then the Next question with why you ask. No advice yet: do not talk about the emergency fund gap, BTC, the cirBTC buy lock or how to divide money; the plan comes once you know enough.${userAsks ? ' They asked something: answer it plainly first.' : ''}` })
+  if (phase === 'collect' && assistantTexts.length && !placement) replyMessages.push({ role: 'system', content: `PHASE 1, COLLECTING. Acknowledge what they told you in a few words, then the Next question with why you ask. No advice yet: do not talk about the emergency fund gap, BTC, the cirBTC buy lock or how to divide money; the plan comes once you know enough.${userAsks ? ' They asked something: answer it plainly first.' : ''}` })
   // The plan, framework v2 (2026-10-27): three buckets; until the fund is full only the fund and saving get amounts.
-  if (phase === 'plan') {
+  if (phase === 'plan' && !placement) {
     const fundMet = balance.fund.met
     const deps = (profile.dependents ?? 0) > 0 || profile.soleEarner === true
     const points = [
@@ -1234,8 +1249,11 @@ ${points.map((x, k) => `${k + 1}. ${x}`).join('\n')}
 ${ending}` })
   }
   // After the plan they fill one bucket at a time, the one they pick (Hieu, 2026-10-27).
-  if (phase === 'start' && planGiven && balance.fund.met && !appEvent) replyMessages.push({ role: 'system', content: `The plan was given and the emergency fund is full. They fill one bucket at a time, the one THEY pick, no need to split every dollar. If they pick one: Crypto → ${balance.lock.open && cryptoOffer >= 1 ? `offer exactly: "Would you like me to prepare a cirBTC buy of **${usdc(cryptoOffer)}** for you to sign?" (that fills the Crypto bucket as far as the wallet allows; ignore the split in "Suggested use of idle money")` : 'say what is missing to buy in the app'}; Safety → their own bank savings or flexible earn, outside the app, with the amount; Traditional → bought outside the app with a broker (an index fund such as VOO, or gold), with the amount. If they have not picked yet, ask which one they want to fill first.` })
-  if (appEvent) replyMessages.push({ role: 'system', content: `The latest "user" line is the app telling you a card was signed (not their words). Confirm it in one sentence with what it means for them (e.g. their emergency fund now holds N months of spending), then the next step: ${balance.fund.met ? 'ask which bucket they want to fill first (Safety, Traditional or Crypto), with how much each still needs from "Still to fill"; they can fill one fully before the next.' : 'what still remains for the emergency fund.'} Numbers only from ASSET & FUND FIGURES.` })
+  if (phase === 'start' && planGiven && balance.fund.met && !appEvent && !placement) replyMessages.push({ role: 'system', content: `The plan was given and the emergency fund is full. They fill one bucket at a time, the one THEY pick, no need to split every dollar. If they pick one: Crypto → ${balance.lock.open && cryptoOffer >= 1 ? `offer exactly: "Would you like me to prepare a cirBTC buy of **${usdc(cryptoOffer)}** for you to sign?" (that fills the Crypto bucket as far as the wallet allows; ignore the split in "Suggested use of idle money")` : 'say what is missing to buy in the app'}; Safety → their own bank savings or flexible earn, outside the app, with the amount; Traditional → bought outside the app with a broker (an index fund such as VOO, or gold), with the amount. If they have not picked yet, ask which one they want to fill first.` })
+  const recordEvent = lastUserText.startsWith('[app event] The user confirmed recording')
+  if (placement) replyMessages.push({ role: 'system', content: `A confirmation box is under this reply: it saves ${usdc(placement.amountUsd)} in ${placement.name} (${bucketLabel(placement.holdingType)}) once the user picks where the money came from and taps Confirm. Say in ONE short sentence: pick where the money came from in the box and tap Confirm to save it; nothing is saved before. Nothing else: no advice, no talk about buckets, targets or what is outside the app, no question (the box asks the source), no "Noted".` })
+  else if (recordEvent) replyMessages.push({ role: 'system', content: `The latest "user" line is the app telling you the user CONFIRMED a confirmation box (not their words): the amount is now saved in their balance and the figures above already include it. In two short sentences: confirm what was saved, and what it means for them (how much that bucket holds now against its target, or what is still to fill there). Then ${next ? 'ask the Next question below' : balance.fund.met ? 'ask which bucket they want to fill next (Safety, Traditional or Crypto), with how much each still needs from "Still to fill"; they can fill one fully before the next.' : 'say what still remains for the emergency fund.'} Numbers only from ASSET & FUND FIGURES. Do not say "Noted" and do not explain where the bank is or that it is outside the app.` })
+  else if (appEvent) replyMessages.push({ role: 'system', content: `The latest "user" line is the app telling you a card was signed (not their words). Confirm it in one sentence with what it means for them (e.g. their emergency fund now holds N months of spending), then the next step: ${balance.fund.met ? 'ask which bucket they want to fill first (Safety, Traditional or Crypto), with how much each still needs from "Still to fill"; they can fill one fully before the next.' : 'what still remains for the emergency fund.'} Numbers only from ASSET & FUND FIGURES.` })
   // "do it" showed the card but the reply went back to the cirBTC lock (real chat 2026-10-27).
   const card = actions.find(x => x.type === 'prepare_deposit')
   if (card) replyMessages.push({ role: 'system', content: `The deposit card is under this reply. In two short sentences: what it does for them (their emergency fund reaches its target, so N months of spending are covered if income stops) and what comes after they sign (the next step of the plan). No buy-lock talk, no new question.` })
@@ -1320,7 +1338,7 @@ ${ending}` })
       // They picked Crypto after the plan but got the question back (v2 test 2026-10-27): offer the cirBTC card with a server-computed amount.
       if (phase === 'start' && planGiven && balance.lock.open && /crypto|btc|bitcoin/i.test(lastUserText) && !actions.some(x => x.type === 'prepare_buy_cirbtc' || x.type === 'propose_dca') && !/prepare[^.?!\n]{0,60}(cirBTC|buy|DCA)/i.test(plain) && cryptoOffer >= 1) problems.push(`they picked Crypto: offer a cirBTC buy of **${usdc(cryptoOffer)}** for them to sign ("Would you like me to prepare a cirBTC buy of … for you to sign?")`)
       // A beginner may think stocks or savings are bought in the app (v2 test 2026-10-27).
-      if (phase === 'start' && planGiven && /stock|traditional|index|gold|savings|bank|cổ phiếu|vàng|tiết kiệm/i.test(lastUserText) && !/outside|broker|your (own )?bank|bên ngoài/i.test(plain)) problems.push('say plainly this part is done outside the app (a broker for stocks or index funds, their own bank for savings), with the amount from "Still to fill"') // lang-ok
+      if (phase === 'start' && planGiven && !placement && !recordEvent && /stock|traditional|index|gold|savings|bank|cổ phiếu|vàng|tiết kiệm/i.test(lastUserText) && !/outside|broker|your (own )?bank|bên ngoài/i.test(plain)) problems.push('say plainly this part is done outside the app (a broker for stocks or index funds, their own bank for savings), with the amount from "Still to fill"') // lang-ok
       // Phase 1 is for listening: advice about the fund gap or the lock waits for the plan (Hieu, 2026-10-27).
       if (phase === 'collect' && !userAsks && (LOCK_TALK.test(plain) || /\bshort\b|still needed|còn thiếu/i.test(plain))) problems.push('still collecting: no advice yet about the emergency fund gap or the cirBTC lock; acknowledge and ask the next question with why') // lang-ok
       // Advisor replies (2026-10-27 tests): a stray "Right?" after the real question, "I need to know…" instead of asking,
@@ -1342,7 +1360,8 @@ ${ending}` })
       if (next && content.includes('?') && !GIVES_REASON.test(content)) problems.push('say in a few words why you ask (what the answer lets you work out for them); if something useful is already known from the figures, give that one point before the question')
       if (SAFE_IN_APP.test(content)) problems.push('the app cannot move money to the user\'s bank or exchange and nothing was moved: the user tops up their own savings themselves; never offer or claim a deposit / transfer to savings')
       if (SAFE_AS_FUND.test(content)) problems.push('if you meant the emergency fund, call it "emergency fund" / "quỹ dự phòng" and add no explanation about the safe part; the safe part is the user\'s own savings, NOT the emergency fund, and cannot be deposited in the app') // lang-ok
-      if (startFacts.intent_added_to_safe && !ops.length && !/(?<!\p{L})(where|from|từ đâu|ở đâu)(?!\p{L})/iu.test(content)) problems.push('ask exactly one question: where did the money come from (their idle money / the app wallet, or new money)?') // lang-ok
+      if (placement && (content.includes('?') || /came from|come from|where did|from where/i.test(plain))) problems.push('a confirmation box is shown under this reply: ask no question and do not ask where the money came from; say what the box saves and that nothing is saved until they confirm')
+      if (!placement && startFacts.intent_added_to_safe && !ops.length && !/(?<!\p{L})(where|from|từ đâu|ở đâu)(?!\p{L})/iu.test(content)) problems.push('ask exactly one question: where did the money come from (their idle money / the app wallet, or new money)?') // lang-ok
       if (usedOnce.has('altcoin_heavy') && CAUTION_ALT.test(content)) problems.push('the altcoin risk was already said once in this chat: do not repeat it, respect their decision')
       // Users found replies wordy (2026-10-24, median 305 chars), then found them bossy with no reasons (Hieu, 2026-10-27):
       // room for one "why" sentence. Checked only once the content is right.
