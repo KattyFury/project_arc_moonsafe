@@ -9,6 +9,8 @@ import { useApp } from '@/state/AppState'
 import { WELCOME, WELCOME_BACK, readChatExtras, useAgent, writeChatExtras, type AgentAction, type StoredCard } from '@/hooks/useAgent'
 import { dcaNextRun } from '@/hooks/useCirBtc'
 import { useNow } from '@/hooks/useNow'
+import { isOutOfPower, useAiPower } from '@/hooks/useAiPower'
+import { PowerMeter, PowerSheet } from '@/components/chat/AiPower'
 import { DCA_AVAILABLE } from '@/lib/features'
 import { formatUsdc } from '@/lib/format'
 import { GlassCard } from '@/components/ui/kit'
@@ -77,6 +79,9 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  const { power, setPower, verifyOwner } = useAiPower()
+  const [powerOpen, setPowerOpen] = useState(false)
+  const outOfPower = isOutOfPower(power)
   const { messages, loading, sendMessage } = useAgent({
     // The server recomputes every figure and the buy lock from these (src/lib/allocation.ts computeBalance).
     getContext: () => ({
@@ -89,6 +94,7 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
     onOps: profile.apply,
     onDcaStop: () => { cirBtc.stopDca(); toast('DCA stopped') },
     onActions: handleActions,
+    onPower: p => { if (p) { setPower(p); if (isOutOfPower(p)) setPowerOpen(true) } },
   })
 
   const count = messages.length
@@ -101,7 +107,7 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
 
   const handleSend = async () => {
     const text = input.trim()
-    if (!text || loading) return
+    if (!text || loading || outOfPower) return
     setInput('')
     onError(null)
     await sendMessage(text)
@@ -155,16 +161,19 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
           <div ref={bottomRef} />
         </div>
 
+        {power && <PowerMeter power={power} onOpen={() => setPowerOpen(true)} />}
+        {powerOpen && power && <PowerSheet power={power} verifyOwner={verifyOwner} onClose={() => setPowerOpen(false)} />}
+
         {/* Composer */}
         <div className="flex-shrink-0 flex gap-2 items-center px-4 py-4 lg:px-6 lg:pb-6 lg:pt-0" style={{ background: 'var(--bg)' }}>
           <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void handleSend() } }}
-            placeholder="Message the agent…" aria-label="Message"
+            placeholder={outOfPower ? 'Out of AI power · recharge to keep chatting' : 'Message the agent…'} aria-label="Message"
             className="flex-1 min-w-0 h-12 px-4 rounded-full text-[16px] leading-6 outline-none focus-visible:outline-none border border-[var(--line)] focus:border-2 focus:border-[var(--accent)] placeholder:text-[var(--muted)]"
             style={{ background: 'var(--surface-muted)', color: 'var(--ink)' }} />
-          <button onClick={() => { void handleSend() }} disabled={loading || !input.trim()} aria-label="Send"
+          <button onClick={() => { void handleSend() }} disabled={loading || outOfPower || !input.trim()} aria-label="Send"
             className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
-            style={loading || !input.trim()
+            style={loading || outOfPower || !input.trim()
               ? { background: 'var(--line)', color: 'var(--muted)' }
               : { background: 'var(--accent)', color: 'white', boxShadow: 'var(--shadow-y2)' }}>
             {loading ? <Loader2 size={24} className="animate-spin" /> : <Send size={24} />}
