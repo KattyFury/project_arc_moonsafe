@@ -9,8 +9,9 @@ import { useApp } from '@/state/AppState'
 import { WELCOME, WELCOME_BACK, readChatExtras, useAgent, writeChatExtras, type AgentAction, type StoredCard } from '@/hooks/useAgent'
 import { dcaNextRun } from '@/hooks/useCirBtc'
 import { useNow } from '@/hooks/useNow'
+import { DCA_AVAILABLE } from '@/lib/features'
 import { formatUsdc } from '@/lib/format'
-import { GlassCard, Notice } from '@/components/ui/kit'
+import { GlassCard } from '@/components/ui/kit'
 import { ActionCard, type ChatAction } from '@/components/chat/ActionCard'
 import { RecordCard } from '@/components/chat/RecordCard'
 import type { AssetType } from '@/types'
@@ -30,7 +31,7 @@ function renderContent(text: string): ReactNode {
 
 const Avatar = () => <img src="/logo.svg" alt="" width={32} height={32} className="flex-shrink-0" />
 
-export function ChatScreen({ onError, onOpenInvest, onActions }: { onError: (m: string | null) => void; onOpenInvest: () => void; onActions: (a: AgentAction[]) => void }) {
+export function ChatScreen({ onError, onActions }: { onError: (m: string | null) => void; onActions: (a: AgentAction[]) => void }) {
   const { profile, vault, math, cirBtc, vndToUsdc } = useApp()
   // Deposit / withdraw / buy / DCA cards and charts under the agent's replies, by reply timestamp.
   // Stored, so a chat remounted mid-signature (wallet switching network) keeps them (real chat 2026-10-27).
@@ -66,9 +67,10 @@ export function ChatScreen({ onError, onOpenInvest, onActions }: { onError: (m: 
   // Sent after the next render, so the context it reads has the refreshed balances.
   const [signed, setSigned] = useState<string | null>(null)
   const finishCard = (id: number, status: 'done' | 'cancelled', summary: string) => {
-    const isRecord = extras.cards.some(c => c.id === id && c.kind === 'record')
+    const kind = extras.cards.find(c => c.id === id)?.kind
     setExtras(x => ({ ...x, cards: x.cards.map(c => c.id === id ? { ...c, status } : c) }))
-    if (status === 'done') setSigned(isRecord ? `[app event] The user confirmed recording: ${summary}` : `[app event] The user signed the card: ${summary}`)
+    // A DCA approval buys nothing yet: tell the agent so it does not say "signed" (real chat 2026-10-27).
+    if (status === 'done') setSigned(kind === 'record' ? `[app event] The user confirmed recording: ${summary}` : kind === 'dca' ? `[app event] The user approved the DCA plan: ${summary}` : `[app event] The user signed the card: ${summary}`)
   }
   const now = useNow()
   const [input, setInput] = useState('')
@@ -107,7 +109,10 @@ export function ChatScreen({ onError, onOpenInvest, onActions }: { onError: (m: 
   }, [input, loading, sendMessage, onError])
 
   const [scrolled, setScrolled] = useState(false)
-  const dcaDue = math.investUnlocked && cirBtc.dca !== null && (dcaNextRun(cirBtc.dca) ?? Infinity) <= now
+  const dcaDue = DCA_AVAILABLE && math.investUnlocked && cirBtc.dca !== null && (dcaNextRun(cirBtc.dca) ?? Infinity) <= now
+  // The DCA round that is due is bought right here in the chat (card), not in another tab; the card stays after the purchase.
+  const [dueDone, setDueDone] = useState<bigint | null>(null)
+  const dueAmount = dcaDue && cirBtc.dca ? BigInt(cirBtc.dca.amountUsdc) : dueDone
 
   return (
     <div className="flex flex-col flex-1 min-h-0 w-full lg:max-w-[840px] lg:mx-auto lg:px-6 lg:py-12">
@@ -143,10 +148,9 @@ export function ChatScreen({ onError, onOpenInvest, onActions }: { onError: (m: 
             </div>
           )}
 
-          {dcaDue && (
-            <Notice tone="info" title="Your DCA buy is due">
-              <button className="underline" onClick={onOpenInvest}>Open Invest to get a quote and sign</button>
-            </Notice>
+          {dueAmount !== null && (
+            <ActionCard key="dca-due" title="DCA buy is due" action={{ id: -1, at: 0, kind: 'buy', amount: dueAmount, status: dueDone !== null ? 'done' : undefined }}
+              onFinished={s => { if (s === 'done') { setDueDone(dueAmount); cirBtc.markDcaRun() } }} />
           )}
           <div ref={bottomRef} />
         </div>

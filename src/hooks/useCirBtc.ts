@@ -10,6 +10,7 @@ import { useAccount, usePublicClient, useSwitchChain } from 'wagmi'
 import { arcTestnet } from 'viem/chains'
 import type { DcaPlan } from '@/types'
 import { ensureArcChain } from '@/lib/chain'
+import { DCA_AVAILABLE } from '@/lib/features'
 
 /** docs.arc.network/arc/references/contract-addresses — testnet cirBTC. */
 export const CIRBTC_ADDRESS = '0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF' as const
@@ -31,6 +32,7 @@ export interface CirBtcQuote {
 }
 
 function readDca(): DcaPlan | null {
+  if (!DCA_AVAILABLE) return null // plans saved before DCA was switched off are ignored
   try {
     const raw = localStorage.getItem(DCA_KEY)
     return raw ? (JSON.parse(raw) as DcaPlan) : null
@@ -64,7 +66,7 @@ export interface CirBtcState {
   refresh: () => Promise<void>
 }
 
-const toAppKitAmount = (u: bigint) => {
+export const toAppKitAmount = (u: bigint) => {
   const whole = u / 1_000_000n
   const frac = (u % 1_000_000n).toString().padStart(6, '0').replace(/0+$/, '')
   return frac ? `${whole}.${frac}` : `${whole}`

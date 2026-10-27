@@ -7,6 +7,7 @@ import { ArrowRight, ExternalLink, Lock } from 'lucide-react'
 import { useApp } from '@/state/AppState'
 import { overTargetWarning, spendable } from '@/lib/invest'
 import { dcaNextRun, formatCirBtc } from '@/hooks/useCirBtc'
+import { DCA_AVAILABLE } from '@/lib/features'
 import { useNow } from '@/hooks/useNow'
 import { DASH, formatUsdc, parseUsdcInput, usdcToInput } from '@/lib/format'
 import { AmountField, Btn, Chips, Col, GlassCard, Grid, IconBox, Notice, Screen, Sheet, Toggle } from '@/components/ui/kit'
@@ -104,7 +105,7 @@ function InvestOpen() {
           {/* One card: buy once or set a weekly DCA */}
           <GlassCard className="p-4 lg:p-8 flex flex-col gap-4">
             <Toggle value={mode} onChange={setMode}
-              options={[{ value: 'once', label: 'Buy once' }, { value: 'dca', label: due ? 'DCA · due' : 'Recurring (DCA)' }]} />
+              options={[{ value: 'once', label: 'Buy once' }, { value: 'dca', label: !DCA_AVAILABLE ? 'DCA · not available' : due ? 'DCA · due' : 'Recurring (DCA)' }]} />
 
             {mode === 'once' ? (
               <>
@@ -130,6 +131,8 @@ function InvestOpen() {
                   {cirBtc.busy && !q ? 'Getting a quote…' : 'Get a quote · Buy cirBTC'}
                 </Btn>
               </>
+            ) : !DCA_AVAILABLE ? (
+              <Notice tone="info" title="DCA is not available yet">Recurring buys are coming on mainnet. For now you can buy cirBTC once.</Notice>
             ) : dca && dcaAmount !== null ? (
               <>
                 <p className="text-[16px] leading-6" style={{ color: 'var(--ink)' }}>

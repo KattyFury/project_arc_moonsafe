@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { ArrowDownToLine, ArrowRight, ArrowUpFromLine, ExternalLink, Repeat, TrendingUp } from 'lucide-react'
 import { useApp } from '@/state/AppState'
 import { GAS_ESTIMATE_USDC6, GAS_RESERVE_USDC6, txErrorMessage } from '@/hooks/useVault'
+import { toAppKitAmount } from '@/hooks/useCirBtc'
 import { overTargetWarning, spendable } from '@/lib/invest'
 import { formatUsdc } from '@/lib/format'
 import { Btn, GlassCard, IconBox, Notice } from '@/components/ui/kit'
@@ -20,7 +21,11 @@ const TITLES = { deposit: 'Add to fund', withdraw: 'Withdraw to wallet', buy: 'B
 const ICONS = { deposit: ArrowDownToLine, withdraw: ArrowUpFromLine, buy: TrendingUp, dca: Repeat } as const
 
 /** onFinished: the card was signed or cancelled (stored, so a remounted chat shows it the same way). */
-export function ActionCard({ action, onFinished }: { action: ChatAction; onFinished?: (status: 'done' | 'cancelled', summary: string) => void }) {
+/** "every day" / "every 7 days". */
+export const everyDays = (n: number) => (n === 1 ? 'every day' : `every ${n} days`)
+
+/** title: overrides the heading (the DCA round that is due is a plain buy card). */
+export function ActionCard({ action, title, onFinished }: { action: ChatAction; title?: string; onFinished?: (status: 'done' | 'cancelled', summary: string) => void }) {
   const { vault, math, cirBtc, balance, money, unit } = useApp()
   const [status, setStatus] = useState<Status>(action.status ?? 'idle')
   const [error, setError] = useState<string | null>(null)
@@ -31,7 +36,8 @@ export function ActionCard({ action, onFinished }: { action: ChatAction; onFinis
   const vb = vault.vaultBalance
   const maxDeposit = wb !== null ? (wb > GAS_RESERVE_USDC6 ? wb - GAS_RESERVE_USDC6 : 0n) : null
   const room = spendable(wb)
-  const q = cirBtc.quote
+  // One quote lives in the app: a card uses it only when it is for this card's amount (a quote for another card once showed here).
+  const q = cirBtc.quote && cirBtc.quote.amountInUsdc === toAppKitAmount(amount) ? cirBtc.quote : null
 
   // What blocks the button, and what the user should know before signing.
   let block: string | null = null
@@ -68,11 +74,11 @@ export function ActionCard({ action, onFinished }: { action: ChatAction; onFinis
       setError(txErrorMessage(e)); setStatus('error')
     }
   }
-  const cancel = () => { if (kind === 'buy') cirBtc.clearQuote(); setStatus('cancelled'); onFinished?.('cancelled', `Cancelled: ${TITLES[kind]} ${formatUsdc(amount)}.`) }
+  const cancel = () => { if (kind === 'buy' && q) cirBtc.clearQuote(); setStatus('cancelled'); onFinished?.('cancelled', `Cancelled: ${TITLES[kind]} ${formatUsdc(amount)}.`) }
 
   const doneText = kind === 'deposit' ? `Added ${formatUsdc(amount)} to your fund.`
     : kind === 'withdraw' ? `Withdrew ${formatUsdc(amount)} to your wallet.`
-    : kind === 'dca' ? `DCA approved: ${formatUsdc(amount)} every ${action.intervalDays} days. Each time you still review the quote and sign.`
+    : kind === 'dca' ? `DCA approved: ${formatUsdc(amount)} ${everyDays(action.intervalDays)}. Each round you still review the quote and sign.`
     : 'cirBTC bought.'
   const signLabel = kind === 'dca' ? 'Approve DCA' : kind === 'buy' && !q ? 'Get a quote' : kind === 'buy' ? 'Sign purchase' : kind === 'withdraw' && warnings.length ? 'Withdraw anyway' : 'Sign transaction'
   const busyLabel = kind === 'buy' && !q ? 'Getting a quote…' : 'Waiting for wallet…'
@@ -82,9 +88,9 @@ export function ActionCard({ action, onFinished }: { action: ChatAction; onFinis
       <div className="flex items-center gap-4">
         <IconBox><Icon size={24} style={{ color: 'var(--accent)' }} /></IconBox>
         <div className="min-w-0">
-          <p className="text-[14px] leading-5 font-semibold" style={{ color: 'var(--subtle)' }}>{TITLES[kind]}</p>
+          <p className="text-[14px] leading-5 font-semibold" style={{ color: 'var(--subtle)' }}>{title ?? TITLES[kind]}</p>
           <p className="display font-bold text-[24px] leading-8 tabular-nums" style={{ color: 'var(--ink)' }}>
-            {formatUsdc(amount)}{kind === 'dca' ? <span className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--subtle)' }}> / {action.intervalDays} days</span> : null}
+            {formatUsdc(amount)}{kind === 'dca' ? <span className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--subtle)' }}> / {action.intervalDays === 1 ? 'day' : `${action.intervalDays} days`}</span> : null}
           </p>
           {unit === 'VND' && <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>≈ {money(amount)}</p>}
         </div>
