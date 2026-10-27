@@ -503,7 +503,6 @@ const usdc = (n: number) => `${new Intl.NumberFormat('en-US', { maximumFractionD
 const vnd = (n: number) => n >= 1_000_000
   ? `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(n / 1_000_000)}M VND`
   : `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(n)} VND`
-const pct = (n: number) => `${Math.round(n * 10) / 10}%`
 /** Whole percentages that add up like the exact ones (largest remainder), so a shown split sums to 100. */
 function wholeShares(exact: number[]): number[] {
   const floors = exact.map(Math.floor)
