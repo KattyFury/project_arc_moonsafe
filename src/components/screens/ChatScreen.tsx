@@ -9,6 +9,7 @@ import { useApp } from '@/state/AppState'
 import { WELCOME, WELCOME_BACK, readChatExtras, useAgent, writeChatExtras, type AgentAction, type StoredCard } from '@/hooks/useAgent'
 import { dcaNextRun } from '@/hooks/useCirBtc'
 import { useNow } from '@/hooks/useNow'
+import { DCA_AVAILABLE } from '@/lib/features'
 import { formatUsdc } from '@/lib/format'
 import { GlassCard } from '@/components/ui/kit'
 import { ActionCard, type ChatAction } from '@/components/chat/ActionCard'
@@ -108,7 +109,7 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
   }, [input, loading, sendMessage, onError])
 
   const [scrolled, setScrolled] = useState(false)
-  const dcaDue = math.investUnlocked && cirBtc.dca !== null && (dcaNextRun(cirBtc.dca) ?? Infinity) <= now
+  const dcaDue = DCA_AVAILABLE && math.investUnlocked && cirBtc.dca !== null && (dcaNextRun(cirBtc.dca) ?? Infinity) <= now
   // The DCA round that is due is bought right here in the chat (card), not in another tab; the card stays after the purchase.
   const [dueDone, setDueDone] = useState<bigint | null>(null)
   const dueAmount = dcaDue && cirBtc.dca ? BigInt(cirBtc.dca.amountUsdc) : dueDone

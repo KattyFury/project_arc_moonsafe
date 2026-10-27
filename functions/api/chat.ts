@@ -88,6 +88,8 @@ const AGE_WORD = /(?<!\p{L})(age|old|tuổi)(?!\p{L})/iu // lang-ok
 // \b treats Vietnamese letters as non-word, so word edges are written with \p{L}.
 // Agreement only counts at the start of the message ("ok so my salary is…" is not a yes).
 const AGREES = /^\s*(ok|okay|oke|sure|yes|yeah|yep|go ahead|do it|sounds good|please do|được|đồng ý|ừ|uk|chốt|nhất trí|triển)(?!\p{L})/iu // lang-ok
+import { DCA_AVAILABLE } from '../../src/lib/features'
+
 const ACTION_INTENT = new RegExp(`(?<!\\p{L})(deposit|add|top up|put|withdraw|take out|buy|purchase|sell|dca|open|show|fill|stop|move|transfer|nạp|rút|mua|bán|mở(?!\\s*kh(?:oá|óa|oa))|xem|điền|dừng|chuyển|làm đi)(?!\\p{L})|${AGREES.source}`, 'iu') // lang-ok
 // Only a wish to buy BTC in the app brings up the cirBTC lock; "I want to start investing the right way"
 // is the normal collect → plan flow (Hieu 1a, 2026-10-27: the lock was pushed on every "invest").
@@ -282,7 +284,7 @@ ${RULES}
 - "MATCHING SITUATIONS" lists what applies to this user right now, most important first. Follow "does", you may use the "may say" lines, never do the "never" lines. Only bring up a situation when it fits what they asked, the most important one first.
 
 ## Actions and recording
-- Only describe what the "Actions just taken" note lists. Cards (add to the fund, withdraw, buy cirBTC, DCA) are confirmation CARDS the user signs: never say deposited / bought / done. To offer one: "Would you like me to prepare … for you to sign?".
+${DCA_AVAILABLE ? '' : '- DCA (recurring buys) is NOT available yet; it comes on mainnet. Never offer, suggest or set it up, whatever other rules say. If the user asks for it, say so in one sentence and offer a single cirBTC buy card instead (when buying is open).\n'}- Only describe what the "Actions just taken" note lists. Cards (add to the fund, withdraw, buy cirBTC, DCA) are confirmation CARDS the user signs: never say deposited / bought / done. To offer one: "Would you like me to prepare … for you to sign?".
 - Something recorded → start with the read-back from the notes, then at most one sentence on what the new number means for them, then end with "Right?" (that is your one question). When a "Next question" is given, ask it instead of "Right?" (with why you ask). Never mention what they said before or that it changed.
 - The app cannot move money to a bank or an exchange; the Safe part is their own savings or flexible earn (e.g. Binance Simple Earn Flexible), never the emergency fund.
 - They want a big BTC share (even 50%) → understand and respect it, Web3 thinking is heavy on BTC; only the fund comes first. They want a big low-cap / memecoin share → the reality check from the matching situation, once.
@@ -1077,6 +1079,10 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
     } else if (name === 'stop_dca') {
       dcaStop = true
       done.push('DCA was stopped in the app.')
+    } else if (name === 'propose_dca' && !DCA_AVAILABLE) {
+      console.log('dropped propose_dca: DCA is off')
+      done.push('BLOCKED propose_dca: DCA is not available yet (it comes on mainnet). Nothing was set up. Say so in one sentence; a single cirBTC buy card is still possible.')
+      return done[done.length - 1]
     } else if (UI_ACTIONS.has(name)) {
       // "just doing as you said" / "just BTC" right after the agent offered this action is a yes (real chat 2026-10-24).
       // A message with numbers ("I have 2000$ of gold") tells something new, it does not accept the offer.
@@ -1189,6 +1195,8 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   const facts = computeFacts({ balance, profile, prices, vndPerUsd: rate, message: lastUserText, changed: ops.length > 0 })
   const usedOnce = new Set(Object.entries(ONCE_SEEN).filter(([, re]) => assistantTexts.some(t => re.test(t))).map(([id]) => id))
   // A recorded fact is not "missing" any more; recording itself is not a reason to bring up every pattern.
+  // No DCA yet: the pattern that offers it never fires.
+  if (!DCA_AVAILABLE) usedOnce.add('lock_open_surplus')
   const matched = matchPatterns(facts, usedOnce)
   const brief = patternBrief(matched, displayFacts(facts))
   const { text: figs, floors, cover } = figures(balance, profile, wallet, cir, rate, usesVnd, !usedOnce.has('lock_open_surplus'))
@@ -1376,6 +1384,7 @@ ${ending}` })
       if (next && content.includes('?') && !GIVES_REASON.test(content)) problems.push('say in a few words why you ask (what the answer lets you work out for them); if something useful is already known from the figures, give that one point before the question')
       if (SAFE_IN_APP.test(content)) problems.push('the app cannot move money to the user\'s bank or exchange and nothing was moved: the user tops up their own savings themselves; never offer or claim a deposit / transfer to savings')
       if (SAFE_AS_FUND.test(content)) problems.push('if you meant the emergency fund, call it "emergency fund" / "quỹ dự phòng" and add no explanation about the safe part; the safe part is the user\'s own savings, NOT the emergency fund, and cannot be deposited in the app') // lang-ok
+      if (!DCA_AVAILABLE && /(set up|prepare|start|approve|propose|offer|want)[^.?!\n]{0,30}DCA|DCA (plan|card)/i.test(plain) && !/not available|isn.t available|unavailable|not yet|coming/i.test(plain)) problems.push('DCA is not available yet: do not offer it or set it up; if the user asked, say it is not available yet')
       if (placement && !dupBox && !/confirm/i.test(plain)) problems.push('tell them to tap Confirm in the box')
       if (placement && (content.includes('?') || /came from|come from|where did|from where/i.test(plain))) problems.push('a confirmation box is shown under this reply: ask no question and do not ask where the money came from; say what the box saves and that nothing is saved until they confirm')
       if (!placement && startFacts.intent_added_to_safe && !ops.length && !/(?<!\p{L})(where|from|từ đâu|ở đâu)(?!\p{L})/iu.test(content)) problems.push('ask exactly one question: where did the money come from (their idle money / the app wallet, or new money)?') // lang-ok
