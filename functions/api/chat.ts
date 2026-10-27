@@ -88,7 +88,9 @@ const AGE_WORD = /(?<!\p{L})(age|old|tuổi)(?!\p{L})/iu // lang-ok
 // Agreement only counts at the start of the message ("ok so my salary is…" is not a yes).
 const AGREES = /^\s*(ok|okay|oke|sure|yes|yeah|yep|go ahead|do it|sounds good|please do|được|đồng ý|ừ|uk|chốt|nhất trí|triển)(?!\p{L})/iu // lang-ok
 const ACTION_INTENT = new RegExp(`(?<!\\p{L})(deposit|add|top up|put|withdraw|take out|buy|purchase|sell|dca|open|show|fill|stop|move|transfer|nạp|rút|mua|bán|mở(?!\\s*kh(?:oá|óa|oa))|xem|điền|dừng|chuyển|làm đi)(?!\\p{L})|${AGREES.source}`, 'iu') // lang-ok
-const INVEST_INTENT = /(?<!\p{L})(buy|invest|investing|cirbtc|dca|btc|mua|đầu tư)(?!\p{L})/iu // lang-ok
+// Only a wish to buy BTC in the app brings up the cirBTC lock; "I want to start investing the right way"
+// is the normal collect → plan flow (Hieu 1a, 2026-10-27: the lock was pushed on every "invest").
+const INVEST_INTENT = /(?<!\p{L})(buy|cirbtc|dca|btc|bitcoin|mua)(?!\p{L})/iu // lang-ok
 // "I'm not yet investing" (answer to the coins question) once got the buy-lock sentence (real chat 2026-10-26).
 const NOT_INVESTING = /(not|never|don'?t|do not|no)\s+(yet\s+)?(invest|investing|buy|buying)|(chưa|không|ko)\s+(đầu tư|mua)/iu // lang-ok
 // A number paid per month or towards a debt: never the total owed ("200$ to repay my debt" became a 200 debt, real chat 2026-10-26).
