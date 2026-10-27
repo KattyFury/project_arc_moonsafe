@@ -64,7 +64,7 @@ export interface CirBtcState {
   refresh: () => Promise<void>
 }
 
-const toAppKitAmount = (u: bigint) => {
+export const toAppKitAmount = (u: bigint) => {
   const whole = u / 1_000_000n
   const frac = (u % 1_000_000n).toString().padStart(6, '0').replace(/0+$/, '')
   return frac ? `${whole}.${frac}` : `${whole}`

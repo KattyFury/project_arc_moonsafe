@@ -116,7 +116,7 @@ export function AppShell({ onLogout }: { onLogout: () => void }) {
         </div>
       )}
       <main className="flex-1 overflow-hidden flex flex-col min-h-0">
-        {tab === 'chat'    && <ChatScreen onError={setError} onOpenInvest={() => go('invest')} onActions={runActions} />}
+        {tab === 'chat'    && <ChatScreen onError={setError} onActions={runActions} />}
         {tab === 'fund'    && <FundScreen onOpenChat={openChat} />}
         {tab === 'invest'  && <InvestScreen onOpenFund={() => go('fund')} onOpenChat={openChat} />}
         {tab === 'balance' && <BalanceSheet onOpenChat={openChat} />}

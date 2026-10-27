@@ -6,6 +6,15 @@ Khung tài chính: **`docs/SPEC-FRAMEWORK-2026-10-25.md`** (dữ liệu: `src/kb
 
 ## ▶ Làm tiếp từ đây (mới nhất ở trên)
 
+**▶ BTC / DCA: mua ngay trong chat, không chuyển tab (2026-10-27, Arc Studio) — cùng nhánh PR #3, CHƯA DEPLOY.** Chat thật: DCA 5 USDC/ngày được duyệt, agent nói "signed", hỏi lại bucket, rồi hiện "Your DCA buy is due — Open Invest…".
+- **Không có hợp đồng DCA:** DCA là kế hoạch lưu ở app (localStorage `moonsafe_dca_v1`); mỗi vòng user tự lấy quote và ký swap App Kit. Lỗi nằm ở app/prompt, không phải hợp đồng.
+- **Thẻ mua dùng nhầm quote:** `cirBtc.quote` là MỘT quote chung; mọi thẻ buy đều hiện và ký quote đó dù khác số tiền. Giờ thẻ chỉ dùng quote đúng số tiền của nó (`toAppKitAmount`).
+- **Vòng DCA đến hạn:** bỏ dòng "Open Invest…"; thẻ "DCA buy is due" hiện ngay trong chat (Get a quote → Sign purchase) và gọi `markDcaRun` (trước đây mua từ thẻ chat không đánh dấu vòng đã chạy, nên luôn "due"). Tab Invest vẫn mua được như cũ.
+- **Phê duyệt DCA:** app báo agent "approved the DCA plan" (không còn "signed"); agent nói gọn: kế hoạch đã đặt, vòng đầu đến hạn và thẻ mua ngay bên dưới. Thẻ DCA/mua chỉ giải thích thẻ, không kể lại kế hoạch, không hỏi bucket. "every 1 days" → "every day".
+- **Plan bị đọc lại:** lịch sử gửi lên server bị cắt (`MAX_SEND`) nên tin có kế hoạch rơi mất → `planGiven` sai → agent đọc lại cả kế hoạch. Giờ quỹ khẩn cấp đã đủ thì coi như kế hoạch đã đưa.
+- **Hỏi bucket đã đầy:** thêm `BUCKETS_RULE`: chỉ nêu bucket còn "Still to fill" > 0; còn đúng 1 thì đề xuất luôn.
+- Thử với model thật (script tạm): "now we move to crypto" → đề nghị mua 1.269; "ok make it a DCA…" → thẻ DCA 5/ngày, trả lời 2 câu; app event approved → câu ngắn, không hỏi bucket. **Chưa thử swap thật / ví thật** (sandbox không có ví): Hiếu thử mua 5 USDC và báo lỗi nguyên văn nếu thẻ báo lỗi.
+
 **▶ Sửa 2 lỗi chat thật (2026-10-27, Arc Studio) — nhánh `arc-studio/fix-screen-and-newmoney-2026-10-27`, CHƯA DEPLOY.**
 - **Tự nhảy sang tab Invest:** `open_screen` không có động từ riêng trong `ACTION_VERB`, nên "fill crypto" / "yes" / "buy" đều qua cổng và agent mở tab Invest thay vì đề xuất. Giờ chỉ mở màn hình khi user nói tên màn hình ("open / show / go to … Invest tab"); một "yes" không bao giờ mở màn hình (yes vẫn dùng cho thẻ mua/nạp). Giao dịch vẫn chỉ được đề xuất khi user đồng ý ("Would you like me to prepare that buy…" → yes → thẻ).
 - **Safety tăng/giảm lung tung khi nói tiền mới ngoài app:** các câu như "I got 1000 new money from outside, I put it in my bank", "1000 more in savings from outside", "outside money, 1000 in the bank" không qua hộp xác nhận, nên model `set_holding` đè tổng Bank savings (1200 → 1000) hoặc cộng thêm tuỳ ý. `detectPlacement` giờ nhận cả ba dạng (số tiền đứng trước động từ + "it", "more/extra/new/outside" + số + bank/savings, và ngược lại). Nói lại cùng số tiền khi hộp đang chờ hoặc vừa Confirm thì KHÔNG hiện hộp thứ hai (chặn cộng đôi): agent chỉ nhắc hộp đang chờ / đã lưu. Prompt: số kèm "more/extra/new/outside" là phần cộng thêm, không bao giờ `set_holding` đè tổng.
