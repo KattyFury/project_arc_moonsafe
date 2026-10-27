@@ -37,21 +37,36 @@ const FROM_WALLET = /(from|out of)\s+(my\s+|the\s+|this\s+)?(app\s+|moonsafe\s+)
 const NEW_MONEY = /(?<!\p{L})(new money|airdrop|salary|bonus|earned|income|just got|received|from work|tiền mới|lương)(?!\p{L})/iu // lang-ok
 
 /** A placement the user reports in this message, or null (questions and plain "I have X in the bank" are not placements). */
+const DEST = '(?:my\\s+|the\\s+|a\\s+|an\\s+)?(?:safe|safety|savings?|bank|term deposit|fixed deposit|flexible|simple earn|earn|checking)'
+const VERB = '(?:put|putting|add|added|move|moved|moving|deposit|deposited|transfer|transferred|place|placed|save|saved|sent|wired|send)'
+// "I got 1000 new money … I put it in my bank": the amount comes first, the verb has "it" as object (real chat 2026-10-27).
+const PLACE_IT = new RegExp(`(?<!\\p{L})${VERB}\\s+(?:it|them|that|this|the money|all of it)\\s+(?:into|in|to|on)\\s+${DEST}`, 'iu')
+// "1000 more in savings from outside" / "outside money, 1000 in the bank": an amount for the bank with a "new money" word, no verb.
+const PLACE_NEW_AFTER = new RegExp(`\\d[^.?!\\n]{0,30}?(?<!\\p{L})(?:more|extra|additional|new money|outside|airdrop|salary|bonus)(?!\\p{L})[^.?!\\n]{0,40}?(?<!\\p{L})(?:into|in|to|on)\\s+${DEST}`, 'iu')
+const PLACE_NEW_BEFORE = new RegExp(`(?<!\\p{L})(?:more|extra|additional|new money|outside|airdrop|salary|bonus)(?!\\p{L})[^.?!\\n]{0,40}?\\d[^.?!\\n]{0,30}?(?<!\\p{L})(?:into|in|to|on)\\s+${DEST}`, 'iu')
+
+/** The first number in `t` from `from` on, as USD (the app's default unit when no currency word is given). */
+function firstAmount(t: string, from: number, vndPerUsd: number | null): number {
+  const withUnit = amountsUsd(t.slice(from), vndPerUsd)[0]
+  if (withUnit) return withUnit
+  const bare = /(?<![\w.,])(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s?(k|m)?(?![\w%])/i.exec(t.slice(from))
+  return bare ? Number(bare[1].replace(/,/g, '')) * ({ k: 1e3, m: 1e6 }[(bare[2] ?? '').toLowerCase()] ?? 1) : 0
+}
+
 export function detectPlacement(text: string, vndPerUsd: number | null): RecordRequest | null {
   const t = text.trim()
   if (!t || t.startsWith('[app event]') || QUESTION.test(t)) return null
-  const hit = PLACE.exec(t)
-  if (!hit && !PLACE_VI.test(t)) return null
-  // "put 1000 in my bank" has no currency word: read the first number after the verb as USD (the app's default unit).
-  const bare = hit ? /(?<![\w.,])(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s?(k|m)?(?![\w%])/i.exec(t.slice(hit.index)) : null
-  const bareAmount = bare ? Number(bare[1].replace(/,/g, '')) * ({ k: 1e3, m: 1e6 }[(bare[2] ?? '').toLowerCase()] ?? 1) : 0
-  const amount = amountsUsd(t, vndPerUsd)[0] ?? bareAmount
+  const hit = PLACE.exec(t) ?? PLACE_NEW_AFTER.exec(t) ?? PLACE_NEW_BEFORE.exec(t)
+  const viaIt = !hit && PLACE_IT.test(t)
+  if (!hit && !viaIt && !PLACE_VI.test(t)) return null
+  // "put 1000 in my bank" has no currency word: read the first number after the verb as USD.
+  const amount = firstAmount(t, hit && !viaIt ? hit.index : 0, vndPerUsd) || firstAmount(t, 0, vndPerUsd)
   if (!amount || !(amount > 0)) return null
   const holdingType: AssetType = /term deposit|fixed deposit/i.test(t) ? 'term_deposit'
     : /flexible|simple earn|(?<!\p{L})earn(?!\p{L})/iu.test(t) ? 'flexible_earn'
     : /checking|current account/i.test(t) ? 'checking'
     : 'savings'
-  const source = FROM_WALLET.test(t) ? 'wallet' : NEW_MONEY.test(t) ? 'new' : null
+  const source = FROM_WALLET.test(t) ? 'wallet' : NEW_MONEY.test(t) || /outside|extra/i.test(t) ? 'new' : null
   return { amountUsd: Math.round(amount * 100) / 100, holdingType, name: DEST_NAME[holdingType] ?? 'Savings', source }
 }
 
