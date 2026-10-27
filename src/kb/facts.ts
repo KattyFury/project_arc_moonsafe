@@ -65,8 +65,10 @@ export function computeFacts(i: FactsInput): Facts {
   const crypto = g.btc + g.large_cap + g.altcoin
   // Off target: placed money (liquid minus idle) against the target split; idle money is handled by the suggestion.
   const placed = liquid - g.idle
+  // Three buckets (framework v2): Safety, Traditional, Crypto as one (held ETH or small coins are not "off target").
   const maxGap = b.target && placed > 0
-    ? Math.max(...(['safe', 'traditional', 'btc', 'large_cap', 'altcoin'] as const).map(k => Math.abs(g[k] / placed * 100 - b.target![k])))
+    ? Math.max(Math.abs(g.safe / placed * 100 - b.target.safe), Math.abs(g.traditional / placed * 100 - b.target.traditional),
+      Math.abs(crypto / placed * 100 - (b.target.btc + b.target.large_cap + b.target.altcoin)))
     : null
   const holdings = p?.holdings ?? []
   const stale = holdings.filter(h => h.priceSource === 'self' && now - h.updatedAt > param('stale_self_declared_days') * DAY)

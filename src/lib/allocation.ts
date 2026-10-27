@@ -15,7 +15,7 @@ import { BTC_SYMBOLS, categoryOf, priceKindOf, STABLECOINS, subgroupOf } from '.
 export type Group = 'safe' | 'traditional' | 'btc' | 'large_cap' | 'altcoin' | 'idle'
 export const GROUPS: Group[] = ['safe', 'traditional', 'btc', 'large_cap', 'altcoin', 'idle']
 export const TARGET_GROUPS: MixKey[] = ['safe', 'traditional', 'btc', 'large_cap', 'altcoin']
-export const GROUP_LABEL: Record<Group, string> = { safe: 'Safe', traditional: 'Traditional', btc: 'BTC', large_cap: 'Big caps', altcoin: 'Low caps', idle: 'Idle' }
+export const GROUP_LABEL: Record<Group, string> = { safe: 'Safety', traditional: 'Traditional', btc: 'BTC', large_cap: 'Big caps', altcoin: 'Low caps', idle: 'Idle' }
 
 export { STABLECOINS, BTC_SYMBOLS }
 
@@ -146,10 +146,12 @@ export interface Balance {
   }
   /**
    * How to place idle money (spec 5.4), keeping 1 month of spending: starter fund, priority debt,
-   * the rest of the fund, then the groups below target with Safe first. null until the spending
-   * and an age (or the declined default) are known, or with no idle money.
+   * the rest of the fund, money for a near-term goal (kept in Safety), then the groups below target
+   * with Safe first. null until the spending and an age (or the declined default) are known, or with no idle money.
    */
-  suggest: { idle: number; keep: number; toFund: number; toDebt: number; to: Record<MixKey, number> } | null
+  suggest: { idle: number; keep: number; toFund: number; toDebt: number; toGoal: number; to: Record<MixKey, number> } | null
+  /** A big expense within 5 years, in USD: held in Safety and left out of the money to divide (framework v2). */
+  goalUsd: number
 }
 
 export interface BalanceInput {
@@ -252,6 +254,7 @@ export function computeBalance(input: BalanceInput): Balance {
   const lock: Balance['lock'] = { open, missing, text: open ? 'cirBTC buying is open.' : `To open cirBTC buying: ${list}.` }
 
   // Shares and targets.
+  const goalUsd = p?.nearGoal ? toUsd(p.nearGoal.amount, p.nearGoal.currency, rate) ?? 0 : 0
   const age = p?.age ?? (p?.ageDeclined ? param('default_age') : null)
   const target = age !== null ? targetMix(age) : null
 
@@ -265,22 +268,30 @@ export function computeBalance(input: BalanceInput): Balance {
     const toStarter = take((starterUsd ?? 0) - vaultNow)
     const toDebt = take(debts.priorityTotal)
     const toFund = toStarter + take((floorUsd ?? 0) - vaultNow - toStarter)
-    // Targets apply to the liquid money left after the reserve, the fund and the debt.
-    const base = liquid - keep - toFund - toDebt
+    // A near-term goal is held in Safety first (framework v2): savings already there count toward it.
+    const toGoal = take(goalUsd - byGroup.safe)
+    // Targets apply to the liquid money left after the reserve, the fund, the debt and the goal.
+    const base = liquid - keep - toFund - toDebt - goalUsd
+    const safeFree = Math.max(0, byGroup.safe + toGoal - goalUsd)
     const gap = Object.fromEntries(TARGET_GROUPS.map(g => [g, Math.max(0, base * target[g] / 100 - byGroup[g])])) as Record<MixKey, number>
+    gap.safe = Math.max(0, base * target.safe / 100 - safeFree)
+    // Crypto is one bucket: coins already held (ETH, small coins) count toward it, new money goes to BTC.
+    gap.btc = Math.max(0, base * (target.btc + target.large_cap + target.altcoin) / 100 - (byGroup.btc + byGroup.large_cap + byGroup.altcoin))
+    gap.large_cap = 0
+    gap.altcoin = 0
     const to = { safe: take(gap.safe), traditional: 0, btc: 0, large_cap: 0, altcoin: 0 }
     const investGap = gap.traditional + gap.btc + gap.large_cap + gap.altcoin
     if (investGap > 0) {
       const k = Math.min(1, left / investGap)
       for (const g of ['traditional', 'btc', 'large_cap', 'altcoin'] as const) to[g] = gap[g] * k
     }
-    suggest = { idle: byGroup.idle, keep, toFund, toDebt, to }
+    suggest = { idle: byGroup.idle, keep, toFund, toDebt, toGoal, to }
   }
 
   return {
     items, unpriced, byGroup, liquid, grey, lifestyle, fundUsd: vault, assets, debtTotal, netWorth: assets - debtTotal,
     age, ageIsDefault: p?.age === null && !!p?.ageDeclined, target, declared: (p?.holdings.length ?? 0) > 0,
-    cashflow, fund, debts, lock, suggest,
+    cashflow, fund, debts, lock, suggest, goalUsd,
   }
 }
 

@@ -12,7 +12,9 @@ export function spendable(wallet: bigint | null): bigint | null {
 /** Warning text if buying `amount` (6-dec USDC, moved from idle into BTC) ends above the BTC target; null otherwise. */
 export function overTargetWarning(b: Balance, amount: bigint): string | null {
   if (!b.target || b.liquid <= 0) return null
-  const after = shareOfLiquid(b, b.byGroup.btc + Number(amount) / 1_000_000)
-  if (after <= b.target.btc + 0.5) return null
-  return `After this buy, BTC would be about ${Math.round(after)}% of your liquid assets, above the ${Math.round(b.target.btc)}% MoonSafe target for your age. Your call.`
+  // Crypto is one bucket (framework v2): all coins held count against the whole crypto share.
+  const after = shareOfLiquid(b, b.byGroup.btc + b.byGroup.large_cap + b.byGroup.altcoin + Number(amount) / 1_000_000)
+  const target = b.target.btc + b.target.large_cap + b.target.altcoin
+  if (after <= target + 0.5) return null
+  return `After this buy, crypto would be about ${Math.round(after)}% of your liquid assets, above the ${Math.round(target)}% MoonSafe target for your age. Your call.`
 }

@@ -1,5 +1,5 @@
 // Two donuts: the target split by the MoonSafe framework (spec 4) and what the user holds now,
-// in six groups (Safe, Traditional, BTC, Big caps, Low caps, Idle) plus a grey slice for items
+// in three buckets (Safety, Traditional, Crypto: framework v2, 2026-10-27) plus Idle and a grey slice for items
 // that cannot be rebalanced (spec 3: rental, business, loans given, insurance). Shares are of
 // liquid assets (the base of every %, spec 2); the full version also shows each group's share of
 // net worth (spec 11). Used on Balance, Invest and in the chat.
@@ -8,13 +8,13 @@
 // has a text label + share, so colour is never alone.
 
 import { useApp } from '@/state/AppState'
-import { GROUP_LABEL, GROUPS, shareOfLiquid, shareOfNetWorth, type Group } from '@/lib/allocation'
+import { GROUP_LABEL, shareOfLiquid, shareOfNetWorth } from '@/lib/allocation'
 
-type Segment = Group | 'grey'
+type Segment = 'safe' | 'traditional' | 'crypto' | 'idle' | 'grey'
 
-const SEG_COLOR: Record<Segment, string> = { safe: '#1baf7a', traditional: '#1E6DF7', btc: '#eb6834', large_cap: '#c2389b', altcoin: '#6250d6', idle: '#eda100', grey: '#a3a39d' }
-const SEG_NAME: Record<Segment, string> = { ...GROUP_LABEL, grey: 'Not rebalanced' }
-const ORDER: Segment[] = [...GROUPS, 'grey']
+const SEG_COLOR: Record<Segment, string> = { safe: '#1baf7a', traditional: '#1E6DF7', crypto: '#eb6834', idle: '#eda100', grey: '#a3a39d' }
+const SEG_NAME: Record<Segment, string> = { safe: GROUP_LABEL.safe, traditional: GROUP_LABEL.traditional, crypto: 'Crypto', idle: GROUP_LABEL.idle, grey: 'Not rebalanced' }
+const ORDER: Segment[] = ['safe', 'traditional', 'crypto', 'idle', 'grey']
 
 function arc(cx: number, cy: number, r: number, from: number, to: number): string {
   const p = (a: number) => [cx + r * Math.sin(a * 2 * Math.PI), cy - r * Math.cos(a * 2 * Math.PI)]
@@ -66,8 +66,9 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
   const { balance: b, moneyUsd, prices } = useApp()
   const { target, liquid, grey, byGroup, suggest, unpriced, declared } = b
   const size = compact ? 72 : 112
-  const held: Record<Segment, number> = { ...byGroup, grey }
-  const goalPct: Partial<Record<Segment, number>> = target ? { ...target, idle: 0 } : {}
+  // Crypto is one bucket: BTC plus any other coins held; its target is all of the crypto share.
+  const held: Record<Segment, number> = { safe: byGroup.safe, traditional: byGroup.traditional, crypto: byGroup.btc + byGroup.large_cap + byGroup.altcoin, idle: byGroup.idle, grey }
+  const goalPct: Partial<Record<Segment, number>> = target ? { safe: target.safe, traditional: target.traditional, crypto: target.btc + target.large_cap + target.altcoin, idle: 0 } : {}
   // The "now" ring shows liquid assets plus the grey slice, so the grey part is visible beside them.
   const ring = liquid + grey
   const now = ORDER.map(s => ({ seg: s, share: ring > 0 ? held[s] / ring : 0, title: `${SEG_NAME[s]} ${moneyUsd(held[s])}` }))
@@ -93,7 +94,7 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
       <div className="flex flex-wrap items-center gap-2">
         <Donut slices={goal} size={size} label="Target" center={target ? `${r(target.safe)}%` : '–'} />
         <Donut slices={now} size={size} label="Now" center={liquid > 0 ? `${r(shareOfLiquid(b, byGroup.safe))}%` : '–'} />
-        <ul className="flex-1 min-w-[160px] flex flex-col" title="% of liquid assets now / target. Centre: Safe share">
+        <ul className="flex-1 min-w-[160px] flex flex-col" title="% of liquid assets now / target. Centre: Safety share">
           {rows.map(s => (
             <li key={s} className="flex items-center gap-2 text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>
               <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: SEG_COLOR[s] }} />
@@ -107,12 +108,13 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
     </div>
   )
 
-  const place = suggest && (['safe', 'traditional', 'btc', 'large_cap', 'altcoin'] as const).filter(g => suggest.to[g] >= 0.01)
+  const placeTo = suggest ? { safe: suggest.to.safe, traditional: suggest.to.traditional, crypto: suggest.to.btc + suggest.to.large_cap + suggest.to.altcoin } : null
+  const place = placeTo && (['safe', 'traditional', 'crypto'] as const).filter(g => placeTo[g] >= 0.01)
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-4">
-        <Donut slices={goal} size={size} label={targetLabel} center={target ? `${r(target.safe)}%` : '–'} sub="safe" />
-        <Donut slices={now} size={size} label="Now" center={liquid > 0 ? `${r(shareOfLiquid(b, byGroup.safe))}%` : '–'} sub="safe" />
+        <Donut slices={goal} size={size} label={targetLabel} center={target ? `${r(target.safe)}%` : '–'} sub="safety" />
+        <Donut slices={now} size={size} label="Now" center={liquid > 0 ? `${r(shareOfLiquid(b, byGroup.safe))}%` : '–'} sub="safety" />
       </div>
 
       {/* Legend: colour + name + amount + % of liquid now / target + % of net worth, so no slice relies on colour alone. */}
@@ -142,7 +144,8 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
           Idle money, keeping {moneyUsd(suggest!.keep)} for daily spending:
           {suggest!.toFund >= 0.01 && <> <strong style={{ color: 'var(--ink)' }}>{moneyUsd(suggest!.toFund)}</strong> to the fund,</>}
           {suggest!.toDebt >= 0.01 && <> <strong style={{ color: 'var(--ink)' }}>{moneyUsd(suggest!.toDebt)}</strong> to priority debt,</>}
-          {place.map((g, i) => <span key={g}> <strong style={{ color: 'var(--ink)' }}>{moneyUsd(suggest!.to[g])}</strong> {g === 'safe' ? 'to your own savings' : GROUP_LABEL[g].toLowerCase()}{i < place.length - 1 ? ',' : '.'}</span>)}
+          {suggest!.toGoal >= 0.01 && <> <strong style={{ color: 'var(--ink)' }}>{moneyUsd(suggest!.toGoal)}</strong> kept in savings for your goal,</>}
+          {place.map((g, i) => <span key={g}> <strong style={{ color: 'var(--ink)' }}>{moneyUsd(placeTo![g])}</strong> {g === 'safe' ? 'to your own savings' : g === 'crypto' ? 'to crypto, mostly BTC' : SEG_NAME[g].toLowerCase()}{i < place.length - 1 ? ',' : '.'}</span>)}
         </p>
       ))}
       {unpriced.length > 0 && (

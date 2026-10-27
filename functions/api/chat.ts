@@ -23,12 +23,12 @@ import { getPrices } from './prices'
 import { privyUserId } from '../_lib/privyAuth'
 import { KB, fundFloorMonths, matchPatterns, patternBrief, param } from '../../src/kb/kb'
 import { computeFacts, displayFacts, amountsUsd } from '../../src/kb/facts'
-import { computeBalance, holdingUsd, priceKey, symbolOf, toUsd, GOLD_UNITS_TO_OZ, GROUP_LABEL, TARGET_GROUPS, type Balance, type Prices } from '../../src/lib/allocation'
+import { computeBalance, holdingUsd, priceKey, symbolOf, toUsd, GOLD_UNITS_TO_OZ, GROUP_LABEL, type Balance, type Prices } from '../../src/lib/allocation'
 import {
-  applyOps, categoryOf, defaultRebalanceable, isAssetType, newId, normalizeProfile, priceKindOf, BTC_SYMBOLS, DEBT_TYPES, STABLECOINS, TOP10_SYMBOLS,
+  applyOps, categoryOf, defaultRebalanceable, hasAnyData, isAssetType, newId, normalizeProfile, priceKindOf, BTC_SYMBOLS, DEBT_TYPES, STABLECOINS, TOP10_SYMBOLS,
   type ProfileOp,
 } from '../../src/lib/profile'
-import type { AssetType, Currency, Debt, DebtType, Expense, FinancialProfile, Holding, Income } from '../../src/types'
+import type { AssetType, Currency, Debt, DebtType, Expense, FinancialProfile, Holding, Income, NearGoal } from '../../src/types'
 
 interface Env {
   OPENAI_API_KEY: string
@@ -62,7 +62,9 @@ const json = (body: unknown, status = 200) =>
 const RULES = `## MoonSafe principles
 ${KB.principles.map(p => `- ${p}`).join('\n')}
 ## Framework (by age, only age changes it)
-- Shares of LIQUID assets (Safe + rebalanceable Invest + Idle): Safe = age %; the rest 4/7 Traditional (stocks, gold, funds) and 3/7 crypto: BTC 2/3, Big caps (ETH, SOL, BNB, top-10) 1/6, Low caps (smaller coins, memecoins) 1/6. Age 30: Safe 30, Traditional 40, BTC 20, Big caps 5, Low caps 5. BTC never goes to 0.
+- Three buckets of the money to divide (liquid assets, minus money for a near-term goal): Safety = age %; the rest 4/7 Traditional (stocks, index funds, gold) and 3/7 Crypto as ONE bucket, mostly BTC (say it in words; no share for other coins, never suggest buying small coins or memecoins). Age 30: Safety 30, Traditional 40, Crypto 30. BTC never goes to 0. Coins they already hold just count in Crypto.
+- Money for a big expense within 5 years (car, wedding, school) stays in Safety, never invested.
+- They said they could not hold through a 50% crypto drop → you may suggest a smaller Crypto part for now (their call); never change the numbers yourself.
 - The emergency fund (USDC in the MoonSafe vault) stands apart. Floor in months of spending (fixed + essential variable + debt payments): 3 stable income; 6 stable with dependents or irregular without; 9 irregular with dependents; 12 if also the sole earner.
 - Priority debt: credit card, consumer / payday loan, crypto margin, or any debt at ${param('priority_debt_rate_pct')}%/year or more. Interest-free debt never blocks.
 - cirBTC buying in the app opens only with no priority debt AND the fund at its floor. Nothing else is ever blocked.
@@ -163,6 +165,8 @@ const TEACH_ONCE: { term: RegExp; taught: RegExp; plain: string }[] = [
 const PLAN_GIVEN = /Traditional[^\n]{0,80}\d+(\.\d+)?\s*%|Truyền thống[^\n]{0,80}\d+(\.\d+)?\s*%/i // lang-ok
 // "Not at all" answering "does it charge interest?" (real chat 2026-10-27: the question came back three times).
 const NOT_AT_ALL = /^\W*(no|nope|not at all|none|zero|nothing|never)(?!\p{L})/iu
+const PAID_Q = /paid (it )?off|still owe|trả hết|còn nợ/i // lang-ok
+const SOLE_WORDS = /(only|sole|single|main)[^.?!\n]{0,20}(earner|income|breadwinner|one (who )?work)|breadwinner|trụ cột|một mình (kiếm|lo)|duy nhất (kiếm|có thu nhập)/i // lang-ok
 const LOCK_TALK = /(open|unlock|opens)[^.?!\n]{0,30}cirBTC|cirBTC (buying|buy)|buy lock|mở (khóa|khoá)? ?mua cirBTC/i // lang-ok
 const KNOWS_NOTHING = /(don'?t|do not) know (anything|much|where to start|what to do)|no idea|i'?m (lost|confused|new to)|never (managed|done this)|beginner|(không|chả|chẳng) biết (gì|bắt đầu)|mới bắt đầu/i // lang-ok
 const INTERNAL_LABEL = /(?<!\p{L})(floor|surplus|liquid assets?|idle( money| cash)?|priority debt)(?!\p{L})/iu
@@ -240,7 +244,8 @@ Reply in the language of the user's latest message (default English). ${VI_VOICE
   - surplus → "what is left each month after spending"
   - priority debt → "expensive debt (high interest)"
   - the split / allocation → "how to divide your money"
-- The first time a reply brings up an idea (emergency fund, the cirBTC buy lock, dividing money by age, Safe / Traditional / BTC / Big caps / Low caps, expensive debt, DCA), teach it in one plain sentence: what it is and why it helps, with their numbers. Safe = bank savings you can reach any time; Traditional = stocks, index funds, gold; Big caps = large well-known coins (ETH, SOL, BNB); Low caps = small coins and memecoins, very risky; cirBTC = Bitcoin you can buy in this app; DCA = buying a fixed amount on a schedule.
+- The first time a reply brings up an idea (emergency fund, the cirBTC buy lock, dividing money by age, Safety / Traditional / Crypto, expensive debt, DCA), teach it in one plain sentence: what it is and why it helps, with their numbers. Safety = bank savings you can reach any time; Traditional = stocks, index funds, gold; Crypto = mostly Bitcoin, held for the long term; cirBTC = Bitcoin you can buy in this app; DCA = buying a fixed amount on a schedule.
+- Never bring in ideas they do not need: no talk of depegs, oracles, bridges, smart-contract risk, savings-rate scores or "assumptions" unless they ask. Never ask for a seed phrase or private key.
 - They say they know nothing, are confused, or ask what to do → the big picture first, in order: know your monthly spending → build an emergency fund → pay off expensive debt → then divide the rest and invest. Tell them which step they are on and the one next step.
 
 ## The advice path (Hieu, 2026-10-27) — the app says which phase you are in
@@ -275,7 +280,7 @@ ${RULES}
 - The app cannot move money to a bank or an exchange; the Safe part is their own savings or flexible earn (e.g. Binance Simple Earn Flexible), never the emergency fund.
 - They want a big BTC share (even 50%) → understand and respect it, Web3 thinking is heavy on BTC; only the fund comes first. They want a big low-cap / memecoin share → the reality check from the matching situation, once.
 - They want to buy cirBTC while it is locked → what is missing and how much (the "Buy lock" line), then why the lock exists in one sentence: without the cushion, if BTC drops right when they need cash, they would have to sell at a loss. No longer lecture.
-- Buying is OPEN and they agree to invest without an amount → offer the BTC amount from "Suggested use of idle money" as a cirBTC card for them to sign; never ask the same yes / no again.
+- Buying is OPEN and they agree to invest without an amount → offer the "cirBTC buy to offer" amount as a cirBTC card for them to sign; never ask the same yes / no again.
 
 ## Questions
 - At most one, only when it helps. Never ask again for something known or a question they ignored. They decline to share → ask nothing personal, use the defaults and say the picture is an estimate.
@@ -341,6 +346,12 @@ const PLAN_TOOLS = [
     dependents: { type: 'integer', description: 'Number of people who rely on their income' },
     sole_earner: { type: 'boolean', description: 'They are the only earner of the household' },
     debts_complete: { type: 'boolean', description: 'true when they said they have no (other) debt, family loans included' },
+    near_goal_name: { type: 'string', description: 'A big expense within 5 years they told: "car", "wedding", "school fees"' },
+    near_goal_amount: MONEY,
+    near_goal_years: { type: 'number', description: 'Years until they need it, if said' },
+    no_near_goal: { type: 'boolean', description: 'true when they said there is no big expense coming in the next 5 years' },
+    crypto_drop_ok: { type: 'boolean', description: 'Answer to "if your crypto dropped by half, could you hold it without selling to live?": yes = true, no = false; unsure = leave out' },
+    insured: { type: 'boolean', description: 'They have health or life insurance protecting the people who rely on them' },
   }),
   fn('add_holding', 'Record one thing the user holds (the app prices it live or keeps the declared value).', {
     type: { type: 'string', enum: ASSET_TYPE_KEYS },
@@ -484,6 +495,14 @@ const vnd = (n: number) => n >= 1_000_000
   ? `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(n / 1_000_000)}M VND`
   : `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(n)} VND`
 const pct = (n: number) => `${Math.round(n * 10) / 10}%`
+/** Whole percentages that add up like the exact ones (largest remainder), so a shown split sums to 100. */
+function wholeShares(exact: number[]): number[] {
+  const floors = exact.map(Math.floor)
+  let left = Math.round(exact.reduce((a, b) => a + b, 0)) - floors.reduce((a, b) => a + b, 0)
+  const order = exact.map((v, i) => ({ i, r: v - Math.floor(v) })).sort((x, y) => y.r - x.r)
+  for (const { i } of order) { if (left <= 0) break; floors[i]++; left-- }
+  return floors
+}
 const qty = (n: number) => `${Math.round(n * 10_000) / 10_000}`
 
 /** A tool amount ({amount, currency}) read loosely. */
@@ -574,21 +593,34 @@ function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: nu
 
   // Totals (spec 2) and the split (spec 4).
   lines.push(`- Liquid assets (base of every %): ${show(b.liquid)} · Net worth: ${show(b.netWorth)} (all assets ${show(b.assets)} incl. fund, lifestyle ${show(b.lifestyle)}, not rebalanceable ${show(b.grey)}; minus debt ${show(b.debtTotal)})`)
-  if (b.liquid > 0) lines.push(`- Split now (% of liquid): ${(['safe', 'traditional', 'btc', 'large_cap', 'altcoin', 'idle'] as const).map(g => `${GROUP_LABEL[g]} ${pct(b.byGroup[g] / b.liquid * 100)} (${show(b.byGroup[g])})`).join(', ')}`)
+  // Three buckets (framework v2, 2026-10-27): Safety, Traditional, Crypto as one; whole % that add to 100.
+  const g = b.byGroup
+  const cryptoNow = g.btc + g.large_cap + g.altcoin
+  if (b.liquid > 0) {
+    const [s, tr, c, id] = wholeShares([g.safe, g.traditional, cryptoNow, g.idle].map(v => v / b.liquid * 100))
+    lines.push(`- Split now (% of liquid): Safety ${s}% (${show(g.safe)}), Traditional ${tr}% (${show(g.traditional)}), Crypto ${c}% (${show(cryptoNow)}${cryptoNow > 0 ? `: BTC ${show(g.btc)}${g.large_cap + g.altcoin > 0.01 ? `, other coins ${show(g.large_cap + g.altcoin)}` : ''}` : ''}), not placed yet ${id}% (${show(g.idle)})`)
+  }
+  if (b.goalUsd > 0 && p.nearGoal) lines.push(`- Near-term goal: ${p.nearGoal.name} ${show(b.goalUsd)}${p.nearGoal.years ? ` in ${p.nearGoal.years} year${p.nearGoal.years === 1 ? '' : 's'}` : ''}: kept in Safety (savings), NOT invested; it is left out of the money to divide`)
   const parts = b.items.filter(i => i.holding || i.label === 'cirBTC')
-  if (parts.length) lines.push(`- Items: ${parts.map(i => `${i.label} ${show(i.usd)} (${i.group ? GROUP_LABEL[i.group] : i.place === 'grey' ? 'not rebalanceable' : i.place})${i.holding?.priceSource === 'self' ? ' self-declared' : ''}`).join('; ')}`)
+  if (parts.length) lines.push(`- Items: ${parts.map(i => `${i.label} ${show(i.usd)} (${i.group ? (i.group === 'btc' || i.group === 'large_cap' || i.group === 'altcoin' ? 'Crypto' : GROUP_LABEL[i.group]) : i.place === 'grey' ? 'not rebalanceable' : i.place})${i.holding?.priceSource === 'self' ? ' self-declared' : ''}`).join('; ')}`)
   if (b.unpriced.length) lines.push(`- No price yet, left out for now: ${b.unpriced.map(h => h.name).join(', ')}`)
   if (b.target) {
     const t = b.target
-    lines.push(`- Target by the MoonSafe framework at age ${b.age}${b.ageIsDefault ? ' (DEFAULT age 30: the user declined; say the split is an estimate)' : ''}: ${TARGET_GROUPS.map(g => `${GROUP_LABEL[g]} ${pct(t[g])}`).join(', ')}; crypto ${pct(t.btc + t.large_cap + t.altcoin)}`)
+    const tc = t.btc + t.large_cap + t.altcoin
+    const [ts, ttr, tcr] = wholeShares([t.safe, t.traditional, tc])
+    lines.push(`- Target by the MoonSafe framework at age ${b.age}${b.ageIsDefault ? ' (DEFAULT age 30: the user declined; say the split is an estimate)' : ''}: Safety ${ts}%, Traditional ${ttr}%, Crypto ${tcr}% (mostly BTC; no target for other coins)`)
     // The plan quotes each group as an amount too (Hieu, 2026-10-27: "how much in the bank, how much in stocks").
-    if (b.liquid > 0) lines.push(`- Target amounts of their liquid assets ${show(b.liquid)}: ${TARGET_GROUPS.map(g => `${GROUP_LABEL[g]} ${show(b.liquid * t[g] / 100)}`).join(', ')}`)
+    const toDivide = Math.max(0, b.liquid - b.goalUsd)
+    if (toDivide > 0) lines.push(`- Target amounts of the money to divide ${show(toDivide)}${b.goalUsd > 0 ? ' (liquid assets minus the near-term goal)' : ''}: Safety ${show(toDivide * t.safe / 100)}, Traditional ${show(toDivide * t.traditional / 100)}, Crypto ${show(toDivide * tc / 100)}`)
+    // They fill one bucket at a time, in the order they choose (Hieu, 2026-10-27: "why split it up, what matters is what they pick").
+    if (toDivide > 0) lines.push(`- Still to fill to reach each target (they may fill one bucket fully before the next, in any order): Safety ${show(Math.max(0, toDivide * t.safe / 100 - Math.max(0, g.safe - b.goalUsd)))}, Traditional ${show(Math.max(0, toDivide * t.traditional / 100 - g.traditional))}, Crypto ${show(Math.max(0, toDivide * tc / 100 - cryptoNow))}`)
   } else lines.push('- Target: AGE UNKNOWN. Ask the age before talking about any share.')
   if (!b.declared) lines.push('- Only the app wallet is known: the user has not said what else they hold. If they ask how to split or invest: suggest NO split and NO purchase from the wallet, turn NO percentage into an amount; ask about the next item of the collection flow instead.')
   else if (b.suggest) {
     const s = b.suggest
-    const to = TARGET_GROUPS.filter(g => s.to[g] >= 0.01).map(g => `${GROUP_LABEL[g]} ${show(s.to[g])}${g === 'safe' ? " (their OWN bank savings or flexible earn such as Binance Simple Earn Flexible; nothing to do in the app)" : g === 'btc' ? ' (the only part buyable in the app, as cirBTC)' : ' (bought outside the app)'}`)
-    lines.push(`- Suggested use of idle money ${show(s.idle)}: keep ${show(s.keep)} for daily spending${s.toFund > 0.01 ? `; emergency fund ${show(s.toFund)}` : ''}${s.toDebt > 0.01 ? `; priority debt ${show(s.toDebt)}` : ''}${to.length ? `; ${to.join('; ')}` : ''}${!to.length && s.toFund < 0.01 && s.toDebt < 0.01 ? '; nothing to place' : ''}`)
+    // No split across buckets here: they fill one bucket at a time, the one they pick (Hieu, 2026-10-27; a proportional 429 USDC crypto offer came from this line).
+    const rest = Object.values(s.to).reduce((x, y) => x + y, 0)
+    lines.push(`- Suggested use of idle money ${show(s.idle)}: keep ${show(s.keep)} for daily spending${s.toFund > 0.01 ? `; emergency fund ${show(s.toFund)}` : ''}${s.toDebt > 0.01 ? `; priority debt ${show(s.toDebt)}` : ''}${s.toGoal > 0.01 ? `; near-term goal (savings) ${show(s.toGoal)}` : ''}${rest >= 0.01 ? `; the rest, ${show(rest)}, goes to the bucket they pick (see Still to fill)` : ''}${rest < 0.01 && s.toFund < 0.01 && s.toDebt < 0.01 && s.toGoal < 0.01 ? '; nothing to place' : ''}`)
   }
   lines.push(`- Buy lock: ${b.lock.open ? 'cirBTC buying is OPEN' : `LOCKED. ${b.lock.text}`}`)
   if (surplusDca && b.lock.open && cf.surplus !== null && cf.surplus > 0) lines.push(`- DCA suggestion: ${show(cf.surplus * param('dca_share_of_surplus'))} a month into cirBTC (50% of the surplus; the user adjusts)`)
@@ -601,6 +633,9 @@ const TOPICS: { key: string; ask: string; asked: RegExp; known: (p: FinancialPro
   { key: 'income', ask: 'Roughly how much do you earn a month, and from what?', asked: /(earn|income|salary)[^.?!\n]{0,40}\?|thu nhập[^.?!\n]{0,40}\?/i, known: p => p.incomes.length > 0 }, // lang-ok
   { key: 'spending', ask: 'Roughly how much do you spend a month?', asked: /spend[^.?!\n]{0,40}\?|chi tiêu[^.?!\n]{0,40}\?/i, known: p => p.expenses.length > 0 }, // lang-ok
   { key: 'stability', ask: 'Is your income stable, and does anyone rely on it?', asked: /(stable|steady|rely|depend)[^.?!\n]{0,60}\?|(ổn định|phụ thuộc)[^.?!\n]{0,60}\?/i, known: p => p.incomeStable !== null && p.dependents !== null }, // lang-ok
+  // Framework v2 (2026-10-27): money for a goal within 5 years stays in Safety, not invested.
+  { key: 'goal', ask: 'In the next 5 years, is there a big expense you are saving for (a car, a wedding, school fees)? Roughly how much, and when?', asked: /(next 5 years|next five years|big expense|5 năm)[^?\n]{0,120}\?/i, known: p => !!p.nearGoal || !!p.noNearGoal }, // lang-ok
+  { key: 'insurance', ask: 'Do you have health or life insurance that would protect the people who rely on you?', asked: /insurance[^.?!\n]{0,80}\?|bảo hiểm[^.?!\n]{0,80}\?/i, known: p => !((p.dependents ?? 0) > 0 || p.soleEarner === true) || (p.insured !== null && p.insured !== undefined) }, // lang-ok
   { key: 'bank', ask: 'How much do you keep in the bank (savings or checking)?', asked: /bank[^.?!\n]{0,60}\?|ngân hàng[^.?!\n]{0,60}\?/i, known: p => p.holdings.some(h => ['savings', 'term_deposit', 'checking', 'cash'].includes(h.type)) }, // lang-ok
   { key: 'stables', ask: 'Any USDC / USDT on exchanges or in other wallets?', asked: /(stablecoin|USDT|USDC on|exchange)[^.?!\n]{0,60}\?/i, known: p => p.holdings.some(h => ['stable_wallet', 'flexible_earn', 'locked_earn', 'defi_stable'].includes(h.type)) },
   { key: 'crypto', ask: 'Which coins do you hold (BTC, ETH, others), and how much?', asked: /(coins?|crypto|BTC|ETH)[^.?!\n]{0,60}\?/i, known: p => p.holdings.some(h => ['btc', 'eth', 'top10', 'altcoin', 'staked_large_cap', 'nft'].includes(h.type)) },
@@ -608,6 +643,8 @@ const TOPICS: { key: string; ask: string; asked: RegExp; known: (p: FinancialPro
   { key: 'property', ask: 'Do you own a home, land or a car?', asked: /(home|house|property|land|car|nhà|đất|xe)[^.?!\n]{0,60}\?/i, known: p => p.holdings.some(h => ['home', 'car', 'rental_property'].includes(h.type)) }, // lang-ok
   { key: 'lending', ask: 'Have you lent money to anyone, or put money into a business?', asked: /(lent|lend|business|cho vay|góp vốn|kinh doanh)[^.?!\n]{0,60}\?/i, known: p => p.holdings.some(h => ['loan_given', 'business_stake'].includes(h.type)) }, // lang-ok
   { key: 'debt', ask: `Do you have any debt? (credit card, loans… then, last: "${KB.collection.last_debt_question}")`, asked: /$^/, known: p => p.debtsComplete },
+  // Asked last, right before the plan: a no turns into a suggestion of less crypto, never an automatic change.
+  { key: 'risk', ask: 'If your crypto dropped by half, could you hold it without having to sell to pay for daily life?', asked: /(drop|fell|fall)[^.?!\n]{0,40}(half|50)[^?\n]{0,80}\?|giảm (một nửa|50)[^?\n]{0,80}\?/i, known: p => p.cryptoDropOk !== null && p.cryptoDropOk !== undefined }, // lang-ok
 ]
 const ASSET_TOPICS = new Set(['bank', 'stables', 'crypto', 'traditional', 'property', 'lending'])
 
@@ -813,11 +850,24 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       // An answer about something else ("I bring it all onchain") once became "income stable" (real chat 2026-10-26): it needs a yes / no or a stability word.
       if (typeof a.income_stable === 'boolean' && a.income_stable !== profile.incomeStable && (STABILITY_WORDS.test(lastUserText) || (ASKS_STABLE.test(prevAssistantText) && YES_NO.test(lastUserText)))) f.incomeStable = a.income_stable
       if (typeof a.dependents === 'number' && a.dependents >= 0 && a.dependents !== profile.dependents && (a.dependents === 0 ? SAYS_NONE.test(lastUserText) : stated(a.dependents) || DEPENDENT_WORDS.test(lastUserText))) f.dependents = Math.round(a.dependents)
-      if (typeof a.sole_earner === 'boolean' && a.sole_earner !== profile.soleEarner) f.soleEarner = a.sole_earner
+      // "Sole earner" was recorded from a bare "no" to the debt question (replay 2026-10-27): it needs their words or an answer to that question.
+      if (typeof a.sole_earner === 'boolean' && a.sole_earner !== profile.soleEarner && (SOLE_WORDS.test(lastUserText) || (SOLE_WORDS.test(prevAssistantText) && YES_NO.test(lastUserText)))) f.soleEarner = a.sole_earner
       if (a.debts_complete === true && !profile.debtsComplete && SAYS_NONE.test(lastUserText)) f.debtsComplete = true
+      // Framework v2 (2026-10-27): near-term goal, the 50% drop question, insurance; each only from the user's own words.
+      const goalAmt = moneyArg(a.near_goal_amount)
+      if (goalAmt && goalAmt.amount > 0 && stated(goalAmt.amount)) {
+        const years = typeof a.near_goal_years === 'number' && a.near_goal_years > 0 && a.near_goal_years <= 5 ? a.near_goal_years : null
+        f.nearGoal = { name: typeof a.near_goal_name === 'string' && a.near_goal_name.trim() ? a.near_goal_name.trim() : 'Goal', amount: goalAmt.amount, currency: goalAmt.currency, years }
+      }
+      if (a.no_near_goal === true && !profile.nearGoal && SAYS_NONE.test(lastUserText)) f.noNearGoal = true
+      if (typeof a.crypto_drop_ok === 'boolean' && a.crypto_drop_ok !== profile.cryptoDropOk && (YES_NO.test(lastUserText) || /drop|half|giảm|một nửa/i.test(prevAssistantText))) f.cryptoDropOk = a.crypto_drop_ok // lang-ok
+      if (typeof a.insured === 'boolean' && a.insured !== profile.insured && (YES_NO.test(lastUserText) || /insur|bảo hiểm/i.test(lastUserText + prevAssistantText))) f.insured = a.insured // lang-ok
       if (!Object.keys(f).length) { console.log(`dropped update_profile ${call.function.arguments}: not stated or unchanged`); return 'Nothing changed (not stated in the latest message, or already known).' }
       const words = [f.age !== undefined && `age ${f.age}`, f.ageDeclined && 'age not given (default 30)', f.incomeStable !== undefined && `income ${f.incomeStable ? 'stable' : 'irregular'}`,
-        f.dependents !== undefined && `${f.dependents} dependent${f.dependents === 1 ? '' : 's'}`, f.soleEarner !== undefined && (f.soleEarner ? 'sole earner' : 'not the sole earner'), f.debtsComplete && 'no other debt'].filter(Boolean)
+        f.dependents !== undefined && `${f.dependents} dependent${f.dependents === 1 ? '' : 's'}`, f.soleEarner !== undefined && (f.soleEarner ? 'sole earner' : 'not the sole earner'), f.debtsComplete && 'no other debt',
+        !!f.nearGoal && (() => { const g = f.nearGoal as NearGoal; return `${g.name} ${moneyText({ amount: g.amount, currency: g.currency })}${g.years ? ` in ${g.years} year${g.years === 1 ? '' : 's'}` : ''}` })(),
+        f.noNearGoal && 'no big expense in the next 5 years', f.cryptoDropOk !== undefined && (f.cryptoDropOk ? 'could hold through a 50% crypto drop' : 'could not hold through a 50% crypto drop'),
+        f.insured !== undefined && (f.insured ? 'insured' : 'no insurance yet')].filter(Boolean)
       record({ op: 'update_profile', fields: f }, words.join(', '))
       done.push(`Recorded: ${words.join(', ')}.`)
     } else if (name === 'add_holding') {
@@ -961,7 +1011,8 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
     } else if (name === 'remove_debt') {
       const d = findD(a.id)
       if (!d) return `No debt with id ${String(a.id)}.`
-      if (!SOLD.test(lastUserText) && !SAYS_NONE.test(lastUserText)) return 'Not removed: the user did not say it is paid off.'
+      // "no no not at all" to "any OTHER debt?" deleted the 20,000 loan from Mom (replay 2026-10-27): a bare no is not "paid off".
+      if (!SOLD.test(lastUserText) && !(SAYS_NONE.test(lastUserText) && PAID_Q.test(prevAssistantText))) return 'Not removed: the user did not say it is paid off.'
       record({ op: 'remove_debt', id: d.id }, `${d.name} paid off`)
       done.push(`Removed debt ${d.name}.`)
     } else if (name === 'set_income' || name === 'set_expense') {
@@ -1117,17 +1168,28 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   const collecting = matched.some(p => p.id === 'collecting' || p.id === 'age_unknown')
   // A question or a doubt from the user is answered first; the collection flow waits a turn.
   const userAsks = QUESTIONS_US.test(lastUserText)
-  const pending = collecting && !toAsk.length ? nextQuestion(profile, assistantTexts, messages.filter(m => m.role === 'user').map(m => m.content), userSaidNothingElse, vi) : null
-  const next = !DECLINES.test(lastUserText) && !userAsks ? pending : null
+  // The framework v2 questions (goal, insurance, 50% drop) are not in the KB collecting pattern: they keep collection open too.
+  const relies = (profile.dependents ?? 0) > 0 || profile.soleEarner === true
+  const v2Missing = (!profile.nearGoal && !profile.noNearGoal) || (relies && (profile.insured === null || profile.insured === undefined)) || profile.cryptoDropOk === null || profile.cryptoDropOk === undefined
+  const pending = (collecting || v2Missing) && !toAsk.length ? nextQuestion(profile, assistantTexts, messages.filter(m => m.role === 'user').map(m => m.content), userSaidNothingElse, vi) : null
+  // "What else do you need to know?" invites the next question; it is not a question to answer first (v2 test 2026-10-27).
+  const invitesNext = /what else|anything else|what (else )?do you need|next question|ask me/i.test(lastUserText)
+  const next = !DECLINES.test(lastUserText) && (!userAsks || invitesNext) ? pending : null
   // The advice path (Hieu, 2026-10-27): collect → the plan, once → start with the emergency fund.
   const planGiven = assistantTexts.some(a => PLAN_GIVEN.test(a))
   const phase: 'collect' | 'plan' | 'start' = pending || toAsk.length ? 'collect' : !planGiven && balance.target ? 'plan' : 'start'
+  // Crypto to buy now: the smaller of what the Crypto bucket still needs and what the wallet can spend.
+  const tCrypto = balance.target ? balance.target.btc + balance.target.large_cap + balance.target.altcoin : 0
+  const cryptoFill = Math.max(0, (balance.liquid - balance.goalUsd) * tCrypto / 100 - (balance.byGroup.btc + balance.byGroup.large_cap + balance.byGroup.altcoin))
+  // Spec 5.4: idle money keeps 1 month of spending for daily life before any purchase.
+  const cryptoOffer = Math.floor(Math.min(cryptoFill, Math.max(0, (wallet ?? 0) - GAS_RESERVE_USDC), balance.suggest ? Math.max(0, balance.suggest.idle - balance.suggest.keep) : Infinity))
 
   const replyMessages: Message[] = [
     { role: 'system', content: REPLY_PROMPT },
     ...messages,
     { role: 'system', content: `Actions just taken: ${done.length ? done.join(' | ') : 'none.'}${readback.length ? `\nRead-back to start with (one sentence; then "Right?", or the Next question if one is given): "Noted: ${readback.join(', ')}."` : ''}` },
-    { role: 'system', content: `${figs}${wishLine}` },
+    { role: 'system', content: `${figs}${wishLine}${balance.lock.open && cryptoOffer >= 1 ? `
+- cirBTC buy to offer when they want crypto: ${usdc(cryptoOffer)} (fills the Crypto bucket as far as the wallet allows)` : ''}` },
     // While collecting, the situations (fund gap, buy lock…) waited for the plan: they turned every question into a BTC lecture (real chat 2026-10-27).
     { role: 'system', content: `MATCHING SITUATIONS (most important first):\n${(phase === 'collect' && !userAsks ? '' : brief) || '- none'}${next ? `\nNext question (collection flow, one per message): ${next}\nThis is your one question: ask exactly it (same meaning), as a real question ending in "?", not "I need to know…". Before it, one useful point from what is already known (if any); after it, a few words on why it matters for their advice. No "Right?" this turn.` : ''}` },
   ]
@@ -1139,16 +1201,36 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   if (userAsks) replyMessages.push({ role: 'system', content: 'The user is asking or doubting something: answer it first and plainly. If it is about the fund amount, show how it is made from the figures: "Spending per month" (its spending lines + debt payments) × the months = the floor. Do not say they are right unless the figures agree.' })
   // A beginner's first message got balances and "the MoonSafe split" before any welcome (beginner test 2026-10-27).
   // The app already showed its own welcome (useAgent WELCOME, UI only): no second welcome.
-  if (!assistantTexts.length) replyMessages.push({ role: 'system', content: `This is their first message; they already saw MoonSafe's welcome, so do not welcome them again. Answer what they said first, in plain words, then in one or two plain sentences how this works: a few questions about their money (they can skip any), then a plan (how big an emergency fund they need and how to divide the rest of their money for their age), then they decide when to start. No balances, no percentages, no labels in this reply. Then your one question with why you ask.` })
+  // Only a new user gets the how-this-works line; someone with a saved profile came back to do something (v2 test 2026-10-27).
+  if (!assistantTexts.length && !hasAnyData(profile)) replyMessages.push({ role: 'system', content: `This is their first message; they already saw MoonSafe's welcome, so do not welcome them again. Answer what they said first, in plain words, then in one or two plain sentences how this works: a few questions about their money (they can skip any), then a plan (how big an emergency fund they need and how to divide the rest of their money for their age), then they decide when to start. No balances, no percentages, no labels in this reply. Then your one question with why you ask.` })
   else if (KNOWS_NOTHING.test(lastUserText)) replyMessages.push({ role: 'system', content: 'They feel lost: give the big picture in plain words (know your monthly spending → emergency fund → expensive debt → then invest), say which step they are on, and the one next step.' })
   if (ASKS_OVERVIEW.test(lastUserText)) replyMessages.push({ role: 'system', content: `Overall check-up, as an advisor: one short point each, in this order: ${balance.debts.priorityCount ? 'their priority debt (start with it), ' : ''}the emergency fund vs its floor, then the split. For each, why it matters for them and one option they could take (an option, not an order). Keep the split to one sentence.` })
   if (phase === 'collect' && assistantTexts.length) replyMessages.push({ role: 'system', content: `PHASE 1, COLLECTING. Acknowledge what they told you in a few words, then the Next question with why you ask. No advice yet: do not talk about the emergency fund gap, BTC, the cirBTC buy lock or how to divide money; the plan comes once you know enough.${userAsks ? ' They asked something: answer it plainly first.' : ''}` })
-  if (phase === 'plan') replyMessages.push({ role: 'system', content: `PHASE 2, THE PLAN (you now know enough; give it once, plain words, numbers only from ASSET & FUND FIGURES). Layout: one short intro line, then each point on its OWN line starting with "- ", a blank line before the start question:
-1. Emergency fund: how big it should be (the FLOOR: "N months of spending = amount") and why for THEM (their income, people relying on them), and what they have in it now.
-${balance.debts.priorityCount ? '2. Expensive debt: pay it off before investing, with what it costs a month in interest.\n' : ''}${balance.debts.priorityCount ? '3' : '2'}. The rest of their money ("money you can use quickly", the liquid total) divided by MoonSafe's guide at their age, one "- " line per group: name, % = amount from "Target amounts", what it is and why that share: Safe (bank savings or flexible earn: steady money they can reach any time), Traditional (stocks or index funds such as VOO, and gold: steady long-term growth), BTC (the long-term reserve in Web3; it can drop by about half on the way), Big caps (ETH, SOL, BNB), Low caps (small coins and memecoins: kept small because they can go to zero).
-${balance.debts.priorityCount ? '4' : '3'}. Where they stand now in ONE plain sentence: the one or two biggest gaps from "Split now" (e.g. no BTC yet, more in savings than the guide), as a fact, no judging; no list of every group.
-End with the start question: "Ready to start? The first step is your emergency fund${cover !== null ? `: shall I prepare a deposit of **${usdc(cover)}** from your wallet for you to sign?` : '.'}"${cover === null ? ' If the wallet cannot fill it, suggest saving the monthly amount into it.' : ''}` })
-  if (appEvent) replyMessages.push({ role: 'system', content: `The latest "user" line is the app telling you a card was signed (not their words). Confirm it in one sentence with what it means for them (e.g. their emergency fund now holds N months of spending), then the next step of the plan: the first concrete move from "Suggested use of idle money" with its amount (the Safe part in their own bank savings comes first), and one question. Numbers only from ASSET & FUND FIGURES.` })
+  // The plan, framework v2 (2026-10-27): three buckets; until the fund is full only the fund and saving get amounts.
+  if (phase === 'plan') {
+    const fundMet = balance.fund.met
+    const deps = (profile.dependents ?? 0) > 0 || profile.soleEarner === true
+    const points = [
+      'Emergency fund: how big it should be (the FLOOR: "N months of spending = amount"), why for THEM (their income, people relying on them), and what they have in it now.',
+      balance.debts.priorityCount ? 'Expensive debt: pay it off before investing, with what it costs a month in interest.' : null,
+      profile.nearGoal ? `Near-term goal: keep the money for ${profile.nearGoal.name} in savings, not invested, because it is needed soon and markets can drop right before.` : null,
+      deps && profile.insured === false ? 'Protection: people rely on them and there is no insurance yet; one option is to check health or life cover with a local professional (no product names).' : null,
+      fundMet
+        ? 'The money to divide ("Target amounts"), one "- " line per bucket with its % and amount, what it is and why that share: Safety (bank savings or flexible earn: money they can reach any time), Traditional (stocks or index funds such as VOO, and gold: steady long-term growth), Crypto (mostly BTC, the long-term reserve in Web3; it can drop by about half on the way).'
+        : 'How their money will be divided once the emergency fund is full: ONE line with the three % only (Safety, Traditional, Crypto mostly BTC), no amounts yet, and why the fund comes first.',
+      profile.cryptoDropOk === false ? 'They said they could not hold through a 50% crypto drop: one option is a smaller Crypto part for now and more in Safety or Traditional; their call.' : null,
+      fundMet ? 'Where they stand now in ONE plain sentence: the one or two biggest gaps from "Split now", as a fact, no judging. Say they do not need to split every dollar: they can fill one bucket fully before the next, in the order they choose.' : null,
+    ].filter(Boolean)
+    const ending = fundMet
+      ? 'End with the start question: which bucket would they like to fill first (Safety, Traditional or Crypto), with how much each still needs from "Still to fill".'
+      : `End with the start question: "Ready to start? The first step is your emergency fund${cover !== null ? `: shall I prepare a deposit of **${usdc(cover)}** from your wallet for you to sign?` : '.'}"${cover === null ? ' If the wallet cannot fill it, suggest saving the monthly amount into it.' : ''}`
+    replyMessages.push({ role: 'system', content: `PHASE 2, THE PLAN (you now know enough; give it once, plain words, numbers only from ASSET & FUND FIGURES). Layout: one short intro line, then each point on its OWN line starting with "- ", a blank line before the start question:
+${points.map((x, k) => `${k + 1}. ${x}`).join('\n')}
+${ending}` })
+  }
+  // After the plan they fill one bucket at a time, the one they pick (Hieu, 2026-10-27).
+  if (phase === 'start' && planGiven && balance.fund.met && !appEvent) replyMessages.push({ role: 'system', content: `The plan was given and the emergency fund is full. They fill one bucket at a time, the one THEY pick, no need to split every dollar. If they pick one: Crypto → ${balance.lock.open && cryptoOffer >= 1 ? `offer exactly: "Would you like me to prepare a cirBTC buy of **${usdc(cryptoOffer)}** for you to sign?" (that fills the Crypto bucket as far as the wallet allows; ignore the split in "Suggested use of idle money")` : 'say what is missing to buy in the app'}; Safety → their own bank savings or flexible earn, outside the app, with the amount; Traditional → bought outside the app with a broker (an index fund such as VOO, or gold), with the amount. If they have not picked yet, ask which one they want to fill first.` })
+  if (appEvent) replyMessages.push({ role: 'system', content: `The latest "user" line is the app telling you a card was signed (not their words). Confirm it in one sentence with what it means for them (e.g. their emergency fund now holds N months of spending), then the next step: ${balance.fund.met ? 'ask which bucket they want to fill first (Safety, Traditional or Crypto), with how much each still needs from "Still to fill"; they can fill one fully before the next.' : 'what still remains for the emergency fund.'} Numbers only from ASSET & FUND FIGURES.` })
   // "do it" showed the card but the reply went back to the cirBTC lock (real chat 2026-10-27).
   const card = actions.find(x => x.type === 'prepare_deposit')
   if (card) replyMessages.push({ role: 'system', content: `The deposit card is under this reply. In two short sentences: what it does for them (their emergency fund reaches its target, so N months of spending are covered if income stops) and what comes after they sign (the next step of the plan). No buy-lock talk, no new question.` })
@@ -1157,7 +1239,7 @@ End with the start question: "Ready to start? The first step is your emergency f
   replyMessages.push({ role: 'system', content: `Reply language: ${replyLang} (the language of the user's latest message).${vi ? ` ${VI_FLOORS}` : ''}` })
   if (DECLINES.test(lastUserText)) replyMessages.push({ role: 'system', content: 'The user just declined to share. Respect it: this reply asks NOTHING about their personal situation. Use the defaults (age 30 if the age is missing) and say the picture is an estimate; they can share any time.' })
 
-  const grounding = [figs, wishLine, brief, ...done, readback.join(', '), ...messages.filter(m => m.role === 'user').map(m => m.content)]
+  const grounding = [figs, wishLine, brief, usdc(cryptoOffer), ...done, readback.join(', '), ...messages.filter(m => m.role === 'user').map(m => m.content)]
   const prevAssistant = assistantTexts[assistantTexts.length - 1] ?? ''
   const recordedStable = ops.some(o => o.op === 'update_profile' && o.fields.incomeStable !== undefined)
   let rewrites = 0
@@ -1209,7 +1291,7 @@ End with the start question: "Ready to start? The first step is your emergency f
         if (taughtBefore && t.taught.test(plain)) problems.push(`${t.plain.split(' = ')[0]} was already explained in this chat: do not explain it again`)
       }
       // "do it" showed the deposit card, but the reply offered it again (real chat 2026-10-27).
-      if (actions.some(x => x.type.startsWith('prepare_') || x.type === 'propose_dca') && /would you like me to prepare|want me to prepare|shall I prepare|(muốn|để) mình chuẩn bị/i.test(plain)) problems.push('the card is ALREADY shown under this reply: say it is ready for them to check and sign, do not offer it again') // lang-ok
+      if (actions.some(x => String(x.type).startsWith('prepare_') || x.type === 'propose_dca') && /would you like me to prepare|want me to prepare|shall I prepare|(muốn|để) mình chuẩn bị/i.test(plain)) problems.push('the card is ALREADY shown under this reply: say it is ready for them to check and sign, do not offer it again') // lang-ok
       // The cirBTC lock came up in every reply while they were telling their situation (real chat 2026-10-27).
       if (LOCK_TALK.test(plain) && !/btc|bitcoin|buy|mua/i.test(lastUserText)) problems.push('do not bring up the cirBTC buy lock again: it only matters when they want to buy BTC in the app; talk about what they said and the next step') // lang-ok
       if (!balance.target && !facts.age_declined && /(?<!\d)\d{1,2}\s*%/.test(plain) && ASKS_TARGET.test(lastUserText)) problems.push('the age is unknown: quote no share yet, ask the age first')
@@ -1226,6 +1308,14 @@ End with the start question: "Ready to start? The first step is your emergency f
       if (!vi && INTERNAL_LABEL.test(plain)) problems.push('plain words for a beginner: "your emergency fund target (N months of spending)" not "floor", "what is left each month" not "surplus", "money you can use quickly" not "liquid assets", "money not doing anything yet" not "idle", "expensive debt" not "priority debt"')
       // The first reply read out balances before anything was known (beginner test 2026-10-27).
       if (!assistantTexts.length && /\d[\d,.]*\s*USDC/.test(plain) && !userAsks) problems.push('first reply: no balances or amounts yet; say how this works and ask your question')
+      // The plan must say how big the emergency fund should be (Hieu, 2026-10-27); v2 test #1 left the amount out.
+      if (phase === 'plan' && floors.length && !floors.some(f => f.texts.some(x => plain.includes(x)))) problems.push(`say how big their emergency fund should be: "${floors[0].months} months of spending = ${floors[0].texts[0]}"`)
+      if (phase === 'plan' && profile.cryptoDropOk === false && !/smaller|less|lower|reduce|nhỏ hơn|ít hơn|giảm/i.test(plain)) problems.push('they said they could not hold through a 50% crypto drop: offer a smaller Crypto part for now as an option (their call)') // lang-ok
+      if (phase === 'plan' && profile.nearGoal && !plain.toLowerCase().includes(profile.nearGoal.name.toLowerCase()) && !/goal|mục tiêu/i.test(plain)) problems.push(`say that the money for ${profile.nearGoal.name} stays in savings, not invested, because it is needed soon`) // lang-ok
+      // They picked Crypto after the plan but got the question back (v2 test 2026-10-27): offer the cirBTC card with a server-computed amount.
+      if (phase === 'start' && planGiven && balance.lock.open && /crypto|btc|bitcoin/i.test(lastUserText) && !actions.some(x => x.type === 'prepare_buy_cirbtc' || x.type === 'propose_dca') && !/prepare[^.?!\n]{0,60}(cirBTC|buy|DCA)/i.test(plain) && cryptoOffer >= 1) problems.push(`they picked Crypto: offer a cirBTC buy of **${usdc(cryptoOffer)}** for them to sign ("Would you like me to prepare a cirBTC buy of … for you to sign?")`)
+      // A beginner may think stocks or savings are bought in the app (v2 test 2026-10-27).
+      if (phase === 'start' && planGiven && /stock|traditional|index|gold|savings|bank|cổ phiếu|vàng|tiết kiệm/i.test(lastUserText) && !/outside|broker|your (own )?bank|bên ngoài/i.test(plain)) problems.push('say plainly this part is done outside the app (a broker for stocks or index funds, their own bank for savings), with the amount from "Still to fill"') // lang-ok
       // Phase 1 is for listening: advice about the fund gap or the lock waits for the plan (Hieu, 2026-10-27).
       if (phase === 'collect' && !userAsks && (LOCK_TALK.test(plain) || /\bshort\b|still needed|còn thiếu/i.test(plain))) problems.push('still collecting: no advice yet about the emergency fund gap or the cirBTC lock; acknowledge and ask the next question with why') // lang-ok
       // Advisor replies (2026-10-27 tests): a stray "Right?" after the real question, "I need to know…" instead of asking,

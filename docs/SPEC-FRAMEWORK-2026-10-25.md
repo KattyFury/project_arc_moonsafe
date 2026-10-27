@@ -2,6 +2,14 @@
 
 > Ngày chốt: 2026-10-25. File này thay thế file câu hỏi `MoonSafe-spec-framework-2026-10-25.md`.
 > Claude Code build đúng theo file này, không tự đoán. Chỗ nào thiếu hoặc mâu thuẫn thì hỏi lại Hiếu, không tự ngoại suy.
+>
+> **Sửa đổi 2026-10-27 (framework v2 bản gọn, Hiếu duyệt), đè lên các mục bên dưới:**
+> 1. Mục 4: còn **3 nhóm**: An toàn (Safety) = tuổi %, Truyền thống = r × 4/7, **Crypto = r × 3/7 là một khối**, nói bằng lời "phần lớn là BTC". Bỏ mục tiêu Coin lớn / Altcoin (= 0); coin đang có vẫn được ghi và tính vào Crypto, không thành gợi ý mua. Hiển thị % làm tròn số nguyên, tổng 100.
+> 2. Quỹ dự phòng chưa đủ → kế hoạch chỉ nói quỹ + để dành; tỉ lệ 3 nhóm chỉ nêu %, không chia tiền.
+> 3. Thêm câu hỏi: khoản lớn cần trong 5 năm (giữ ở An toàn, không đầu tư); "crypto giảm một nửa có giữ được không" (không → agent chỉ GỢI Ý giảm crypto, user quyết); bảo hiểm (chỉ khi có người phụ thuộc / trụ cột).
+> 4. Sau khi quỹ đủ: user lấp từng nhóm một, nhóm nào trước do user chọn; không chia nhỏ mọi đồng.
+> 5. Bỏ (người mới không cần): giảng rủi ro DeFi/depeg/oracle/bridge, chỉ số tỉ lệ tiết kiệm, rà soát 30 ngày, tách chi tiêu thiết yếu, nêu "giả định / độ bất định".
+> Đánh giá gốc: Desktop của Hiếu, `MoonSafe-danh-gia-framework-2026-10-27.md` và `MoonSafe-FRAMEWORK-v2-SPEC.md`.
 
 ---
 

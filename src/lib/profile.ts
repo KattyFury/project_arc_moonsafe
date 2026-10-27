@@ -8,7 +8,7 @@
 import { assetTypeRow } from '../kb/kb'
 import {
   EMPTY_PROFILE, type AssetType, type Category, type Currency, type Debt, type DebtType, type Expense,
-  type FinancialProfile, type Holding, type Income, type IncomeKind,
+  type FinancialProfile, type Holding, type Income, type IncomeKind, type NearGoal,
 } from '../types'
 
 export const DEBT_TYPES: DebtType[] = ['credit_card', 'consumer_loan', 'payday_loan', 'crypto_margin', 'mortgage', 'car_loan', 'business_loan', 'family_no_interest', 'family_interest', 'unknown']
@@ -189,8 +189,20 @@ export function normalizeProfile(raw: Record<string, unknown> | null | undefined
     debtsComplete: raw.debtsComplete === true,
     incomes: list(raw.incomes, x => readFlow<Income>(x, ['active', 'passive', 'irregular'], 'i', now)),
     expenses: list(raw.expenses, x => readFlow<Expense>(x, ['fixed', 'variable'], 'e', now)),
+    ...(readNearGoal(raw.nearGoal) ? { nearGoal: readNearGoal(raw.nearGoal) } : {}),
+    ...(raw.noNearGoal === true ? { noNearGoal: true } : {}),
+    ...(bool(raw.cryptoDropOk) !== null ? { cryptoDropOk: bool(raw.cryptoDropOk) } : {}),
+    ...(bool(raw.insured) !== null ? { insured: bool(raw.insured) } : {}),
     ...(num(raw.savedAt) !== null ? { savedAt: num(raw.savedAt)! } : {}),
   }
+}
+
+function readNearGoal(raw: unknown): NearGoal | null {
+  if (!raw || typeof raw !== 'object') return null
+  const g = raw as Record<string, unknown>
+  const amount = num(g.amount)
+  if (amount === null || amount <= 0) return null
+  return { name: str(g.name) ?? 'Goal', amount, currency: g.currency === 'VND' ? 'VND' : 'USDC', years: num(g.years) }
 }
 
 /** Something was ever told to the agent. */
@@ -200,7 +212,7 @@ export const hasAnyData = (p: FinancialProfile | null | undefined): boolean =>
 
 // ---- operations (what the agent's tools become) ---------------------------------------------
 
-export type ProfileFields = Partial<Pick<FinancialProfile, 'age' | 'ageDeclined' | 'incomeStable' | 'dependents' | 'soleEarner' | 'debtsComplete'>>
+export type ProfileFields = Partial<Pick<FinancialProfile, 'age' | 'ageDeclined' | 'incomeStable' | 'dependents' | 'soleEarner' | 'debtsComplete' | 'nearGoal' | 'noNearGoal' | 'cryptoDropOk' | 'insured'>>
 
 export type ProfileOp =
   | { op: 'update_profile'; fields: ProfileFields }
@@ -264,8 +276,10 @@ export function readOps(raw: unknown, now = Date.now()): ProfileOp[] {
         const f = (o.fields && typeof o.fields === 'object' ? o.fields : {}) as Record<string, unknown>
         const fields: ProfileFields = {}
         if (num(f.age) !== null) fields.age = num(f.age)!
-        for (const k of ['ageDeclined', 'incomeStable', 'soleEarner', 'debtsComplete'] as const) if (typeof f[k] === 'boolean') fields[k] = f[k] as boolean
+        for (const k of ['ageDeclined', 'incomeStable', 'soleEarner', 'debtsComplete', 'noNearGoal', 'cryptoDropOk', 'insured'] as const) if (typeof f[k] === 'boolean') fields[k] = f[k] as boolean
         if (num(f.dependents) !== null) fields.dependents = num(f.dependents)!
+        const goal = readNearGoal(f.nearGoal)
+        if (goal) fields.nearGoal = goal
         if (Object.keys(fields).length) out.push({ op: 'update_profile', fields })
         break
       }

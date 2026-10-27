@@ -14,11 +14,12 @@ import { EMPTY_PROFILE, type Debt, type FinancialProfile, type Holding } from '.
 let fails = 0
 const fail = (m: string) => { fails++; console.log('FAIL', m) }
 
-// 1. Age formula vs the spec 4 table (rounded to 0.1 there).
+// 1. Age formula vs the spec 4 table (rounded to 0.1 there). Framework v2 (2026-10-27): crypto is one
+// bucket, all of its target in BTC; big caps and low caps have no target.
 const TABLE: Record<number, number[]> = {
-  18: [18, 46.9, 23.4, 5.9, 5.9], 20: [20, 45.7, 22.9, 5.7, 5.7], 25: [25, 42.9, 21.4, 5.4, 5.4], 30: [30, 40, 20, 5, 5],
-  35: [35, 37.1, 18.6, 4.6, 4.6], 40: [40, 34.3, 17.1, 4.3, 4.3], 45: [45, 31.4, 15.7, 3.9, 3.9], 50: [50, 28.6, 14.3, 3.6, 3.6],
-  55: [55, 25.7, 12.9, 3.2, 3.2], 60: [60, 22.9, 11.4, 2.9, 2.9], 65: [65, 20, 10, 2.5, 2.5], 70: [70, 17.1, 8.6, 2.1, 2.1],
+  18: [18, 46.9, 35.1, 0, 0], 20: [20, 45.7, 34.3, 0, 0], 25: [25, 42.9, 32.1, 0, 0], 30: [30, 40, 30, 0, 0],
+  35: [35, 37.1, 27.9, 0, 0], 40: [40, 34.3, 25.7, 0, 0], 45: [45, 31.4, 23.6, 0, 0], 50: [50, 28.6, 21.4, 0, 0],
+  55: [55, 25.7, 19.3, 0, 0], 60: [60, 22.9, 17.1, 0, 0], 65: [65, 20, 15, 0, 0], 70: [70, 17.1, 12.9, 0, 0],
 }
 for (const [age, want] of Object.entries(TABLE)) {
   const m = targetMix(Number(age))
@@ -161,7 +162,7 @@ for (const r of reals) {
 const shortB = computeBalance({ profile: healthy, walletUsd: 0, vaultUsd: 1000, cirBtcUsd: 0, prices, vndPerUsd: 25000 })
 if (!/add 3,500 USDC to the emergency fund/.test(shortB.lock.text)) fail(`lock text must say the exact gap: ${shortB.lock.text}`)
 const declined = computeBalance({ profile: { ...healthy, age: null, ageDeclined: true }, walletUsd: 0, vaultUsd: 0, cirBtcUsd: 0, prices, vndPerUsd: 25000 })
-if (declined.target?.btc !== 20 || !declined.ageIsDefault) fail('declined age must use the age-30 split (BTC 20%)')
+if (Math.abs((declined.target?.btc ?? 0) - 30) > 1e-9 || !declined.ageIsDefault) fail('declined age must use the age-30 split (crypto 30%, as BTC)')
 const realBrief = patternBrief(matchPatterns(computeFacts({ balance: shortB, profile: healthy, prices, vndPerUsd: 25000, now: NOW })), displayFacts(computeFacts({ balance: shortB, profile: healthy, prices, vndPerUsd: 25000, now: NOW })))
 if (/\{\w+\}/.test(realBrief)) fail(`placeholder left in the brief: ${realBrief}`)
 console.log(`\nReal brief, fund short:\n${realBrief}`)

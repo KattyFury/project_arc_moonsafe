@@ -86,13 +86,14 @@
   "not_counted": ["State social insurance (BHXH): cannot be withdrawn at will, no set value"],
 
   "allocation": {
-    "formula": "safe = age %; rest r = 100 - age; traditional = r * 4/7; crypto = r * 3/7, split btc 2/3, large_cap 1/6, altcoin 1/6 (btc = r * 2/7, large_cap = altcoin = r / 14). Continuous in age, no steps; computed, never looked up.",
+    "formula": "safe (shown as Safety) = age %; rest r = 100 - age; traditional = r * 4/7; crypto = r * 3/7 as ONE bucket (framework v2, Hieu 2026-10-27): explained as mostly BTC in words, no target for big caps, low caps or memecoins, so new crypto money is suggested as BTC. Continuous in age, no steps; computed, never looked up.",
     "rest_split": { "traditional": [4, 7], "crypto": [3, 7] },
-    "crypto_split": { "btc": [2, 3], "large_cap": [1, 6], "altcoin": [1, 6] },
-    "anchor": { "age": 30, "safe": 30, "traditional": 40, "btc": 20, "large_cap": 5, "altcoin": 5 },
+    "crypto_split": { "btc": [1, 1], "large_cap": [0, 1], "altcoin": [0, 1] },
+    "anchor": { "age": 30, "safe": 30, "traditional": 40, "btc": 30, "large_cap": 0, "altcoin": 0 },
     "rules": [
       "BTC never goes to 0 at any age: on purpose, it is held for good.",
-      "Nothing but age changes these shares. Irregular income, dependents, risk appetite and debt only change the fund floor, the buy lock and the advice.",
+      "Nothing but age changes these shares. Irregular income, dependents, debt, a near-term goal or a no to the 50% drop question only change the fund floor, the buy lock and the advice (the agent may suggest less crypto; the user decides).",
+      "Crypto is one bucket, shown as one share and explained as mostly BTC. Coins already held (ETH, small coins) are tracked and count in Crypto, never turned into a buy target.",
       "Ages 18 to 90 in the formula (older counts as 90, Hieu 2026-10-25). Age unknown: ask for it before talking about shares. Declined: use 30 and say it is the default."
     ]
   },

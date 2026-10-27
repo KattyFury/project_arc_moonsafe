@@ -91,7 +91,23 @@ export interface FinancialProfile {
   debtsComplete: boolean
   incomes: Income[]
   expenses: Expense[]
+  /** A big expense within 5 years (car, wedding, school): kept in Safety, not invested (framework v2, 2026-10-27). */
+  nearGoal?: NearGoal | null
+  /** The user said there is no such goal. */
+  noNearGoal?: boolean
+  /** "If your crypto dropped by half, could you hold it without selling to live?" null = not asked / unsure. */
+  cryptoDropOk?: boolean | null
+  /** Health / life cover, asked only when people rely on their income. */
+  insured?: boolean | null
   savedAt?: number
+}
+
+export interface NearGoal {
+  name: string
+  amount: number
+  currency: Currency
+  /** Years until it is needed, if said. */
+  years: number | null
 }
 
 export const EMPTY_PROFILE: FinancialProfile = {
