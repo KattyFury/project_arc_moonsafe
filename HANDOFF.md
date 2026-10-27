@@ -7,6 +7,7 @@ Khung tài chính: **`docs/SPEC-FRAMEWORK-2026-10-25.md`** (dữ liệu: `src/kb
 ## ▶ Làm tiếp từ đây (mới nhất ở trên)
 
 **▶ Phiên sau (2026-10-27):** agent vừa đổi sang giọng tư vấn (mục -26), đã deploy. Chờ Hiếu thử thật và gửi câu trả lời nào còn kiểu ra lệnh / thiếu lý do → chạy lại đúng câu đó. Việc treo mới: planner (gpt-4o-mini) thỉnh thoảng chỉ ghi tuổi mà bỏ lương trong "I'm 30 and earn 2000$ a month" (~1/6 lần đo trực tiếp, hay hơn trong chat nhiều lượt) → agent hỏi lại thu nhập; hướng sửa đã bàn: đổi planner sang gpt-5.4-mini, Hiếu chưa chốt.
+- **Lỗi tiếng Việt, ĐỂ SAU (Hiếu 2026-10-27: đang làm bản English):** kể nhiều món trong 1 tin thì planner ghi ĐỦ (đo 6/6 lần, 7–8 món), bản English đọc lại đủ, nhưng câu trả lời tiếng Việt "Mình ghi: …" chỉ đọc lại món cuối (vd chỉ nợ thẻ) → người dùng tưởng phải khai từng câu. Hướng sửa đã bàn: (4a) kiểm mọi số trong read-back phải có trong câu trả lời, nhiều món thì gom 1 dòng; (4b) đầu chat agent mời kể một lượt (lương, chi tiêu, tiết kiệm, coin, vàng, nợ) rồi mới hỏi phần thiếu. Chưa chốt.
 
 -26. **2026-10-27 — agent tư vấn có lý do, không ra lệnh (Hiếu: "agent cứ bảo làm ABC mà không nói vì sao, vậy là app fail"), ĐÃ DEPLOY.**
    - Test song song trên local: vòng 1 = 5 kiểu Style × 6 chat; vòng 2 = 3 kiểu × 2 lần; vòng 3 = cùng prompt × 3 model. Kết luận: đổi chữ prompt trên gpt-4o-mini cải thiện ít (dao động giữa các lần > khác biệt giữa các kiểu); đổi model mới ra giọng tư vấn. Hiếu chọn 3b. Transcript: Desktop\MoonSafe-test-prompt-2026-10-27.
