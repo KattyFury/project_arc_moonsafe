@@ -5,12 +5,12 @@
 // Numbers: src/lib/allocation.ts computeBalance, the same code the app's screens and buy lock use.
 //
 // Each user message runs two stages:
-// 1. PLAN (gpt-4o-mini, tool_choice "required", at most 10 steps): the tools of spec 10 (profile,
+// 1. PLAN (gpt-5.4-mini since 2026-10-27, tool_choice "required", at most 10 steps): the tools of spec 10 (profile,
 //    holdings, move, debts, incomes, expenses, charts, cards). Recording tools become ProfileOps
 //    (src/lib/profile.ts) that the app applies; each is checked first (numbers must be in the
 //    user's words, values converted to quantities at live prices…). Letting gpt-4o-mini decide on
 //    its own called a tool 0/8 times (measured 2026-10-22), hence "required" + no_action.
-// 2. REPLY (gpt-4o-mini): talks to the user from the figures, the matching situation patterns
+// 2. REPLY (gpt-5.4-mini): talks to the user from the figures, the matching situation patterns
 //    (kb.ts matchPatterns → patternBrief) and what PLAN did; rewritten at most 3 times when a
 //    check fails (amounts not in the figures, never_say phrases, two questions, length…).
 // The app performs the returned actions (cards, screens); the user always signs in their own wallet.
@@ -167,6 +167,7 @@ const PLAN_GIVEN = /Traditional[^\n]{0,80}\d+(\.\d+)?\s*%|Truyền thống[^\n]{
 const NOT_AT_ALL = /^\W*(no|nope|not at all|none|zero|nothing|never)(?!\p{L})/iu
 const PAID_Q = /paid (it )?off|still owe|trả hết|còn nợ/i // lang-ok
 const SOLE_WORDS = /(only|sole|single|main)[^.?!\n]{0,20}(earner|income|breadwinner|one (who )?work)|breadwinner|trụ cột|một mình (kiếm|lo)|duy nhất (kiếm|có thu nhập)/i // lang-ok
+const NO_DEBT = /(no|not any|zero|without)\s+(other\s+)?(debts?|loans?)|debt[- ]free|(không|chưa|ko)\s+(còn\s+)?(nợ|vay)|hết nợ/i // lang-ok
 const LOCK_TALK = /(open|unlock|opens)[^.?!\n]{0,30}cirBTC|cirBTC (buying|buy)|buy lock|mở (khóa|khoá)? ?mua cirBTC/i // lang-ok
 const KNOWS_NOTHING = /(don'?t|do not) know (anything|much|where to start|what to do)|no idea|i'?m (lost|confused|new to)|never (managed|done this)|beginner|(không|chả|chẳng) biết (gì|bắt đầu)|mới bắt đầu/i // lang-ok
 const INTERNAL_LABEL = /(?<!\p{L})(floor|surplus|liquid assets?|idle( money| cash)?|priority debt)(?!\p{L})/iu
@@ -228,7 +229,8 @@ function ungrounded(reply: string, sources: string[]): string[] {
   return out
 }
 
-const REPLY_MODEL = 'gpt-5.4-mini'
+// One model for both stages (Hieu, 2026-10-27): gpt-4o-mini as planner dropped items from a message that listed several ("1000$ in the bank", a salary).
+const MODEL = 'gpt-5.4-mini'
 
 const REPLY_PROMPT = `You are MoonSafe's personal finance EDUCATOR and ADVISOR for Web3 users. Many have never managed their money or heard of personal finance: you teach the idea in plain words, then advise on their own numbers. You ask one question at a time to understand their money, record what they tell you, and prepare cards for them to sign when useful. You never push them to buy or sell; they decide.
 
@@ -852,7 +854,8 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       if (typeof a.dependents === 'number' && a.dependents >= 0 && a.dependents !== profile.dependents && (a.dependents === 0 ? SAYS_NONE.test(lastUserText) : stated(a.dependents) || DEPENDENT_WORDS.test(lastUserText))) f.dependents = Math.round(a.dependents)
       // "Sole earner" was recorded from a bare "no" to the debt question (replay 2026-10-27): it needs their words or an answer to that question.
       if (typeof a.sole_earner === 'boolean' && a.sole_earner !== profile.soleEarner && (SOLE_WORDS.test(lastUserText) || (SOLE_WORDS.test(prevAssistantText) && YES_NO.test(lastUserText)))) f.soleEarner = a.sole_earner
-      if (a.debts_complete === true && !profile.debtsComplete && SAYS_NONE.test(lastUserText)) f.debtsComplete = true
+      // "nobody depends on me" once closed the debt checklist (2026-10-27): the no has to be about debt.
+      if (a.debts_complete === true && !profile.debtsComplete && SAYS_NONE.test(lastUserText) && (DEBT_WORD.test(prevAssistantText) || NO_DEBT.test(lastUserText))) f.debtsComplete = true
       // Framework v2 (2026-10-27): near-term goal, the 50% drop question, insurance; each only from the user's own words.
       const goalAmt = moneyArg(a.near_goal_amount)
       if (goalAmt && goalAmt.amount > 0 && stated(goalAmt.amount)) {
@@ -1121,7 +1124,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   // A signed card (ChatScreen hidden message) records nothing: the balances already come from the chain.
   const appEvent = lastUserText.startsWith('[app event]')
   for (let step = 1; step <= (appEvent ? 0 : MAX_PLAN_STEPS); step++) {
-    const plan = await openai(apiKey, { model: 'gpt-4o-mini', messages: planMessages, tools: PLAN_TOOLS, tool_choice: 'required', temperature: 0, max_tokens: 500 })
+    const plan = await openai(apiKey, { model: MODEL, messages: planMessages, tools: PLAN_TOOLS, tool_choice: 'required', max_completion_tokens: 1500, reasoning_effort: 'none' })
     if (plan instanceof Response) return plan
     planSteps = step
     planIn += plan.usage?.prompt_tokens ?? 0
@@ -1246,7 +1249,7 @@ ${ending}` })
   for (let round = 1; round <= 5; round++) {
     // gpt-5.4-mini replies like an advisor (reasons tied to the user's numbers); gpt-4o-mini read as orders (Hieu, 2026-10-27, 3 test rounds).
     // Function tools need reasoning_effort 'none' on chat/completions.
-    const reply = await openai(apiKey, { model: REPLY_MODEL, messages: replyMessages, tools: REPLY_TOOLS, tool_choice: round >= 3 ? 'none' : 'auto', max_completion_tokens: 1200, reasoning_effort: 'none' })
+    const reply = await openai(apiKey, { model: MODEL, messages: replyMessages, tools: REPLY_TOOLS, tool_choice: round >= 3 ? 'none' : 'auto', max_completion_tokens: 1200, reasoning_effort: 'none' })
     if (reply instanceof Response) return reply
     const msg = reply.choices[0]?.message
     if (reply.usage) console.log(`reply tokens in=${reply.usage.prompt_tokens} out=${reply.usage.completion_tokens} round=${round}`)
