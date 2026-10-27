@@ -310,7 +310,7 @@
       "id": "age_unknown", "name": "Age not known yet", "priority": 88, "spec": "4, 10",
       "when": { "all": [{ "fact": "age_known", "op": "==", "value": false }, { "fact": "age_declined", "op": "==", "value": false }] },
       "agent_does": "Ask the age before talking about shares (first question of the collection flow).",
-      "say": ["How old are you? The MoonSafe split depends on it."],
+      "say": ["How old are you? Your age shapes how MoonSafe suggests dividing your money."],
       "never": ["Quoting shares without an age."],
       "locks": { "buy_cirbtc": "by_lock" }
     },

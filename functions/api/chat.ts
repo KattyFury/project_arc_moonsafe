@@ -111,7 +111,7 @@ const ACTION_VERB: Record<string, RegExp> = {
 // Questions where the reply must state the target split by age.
 const ASKS_TARGET = /(what (percent|percentage|share)|how much (should|can) i invest|allocat|split|how is my money|bao nhiêu (phần trăm|%)|tỷ lệ|tỉ lệ|phân bổ|chia (tiền|thế nào|sao))/iu // lang-ok
 // "why not invest right away instead of keeping a fund?" asks why; it is not a request to invest.
-const ASKS_WHY = /(?<!\p{L})(why|what for|what is|sao|tại sao|vì sao|làm gì|là gì)(?!\p{L})/iu // lang-ok
+const ASKS_WHY = /(?<!\p{L})(why|what for|what is|what are|what does|mean|means|don'?t get|don'?t understand|confused|explain|sao|tại sao|vì sao|làm gì|là gì|nghĩa là|không hiểu)(?!\p{L})/iu // lang-ok
 const DEPOSIT_WORD = /(?<!\p{L})(deposit|nạp)(?!\p{L})/iu // lang-ok
 // An overall check-up ("how are my finances doing?"): the reply follows debt → fund → allocation.
 const ASKS_OVERVIEW = /how (am i|are my finances|is my (financial )?situation)|my finances|tình hình (tài chính)?/i // lang-ok
@@ -152,6 +152,15 @@ const DEBT_WORD = /(?<!\p{L})(debts?|loans?|nợ|khoản vay)(?!\p{L})/iu // lan
 const PUSHY = /(you need to|you must|please) (declare|provide|fill in)|(bạn cần|vui lòng|hãy|bạn phải)\s+khai báo/i // lang-ok
 // Advice read as orders with no reason (Hieu, 2026-10-27): suggestions say what they do for the user.
 const BOSSY = /\byou (need|have) to\b|\byou must\b|(?<!\p{L})(bạn cần|bạn phải|hãy)(?!\p{L})/iu // lang-ok
+// Internal labels a beginner does not know (Hieu, 2026-10-27: users may never have heard of personal finance).
+const BARE_OK = /^\W*(ok|okay|oke|sure|yes|yeah|yep|alright|fine|cool|ừ|ok luôn)\W*$/iu // lang-ok
+// A term a beginner meets for the first time, and words that explain it (in this reply or an earlier one).
+const TEACH_ONCE: { term: RegExp; taught: RegExp; plain: string }[] = [
+  { term: /(?<!\p{L})DCA(?!\p{L})/u, taught: /fixed amount|on a schedule|every (week|month)|same amount|regular(ly)?/i, plain: 'DCA = buying the same amount on a schedule (e.g. every month), so you do not have to guess the right moment' },
+  { term: /cirBTC/i, taught: /bitcoin (that )?you can (buy|hold) in (this|the) app|bitcoin in (this|the) app|in-app bitcoin/i, plain: 'cirBTC = Bitcoin you can buy and hold in this app' },
+]
+const KNOWS_NOTHING = /(don'?t|do not) know (anything|much|where to start|what to do)|no idea|i'?m (lost|confused|new to)|never (managed|done this)|beginner|(không|chả|chẳng) biết (gì|bắt đầu)|mới bắt đầu/i // lang-ok
+const INTERNAL_LABEL = /(?<!\p{L})(floor|surplus|liquid assets?|idle( money| cash)?|priority debt)(?!\p{L})/iu
 const OTHER_SCRIPT = /[\u0400-\u04FF\u0590-\u06FF\u0E00-\u0E7F\u3040-\u30FF\u4E00-\u9FFF\uAC00-\uD7AF]/ // Cyrillic, Hebrew, Arabic, Thai, Japanese, Chinese, Korean
 const RIGHT_Q = /(Right|Đúng chưa)\?/i // lang-ok
 const NEED_TO_KNOW = /I need to know|(?<!\p{L})mình cần (biết|bạn cho biết)(?!\p{L})/iu // lang-ok
@@ -212,18 +221,30 @@ function ungrounded(reply: string, sources: string[]): string[] {
 
 const REPLY_MODEL = 'gpt-5.4-mini'
 
-const REPLY_PROMPT = `You are MoonSafe's personal finance advisor for Web3 users: professional, warm, plain words. You advise, ask one question at a time to understand their money, record what they tell you, and prepare cards for them to sign when useful. You never push them to buy or sell; they decide.
+const REPLY_PROMPT = `You are MoonSafe's personal finance EDUCATOR and ADVISOR for Web3 users. Many have never managed their money or heard of personal finance: you teach the idea in plain words, then advise on their own numbers. You ask one question at a time to understand their money, record what they tell you, and prepare cards for them to sign when useful. You never push them to buy or sell; they decide.
 
 ## Language
 Reply in the language of the user's latest message (default English). ${VI_VOICE}
 
-## Style
-- Talk like a friend who knows money well, sitting next to them: warm, concrete, never preachy. Advise first, ask after.
+## Educator: plain words first
+- Write for someone who has never heard of personal finance. Everyday words; one idea per reply.
+- Never use these internal labels as they are; say the plain version (the figures use the labels, your reply does not):
+  - fund floor → "your emergency fund target" with its months ("3 months of spending")
+  - idle money → "money that is not doing anything yet"
+  - liquid assets → "money you can use or sell quickly"
+  - surplus → "what is left each month after spending"
+  - priority debt → "expensive debt (high interest)"
+  - the split / allocation → "how to divide your money"
+- The first time a reply brings up an idea (emergency fund, the cirBTC buy lock, dividing money by age, Safe / Traditional / BTC / Big caps / Low caps, expensive debt, DCA), teach it in one plain sentence: what it is and why it helps, with their numbers. Safe = bank savings you can reach any time; Traditional = stocks, index funds, gold; Big caps = large well-known coins (ETH, SOL, BNB); Low caps = small coins and memecoins, very risky; cirBTC = Bitcoin you can buy in this app; DCA = buying a fixed amount on a schedule.
+- They say they know nothing, are confused, or ask what to do → the big picture first, in order: know your monthly spending → build an emergency fund → pay off expensive debt → then divide the rest and invest. Tell them which step they are on and the one next step.
+- Never dump many percentages: name at most two groups per reply, in plain words, and offer to explain the rest.
+
+## Advisor
+- Talk like a friend who knows money well, sitting next to them: warm, concrete, never preachy. Teach, then advise, then ask.
 - Make every reason tangible with THEIR numbers and a real-life picture ("if your income stopped next month, **500 USDC** covers about two weeks"). Never the empty "this is important because…": say what actually happens to them.
-- The FIRST time a reply uses a MoonSafe idea (emergency fund, fund floor, cirBTC lock, split by age, idle money, priority debt), explain in one plain sentence what it is and why, with their numbers.
-- Greeting: one sentence on what you can do for them (sort out spending, an emergency fund, how to split their money), then your question with why you ask.
+- First message / greeting: welcome them, one sentence on what MoonSafe does for them (see where their money goes, build an emergency fund, then invest step by step), then your question with why you ask. No numbers or labels yet.
 - Options, never orders ("you could…", "one option is…"; never "you need to" / "you must"). At most one question, saying why you ask.
-- About 3-4 sentences (about 70 words); up to 6 when they ask why. Amounts and the key point in **bold**.
+- About 3-5 sentences (about 80 words); up to 7 when they ask why or what something means. Amounts and the key point in **bold**.
 - No preamble, no repeating what they said, no filler, no judging.
 - No disclaimer in chat ("not investment advice", "only invest what you can afford to lose"): it is on the cards and the "Before you start" screen.
 
@@ -260,6 +281,7 @@ const ASSET_TYPES_TEXT = KB.asset_types.filter(t => t.key !== 'moonsafe_fund' &&
 const PLAN_PROMPT = `You are MoonSafe's action planner. Read the user's LATEST message (earlier ones are context), the profile list (each item has an [id]) and the app state, then CALL tools. Every step calls at least one tool and sees each result; when nothing more was asked or told, call no_action. Never do what was not asked or told. Users write English or Vietnamese.
 
 ## Which tool
+- A bare "ok" / "sure" / "yes" to a question asking for a fact (age, income, spending…) gives no fact: record nothing, and it is NOT declining.
 - A bare answer ("400$", "Maybe 1000$", "No") answers the agent's LAST question: after "how much do you spend?" it is spending, after "how much in the bank?" it is savings, after "any other debt?" a "No" is no other debt.
 - Age, income stability, number of dependents, sole earner, declining to give the age, "no (other) debt" → update_profile. Only what was just said ("salary" says nothing about stability).
 - Something they hold → add_holding, one call per item, with the right type. A new amount for an item already listed → set_holding with its id. Sold everything / closed it → remove_holding.
@@ -563,7 +585,7 @@ function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: nu
 
 // ---- Collection flow (spec 10): the next topic not known and not asked yet ------------------
 const TOPICS: { key: string; ask: string; asked: RegExp; known: (p: FinancialProfile) => boolean }[] = [
-  { key: 'age', ask: 'How old are you? The MoonSafe split depends on it.', asked: /how old|your age|bao nhiêu tuổi/i, known: p => p.age !== null || p.ageDeclined }, // lang-ok
+  { key: 'age', ask: 'How old are you? Your age shapes how MoonSafe suggests dividing your money.', asked: /how old|your age|bao nhiêu tuổi/i, known: p => p.age !== null || p.ageDeclined }, // lang-ok
   { key: 'income', ask: 'Roughly how much do you earn a month, and from what?', asked: /(earn|income|salary)[^.?!\n]{0,40}\?|thu nhập[^.?!\n]{0,40}\?/i, known: p => p.incomes.length > 0 }, // lang-ok
   { key: 'spending', ask: 'Roughly how much do you spend a month?', asked: /spend[^.?!\n]{0,40}\?|chi tiêu[^.?!\n]{0,40}\?/i, known: p => p.expenses.length > 0 }, // lang-ok
   { key: 'stability', ask: 'Is your income stable, and does anyone rely on it?', asked: /(stable|steady|rely|depend)[^.?!\n]{0,60}\?|(ổn định|phụ thuộc)[^.?!\n]{0,60}\?/i, known: p => p.incomeStable !== null && p.dependents !== null }, // lang-ok
@@ -769,7 +791,8 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
     if (name === 'update_profile') {
       const f: Record<string, unknown> = {}
       if (typeof a.age === 'number' && a.age >= 10 && a.age <= 120 && stated(a.age) && a.age !== profile.age) f.age = Math.round(a.age)
-      if (a.age_declined === true && !profile.ageDeclined && profile.age === null && (DECLINES.test(lastUserText) || AGE_WORD.test(prevAssistantText))) f.ageDeclined = true
+      // A bare "ok" after "How old are you?" was recorded as declining (beginner test 2026-10-27).
+      if (a.age_declined === true && !profile.ageDeclined && profile.age === null && (DECLINES.test(lastUserText) || (AGE_WORD.test(prevAssistantText) && !BARE_OK.test(lastUserText)))) f.ageDeclined = true
       // An answer about something else ("I bring it all onchain") once became "income stable" (real chat 2026-10-26): it needs a yes / no or a stability word.
       if (typeof a.income_stable === 'boolean' && a.income_stable !== profile.incomeStable && (STABILITY_WORDS.test(lastUserText) || (ASKS_STABLE.test(prevAssistantText) && YES_NO.test(lastUserText)))) f.incomeStable = a.income_stable
       if (typeof a.dependents === 'number' && a.dependents >= 0 && a.dependents !== profile.dependents && (a.dependents === 0 ? SAYS_NONE.test(lastUserText) : stated(a.dependents) || DEPENDENT_WORDS.test(lastUserText))) f.dependents = Math.round(a.dependents)
@@ -1080,6 +1103,10 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   const altCheck = wishGroup === 'low caps' || (startFacts.intent_all_in_alt && !usedOnce.has('altcoin_heavy'))
   if (altCheck && !usedOnce.has('altcoin_heavy')) replyMessages.push({ role: 'system', content: `They want a big share in low caps / memecoins. Once, a vivid reality check as your one question: most low caps end up down 90-99%; would they dare put ${wishGroup ? `${wishPct}% of their assets` : 'that much'} in and watch it shrink to 1%? Then it is their call. No card (the app cannot buy them), no "should".` })
   if (userAsks) replyMessages.push({ role: 'system', content: 'The user is asking or doubting something: answer it first and plainly. If it is about the fund amount, show how it is made from the figures: "Spending per month" (its spending lines + debt payments) × the months = the floor. Do not say they are right unless the figures agree.' })
+  // A beginner's first message got balances and "the MoonSafe split" before any welcome (beginner test 2026-10-27).
+  // The app already showed its own welcome (useAgent WELCOME, UI only): no second welcome.
+  if (!assistantTexts.length) replyMessages.push({ role: 'system', content: `This is their first message; they already saw MoonSafe's welcome, so do not welcome them again. Answer what they said first, in plain words.${KNOWS_NOTHING.test(lastUserText) ? ' They are new to managing money: in two plain sentences give the path (know your monthly spending → build an emergency fund → pay off expensive debt → then invest step by step) and that the first step is knowing their spending.' : ''} No balances, no percentages, no labels in this reply unless they asked for them. Then your one question with why you ask.` })
+  else if (KNOWS_NOTHING.test(lastUserText)) replyMessages.push({ role: 'system', content: 'They feel lost: give the big picture in plain words (know your monthly spending → emergency fund → expensive debt → then invest), say which step they are on, and the one next step.' })
   if (ASKS_OVERVIEW.test(lastUserText)) replyMessages.push({ role: 'system', content: `Overall check-up, as an advisor: one short point each, in this order: ${balance.debts.priorityCount ? 'their priority debt (start with it), ' : ''}the emergency fund vs its floor, then the split. For each, why it matters for them and one option they could take (an option, not an order). Keep the split to one sentence.` })
   const replyLang = vi ? 'Vietnamese' : 'English'
   replyMessages.push({ role: 'system', content: `Reply language: ${replyLang} (the language of the user's latest message).${vi ? ` ${VI_FLOORS}` : ''}` })
@@ -1129,7 +1156,10 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       if (altCheck && !usedOnce.has('altcoin_heavy') && (!/99\s*%/.test(plain) || !/(?<![\d.,])1\s*%/.test(plain))) problems.push('give the reality check once: most low caps end up down 90-99%; would they dare put that share in and watch it shrink to 1%?')
       if (SPLIT_AS_MUST.test(plain)) problems.push('the split by age is only a reference they may consider: say "you could consider" / "the framework suggests", never "recommended", "you need to" or "you must"')
       if (DISCLAIMER.test(content)) problems.push('no disclaimer in chat (it is on the cards and the "Before you start" screen): drop it')
-      if (balance.target && ASKS_TARGET.test(lastUserText) && !new RegExp(`(?<!\\d)${Math.round(balance.target.safe)}\\s*%`).test(plain)) problems.push(`give the target by the MoonSafe framework: Safe ${pct(balance.target.safe)}, Traditional ${pct(balance.target.traditional)}, BTC ${pct(balance.target.btc)}, Big caps ${pct(balance.target.large_cap)}, Low caps ${pct(balance.target.altcoin)} of liquid assets`)
+      if (balance.target && ASKS_TARGET.test(lastUserText) && !new RegExp(`(?<!\\d)${Math.round(balance.target.safe)}\\s*%`).test(plain)) problems.push(`give the target by the MoonSafe framework in plain words, two groups only: about ${pct(balance.target.safe)} in Safe (bank savings you can reach any time) and ${pct(balance.target.btc)} in BTC; offer to explain the other groups`)
+      // Five percentages at once lost a beginner ("I don't get it", beginner test 2026-10-27).
+      if ((plain.match(/\d\s*%/g) ?? []).length > 3 && !actions.some(x => x.type === 'show_allocation')) problems.push('too many percentages for a beginner: name at most two groups in plain words and offer to explain the rest')
+      for (const t of TEACH_ONCE) if (t.term.test(plain) && !t.taught.test(plain) && !assistantTexts.some(a => t.taught.test(a))) problems.push(`first time this chat says it, explain it in plain words: ${t.plain}`)
       if (!balance.target && !facts.age_declined && /(?<!\d)\d{1,2}\s*%/.test(plain) && ASKS_TARGET.test(lastUserText)) problems.push('the age is unknown: quote no share yet, ask the age first')
       if (balance.cashflow.spending === null && !balance.fund.met && NEEDS_AMOUNT.test(content)) problems.push('monthly spending is unknown, so nobody knows how much the fund needs: never say an amount is needed or quote the wallet as what to add; ask how much they spend a month')
       // "Would you like me to prepare a deposit of 1,101 USDC" for the bank-savings part (real chat 2026-10-24).
@@ -1140,6 +1170,8 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       if (BUILD_FUND.test(lastUserText) && /a month into the fund takes about/.test(figs) && !/sav|để dành|tiết kiệm/i.test(content)) problems.push('they asked how to build the fund: suggest saving the monthly amount from the figures and say about how many months it takes') // lang-ok
       if (vi && /months? of spending|Noted[.:]|Right\?/i.test(content)) problems.push('this reply is in Vietnamese: write "N tháng chi tiêu", "Mình ghi: …", "Đúng chưa?", no English phrases') // lang-ok
       if (PUSHY.test(content)) problems.push('do not order the user to provide details ("please provide…"); ask one friendly question instead')
+      if (/\bN months\b|N tháng/.test(plain)) problems.push('write the real number of months, not "N months"') // lang-ok
+      if (!vi && INTERNAL_LABEL.test(plain)) problems.push('plain words for a beginner: "your emergency fund target (N months of spending)" not "floor", "what is left each month" not "surplus", "money you can use quickly" not "liquid assets", "money not doing anything yet" not "idle", "expensive debt" not "priority debt"')
       // Advisor replies (2026-10-27 tests): a stray "Right?" after the real question, "I need to know…" instead of asking,
       // the rote "this is important because", and "adding to the fund opens cirBTC" while priority debt still locks it.
       if (!readback.length && RIGHT_Q.test(plain)) problems.push('nothing was recorded this turn: drop "Right?" / "Đúng chưa?"') // lang-ok
@@ -1163,8 +1195,8 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       if (usedOnce.has('altcoin_heavy') && CAUTION_ALT.test(content)) problems.push('the altcoin risk was already said once in this chat: do not repeat it, respect their decision')
       // Users found replies wordy (2026-10-24, median 305 chars), then found them bossy with no reasons (Hieu, 2026-10-27):
       // room for one "why" sentence. Checked only once the content is right.
-      const maxChars = ASKS_WHY.test(lastUserText) ? 680 : readback.length ? 520 : 480
-      if (!problems.length && content.replace(/\*\*/g, '').length > maxChars && !actions.some(x => x.type === 'show_allocation' || x.type === 'show_cashflow')) problems.push(`too long (${content.length} chars): cut to at most ${maxChars === 680 ? '5' : '4'} short sentences including one question; first sentence = the direct answer; keep every point it makes now (key numbers, the reason why, advice on debt or saving), drop only preambles, repeats and filler`)
+      const maxChars = ASKS_WHY.test(lastUserText) ? 800 : 560
+      if (!problems.length && content.replace(/\*\*/g, '').length > maxChars && !actions.some(x => x.type === 'show_allocation' || x.type === 'show_cashflow')) problems.push(`too long (${content.length} chars): cut to at most ${maxChars === 800 ? '7' : '5'} short sentences including one question; first sentence = the direct answer; keep every point it makes now (key numbers, the reason why, advice on debt or saving), drop only preambles, repeats and filler`)
       if (problems.length && rewrites < 3 && round < 5) {
         rewrites++
         replyMessages.push({ role: 'assistant', content })
