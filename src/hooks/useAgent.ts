@@ -52,6 +52,23 @@ export function hydrateChat(msgs: ChatMessage[] | null) {
 export function clearChatStorage() {
   hydrateChat(null)
   cloudSave({ chat: null })
+  writeChatExtras(null)
+}
+
+// Cards and charts under the agent's replies, by reply timestamp. Kept in localStorage: they used to live in
+// component state and vanished when the chat remounted mid-signature (real chat 2026-10-27).
+const EXTRAS_KEY = 'moonsafe_chat_extras_v1'
+export interface StoredCard { id: number; at: number; kind: 'deposit' | 'withdraw' | 'buy' | 'dca'; amount: string; intervalDays?: number; status?: 'done' | 'cancelled' }
+export interface StoredChart { at: number; kind: 'allocation' | 'cashflow' }
+export function readChatExtras(): { cards: StoredCard[]; charts: StoredChart[] } {
+  try {
+    const raw = localStorage.getItem(EXTRAS_KEY)
+    const v = raw ? JSON.parse(raw) as { cards?: StoredCard[]; charts?: StoredChart[] } : {}
+    return { cards: v.cards ?? [], charts: v.charts ?? [] }
+  } catch { return { cards: [], charts: [] } }
+}
+export function writeChatExtras(v: { cards: StoredCard[]; charts: StoredChart[] } | null) {
+  try { if (v) localStorage.setItem(EXTRAS_KEY, JSON.stringify(v)); else localStorage.removeItem(EXTRAS_KEY) } catch { /* storage blocked */ }
 }
 
 export interface AgentHooks {
@@ -60,8 +77,8 @@ export interface AgentHooks {
   /** What the agent recorded this turn (profile, holdings, debts, incomes, expenses), applied in one save. */
   onOps: (ops: ProfileOp[]) => void
   onDcaStop: () => void
-  /** UI actions the agent asked for (open a screen with a prefilled amount). */
-  onActions?: (actions: AgentAction[]) => void
+  /** UI actions the agent asked for (cards, charts, screens), with the timestamp of the reply they belong to. */
+  onActions?: (actions: AgentAction[], replyAt: number) => void
 }
 
 export interface AgentAction {
@@ -78,8 +95,9 @@ export function useAgent(hooks: AgentHooks) {
   useLayoutEffect(() => { hooksRef.current = hooks })
   const abortRef = useRef<AbortController | null>(null)
 
-  const sendMessage = useCallback(async (text: string) => {
-    const userMsg: ChatMessage = { role: 'user', content: text, timestamp: Date.now() }
+  /** hidden: an app event for the agent (a card was signed), kept in the history but not shown. */
+  const sendMessage = useCallback(async (text: string, hidden = false) => {
+    const userMsg: ChatMessage = { role: 'user', content: text, timestamp: Date.now(), ...(hidden ? { hidden: true } : {}) }
     const history = [...messages.filter(m => !m.error), userMsg]
     setMessages(history)
     writeChat(history)
@@ -107,9 +125,10 @@ export function useAgent(hooks: AgentHooks) {
       const ops = readOps(data.ops)
       if (ops.length) hooksRef.current.onOps(ops)
       if (data.dcaStop) hooksRef.current.onDcaStop()
-      if (data.actions?.length) hooksRef.current.onActions?.(data.actions)
+      const replyAt = Date.now()
+      if (data.actions?.length) hooksRef.current.onActions?.(data.actions, replyAt)
 
-      const final = [...history, { role: 'assistant' as const, content, timestamp: Date.now() }]
+      const final = [...history, { role: 'assistant' as const, content, timestamp: replyAt }]
       setMessages(final)
       writeChat(final)
     } catch (e) {

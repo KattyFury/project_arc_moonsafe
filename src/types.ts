@@ -107,6 +107,8 @@ export interface ChatMessage {
   content: string
   timestamp: number
   error?: boolean
+  /** Sent to the agent but not shown: the app telling it a card was signed. */
+  hidden?: boolean
 }
 
 /** DCA plan the user approved. Each run is a swap the user signs. */

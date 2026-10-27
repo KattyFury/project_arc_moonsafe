@@ -11,17 +11,18 @@ import { formatUsdc } from '@/lib/format'
 import { Btn, GlassCard, IconBox, Notice } from '@/components/ui/kit'
 
 export type ChatAction =
-  | { id: number; anchor: number; kind: 'deposit' | 'withdraw' | 'buy'; amount: bigint }
-  | { id: number; anchor: number; kind: 'dca'; amount: bigint; intervalDays: number }
+  | { id: number; at: number; kind: 'deposit' | 'withdraw' | 'buy'; amount: bigint; status?: 'done' | 'cancelled' }
+  | { id: number; at: number; kind: 'dca'; amount: bigint; intervalDays: number; status?: 'done' | 'cancelled' }
 
 type Status = 'idle' | 'busy' | 'done' | 'error' | 'cancelled'
 
 const TITLES = { deposit: 'Add to fund', withdraw: 'Withdraw to wallet', buy: 'Buy cirBTC', dca: 'Recurring buy (DCA)' } as const
 const ICONS = { deposit: ArrowDownToLine, withdraw: ArrowUpFromLine, buy: TrendingUp, dca: Repeat } as const
 
-export function ActionCard({ action }: { action: ChatAction }) {
+/** onFinished: the card was signed or cancelled (stored, so a remounted chat shows it the same way). */
+export function ActionCard({ action, onFinished }: { action: ChatAction; onFinished?: (status: 'done' | 'cancelled', summary: string) => void }) {
   const { vault, math, cirBtc, balance, money, unit } = useApp()
-  const [status, setStatus] = useState<Status>('idle')
+  const [status, setStatus] = useState<Status>(action.status ?? 'idle')
   const [error, setError] = useState<string | null>(null)
   const { kind, amount } = action
   const Icon = ICONS[kind]
@@ -62,11 +63,12 @@ export function ActionCard({ action }: { action: ChatAction }) {
       else if (!q) { await cirBtc.estimate(amount); setStatus('idle'); return }
       else if (!(await cirBtc.execute())) throw new Error(cirBtc.error ?? 'The cirBTC purchase did not go through')
       setStatus('done')
+      onFinished?.('done', doneText)
     } catch (e) {
       setError(txErrorMessage(e)); setStatus('error')
     }
   }
-  const cancel = () => { if (kind === 'buy') cirBtc.clearQuote(); setStatus('cancelled') }
+  const cancel = () => { if (kind === 'buy') cirBtc.clearQuote(); setStatus('cancelled'); onFinished?.('cancelled', `Cancelled: ${TITLES[kind]} ${formatUsdc(amount)}.`) }
 
   const doneText = kind === 'deposit' ? `Added ${formatUsdc(amount)} to your fund.`
     : kind === 'withdraw' ? `Withdrew ${formatUsdc(amount)} to your wallet.`

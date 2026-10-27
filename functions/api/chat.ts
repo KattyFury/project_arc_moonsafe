@@ -157,8 +157,13 @@ const BARE_OK = /^\W*(ok|okay|oke|sure|yes|yeah|yep|alright|fine|cool|ừ|ok lu�
 // A term a beginner meets for the first time, and words that explain it (in this reply or an earlier one).
 const TEACH_ONCE: { term: RegExp; taught: RegExp; plain: string }[] = [
   { term: /(?<!\p{L})DCA(?!\p{L})/u, taught: /fixed amount|on a schedule|every (week|month)|same amount|regular(ly)?/i, plain: 'DCA = buying the same amount on a schedule (e.g. every month), so you do not have to guess the right moment' },
-  { term: /cirBTC/i, taught: /bitcoin (that )?you can (buy|hold) in (this|the) app|bitcoin in (this|the) app|in-app bitcoin/i, plain: 'cirBTC = Bitcoin you can buy and hold in this app' },
+  { term: /cirBTC/i, taught: /bitcoin[^.;\n]{0,40}in (this|the) app|in-app bitcoin/i, plain: 'cirBTC = Bitcoin you can buy and hold in this app' },
 ]
+// The plan was given in this chat: a Traditional share quoted as a percentage.
+const PLAN_GIVEN = /Traditional[^\n]{0,80}\d+(\.\d+)?\s*%|Truyền thống[^\n]{0,80}\d+(\.\d+)?\s*%/i // lang-ok
+// "Not at all" answering "does it charge interest?" (real chat 2026-10-27: the question came back three times).
+const NOT_AT_ALL = /^\W*(no|nope|not at all|none|zero|nothing|never)(?!\p{L})/iu
+const LOCK_TALK = /(open|unlock|opens)[^.?!\n]{0,30}cirBTC|cirBTC (buying|buy)|buy lock|mở (khóa|khoá)? ?mua cirBTC/i // lang-ok
 const KNOWS_NOTHING = /(don'?t|do not) know (anything|much|where to start|what to do)|no idea|i'?m (lost|confused|new to)|never (managed|done this)|beginner|(không|chả|chẳng) biết (gì|bắt đầu)|mới bắt đầu/i // lang-ok
 const INTERNAL_LABEL = /(?<!\p{L})(floor|surplus|liquid assets?|idle( money| cash)?|priority debt)(?!\p{L})/iu
 const OTHER_SCRIPT = /[\u0400-\u04FF\u0590-\u06FF\u0E00-\u0E7F\u3040-\u30FF\u4E00-\u9FFF\uAC00-\uD7AF]/ // Cyrillic, Hebrew, Arabic, Thai, Japanese, Chinese, Korean
@@ -237,7 +242,12 @@ Reply in the language of the user's latest message (default English). ${VI_VOICE
   - the split / allocation → "how to divide your money"
 - The first time a reply brings up an idea (emergency fund, the cirBTC buy lock, dividing money by age, Safe / Traditional / BTC / Big caps / Low caps, expensive debt, DCA), teach it in one plain sentence: what it is and why it helps, with their numbers. Safe = bank savings you can reach any time; Traditional = stocks, index funds, gold; Big caps = large well-known coins (ETH, SOL, BNB); Low caps = small coins and memecoins, very risky; cirBTC = Bitcoin you can buy in this app; DCA = buying a fixed amount on a schedule.
 - They say they know nothing, are confused, or ask what to do → the big picture first, in order: know your monthly spending → build an emergency fund → pay off expensive debt → then divide the rest and invest. Tell them which step they are on and the one next step.
-- Never dump many percentages: name at most two groups per reply, in plain words, and offer to explain the rest.
+
+## The advice path (Hieu, 2026-10-27) — the app says which phase you are in
+1. COLLECT: ask what you need to advise, one question at a time, each with why. Anything they skip or do not want to say: skip it, never push. No advice yet.
+2. PLAN (once you know enough): how big their emergency fund should be and why, then how to divide the rest of their money by age, each group with its amount and its reason.
+3. START: ask whether they want to start; the first step is always the emergency fund, the most important part.
+The goal is a whole plan for their money, not BTC: never steer the talk to BTC or the cirBTC buy lock unless they ask about buying BTC.
 
 ## Advisor
 - Talk like a friend who knows money well, sitting next to them: warm, concrete, never preachy. Teach, then advise, then ask.
@@ -571,6 +581,8 @@ function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: nu
   if (b.target) {
     const t = b.target
     lines.push(`- Target by the MoonSafe framework at age ${b.age}${b.ageIsDefault ? ' (DEFAULT age 30: the user declined; say the split is an estimate)' : ''}: ${TARGET_GROUPS.map(g => `${GROUP_LABEL[g]} ${pct(t[g])}`).join(', ')}; crypto ${pct(t.btc + t.large_cap + t.altcoin)}`)
+    // The plan quotes each group as an amount too (Hieu, 2026-10-27: "how much in the bank, how much in stocks").
+    if (b.liquid > 0) lines.push(`- Target amounts of their liquid assets ${show(b.liquid)}: ${TARGET_GROUPS.map(g => `${GROUP_LABEL[g]} ${show(b.liquid * t[g] / 100)}`).join(', ')}`)
   } else lines.push('- Target: AGE UNKNOWN. Ask the age before talking about any share.')
   if (!b.declared) lines.push('- Only the app wallet is known: the user has not said what else they hold. If they ask how to split or invest: suggest NO split and NO purchase from the wallet, turn NO percentage into an amount; ask about the next item of the collection flow instead.')
   else if (b.suggest) {
@@ -609,7 +621,7 @@ function nextQuestion(p: FinancialProfile, assistantTexts: string[], userTexts: 
   if (knownSoFar && !p.debts.length && !p.debtsComplete && userTexts.some(t => DEBT_WORD.test(t) || /repay|pay (it )?back|trả nợ/i.test(t)) && !questions.some(q => OWED_Q.test(q))) // lang-ok
     return 'You mentioned paying back a debt: how much do you still owe, and to whom?'
   // A debt without its rate keeps cirBTC buying locked (allocation.ts debtIsPriority): ask it right away, once per debt.
-  const untold = p.debts.find(d => (d.ratePct === null || d.type === 'unknown') && d.type !== 'family_no_interest' && !questions.some(q => INTEREST_Q.test(q) && q.includes(d.name)))
+  const untold = p.debts.find(d => (d.ratePct === null || d.type === 'unknown') && d.type !== 'family_no_interest' && !questions.some(q => INTEREST_Q.test(q) && (q.includes(d.name) || DEBT_WORD.test(q))))
   if (untold) return `Does "${untold.name}" charge you any interest? If yes, roughly how much a year?`
   // The last debt question is asked once; asked again it reads like the agent was not listening (real chat 2026-10-26).
   const lastDebtAsked = questions.some(q => q.includes(KB.collection.last_debt_question.slice(0, 40)) || q.includes(VI_DEBT_Q.slice(0, 30)))
@@ -620,6 +632,8 @@ function nextQuestion(p: FinancialProfile, assistantTexts: string[], userTexts: 
     if (ASSET_TOPICS.has(t.key) && (userSaidNothingElse || questions.some(q => t.asked.test(q)))) continue
     // A question they ignored is not asked again.
     if (t.key !== 'debt' && questions.some(q => t.asked.test(q))) continue
+    // "Is your income stable…?" again after "kinda stable" (real chat 2026-10-27): ask only the part not known.
+    if (t.key === 'stability' && p.incomeStable !== null) return 'Does anyone rely on your income (children, parents, a partner)?'
     if (t.key === 'debt') return p.debts.length ? `The debt checklist's LAST question, word for word: "${vi ? VI_DEBT_Q : KB.collection.last_debt_question}"` : `Do you have any debt (credit card, loans)?`
     return t.ask
   }
@@ -783,7 +797,10 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       return 'Not done: they did not say where the money came from. Record nothing; the agent asks "where did it come from?" first.'
     }
     // The app wallet is read onchain: "2300$ in this wallet" reached the profile through add, set and move (real chats 2026-10-26).
-    if ((name === 'add_holding' || name === 'set_holding' || name === 'move') && wallet !== null && APP_WALLET.test(lastUserText)) {
+    // Only dollar-like items can be the wallet: "2000$ in gold … + money in this wallet" dropped the gold (real chat 2026-10-27).
+    const itemType = name === 'add_holding' ? String(a.type) : name === 'set_holding' ? findH(a.id)?.type : undefined
+    const walletLike = itemType === undefined || !isAssetType(itemType) || priceKindOf(itemType) === 'stable' || ['cash', 'checking'].includes(itemType)
+    if ((name === 'add_holding' || name === 'set_holding' || name === 'move') && wallet !== null && walletLike && APP_WALLET.test(lastUserText)) {
       const amts = [moneyArg(a.worth), moneyArg(a.amount), typeof a.quantity === 'number' ? { amount: a.quantity, currency: 'USDC' as Currency } : null]
       if (amts.some(m => m && Math.abs((toUsd(m.amount, m.currency, rate) ?? -1) - wallet) <= Math.max(1, wallet * 0.05))) return 'Not recorded: that is the app wallet, which the app reads onchain by itself.'
     }
@@ -895,8 +912,11 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
         console.log(`dropped add_debt ${call.function.arguments}: the number is a payment, not the total owed`)
         return 'Not recorded: that number is what they pay, not the total owed. Record no debt; the agent asks how much is still owed and to whom.'
       }
-      const type = DEBT_TYPES.includes(a.type as DebtType) ? a.type as DebtType : 'unknown'
-      const rateArg = typeof a.rate_pct === 'number' && a.rate_pct >= 0 && (a.rate_pct === 0 ? SAYS_NONE.test(lastUserText) || NO_INTEREST.test(lastUserText) || type === 'family_no_interest' : stated(a.rate_pct)) ? a.rate_pct : null // lang-ok
+      // "a debt with 0 interest (my mom…)" two messages before the amount: still no interest (real chat 2026-10-27).
+      const saidNoInterest = messages.filter(m => m.role === 'user').slice(-4).some(m => NO_INTEREST.test(m.content))
+      const asked = DEBT_TYPES.includes(a.type as DebtType) ? a.type as DebtType : 'unknown'
+      const type: DebtType = asked === 'family_interest' && saidNoInterest && !(typeof a.rate_pct === 'number' && a.rate_pct > 0) ? 'family_no_interest' : asked
+      const rateArg = typeof a.rate_pct === 'number' && a.rate_pct >= 0 && (a.rate_pct === 0 ? SAYS_NONE.test(lastUserText) || saidNoInterest || type === 'family_no_interest' : stated(a.rate_pct)) ? a.rate_pct : null // lang-ok
       const pay = moneyArg(a.monthly_payment)
       const d: Debt = {
         id: newId('d'), name: typeof a.name === 'string' && a.name.trim() ? a.name.trim() : 'Debt', type, balance: bal.amount, currency: bal.currency,
@@ -920,7 +940,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       if (DEBT_TYPES.includes(a.type as DebtType) && a.type !== d.type) patch.type = a.type as DebtType
       const bal = moneyArg(a.balance)
       if (bal && stated(bal.amount)) { patch.balance = bal.amount; patch.currency = bal.currency }
-      if (typeof a.rate_pct === 'number' && (a.rate_pct === 0 ? SAYS_NONE.test(lastUserText) || NO_INTEREST.test(lastUserText) : stated(a.rate_pct))) patch.ratePct = a.rate_pct // lang-ok
+      if (typeof a.rate_pct === 'number' && (a.rate_pct === 0 ? SAYS_NONE.test(lastUserText) || NO_INTEREST.test(lastUserText) || (INTEREST_Q.test(prevAssistantText) && NOT_AT_ALL.test(lastUserText)) : stated(a.rate_pct))) patch.ratePct = a.rate_pct // lang-ok
       const pay = moneyArg(a.monthly_payment)
       if (pay && stated(pay.amount)) patch.monthlyPayment = pay.amount
       if (typeof a.lender === 'string' && a.lender.trim()) patch.lender = a.lender.trim()
@@ -929,7 +949,14 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       // Same values again read back as "Noted: Loan from Mom: ratePct 0" (real chat 2026-10-26).
       for (const k of Object.keys(patch) as (keyof Debt)[]) if (patch[k] === d[k]) delete patch[k]
       if (!Object.keys(patch).length) return 'Not changed: nothing new in the user\'s words.'
-      record({ op: 'update_debt', id: d.id, patch }, `${d.name}: ${Object.entries(patch).map(([k, v]) => `${k} ${v}`).join(', ')}`)
+      // Plain words, not field names ("Loan from Mom: type family_no_interest, ratePct 0", real chat 2026-10-27).
+      const said = (k: string, v: unknown) => k === 'type' ? (KB.debt_types.find(t => t.key === v)?.label ?? 'type updated')
+        : k === 'ratePct' ? ((patch.type ?? d.type) === 'family_no_interest' ? null : v === 0 ? 'no interest' : `${String(v)}% interest a year`)
+        : k === 'required' ? (v ? 'payments required' : 'payments flexible')
+        : k === 'monthlyPayment' ? `pays ${moneyText({ amount: Number(v), currency: patch.currency ?? d.currency })} a month`
+        : k === 'balance' ? `still owed ${moneyText({ amount: Number(v), currency: patch.currency ?? d.currency })}`
+        : k === 'lender' ? `from ${String(v)}` : null
+      record({ op: 'update_debt', id: d.id, patch }, `${d.name}: ${Object.entries(patch).map(([k, v]) => said(k, v)).filter(Boolean).join(', ')}`)
       done.push(`Updated debt ${d.name}.`)
     } else if (name === 'remove_debt') {
       const d = findD(a.id)
@@ -1040,7 +1067,9 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   // What the user told but could not be recorded yet (a home without its value, a debt payment without the total owed).
   const toAsk: string[] = []
   let planIn = 0, planOut = 0, planSteps = 0
-  for (let step = 1; step <= MAX_PLAN_STEPS; step++) {
+  // A signed card (ChatScreen hidden message) records nothing: the balances already come from the chain.
+  const appEvent = lastUserText.startsWith('[app event]')
+  for (let step = 1; step <= (appEvent ? 0 : MAX_PLAN_STEPS); step++) {
     const plan = await openai(apiKey, { model: 'gpt-4o-mini', messages: planMessages, tools: PLAN_TOOLS, tool_choice: 'required', temperature: 0, max_tokens: 500 })
     if (plan instanceof Response) return plan
     planSteps = step
@@ -1088,14 +1117,19 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   const collecting = matched.some(p => p.id === 'collecting' || p.id === 'age_unknown')
   // A question or a doubt from the user is answered first; the collection flow waits a turn.
   const userAsks = QUESTIONS_US.test(lastUserText)
-  const next = collecting && !DECLINES.test(lastUserText) && !userAsks && !toAsk.length ? nextQuestion(profile, assistantTexts, messages.filter(m => m.role === 'user').map(m => m.content), userSaidNothingElse, vi) : null
+  const pending = collecting && !toAsk.length ? nextQuestion(profile, assistantTexts, messages.filter(m => m.role === 'user').map(m => m.content), userSaidNothingElse, vi) : null
+  const next = !DECLINES.test(lastUserText) && !userAsks ? pending : null
+  // The advice path (Hieu, 2026-10-27): collect → the plan, once → start with the emergency fund.
+  const planGiven = assistantTexts.some(a => PLAN_GIVEN.test(a))
+  const phase: 'collect' | 'plan' | 'start' = pending || toAsk.length ? 'collect' : !planGiven && balance.target ? 'plan' : 'start'
 
   const replyMessages: Message[] = [
     { role: 'system', content: REPLY_PROMPT },
     ...messages,
     { role: 'system', content: `Actions just taken: ${done.length ? done.join(' | ') : 'none.'}${readback.length ? `\nRead-back to start with (one sentence; then "Right?", or the Next question if one is given): "Noted: ${readback.join(', ')}."` : ''}` },
     { role: 'system', content: `${figs}${wishLine}` },
-    { role: 'system', content: `MATCHING SITUATIONS (most important first):\n${brief || '- none'}${next ? `\nNext question (collection flow, one per message): ${next}\nThis is your one question: ask exactly it (same meaning), as a real question ending in "?", not "I need to know…". Before it, one useful point from what is already known (if any); after it, a few words on why it matters for their advice. No "Right?" this turn.` : ''}` },
+    // While collecting, the situations (fund gap, buy lock…) waited for the plan: they turned every question into a BTC lecture (real chat 2026-10-27).
+    { role: 'system', content: `MATCHING SITUATIONS (most important first):\n${(phase === 'collect' && !userAsks ? '' : brief) || '- none'}${next ? `\nNext question (collection flow, one per message): ${next}\nThis is your one question: ask exactly it (same meaning), as a real question ending in "?", not "I need to know…". Before it, one useful point from what is already known (if any); after it, a few words on why it matters for their advice. No "Right?" this turn.` : ''}` },
   ]
   // A read-back's "Right?" is the turn's one question (spec 10), so this waits for the next turn.
   if (toAsk.length && !userAsks && !readback.length) replyMessages.push({ role: 'system', content: `Told but not recorded yet: ${[...new Set(toAsk)].join(' ')} Your one question is about this.` })
@@ -1105,9 +1139,20 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   if (userAsks) replyMessages.push({ role: 'system', content: 'The user is asking or doubting something: answer it first and plainly. If it is about the fund amount, show how it is made from the figures: "Spending per month" (its spending lines + debt payments) × the months = the floor. Do not say they are right unless the figures agree.' })
   // A beginner's first message got balances and "the MoonSafe split" before any welcome (beginner test 2026-10-27).
   // The app already showed its own welcome (useAgent WELCOME, UI only): no second welcome.
-  if (!assistantTexts.length) replyMessages.push({ role: 'system', content: `This is their first message; they already saw MoonSafe's welcome, so do not welcome them again. Answer what they said first, in plain words.${KNOWS_NOTHING.test(lastUserText) ? ' They are new to managing money: in two plain sentences give the path (know your monthly spending → build an emergency fund → pay off expensive debt → then invest step by step) and that the first step is knowing their spending.' : ''} No balances, no percentages, no labels in this reply unless they asked for them. Then your one question with why you ask.` })
+  if (!assistantTexts.length) replyMessages.push({ role: 'system', content: `This is their first message; they already saw MoonSafe's welcome, so do not welcome them again. Answer what they said first, in plain words, then in one or two plain sentences how this works: a few questions about their money (they can skip any), then a plan (how big an emergency fund they need and how to divide the rest of their money for their age), then they decide when to start. No balances, no percentages, no labels in this reply. Then your one question with why you ask.` })
   else if (KNOWS_NOTHING.test(lastUserText)) replyMessages.push({ role: 'system', content: 'They feel lost: give the big picture in plain words (know your monthly spending → emergency fund → expensive debt → then invest), say which step they are on, and the one next step.' })
   if (ASKS_OVERVIEW.test(lastUserText)) replyMessages.push({ role: 'system', content: `Overall check-up, as an advisor: one short point each, in this order: ${balance.debts.priorityCount ? 'their priority debt (start with it), ' : ''}the emergency fund vs its floor, then the split. For each, why it matters for them and one option they could take (an option, not an order). Keep the split to one sentence.` })
+  if (phase === 'collect' && assistantTexts.length) replyMessages.push({ role: 'system', content: `PHASE 1, COLLECTING. Acknowledge what they told you in a few words, then the Next question with why you ask. No advice yet: do not talk about the emergency fund gap, BTC, the cirBTC buy lock or how to divide money; the plan comes once you know enough.${userAsks ? ' They asked something: answer it plainly first.' : ''}` })
+  if (phase === 'plan') replyMessages.push({ role: 'system', content: `PHASE 2, THE PLAN (you now know enough; give it once, plain words, numbers only from ASSET & FUND FIGURES). Layout: one short intro line, then each point on its OWN line starting with "- ", a blank line before the start question:
+1. Emergency fund: how big it should be (the FLOOR: "N months of spending = amount") and why for THEM (their income, people relying on them), and what they have in it now.
+${balance.debts.priorityCount ? '2. Expensive debt: pay it off before investing, with what it costs a month in interest.\n' : ''}${balance.debts.priorityCount ? '3' : '2'}. The rest of their money ("money you can use quickly", the liquid total) divided by MoonSafe's guide at their age, one "- " line per group: name, % = amount from "Target amounts", what it is and why that share: Safe (bank savings or flexible earn: steady money they can reach any time), Traditional (stocks or index funds such as VOO, and gold: steady long-term growth), BTC (the long-term reserve in Web3; it can drop by about half on the way), Big caps (ETH, SOL, BNB), Low caps (small coins and memecoins: kept small because they can go to zero).
+${balance.debts.priorityCount ? '4' : '3'}. Where they stand now in ONE plain sentence: the one or two biggest gaps from "Split now" (e.g. no BTC yet, more in savings than the guide), as a fact, no judging; no list of every group.
+End with the start question: "Ready to start? The first step is your emergency fund${cover !== null ? `: shall I prepare a deposit of **${usdc(cover)}** from your wallet for you to sign?` : '.'}"${cover === null ? ' If the wallet cannot fill it, suggest saving the monthly amount into it.' : ''}` })
+  if (appEvent) replyMessages.push({ role: 'system', content: `The latest "user" line is the app telling you a card was signed (not their words). Confirm it in one sentence with what it means for them (e.g. their emergency fund now holds N months of spending), then the next step of the plan: the first concrete move from "Suggested use of idle money" with its amount (the Safe part in their own bank savings comes first), and one question. Numbers only from ASSET & FUND FIGURES.` })
+  // "do it" showed the card but the reply went back to the cirBTC lock (real chat 2026-10-27).
+  const card = actions.find(x => x.type === 'prepare_deposit')
+  if (card) replyMessages.push({ role: 'system', content: `The deposit card is under this reply. In two short sentences: what it does for them (their emergency fund reaches its target, so N months of spending are covered if income stops) and what comes after they sign (the next step of the plan). No buy-lock talk, no new question.` })
+  else if (phase === 'start' && planGiven && cover !== null && !actions.length) replyMessages.push({ role: 'system', content: `The plan was given. When it fits, the next step is still the emergency fund: offer the deposit of ${usdc(cover)} ("shall I prepare a deposit of … for you to sign?").` })
   const replyLang = vi ? 'Vietnamese' : 'English'
   replyMessages.push({ role: 'system', content: `Reply language: ${replyLang} (the language of the user's latest message).${vi ? ` ${VI_FLOORS}` : ''}` })
   if (DECLINES.test(lastUserText)) replyMessages.push({ role: 'system', content: 'The user just declined to share. Respect it: this reply asks NOTHING about their personal situation. Use the defaults (age 30 if the age is missing) and say the picture is an estimate; they can share any time.' })
@@ -1156,10 +1201,17 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       if (altCheck && !usedOnce.has('altcoin_heavy') && (!/99\s*%/.test(plain) || !/(?<![\d.,])1\s*%/.test(plain))) problems.push('give the reality check once: most low caps end up down 90-99%; would they dare put that share in and watch it shrink to 1%?')
       if (SPLIT_AS_MUST.test(plain)) problems.push('the split by age is only a reference they may consider: say "you could consider" / "the framework suggests", never "recommended", "you need to" or "you must"')
       if (DISCLAIMER.test(content)) problems.push('no disclaimer in chat (it is on the cards and the "Before you start" screen): drop it')
-      if (balance.target && ASKS_TARGET.test(lastUserText) && !new RegExp(`(?<!\\d)${Math.round(balance.target.safe)}\\s*%`).test(plain)) problems.push(`give the target by the MoonSafe framework in plain words, two groups only: about ${pct(balance.target.safe)} in Safe (bank savings you can reach any time) and ${pct(balance.target.btc)} in BTC; offer to explain the other groups`)
-      // Five percentages at once lost a beginner ("I don't get it", beginner test 2026-10-27).
-      if ((plain.match(/\d\s*%/g) ?? []).length > 3 && !actions.some(x => x.type === 'show_allocation')) problems.push('too many percentages for a beginner: name at most two groups in plain words and offer to explain the rest')
-      for (const t of TEACH_ONCE) if (t.term.test(plain) && !t.taught.test(plain) && !assistantTexts.some(a => t.taught.test(a))) problems.push(`first time this chat says it, explain it in plain words: ${t.plain}`)
+      if (balance.target && ASKS_TARGET.test(lastUserText) && !new RegExp(`(?<!\\d)${Math.round(balance.target.safe)}\\s*%`).test(plain)) problems.push(`give the plan by the MoonSafe framework: each group with its % and amount ("Target amounts") and why that share`)
+      // "cirBTC is Bitcoin you can buy and hold in this app" in every reply (real chat 2026-10-27): explained once, never again.
+      for (const t of TEACH_ONCE) {
+        const taughtBefore = assistantTexts.some(a => t.taught.test(a))
+        if (t.term.test(plain) && !t.taught.test(plain) && !taughtBefore) problems.push(`first time this chat says it, explain it in plain words: ${t.plain}`)
+        if (taughtBefore && t.taught.test(plain)) problems.push(`${t.plain.split(' = ')[0]} was already explained in this chat: do not explain it again`)
+      }
+      // "do it" showed the deposit card, but the reply offered it again (real chat 2026-10-27).
+      if (actions.some(x => x.type.startsWith('prepare_') || x.type === 'propose_dca') && /would you like me to prepare|want me to prepare|shall I prepare|(muốn|để) mình chuẩn bị/i.test(plain)) problems.push('the card is ALREADY shown under this reply: say it is ready for them to check and sign, do not offer it again') // lang-ok
+      // The cirBTC lock came up in every reply while they were telling their situation (real chat 2026-10-27).
+      if (LOCK_TALK.test(plain) && !/btc|bitcoin|buy|mua/i.test(lastUserText)) problems.push('do not bring up the cirBTC buy lock again: it only matters when they want to buy BTC in the app; talk about what they said and the next step') // lang-ok
       if (!balance.target && !facts.age_declined && /(?<!\d)\d{1,2}\s*%/.test(plain) && ASKS_TARGET.test(lastUserText)) problems.push('the age is unknown: quote no share yet, ask the age first')
       if (balance.cashflow.spending === null && !balance.fund.met && NEEDS_AMOUNT.test(content)) problems.push('monthly spending is unknown, so nobody knows how much the fund needs: never say an amount is needed or quote the wallet as what to add; ask how much they spend a month')
       // "Would you like me to prepare a deposit of 1,101 USDC" for the bank-savings part (real chat 2026-10-24).
@@ -1172,6 +1224,10 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       if (PUSHY.test(content)) problems.push('do not order the user to provide details ("please provide…"); ask one friendly question instead')
       if (/\bN months\b|N tháng/.test(plain)) problems.push('write the real number of months, not "N months"') // lang-ok
       if (!vi && INTERNAL_LABEL.test(plain)) problems.push('plain words for a beginner: "your emergency fund target (N months of spending)" not "floor", "what is left each month" not "surplus", "money you can use quickly" not "liquid assets", "money not doing anything yet" not "idle", "expensive debt" not "priority debt"')
+      // The first reply read out balances before anything was known (beginner test 2026-10-27).
+      if (!assistantTexts.length && /\d[\d,.]*\s*USDC/.test(plain) && !userAsks) problems.push('first reply: no balances or amounts yet; say how this works and ask your question')
+      // Phase 1 is for listening: advice about the fund gap or the lock waits for the plan (Hieu, 2026-10-27).
+      if (phase === 'collect' && !userAsks && (LOCK_TALK.test(plain) || /\bshort\b|still needed|còn thiếu/i.test(plain))) problems.push('still collecting: no advice yet about the emergency fund gap or the cirBTC lock; acknowledge and ask the next question with why') // lang-ok
       // Advisor replies (2026-10-27 tests): a stray "Right?" after the real question, "I need to know…" instead of asking,
       // the rote "this is important because", and "adding to the fund opens cirBTC" while priority debt still locks it.
       if (!readback.length && RIGHT_Q.test(plain)) problems.push('nothing was recorded this turn: drop "Right?" / "Đúng chưa?"') // lang-ok
@@ -1195,7 +1251,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       if (usedOnce.has('altcoin_heavy') && CAUTION_ALT.test(content)) problems.push('the altcoin risk was already said once in this chat: do not repeat it, respect their decision')
       // Users found replies wordy (2026-10-24, median 305 chars), then found them bossy with no reasons (Hieu, 2026-10-27):
       // room for one "why" sentence. Checked only once the content is right.
-      const maxChars = ASKS_WHY.test(lastUserText) ? 800 : 560
+      const maxChars = phase === 'plan' ? 1800 : ASKS_WHY.test(lastUserText) ? 800 : 560
       if (!problems.length && content.replace(/\*\*/g, '').length > maxChars && !actions.some(x => x.type === 'show_allocation' || x.type === 'show_cashflow')) problems.push(`too long (${content.length} chars): cut to at most ${maxChars === 800 ? '7' : '5'} short sentences including one question; first sentence = the direct answer; keep every point it makes now (key numbers, the reason why, advice on debt or saving), drop only preambles, repeats and filler`)
       if (problems.length && rewrites < 3 && round < 5) {
         rewrites++

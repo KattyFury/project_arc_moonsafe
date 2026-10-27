@@ -2,11 +2,11 @@
 // agent (income, spending, debts, holdings…) is saved straight to the profile; they can read it
 // in Balance, correct it by telling the agent, or clear it in Menu.
 
-import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Loader2, Send } from 'lucide-react'
 import { toast } from 'sonner'
 import { useApp } from '@/state/AppState'
-import { WELCOME, WELCOME_BACK, useAgent, type AgentAction } from '@/hooks/useAgent'
+import { WELCOME, WELCOME_BACK, readChatExtras, useAgent, writeChatExtras, type AgentAction, type StoredCard } from '@/hooks/useAgent'
 import { dcaNextRun } from '@/hooks/useCirBtc'
 import { useNow } from '@/hooks/useNow'
 import { formatUsdc } from '@/lib/format'
@@ -30,28 +30,36 @@ const Avatar = () => <img src="/logo.svg" alt="" width={32} height={32} classNam
 
 export function ChatScreen({ onError, onOpenInvest, onActions }: { onError: (m: string | null) => void; onOpenInvest: () => void; onActions: (a: AgentAction[]) => void }) {
   const { profile, vault, math, cirBtc, vndToUsdc } = useApp()
-  // Deposit / withdraw / buy / DCA from the agent become cards under its reply (index = anchor).
-  const [cards, setCards] = useState<ChatAction[]>([])
-  // Charts the agent showed (allocation / cash flow), by the index of the reply they follow.
-  const [charts, setCharts] = useState<{ at: number; kind: 'allocation' | 'cashflow' }[]>([])
-  const countRef = useRef(0)
-  const handleActions = (actions: AgentAction[]) => {
+  // Deposit / withdraw / buy / DCA cards and charts under the agent's replies, by reply timestamp.
+  // Stored, so a chat remounted mid-signature (wallet switching network) keeps them (real chat 2026-10-27).
+  const [extras, setExtras] = useState(readChatExtras)
+  useEffect(() => { writeChatExtras(extras) }, [extras])
+  const cards: ChatAction[] = extras.cards.map(c => ({ ...c, amount: BigInt(c.amount), intervalDays: c.intervalDays ?? 7 }))
+  const handleActions = (actions: AgentAction[], at: number) => {
     const screens = actions.filter(a => a.type === 'open_screen')
     if (screens.length) onActions(screens)
     const shown = actions.filter(a => a.type === 'show_allocation' || a.type === 'show_cashflow')
-    if (shown.length) setCharts(c => [...c, ...shown.map(a => ({ at: countRef.current, kind: a.type === 'show_cashflow' ? 'cashflow' as const : 'allocation' as const }))])
-    const next: ChatAction[] = []
+    const next: StoredCard[] = []
     for (const a of actions) {
       if (a.type === 'open_screen' || a.type === 'show_allocation' || a.type === 'show_cashflow' || !a.amount) continue
       const amount = a.amount.currency === 'USDC' ? BigInt(Math.round(a.amount.amount * 1_000_000)) : vndToUsdc(a.amount.amount)
       if (amount === null || amount <= 0n) { toast.error('Could not convert the amount (no exchange rate). Please say it in USDC.'); continue }
-      // The reply is appended right after this call, at the current message count.
-      const base = { id: Date.now() + next.length, anchor: countRef.current, amount }
+      const base = { id: Date.now() + next.length, at, amount: amount.toString() }
       next.push(a.type === 'propose_dca'
         ? { ...base, kind: 'dca', intervalDays: a.intervalDays && a.intervalDays > 0 ? a.intervalDays : 7 }
         : { ...base, kind: a.type === 'prepare_deposit' ? 'deposit' : a.type === 'prepare_withdraw' ? 'withdraw' : 'buy' })
     }
-    if (next.length) setCards(c => [...c, ...next])
+    if (next.length || shown.length) setExtras(x => ({
+      cards: [...x.cards, ...next].slice(-40),
+      charts: [...x.charts, ...shown.map(a => ({ at, kind: a.type === 'show_cashflow' ? 'cashflow' as const : 'allocation' as const }))].slice(-40),
+    }))
+  }
+  // A signed card tells the agent (hidden message), so it carries on instead of going quiet (real chat 2026-10-27).
+  // Sent after the next render, so the context it reads has the refreshed balances.
+  const [signed, setSigned] = useState<string | null>(null)
+  const finishCard = (id: number, status: 'done' | 'cancelled', summary: string) => {
+    setExtras(x => ({ ...x, cards: x.cards.map(c => c.id === id ? { ...c, status } : c) }))
+    if (status === 'done') setSigned(summary)
   }
   const now = useNow()
   const [input, setInput] = useState('')
@@ -73,8 +81,12 @@ export function ChatScreen({ onError, onOpenInvest, onActions }: { onError: (m: 
   })
 
   const count = messages.length
-  useLayoutEffect(() => { countRef.current = count })
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [count, loading])
+  useEffect(() => {
+    if (!signed || loading) return
+    setSigned(null)
+    void sendMessage(`[app event] The user signed the card: ${signed}`, true)
+  }, [signed, loading, sendMessage])
 
   const handleSend = useCallback(async () => {
     const text = input.trim()
@@ -94,7 +106,7 @@ export function ChatScreen({ onError, onOpenInvest, onActions }: { onError: (m: 
         {/* Messages above the fold fade out under the nav bar, so it reads as "there is more". */}
         <div className="flex-1 overflow-y-auto no-scrollbar px-4 py-4 lg:p-6 flex flex-col gap-4 [&>*]:flex-shrink-0"
           onScroll={e => setScrolled(e.currentTarget.scrollTop > 0)} style={scrolled ? FADE_TOP : undefined}>
-          {messages.map((msg, i) => (
+          {messages.map((msg, i) => msg.hidden ? null : (
             <Fragment key={i}>
               <div className={`flex gap-2 items-end ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {msg.role === 'assistant' && <Avatar />}
@@ -107,8 +119,8 @@ export function ChatScreen({ onError, onOpenInvest, onActions }: { onError: (m: 
                   {renderContent(msg.timestamp === 0 ? (profile.known ? WELCOME_BACK : WELCOME.content) : msg.content)}
                 </div>
               </div>
-              {cards.filter(c => c.anchor === i).map(c => <ActionCard key={c.id} action={c} />)}
-              {charts.filter(c => c.at === i).map((c, k) => <GlassCard key={k} className="ml-10 p-4">{c.kind === 'cashflow' ? <CashflowCard compact /> : <AllocationPies compact />}</GlassCard>)}
+              {msg.role === 'assistant' && cards.filter(c => c.at === msg.timestamp).map(c => <ActionCard key={c.id} action={c} onFinished={(s, summary) => finishCard(c.id, s, summary)} />)}
+              {msg.role === 'assistant' && extras.charts.filter(c => c.at === msg.timestamp).map((c, k) => <GlassCard key={k} className="ml-10 p-4">{c.kind === 'cashflow' ? <CashflowCard compact /> : <AllocationPies compact />}</GlassCard>)}
             </Fragment>
           ))}
 
