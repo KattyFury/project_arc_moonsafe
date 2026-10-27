@@ -2,7 +2,7 @@
 // agent (income, spending, debts, holdings…) is saved straight to the profile; they can read it
 // in Balance, correct it by telling the agent, or clear it in Menu.
 
-import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Loader2, Send } from 'lucide-react'
 import { toast } from 'sonner'
 import { useApp } from '@/state/AppState'
@@ -99,14 +99,14 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
     void sendMessage(signed, true)
   }, [signed, loading, sendMessage])
 
-  const handleSend = useCallback(async () => {
+  const handleSend = async () => {
     const text = input.trim()
     if (!text || loading) return
     setInput('')
     onError(null)
     await sendMessage(text)
     inputRef.current?.focus()
-  }, [input, loading, sendMessage, onError])
+  }
 
   const [scrolled, setScrolled] = useState(false)
   const dcaDue = DCA_AVAILABLE && math.investUnlocked && cirBtc.dca !== null && (dcaNextRun(cirBtc.dca) ?? Infinity) <= now
