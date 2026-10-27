@@ -6,6 +6,8 @@ Khung tài chính: **`docs/SPEC-FRAMEWORK-2026-10-25.md`** (dữ liệu: `src/kb
 
 ## ▶ Làm tiếp từ đây (mới nhất ở trên)
 
+**▶ Cash flow: chính/phụ rõ hơn (2026-10-27, Arc Studio).** `CashflowCard`: Income và Spending là dòng chính (nhãn + số in đậm, màu `ink` đen); các dòng con (Active, Passive, Irregular, Fixed incl. debt, Variable) là phụ: chữ thường, màu `grey` của brand (`--subtle` #4B5568, "Secondary text: descriptions, labels, values" trong `brand/tokens.json`), thụt vào 8px. Surplus/month và Passive/Spending giữ nguyên (nhãn xám, số đậm). Chưa xem trên trình duyệt thật.
+
 **▶ "AI power": giới hạn tin nhắn mỗi ngày + nạp thêm (2026-10-27, Arc Studio).** Hiếu chốt: mỗi tài khoản 30 lượt chat/ngày; muốn thêm phải mua, gọi là "nạp điện cho AI" (trong app: "AI power", nút "Recharge"); ví owner `0xeb2d…2f6` được 90/ngày.
 - **Server** (`functions/_lib/quota.ts`, `functions/api/power.ts`, `functions/api/chat.ts`): đếm trong KV `USERDATA` theo ngày UTC; hết lượt miễn phí thì trừ vào "điện đã nạp" (`power:<user>`, không hết hạn); lượt lỗi phía server được hoàn lại; tin nhắn ẩn của app (ký thẻ, xác nhận hộp) không tính là lượt nhưng giới hạn 20/ngày để không ai lách. Vượt thì `/api/chat` trả 429 `code: out_of_power`; mỗi câu trả lời kèm `power` để app vẽ thanh đo. Đổi mức bằng biến `FREE_TURNS_PER_DAY` (30), `OWNER_TURNS_PER_DAY` (90), `OWNER_WALLET`.
 - **Ví owner:** không thể tin địa chỉ ví do client gửi, nên owner ký MỘT lần một câu thử thách (gắn với tài khoản và thời gian, hết hạn 10 phút) trong tab Chat, mục AI power → "Unlock the owner allowance"; server khôi phục địa chỉ từ chữ ký, khớp `OWNER_WALLET` thì nhớ tài khoản đó là owner (không tốn phí, không gửi gì lên chuỗi).
