@@ -12,6 +12,8 @@ import { useNow } from '@/hooks/useNow'
 import { formatUsdc } from '@/lib/format'
 import { GlassCard, Notice } from '@/components/ui/kit'
 import { ActionCard, type ChatAction } from '@/components/chat/ActionCard'
+import { RecordCard } from '@/components/chat/RecordCard'
+import type { AssetType } from '@/types'
 import { AllocationPies } from '@/components/ui/AllocationPies'
 import { CashflowCard } from '@/components/ui/CashflowCard'
 
@@ -34,13 +36,19 @@ export function ChatScreen({ onError, onOpenInvest, onActions }: { onError: (m: 
   // Stored, so a chat remounted mid-signature (wallet switching network) keeps them (real chat 2026-10-27).
   const [extras, setExtras] = useState(readChatExtras)
   useEffect(() => { writeChatExtras(extras) }, [extras])
-  const cards: ChatAction[] = extras.cards.map(c => ({ ...c, amount: BigInt(c.amount), intervalDays: c.intervalDays ?? 7 }))
+  const cards: ChatAction[] = extras.cards.flatMap(c => c.kind === 'record' ? [] : [{ ...c, amount: BigInt(c.amount), intervalDays: c.intervalDays ?? 7 }])
+  const records = extras.cards.flatMap(c => c.kind === 'record' ? [c] : [])
   const handleActions = (actions: AgentAction[], at: number) => {
     const screens = actions.filter(a => a.type === 'open_screen')
     if (screens.length) onActions(screens)
     const shown = actions.filter(a => a.type === 'show_allocation' || a.type === 'show_cashflow')
     const next: StoredCard[] = []
     for (const a of actions) {
+      // "I put 1,000 in my bank": a box to confirm the source, then the app saves it.
+      if (a.type === 'confirm_record') {
+        if (a.amount && a.holdingType && a.name) next.push({ id: Date.now() + next.length, at, kind: 'record', record: { amountUsd: a.amount.amount, holdingType: a.holdingType as AssetType, name: a.name, source: a.source ?? null } })
+        continue
+      }
       if (a.type === 'open_screen' || a.type === 'show_allocation' || a.type === 'show_cashflow' || !a.amount) continue
       const amount = a.amount.currency === 'USDC' ? BigInt(Math.round(a.amount.amount * 1_000_000)) : vndToUsdc(a.amount.amount)
       if (amount === null || amount <= 0n) { toast.error('Could not convert the amount (no exchange rate). Please say it in USDC.'); continue }
@@ -58,8 +66,9 @@ export function ChatScreen({ onError, onOpenInvest, onActions }: { onError: (m: 
   // Sent after the next render, so the context it reads has the refreshed balances.
   const [signed, setSigned] = useState<string | null>(null)
   const finishCard = (id: number, status: 'done' | 'cancelled', summary: string) => {
+    const isRecord = extras.cards.some(c => c.id === id && c.kind === 'record')
     setExtras(x => ({ ...x, cards: x.cards.map(c => c.id === id ? { ...c, status } : c) }))
-    if (status === 'done') setSigned(summary)
+    if (status === 'done') setSigned(isRecord ? `[app event] The user confirmed recording: ${summary}` : `[app event] The user signed the card: ${summary}`)
   }
   const now = useNow()
   const [input, setInput] = useState('')
@@ -85,7 +94,7 @@ export function ChatScreen({ onError, onOpenInvest, onActions }: { onError: (m: 
   useEffect(() => {
     if (!signed || loading) return
     setSigned(null)
-    void sendMessage(`[app event] The user signed the card: ${signed}`, true)
+    void sendMessage(signed, true)
   }, [signed, loading, sendMessage])
 
   const handleSend = useCallback(async () => {
@@ -120,6 +129,7 @@ export function ChatScreen({ onError, onOpenInvest, onActions }: { onError: (m: 
                 </div>
               </div>
               {msg.role === 'assistant' && cards.filter(c => c.at === msg.timestamp).map(c => <ActionCard key={c.id} action={c} onFinished={(s, summary) => finishCard(c.id, s, summary)} />)}
+              {msg.role === 'assistant' && records.filter(c => c.at === msg.timestamp).map(c => <RecordCard key={c.id} record={c.record} status={c.status} onFinished={(s, summary) => finishCard(c.id, s, summary)} />)}
               {msg.role === 'assistant' && extras.charts.filter(c => c.at === msg.timestamp).map((c, k) => <GlassCard key={k} className="ml-10 p-4">{c.kind === 'cashflow' ? <CashflowCard compact /> : <AllocationPies compact />}</GlassCard>)}
             </Fragment>
           ))}

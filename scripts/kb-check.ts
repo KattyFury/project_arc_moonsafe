@@ -8,7 +8,8 @@
 import { KB, targetMix, fundFloorMonths, isPriorityDebt, matchPatterns, patternBrief, type Cond, type Facts } from '../src/kb/kb'
 import { computeFacts, displayFacts } from '../src/kb/facts'
 import { computeBalance } from '../src/lib/allocation'
-import { normalizeProfile } from '../src/lib/profile'
+import { applyOps, normalizeProfile } from '../src/lib/profile'
+import { buildRecordOps, detectPlacement, sourceOptions } from '../src/lib/record'
 import { EMPTY_PROFILE, type Debt, type FinancialProfile, type Holding } from '../src/types'
 
 let fails = 0
@@ -103,6 +104,33 @@ const personas: [string, Facts, string[]][] = [
   ['70, retired on passive income (not jobless)', { age: 70, income_active: 0, income_passive: 1600, passive_ratio: 1.07, surplus: 100 }, ['lock_open_surplus', 'financially_free']],
   ['retired, passive below spending', { age: 68, income_active: 0, income_passive: 600, passive_ratio: 0.4, surplus: -900 }, ['jobless', 'negative_surplus']],
 ]
+
+// 7. "I put 1,000 in my bank": a confirmation box, saved only with the source the user picks (real chat 2026-10-27).
+const placed: [string, { amountUsd: number; holdingType: string; source: string | null } | null][] = [
+  ['Imma put 1000$ in my bank account as Safety', { amountUsd: 1000, holdingType: 'savings', source: null }],
+  ['I just put 1,000 into safe', { amountUsd: 1000, holdingType: 'savings', source: null }],
+  ['I moved 500 USDC from my wallet into savings', { amountUsd: 500, holdingType: 'savings', source: 'wallet' }],
+  ['I deposited 2,000 in a term deposit', { amountUsd: 2000, holdingType: 'term_deposit', source: null }],
+  ['I put 300 in flexible earn from my salary', { amountUsd: 300, holdingType: 'flexible_earn', source: 'new' }],
+  ['I have 200$ in the bank', null],
+  ['should I put 1000$ in the bank?', null],
+  ['Oh I just accidentaly got 1000$ doing airdrop', null],
+  ['Safety, I told you before', null],
+]
+for (const [msg, want] of placed) {
+  const got = detectPlacement(msg, 25000)
+  if (JSON.stringify(got && { amountUsd: got.amountUsd, holdingType: got.holdingType, source: got.source }) !== JSON.stringify(want)) fail(`placement "${msg}": ${JSON.stringify(got)}`)
+}
+const cashP = normalizeProfile({ v: 2, holdings: [{ id: 'h1', type: 'cash', name: 'Cash', value: 1500, currency: 'USDC', priceSource: 'self', rebalanceable: true, updatedAt: 1 }] })
+const req = detectPlacement('I put 1000$ in my bank', null)!
+const valuesOf = (p: FinancialProfile) => p.holdings.map(h => `${h.type}:${h.value}`).join(',')
+if (sourceOptions(cashP, req, null).map(h => h.id).join() !== 'h1') fail('the cash item should be offered as a source')
+if (valuesOf(applyOps(cashP, buildRecordOps(cashP, req, { kind: 'holding', id: 'h1' }, null))) !== 'cash:500,savings:1000') fail('a listed source goes down, the destination goes up')
+if (valuesOf(applyOps(cashP, buildRecordOps(cashP, req, { kind: 'new' }, null))) !== 'cash:1500,savings:1000') fail('new money only adds')
+const once = applyOps(cashP, buildRecordOps(cashP, req, { kind: 'new' }, null))
+if (valuesOf(applyOps(once, buildRecordOps(once, req, { kind: 'wallet' }, null))) !== 'cash:1500,savings:2000') fail('a second placement adds to the same savings item')
+if (sourceOptions(cashP, { ...req, amountUsd: 2000 }, null).length) fail('a source smaller than the amount must not be offered')
+
 const hit = new Set<string>()
 for (const [name, over, want] of personas) {
   const facts = { ...base, ...over }
