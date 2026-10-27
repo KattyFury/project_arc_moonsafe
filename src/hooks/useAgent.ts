@@ -7,6 +7,7 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import type { ChatMessage } from '@/types'
 import { authHeader, cloudSave } from '@/lib/cloud'
+import type { AiPower } from '@/hooks/useAiPower'
 import { readOps, type ProfileOp } from '@/lib/profile'
 import type { RecordRequest } from '@/lib/record'
 
@@ -83,6 +84,8 @@ export interface AgentHooks {
   onDcaStop: () => void
   /** UI actions the agent asked for (cards, charts, screens), with the timestamp of the reply they belong to. */
   onActions?: (actions: AgentAction[], replyAt: number) => void
+  /** The account's AI power after this request (also sent when it ran out). */
+  onPower?: (power: AiPower | null) => void
 }
 
 export interface AgentAction {
@@ -126,7 +129,14 @@ export function useAgent(hooks: AgentHooks) {
           context: hooksRef.current.getContext(),
         }),
       })
-      const data = await res.json().catch(() => null) as { content?: string; error?: string; ops?: unknown; dcaStop?: boolean; actions?: AgentAction[] } | null
+      const data = await res.json().catch(() => null) as { content?: string; error?: string; ops?: unknown; dcaStop?: boolean; actions?: AgentAction[]; code?: string; power?: AiPower | null } | null
+      // Out of AI power: say so plainly (not as a failure) and let the app show the recharge option.
+      if (res.status === 429 && data?.code === 'out_of_power') {
+        hooksRef.current.onPower?.(data.power ?? null)
+        setMessages([...history, { role: 'assistant', content: data.error ?? 'You are out of AI power for today.', timestamp: Date.now(), error: true }])
+        return
+      }
+      if (data?.power) hooksRef.current.onPower?.(data.power)
       if (!res.ok || !data?.content) throw new Error(data?.error ?? `HTTP ${res.status}`)
 
       const content = data.content.trim()

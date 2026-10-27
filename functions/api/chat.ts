@@ -21,7 +21,8 @@
 
 import { getPrices } from './prices'
 import { privyUserId } from '../_lib/privyAuth'
-import { addUsage, overBudget, type BudgetEnv, type Meter } from '../_lib/budget'
+import { addUsage, overBudget, type Meter } from '../_lib/budget'
+import { powerState, takeTurn, type PowerEnv } from '../_lib/quota'
 import { KB, fundFloorMonths, matchPatterns, patternBrief, param } from '../../src/kb/kb'
 import { computeFacts, displayFacts, amountsUsd } from '../../src/kb/facts'
 import { computeBalance, holdingUsd, priceKey, symbolOf, toUsd, GOLD_UNITS_TO_OZ, GROUP_LABEL, type Balance, type Prices } from '../../src/lib/allocation'
@@ -32,7 +33,7 @@ import {
 import { bucketLabel, detectPlacement } from '../../src/lib/record'
 import type { AssetType, Currency, Debt, DebtType, Expense, FinancialProfile, Holding, Income, NearGoal } from '../../src/types'
 
-interface Env extends BudgetEnv {
+interface Env extends PowerEnv {
   OPENAI_API_KEY: string
   PRIVY_APP_ID?: string
 }
@@ -526,7 +527,7 @@ const moneyText = (m: { amount: number; currency: Currency }) => m.currency === 
 
 // Money kept in the wallet for gas when filling the fund (= GAS_RESERVE_USDC6 in useVault).
 const GAS_RESERVE_USDC = 0.02
-const MAX_PLAN_STEPS = 10
+const MAX_PLAN_STEPS = 6
 
 /** One line per listed item with its id, for the planner. */
 function listing(p: FinancialProfile, b: Balance, prices: Prices | null, rate: number | null): string {
@@ -695,31 +696,46 @@ const ONCE_SEEN: Record<string, RegExp> = {
   lock_open_surplus: /\bDCA\b/i,
 }
 
+/** A request bigger than this is refused (messages are cut to MAX_MESSAGE_CHARS each): nobody can push huge prompts through the agent. */
+const MAX_BODY_CHARS = 64_000
+const MAX_MESSAGE_CHARS = 2_000
+
 export async function onRequestPost(context: { request: Request; env: Env }): Promise<Response> {
   const apiKey = context.env.OPENAI_API_KEY
   if (!apiKey) return json({ error: 'The agent has no AI key configured' }, 503)
   // Signed-in users only, so nobody else can spend the OpenAI credit.
   const userId = await privyUserId(context.request, context.env)
   if (!userId) return json({ error: 'Please sign in again' }, 401)
-  // A daily cap on tokens (functions/_lib/budget.ts) so one busy day cannot use up the credit.
+
+  const text = await context.request.text()
+  if (text.length > MAX_BODY_CHARS) return json({ error: 'That message is too long' }, 413)
+  let body: RequestBody
+  try { body = JSON.parse(text) as RequestBody } catch { return json({ error: 'Invalid JSON' }, 400) }
+  if (Array.isArray(body.messages)) body.messages = body.messages.map(m => typeof m?.content === 'string' ? { ...m, content: m.content.slice(0, MAX_MESSAGE_CHARS) } : m)
+
+  // A safety valve on tokens (functions/_lib/budget.ts) and the user's daily "AI power" (functions/_lib/quota.ts).
   const limit = await overBudget(context.env, userId)
   if (limit) return json({ error: limit }, 429)
+  const lastUser = [...(Array.isArray(body.messages) ? body.messages : [])].reverse().find(m => m?.role === 'user')?.content ?? ''
+  const turn = await takeTurn(context.env, userId, lastUser.startsWith('[app event]') ? 'event' : 'message')
+  if (!turn.ok) return json({ error: turn.message, code: 'out_of_power', power: await powerState(context.env, userId) }, 429)
+
   const meter: Meter = { tokens: 0 }
+  let ok = false
   try {
-    return await handleChat(context, apiKey, meter)
+    const res = await handleChat(context, apiKey, meter, body)
+    ok = res.ok
+    if (!ok) return res
+    // Tell the app how much power is left, so it can show the meter without another request.
+    const data = await res.json() as Record<string, unknown>
+    return json({ ...data, power: await powerState(context.env, userId) })
   } finally {
+    if (!ok) await turn.refund() // a message that got no answer is not charged
     await addUsage(context.env, userId, meter.tokens)
   }
 }
 
-async function handleChat(context: { request: Request; env: Env }, apiKey: string, meter: Meter): Promise<Response> {
-
-  let body: RequestBody
-  try {
-    body = await context.request.json() as RequestBody
-  } catch {
-    return json({ error: 'Invalid JSON' }, 400)
-  }
+async function handleChat(context: { request: Request; env: Env }, apiKey: string, meter: Meter, body: RequestBody): Promise<Response> {
 
   const messages = (Array.isArray(body.messages) ? body.messages : [])
     .filter(m => (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
@@ -1237,7 +1253,8 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: strin
 
   const replyMessages: Message[] = [
     { role: 'system', content: REPLY_PROMPT },
-    ...messages,
+    // The reply model sees the last 10 messages; the server logic above still reads all 30.
+    ...messages.slice(-10),
     { role: 'system', content: `Actions just taken: ${done.length ? done.join(' | ') : 'none.'}${readback.length ? `\nRead-back to start with (one sentence; then "Right?", or the Next question if one is given): "Noted: ${readback.join(', ')}."` : ''}` },
     { role: 'system', content: `${figs}${wishLine}${balance.lock.open && cryptoOffer >= 1 ? `
 - cirBTC buy to offer when they want crypto: ${usdc(cryptoOffer)} (fills the Crypto bucket as far as the wallet allows)` : ''}` },
@@ -1305,7 +1322,7 @@ ${ending}` })
   const prevAssistant = assistantTexts[assistantTexts.length - 1] ?? ''
   const recordedStable = ops.some(o => o.op === 'update_profile' && o.fields.incomeStable !== undefined)
   let rewrites = 0
-  for (let round = 1; round <= 5; round++) {
+  for (let round = 1; round <= 4; round++) {
     // gpt-5.4-mini replies like an advisor (reasons tied to the user's numbers); gpt-4o-mini read as orders (Hieu, 2026-10-27, 3 test rounds).
     // Function tools need reasoning_effort 'none' on chat/completions.
     const reply = await openai(apiKey, { model: MODEL, messages: replyMessages, tools: REPLY_TOOLS, tool_choice: round >= 3 ? 'none' : 'auto', max_completion_tokens: 1200, reasoning_effort: 'none' }, meter)
@@ -1408,7 +1425,7 @@ ${ending}` })
       // room for one "why" sentence. Checked only once the content is right.
       const maxChars = phase === 'plan' ? 1800 : ASKS_WHY.test(lastUserText) ? 800 : 560
       if (!problems.length && content.replace(/\*\*/g, '').length > maxChars && !actions.some(x => x.type === 'show_allocation' || x.type === 'show_cashflow')) problems.push(`too long (${content.length} chars): cut to at most ${maxChars === 800 ? '7' : '5'} short sentences including one question; first sentence = the direct answer; keep every point it makes now (key numbers, the reason why, advice on debt or saving), drop only preambles, repeats and filler`)
-      if (problems.length && rewrites < 3 && round < 5) {
+      if (problems.length && rewrites < 2 && round < 4) {
         rewrites++
         replyMessages.push({ role: 'assistant', content })
         replyMessages.push({ role: 'system', content: `That reply needs fixing: ${problems.join('; ')}. Rewrite the whole reply in ${replyLang}, keeping the correct figures.` })

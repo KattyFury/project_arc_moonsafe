@@ -1,0 +1,89 @@
+// "AI power": the meter above the chat box and the sheet behind it. Every message uses a little AI power; the free
+// allowance refills at 00:00 UTC, and more can be charged (bought). Server rules: functions/_lib/quota.ts.
+
+import { useState } from 'react'
+import { Zap } from 'lucide-react'
+import { useAccount, useSignMessage } from 'wagmi'
+import { useNow } from '@/hooks/useNow'
+import { messagesLeft, type AiPower } from '@/hooks/useAiPower'
+import { Btn, Notice, Sheet } from '@/components/ui/kit'
+
+function untilReset(resetsAt: number, now: number): string {
+  const min = Math.max(0, Math.ceil((resetsAt - now) / 60_000))
+  return min >= 60 ? `${Math.floor(min / 60)}h ${min % 60}m` : `${min}m`
+}
+
+/** The thin strip above the composer. */
+export function PowerMeter({ power, onOpen }: { power: AiPower; onOpen: () => void }) {
+  const left = messagesLeft(power)
+  const out = left <= 0
+  const low = !out && left <= 5
+  const color = out ? 'var(--danger)' : low ? 'var(--warning, #B45309)' : 'var(--subtle)'
+  const pct = Math.min(100, Math.round((Math.max(0, power.limit - power.used) / power.limit) * 100))
+  return (
+    <button onClick={onOpen} className="flex-shrink-0 flex items-center gap-2 px-4 lg:px-6 pt-2 text-left" aria-label="AI power">
+      <Zap size={16} style={{ color }} />
+      <span className="text-[14px] leading-5 font-semibold" style={{ color }}>
+        {out ? 'Out of AI power' : `AI power · ${left} message${left === 1 ? '' : 's'} left today`}
+      </span>
+      <span className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: 'var(--line)' }} aria-hidden>
+        <span className="block h-full rounded-full" style={{ width: `${pct}%`, background: out ? 'var(--danger)' : 'var(--accent)' }} />
+      </span>
+      <span className="text-[14px] leading-5 underline" style={{ color: 'var(--accent)' }}>{out ? 'Recharge' : 'Details'}</span>
+    </button>
+  )
+}
+
+export function PowerSheet({ power, verifyOwner, onClose }: {
+  power: AiPower
+  verifyOwner: (sign: (message: string) => Promise<string>) => Promise<void>
+  onClose: () => void
+}) {
+  const now = useNow()
+  const { address } = useAccount()
+  const { signMessageAsync } = useSignMessage()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const canUnlock = !power.ownerVerified && !!address && address.toLowerCase() === power.ownerWallet
+
+  const unlock = async () => {
+    setBusy(true); setError(null)
+    try { await verifyOwner(message => signMessageAsync({ message })) }
+    catch (e) { setError(/reject|denied/i.test((e as Error).message) ? 'You declined to sign in your wallet.' : (e as Error).message) }
+    finally { setBusy(false) }
+  }
+
+  return (
+    <Sheet>
+      <div className="flex items-center gap-2">
+        <Zap size={24} style={{ color: 'var(--accent)' }} />
+        <p className="display font-bold text-[20px] leading-7" style={{ color: 'var(--ink)' }}>AI power</p>
+      </div>
+      <p className="text-[16px] leading-6" style={{ color: 'var(--ink)' }}>
+        Every message you send to the agent uses a little AI power. You get <strong>{power.limit} messages a day</strong>{power.boosted ? ' (owner allowance)' : ''}.
+        It refills at 00:00 UTC, in {untilReset(power.resetsAt, now)}.
+      </p>
+      <div className="flex gap-4 p-4 rounded-2xl" style={{ background: 'var(--surface-muted)' }}>
+        <div className="flex-1 text-center">
+          <p className="text-[20px] leading-7 font-bold tabular-nums" style={{ color: 'var(--ink)' }}>{Math.max(0, power.limit - power.used)} / {power.limit}</p>
+          <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>Free today</p>
+        </div>
+        <div className="flex-1 text-center">
+          <p className="text-[20px] leading-7 font-bold tabular-nums" style={{ color: 'var(--ink)' }}>{power.extra}</p>
+          <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>Charged, saved for later</p>
+        </div>
+      </div>
+      <Notice tone="info" title="Need more?">
+        Charging extra AI power opens soon. Charged power never expires and is used after the free messages.
+      </Notice>
+      {canUnlock && (
+        <>
+          <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>This is the owner wallet. Sign once to raise your allowance (no fee, nothing is sent onchain).</p>
+          {error && <Notice tone="danger">{error}</Notice>}
+          <Btn variant="outline" loading={busy} onClick={() => { void unlock() }}>Unlock the owner allowance</Btn>
+        </>
+      )}
+      <Btn onClick={onClose}>Close</Btn>
+    </Sheet>
+  )
+}
