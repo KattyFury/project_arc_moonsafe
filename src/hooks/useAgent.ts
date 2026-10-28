@@ -64,6 +64,8 @@ export type StoredCard =
   | { id: number; at: number; kind: 'deposit' | 'withdraw' | 'buy' | 'dca'; amount: string; intervalDays?: number; status?: 'done' | 'cancelled' }
   /** A reported placement waiting for the user's confirmation (src/lib/record.ts). */
   | { id: number; at: number; kind: 'record'; record: RecordRequest; status?: 'done' | 'cancelled' }
+  /** Several declared things waiting to be confirmed one by one (src/components/chat/ItemsCard.tsx); `ask` = what the agent still has to ask once they are done. */
+  | { id: number; at: number; kind: 'items'; items: Array<{ text: string; ops: ProfileOp[]; status?: 'saved' | 'skipped' }>; ask: string[]; status?: 'done' | 'cancelled' }
 export interface StoredChart { at: number; kind: 'allocation' | 'cashflow' }
 export function readChatExtras(): { cards: StoredCard[]; charts: StoredChart[] } {
   try {
@@ -89,7 +91,10 @@ export interface AgentHooks {
 }
 
 export interface AgentAction {
-  type: 'prepare_deposit' | 'prepare_withdraw' | 'prepare_buy_cirbtc' | 'propose_dca' | 'open_screen' | 'show_allocation' | 'show_cashflow' | 'confirm_record'
+  type: 'prepare_deposit' | 'prepare_withdraw' | 'prepare_buy_cirbtc' | 'propose_dca' | 'open_screen' | 'show_allocation' | 'show_cashflow' | 'confirm_record' | 'confirm_items'
+  /** confirm_items: what was declared, one entry per thing, with the operations that save it; and what is still to ask. */
+  items?: Array<{ text: string; ops: unknown }>
+  ask?: string[]
   /** confirm_record: where the money went and what the user already said about its source. */
   holdingType?: string
   name?: string

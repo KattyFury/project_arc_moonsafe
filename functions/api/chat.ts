@@ -508,6 +508,8 @@ function moneyArg(v: unknown): { amount: number; currency: Currency } | null {
 const moneyText = (m: { amount: number; currency: Currency }) => m.currency === 'VND' ? vnd(m.amount) : usdc(m.amount)
 
 // Money kept in the wallet for gas when filling the fund (= GAS_RESERVE_USDC6 in useVault).
+/** From this many items declared at once the app asks to confirm them one by one instead of saving them silently. */
+const CONFIRM_MIN_ITEMS = 3
 const GAS_RESERVE_USDC = 0.02
 const MAX_PLAN_STEPS = 6
 
@@ -784,14 +786,17 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
 
   // The same item recorded twice in one turn is read back once, with its last value ("600…, 400…", real chat 2026-10-26).
   const readbackOf = new Map<string, number>()
+  // The ops behind each read-back line, in the same order: one line = one item of the confirm card.
+  const readbackOps: ProfileOp[][] = []
   const record = (op: ProfileOp, text: string, key?: string) => {
     ops.push(op)
     profile = applyOps(profile, [op])
     const at = key !== undefined ? readbackOf.get(key) : undefined
-    if (at !== undefined) readback[at] = text
+    if (at !== undefined) { readback[at] = text; readbackOps[at].push(op) }
     else {
       if (key !== undefined) readbackOf.set(key, readback.length)
       readback.push(text)
+      readbackOps.push([op])
     }
   }
   const describe = (h: Holding) => `${h.name} ${h.quantity !== undefined && h.priceSource === 'market' ? `${qty(h.quantity)}${h.unit ? ` ${h.unit}` : ''}` : h.value !== undefined ? moneyText({ amount: h.value, currency: h.currency ?? 'USDC' }) : ''}`.trim()
@@ -896,13 +901,19 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       if (typeof a.crypto_drop_ok === 'boolean' && a.crypto_drop_ok !== profile.cryptoDropOk && (YES_NO.test(lastUserText) || /drop|half|giảm|một nửa/i.test(prevAssistantText))) f.cryptoDropOk = a.crypto_drop_ok // lang-ok
       if (typeof a.insured === 'boolean' && a.insured !== profile.insured && (YES_NO.test(lastUserText) || /insur|bảo hiểm/i.test(lastUserText + prevAssistantText))) f.insured = a.insured // lang-ok
       if (!Object.keys(f).length) { console.log(`dropped update_profile ${call.function.arguments}: not stated or unchanged`); return 'Nothing changed (not stated in the latest message, or already known).' }
-      const words = [f.age !== undefined && `age ${f.age}`, f.ageDeclined && 'age not given (default 30)', f.incomeStable !== undefined && `income ${f.incomeStable ? 'stable' : 'irregular'}`,
-        f.dependents !== undefined && `${f.dependents} dependent${f.dependents === 1 ? '' : 's'}`, f.soleEarner !== undefined && (f.soleEarner ? 'sole earner' : 'not the sole earner'), f.debtsComplete && 'no other debt',
-        !!f.nearGoal && (() => { const g = f.nearGoal as NearGoal; return `${g.name} ${moneyText({ amount: g.amount, currency: g.currency })}${g.years ? ` in ${g.years} year${g.years === 1 ? '' : 's'}` : ''}` })(),
-        f.noNearGoal && 'no big expense in the next 5 years', f.cryptoDropOk !== undefined && (f.cryptoDropOk ? 'could hold through a 50% crypto drop' : 'could not hold through a 50% crypto drop'),
-        f.insured !== undefined && (f.insured ? 'insured' : 'no insurance yet')].filter(Boolean)
-      record({ op: 'update_profile', fields: f }, words.join(', '))
-      done.push(`Recorded: ${words.join(', ')}.`)
+      const parts: Array<[Record<string, unknown>, string]> = []
+      if (f.age !== undefined) parts.push([{ age: f.age }, `age ${f.age}`])
+      if (f.ageDeclined) parts.push([{ ageDeclined: true }, 'age not given (default 30)'])
+      if (f.incomeStable !== undefined) parts.push([{ incomeStable: f.incomeStable }, `income ${f.incomeStable ? 'stable' : 'irregular'}`])
+      if (f.dependents !== undefined) parts.push([{ dependents: f.dependents }, `${f.dependents} dependent${f.dependents === 1 ? '' : 's'}`])
+      if (f.soleEarner !== undefined) parts.push([{ soleEarner: f.soleEarner }, f.soleEarner ? 'sole earner' : 'not the sole earner'])
+      if (f.debtsComplete) parts.push([{ debtsComplete: true }, 'no other debt'])
+      if (f.nearGoal) { const g = f.nearGoal as NearGoal; parts.push([{ nearGoal: g }, `${g.name} ${moneyText({ amount: g.amount, currency: g.currency })}${g.years ? ` in ${g.years} year${g.years === 1 ? '' : 's'}` : ''}`]) }
+      if (f.noNearGoal) parts.push([{ noNearGoal: true }, 'no big expense in the next 5 years'])
+      if (f.cryptoDropOk !== undefined) parts.push([{ cryptoDropOk: f.cryptoDropOk }, f.cryptoDropOk ? 'could hold through a 50% crypto drop' : 'could not hold through a 50% crypto drop'])
+      if (f.insured !== undefined) parts.push([{ insured: f.insured }, f.insured ? 'insured' : 'no insurance yet'])
+      for (const [fields, text] of parts) record({ op: 'update_profile', fields }, text)
+      done.push(`Recorded: ${parts.map(x => x[1]).join(', ')}.`)
     } else if (name === 'add_holding') {
       const h = await buildHolding(a)
       if (typeof h === 'string') { console.log(`dropped add_holding ${call.function.arguments}: ${h}`); return h }
@@ -1159,6 +1170,8 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   let planIn = 0, planOut = 0, planSteps = 0
   // A signed card (ChatScreen hidden message) records nothing: the balances already come from the chain.
   const appEvent = lastUserText.startsWith('[app event]')
+  // The app tells us what the user did with the confirm card for several declared items (saved / skipped).
+  const itemsEvent = lastUserText.startsWith('[app event] The user reviewed the items')
   // The list of first questions (functions/_lib/intake.ts) has not been sent, and this message carries nothing to record
   // (no number, no fact words, no question, no action): the planner would only answer "no_action", so it is not called.
   const batchAsked = assistantTexts.some(t => BATCH_MARK.test(t))
@@ -1201,6 +1214,15 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   }
 
   // ---- 2. REPLY ---------------------------------------------------------------------
+  // Several things declared in one message are NOT saved on the spot: the app shows them one by one to confirm or cancel (Hieu,
+  // 2026-10-28). The server only prepares them (ops stay empty); the card applies the confirmed ones and then tells the agent.
+  if (!appEvent && readback.length >= CONFIRM_MIN_ITEMS) {
+    const items = readback.map((text, i) => ({ text: text.charAt(0).toUpperCase() + text.slice(1), ops: readbackOps[i] }))
+    const content = vi
+      ? `Mình ghi nhận được ${items.length} mục từ tin nhắn của bạn. Hãy xem từng mục bên dưới: xác nhận để lưu, hoặc hủy. Chưa có gì được lưu cho đến khi bạn xác nhận.` // lang-ok
+      : `I picked up ${items.length} things from your message. Check them below: confirm each one to save it, or cancel it. Nothing is saved until you do.`
+    return json({ content, ops: [], dcaStop, actions: [...actions, { type: 'confirm_items', items, ask: toAsk }] })
+  }
   // After the list, a missing age is "not shared": the default (30) is used and said to be an estimate, instead of asking again.
   if (batchAsked && profile.age === null && !profile.ageDeclined) {
     const op: ProfileOp = { op: 'update_profile', fields: { ageDeclined: true } }
@@ -1238,7 +1260,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   const cryptoOffer = Math.floor(Math.min(cryptoFill, Math.max(0, (wallet ?? 0) - GAS_RESERVE_USDC), balance.suggest ? Math.max(0, balance.suggest.idle - balance.suggest.keep) : Infinity))
 
   // The plan is built here too, so each step says WHY (Hieu, 2026-10-28) and the numbers always match the figures (functions/_lib/plan.ts).
-  if (phase === 'plan' && !appEvent && !placement && !userAsks && !toAsk.length && !actions.length && balance.target) {
+  if (phase === 'plan' && (!appEvent || itemsEvent) && !placement && !userAsks && !toAsk.length && !actions.length && balance.target) {
     const t = balance.target
     const [ps, pt, pc] = wholeShares([t.safe, t.traditional, t.btc + t.large_cap + t.altcoin])
     const built = buildPlan({ p: profile, b: balance, shares: [ps, pt, pc], cover, vi })
@@ -1246,7 +1268,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   }
 
   // The first questions go out as ONE list, built here (no model call); what the user leaves out is taken as "prefer not to say".
-  if (!batchAsked && !placement && !appEvent && !userAsks && !toAsk.length && !DECLINES.test(lastUserText) && !KNOWS_NOTHING.test(lastUserText)) {
+  if (!batchAsked && !placement && (!appEvent || itemsEvent) && !userAsks && !toAsk.length && !DECLINES.test(lastUserText) && !KNOWS_NOTHING.test(lastUserText)) {
     const intake = buildIntake(profile, lastUserText, vi, readback, wallet)
     if (intake) return json({ content: intake, ops, dcaStop, actions })
   }
@@ -1303,6 +1325,7 @@ ${ending}` })
   const dcaApproved = lastUserText.startsWith('[app event] The user approved the DCA plan')
   if (placement && dupBox) replyMessages.push({ role: 'system', content: boxSaved ? `The user repeats ${usdc(placement.amountUsd)} for ${placement.name}, but that amount was saved a moment ago through the box. Nothing more is recorded. Say in ONE short sentence that it is already saved and the Safety figure is unchanged. No question.` : `The user repeats ${usdc(placement.amountUsd)} for ${placement.name}: the box from your previous reply is still waiting, and nothing is saved until they pick the source in it and tap Confirm. Say that in ONE short sentence. Record nothing, no new box, no question.` })
   else if (placement) replyMessages.push({ role: 'system', content: `A confirmation box is under this reply: it saves ${usdc(placement.amountUsd)} in ${placement.name} (${bucketLabel(placement.holdingType)}) once the user picks where the money came from and taps Confirm. Say in ONE short sentence: pick where the money came from in the box and tap Confirm to save it; nothing is saved before. Nothing else: no advice, no talk about buckets, targets or what is outside the app, no question (the box asks the source), no "Noted".` })
+  else if (itemsEvent) replyMessages.push({ role: 'system', content: `The latest "user" line is the app telling you the user reviewed the items you prepared in a confirm card (not their words): the saved ones are now in their profile (the figures above already include them), the skipped ones were dropped. Do not say "Noted" and do not list the items again. ${/saved: none/i.test(lastUserText) ? 'Nothing was saved: say so in one short sentence and that they can tell you again any time. No question.' : `Carry on in one or two short sentences: ${/still to ask/i.test(lastUserText) ? 'ask what the line says is still to ask (one question, with why)' : next ? 'ask the Next question below, with why' : 'say what comes next'}.`} Numbers only from ASSET & FUND FIGURES.` })
   else if (recordEvent) replyMessages.push({ role: 'system', content: `The latest "user" line is the app telling you the user CONFIRMED a confirmation box (not their words): the amount is now saved in their balance and the figures above already include it. In two short sentences: confirm what was saved, and what it means for them (how much that bucket holds now against its target, or what is still to fill there). Then ${next ? 'ask the Next question below' : balance.fund.met ? `ask which bucket they want to fill next, with how much each still needs from "Still to fill". ${BUCKETS_RULE}` : 'say what still remains for the emergency fund.'} Numbers only from ASSET & FUND FIGURES. Do not say "Noted" and do not explain where the bank is or that it is outside the app.` })
   else if (dcaApproved) replyMessages.push({ role: 'system', content: `The latest "user" line is the app telling you the user APPROVED a DCA plan (not their words). Nothing was bought or signed yet. In ONE or TWO short sentences: the plan is set, the first round is due now and a buy card appears right below this reply (they get a quote and sign it there; later rounds show up in this chat when due). Never say "signed" or "bought". No bucket question, no recap of the plan.` })
   else if (appEvent) replyMessages.push({ role: 'system', content: `The latest "user" line is the app telling you a card was signed (not their words). Confirm it in one sentence with what it means for them (e.g. their emergency fund now holds N months of spending), then the next step: ${balance.fund.met ? `ask which bucket they want to fill first, with how much each still needs from "Still to fill". ${BUCKETS_RULE}` : 'what still remains for the emergency fund.'} Numbers only from ASSET & FUND FIGURES.` })
