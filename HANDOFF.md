@@ -13,8 +13,8 @@ Khung tài chính: [`docs/SPEC-FRAMEWORK-2026-10-25.md`](docs/SPEC-FRAMEWORK-202
 
 ## 2. Luồng agent hiện tại (chi tiết trong code `functions/api/chat.ts`)
 1. Lời chào cố định (UI, không gửi model): "spending, saving or investing?".
-2. Tin trả lời đầu ⇒ **biểu mẫu điền được** (`IntakeFormCard`, mục còn thiếu), 0 lệnh gọi model. Giá trị đổi thành mục bằng mã (`src/lib/intakeForm.ts`). Gõ tự do vẫn được (đường model).
-3. Từ 3 mục trở lên (từ biểu mẫu hoặc gõ) ⇒ **thẻ xác nhận từng mục** (`ItemsCard`, cao cố định 216px): Confirm / Cancel / Confirm all ⇒ sự kiện ẩn `[app event] The user reviewed the items: …`.
+2. Tin trả lời đầu ⇒ **biểu mẫu điền được** (`IntakeFormCard`, mục còn thiếu), 0 lệnh gọi model. Bấm **Save N** là lưu ngay (gửi biểu mẫu chính là sự xác nhận, KHÔNG có thẻ xác nhận sau đó); giá trị đổi thành mục bằng mã (`src/lib/intakeForm.ts`). Gõ tự do vẫn được (đường model).
+3. **Thẻ xác nhận từng mục** (`ItemsCard`, cao cố định 216px; Confirm / Cancel / Confirm all ⇒ sự kiện ẩn `[app event] The user reviewed the items: …`) chỉ dùng khi người dùng **khai THÊM vào dữ liệu đã có** (≥3 mục gõ trong một tin, hồ sơ đã có dữ liệu trước đó — `hadDataBefore` trong `chat.ts`). Lần khai đầu (biểu mẫu hoặc một tin dài của người mới) lưu thẳng, rồi kế hoạch theo sau. Chốt với Hiếu 2026-10-28.
 4. Có đủ dữ liệu ⇒ **kế hoạch do server dựng** (`functions/_lib/plan.ts`, 0 lệnh gọi model): tổng quan (an toàn = tuổi%, còn lại chia Traditional ≈ 4/7 và Crypto ≈ 3/7), từng bước có "Why", quỹ dự phòng giải thích vì sao 3/6/9/12 tháng, mục tiêu gần được giữ trong Safety, câu mời nạp quỹ ("prepare a deposit of N USDC …").
 5. Sau đó model viết ngắn (chế độ BRIEF) hoặc dài chỉ khi dạy (TEACH). Hỏi "how much …" ⇒ server trả thẳng bảng tổng (`buildStanding`). Nói đã bỏ tiền vào ngân hàng ⇒ hộp xác nhận (`RecordCard`).
 6. Thẻ giao dịch (nạp/rút quỹ, mua cirBTC) luôn do user ký; agent không bao giờ chuyển tiền.

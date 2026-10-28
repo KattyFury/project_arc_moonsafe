@@ -1203,6 +1203,8 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   // The list of first questions (functions/_lib/intake.ts) has not been sent, and this message carries nothing to record
   // (no number, no fact words, no question, no action): the planner would only answer "no_action", so it is not called.
   const batchAsked = assistantTexts.some(t => BATCH_MARK.test(t))
+  // Confirm cards are for ADDING to what the app already knows. A first declaration (the form, or a first long message) is saved at once.
+  const hadDataBefore = hasAnyData(profile)
   const skipPlan = !appEvent && !batchAsked && !placement && unknownBullets(profile).length >= INTAKE_MIN_UNKNOWN && !/\d/.test(lastUserText) && lastUserText.length <= 160
     && !QUESTIONS_US.test(lastUserText) && !STABILITY_WORDS.test(lastUserText) && !DEPENDENT_WORDS.test(lastUserText) && !NO_DEBT.test(lastUserText) && !SAYS_NONE.test(lastUserText)
     && !ACTION_INTENT.test(lastUserText) && !DECLINES.test(lastUserText) && !KNOWS_NOTHING.test(lastUserText) && !hasAnyData(profile)
@@ -1256,9 +1258,10 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       await handle({ id: `fallback-${spec.type}`, function: { name: 'add_holding', arguments: JSON.stringify({ ...spec, worth: { amount, currency: 'USDC' } }) } })
     }
   }
-  // Several things declared in one message are NOT saved on the spot: the app shows them one by one to confirm or cancel (Hieu,
-  // 2026-10-28). The server only prepares them (ops stay empty); the card applies the confirmed ones and then tells the agent.
-  if (!appEvent && readback.length >= CONFIRM_MIN_ITEMS) {
+  // Several things ADDED to what the app already knows are not saved on the spot: the app shows them one by one to confirm or cancel
+  // (Hieu, 2026-10-28; first declarations and the form are saved at once). The server only prepares them (ops stay empty); the card
+  // applies the confirmed ones and then tells the agent.
+  if (!appEvent && hadDataBefore && readback.length >= CONFIRM_MIN_ITEMS) {
     const items = readback.map((text, i) => ({ text: text.charAt(0).toUpperCase() + text.slice(1), ops: readbackOps[i] }))
     const content = vi
       ? `Mình ghi nhận ${items.length} mục. Xác nhận hoặc hủy từng mục bên dưới; chưa có gì được lưu cho đến khi bạn xác nhận.` // lang-ok

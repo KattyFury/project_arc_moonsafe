@@ -1,6 +1,6 @@
 // The first questions as a form inside the chat (Hieu, 2026-10-28): "Your age: [   ]", "Any other income? [Yes / No]".
-// Whatever is left empty is "prefer not to say". "Review" turns the values into items (src/lib/intakeForm.ts) and shows them one by
-// one in the confirm card; nothing is saved before that. Pure props (no app context), so it renders anywhere.
+// Whatever is left empty is "prefer not to say". "Save" turns the values into items (src/lib/intakeForm.ts) and saves them straight
+// away: sending the form is the user's confirmation, there is no confirm card after it. Pure props (no app context).
 
 import type { ReactNode } from 'react'
 import { ClipboardList } from 'lucide-react'
@@ -44,13 +44,15 @@ function Ask({ label, value, onChange }: { label: string; value: YesNo; onChange
   )
 }
 
-export function IntakeFormCard({ keys, seen, values, status, prices, onChange, onReview, onSkip }: {
+export function IntakeFormCard({ keys, seen, values, status, saved, prices, onChange, onReview, onSkip }: {
   /** The sections still unknown (functions/_lib/intake.ts keys). */
   keys: string[]
   /** USDC the app sees in the connected wallet: a hint, never a total. */
   seen: number | null
   values: FormValues
   status?: 'done' | 'cancelled'
+  /** How many details the form saved when it was sent. */
+  saved?: number
   prices: Prices | null
   onChange: (v: FormValues) => void
   onReview: (v: FormValues) => void
@@ -64,7 +66,7 @@ export function IntakeFormCard({ keys, seen, values, status, prices, onChange, o
     return (
       <GlassCard className="ml-10 p-4 flex items-center gap-4">
         <IconBox><ClipboardList size={24} style={{ color: 'var(--accent)' }} /></IconBox>
-        <p className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--ink)' }}>Details sent</p>
+        <p className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--ink)' }}>{saved ? `Saved ${saved} ${saved === 1 ? 'detail' : 'details'}` : 'Details sent'}</p>
       </GlassCard>
     )
   }
@@ -175,7 +177,7 @@ export function IntakeFormCard({ keys, seen, values, status, prices, onChange, o
 
       <div className="grid grid-cols-2 gap-2">
         <Btn variant="outline" onClick={onSkip}>Skip all</Btn>
-        <Btn disabled={filled === 0} onClick={() => onReview(values)}>{filled === 0 ? 'Review' : `Review ${filled}`}</Btn>
+        <Btn disabled={filled === 0} onClick={() => onReview(values)}>{filled === 0 ? 'Save' : `Save ${filled}`}</Btn>
       </div>
     </GlassCard>
   )
