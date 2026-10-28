@@ -91,7 +91,7 @@ export function buildPlan({ p, b, shares, cover, vi }: PlanInput): string | null
       : (vi ? 'Bước đầu là quỹ dự phòng. Ví chưa đủ USDC để nạp, nên hãy thêm USDC vào ví rồi nói với mình nhé.' : 'The first step is your emergency fund. The wallet does not have enough USDC to add yet, so add some USDC to it and tell me.') // lang-ok
   // Airdrops and other bursts are not a job: said once, here, because the plan is built only on steady income.
   const windfall = p.hasWindfalls
-    ? (vi ? 'Về airdrop: chúng đến theo từng đợt và không thể trông cậy, nên không phải một nghề ổn định. Kế hoạch này chỉ dựa trên thu nhập ổn định của bạn; khi nhận một khoản airdrop, hãy coi đó là tiền thêm để đặt vào đúng kế hoạch này.' : 'About airdrops: they arrive in bursts and cannot be counted on, so they are not a stable job. This plan is built on your steady income only; when an airdrop lands, treat it as extra money to place by this same plan.') // lang-ok
+    ? (vi ? `Về airdrop: chúng đến theo từng đợt và không thể trông cậy, nên không phải một nghề ổn định${p.windfallsYearly ? ` (bạn nói khoảng ${fmt(p.windfallsYearly)} mỗi năm)` : ''}. Kế hoạch này chỉ dựa trên thu nhập ổn định của bạn; khi nhận một khoản airdrop, hãy coi đó là tiền thêm để đặt vào đúng kế hoạch này.` : `About airdrops: they arrive in bursts and cannot be counted on, so they are not a stable job${p.windfallsYearly ? ` (you said about ${fmt(p.windfallsYearly)} a year)` : ''}. This plan is built on your steady income only; when an airdrop lands, treat it as extra money to place by this same plan.`) // lang-ok
     : null
   const goal = p.nearGoal && b.goalUsd > 0 ? p.nearGoal : null
   const goalLine = goal

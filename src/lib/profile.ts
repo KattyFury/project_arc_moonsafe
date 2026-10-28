@@ -192,6 +192,7 @@ export function normalizeProfile(raw: Record<string, unknown> | null | undefined
     ...(readNearGoal(raw.nearGoal) ? { nearGoal: readNearGoal(raw.nearGoal) } : {}),
     ...(raw.noNearGoal === true ? { noNearGoal: true } : {}),
     ...(raw.hasWindfalls === true ? { hasWindfalls: true } : {}),
+    ...(num(raw.windfallsYearly) !== null && num(raw.windfallsYearly)! > 0 ? { windfallsYearly: num(raw.windfallsYearly)! } : {}),
     ...(bool(raw.cryptoDropOk) !== null ? { cryptoDropOk: bool(raw.cryptoDropOk) } : {}),
     ...(bool(raw.insured) !== null ? { insured: bool(raw.insured) } : {}),
     ...(num(raw.savedAt) !== null ? { savedAt: num(raw.savedAt)! } : {}),
@@ -213,7 +214,7 @@ export const hasAnyData = (p: FinancialProfile | null | undefined): boolean =>
 
 // ---- operations (what the agent's tools become) ---------------------------------------------
 
-export type ProfileFields = Partial<Pick<FinancialProfile, 'age' | 'ageDeclined' | 'incomeStable' | 'dependents' | 'soleEarner' | 'debtsComplete' | 'nearGoal' | 'noNearGoal' | 'hasWindfalls' | 'cryptoDropOk' | 'insured'>>
+export type ProfileFields = Partial<Pick<FinancialProfile, 'age' | 'ageDeclined' | 'incomeStable' | 'dependents' | 'soleEarner' | 'debtsComplete' | 'nearGoal' | 'noNearGoal' | 'hasWindfalls' | 'windfallsYearly' | 'cryptoDropOk' | 'insured'>>
 
 /** The holding the user declared for the USDC in THIS (connected) wallet, if there is one. */
 export function appWalletHolding(p: FinancialProfile | null): Holding | undefined {
@@ -298,6 +299,7 @@ export function readOps(raw: unknown, now = Date.now()): ProfileOp[] {
         if (num(f.age) !== null) fields.age = num(f.age)!
         for (const k of ['ageDeclined', 'incomeStable', 'soleEarner', 'debtsComplete', 'noNearGoal', 'hasWindfalls', 'cryptoDropOk', 'insured'] as const) if (typeof f[k] === 'boolean') fields[k] = f[k] as boolean
         if (num(f.dependents) !== null) fields.dependents = num(f.dependents)!
+        if (num(f.windfallsYearly) !== null && num(f.windfallsYearly)! > 0) fields.windfallsYearly = num(f.windfallsYearly)!
         const goal = readNearGoal(f.nearGoal)
         if (goal) fields.nearGoal = goal
         if (Object.keys(fields).length) out.push({ op: 'update_profile', fields })

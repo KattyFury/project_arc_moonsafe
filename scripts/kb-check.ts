@@ -214,7 +214,8 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   await addUsage(env, 'a', 600)
   if (await overBudget(env, 'a')) fail('budget: 600 of 1000 is still open')
   await addUsage(env, 'a', 500)
-  if (!(await overBudget(env, 'a'))?.includes('daily limit')) fail('budget: one user over 1000 must be blocked')
+  if (!(await overBudget(env, 'a'))?.includes('allowance')) fail('budget: one user over 1000 must be blocked')
+  if (await overBudget(env, 'a', true)) fail('budget: the verified owner has no per-user token cap')
   if (await overBudget(env, 'b')) fail('budget: another user must still be open')
   await addUsage(env, 'b', 450)
   if (!(await overBudget(env, 'b'))?.includes('for everyone')) fail('budget: everyone over 1500 must be blocked')
@@ -326,7 +327,9 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   const fresh = normalizeProfile({ v: 2 })
   const invest = buildIntake(fresh, 'I want to invest in a right way', false, [])
   if (!invest || !invest.includes('build a plan to invest the right way') || !BATCH_MARK.test(invest)) fail('intake: invest wording')
-  if (invest && (invest.match(/^• /gm) ?? []).length !== 8) fail('intake: a brand-new user is asked all 8 things')
+  const { intakeKeys } = await import('../functions/_lib/intake')
+  if (intakeKeys(fresh).join() !== 'age,income,spending,stability,goal,assets,other,debt') fail('intake: a brand-new user gets every section of the form')
+  if (invest && /^• /m.test(invest)) fail('intake: the questions are a form now, not a bulleted list')
   if (!buildIntake(fresh, 'let me see my spending', false, [])?.includes('show you where your money goes')) fail('intake: spending wording')
   if (!buildIntake(fresh, 'build my emergency fund', false, [])?.includes('emergency fund')) fail('intake: emergency fund wording')
   if (!buildIntake(fresh, 'hello', true, [])?.includes('thoải mái chia sẻ')) fail('intake: the Vietnamese version') // lang-ok
@@ -377,9 +380,29 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   if (walletMoveOps(none, -450).length !== 0) fail('no declared wallet: a deposit takes nothing away')
   if (applyOps(none, walletMoveOps(none, 450)).holdings[0]?.value !== 450) fail('no declared wallet: a withdrawal starts one')
   if (appWalletHolding(normalizeProfile({ v: 2, holdings: [H({ id: 'x', type: 'stable_wallet', name: 'USDT', where: 'Binance', value: 10 })] }))) fail('an exchange balance is not the app wallet')
-  // The first list says what the app sees, but asks the user to declare it.
-  const list = buildIntake(normalizeProfile({ v: 2 }), 'I want investing', false, [], 1916)
-  if (!list?.includes('I can see 1,916 USDC in this wallet') || !list.includes('a balance counts only once you tell me')) fail('intake: the wallet seen is named, the declaration asked')
+  // The form: filled values become items (plain code, no model), and the totals use only what was typed.
+  const { formToItems, parseAmount, EMPTY_FORM } = await import('../src/lib/intakeForm')
+  if (parseAmount('2,500') !== 2500 || parseAmount('$2500') !== 2500 || parseAmount('2.5k') !== 2500 || parseAmount('') !== null || parseAmount('abc') !== null || parseAmount('0') !== null) fail('form: amounts are read like a person types them')
+  const filled = { ...EMPTY_FORM, age: '21', salary: '150', spending: '150', steady: 'no' as const, reliers: 'no' as const, goal: 'no' as const, usdcThis: '2500', cash: '500', gold: '2000', debt: 'no' as const }
+  const formItems = formToItems(filled, { goldUsdPerOz: 4000, usd: {} })
+  if (formItems.length !== 10) fail(`form: 10 items expected, got ${formItems.length}: ${formItems.map(i => i.text).join(' / ')}`)
+  let fromForm = normalizeProfile({ v: 2 })
+  for (const it of formItems) fromForm = applyOps(fromForm, it.ops)
+  const fb = computeBalance({ profile: fromForm, walletUsd: 36.58, vaultUsd: 0, cirBtcUsd: 0, prices, vndPerUsd: 25000 })
+  if (fromForm.age !== 21 || fromForm.incomeStable !== false || fromForm.dependents !== 0 || !fromForm.noNearGoal || !fromForm.debtsComplete) fail('form: the facts reach the profile')
+  if (Math.abs(fb.liquid - 5000) > 0.5) fail(`form: liquid money is exactly what was typed (2500 + 500 + 2000 gold), got ${fb.liquid}`)
+  if (fb.cashflow.income !== 150 || fb.cashflow.spending !== 150) fail('form: salary and spending reach the cash flow')
+  const windfall = formToItems({ ...EMPTY_FORM, salary: '150', otherIncome: 'yes', windfalls: 'yes', windfallsYearly: '3000' }, null)
+  let wp = normalizeProfile({ v: 2 })
+  for (const it of windfall) wp = applyOps(wp, it.ops)
+  if (!wp.hasWindfalls || wp.windfallsYearly !== 3000 || wp.incomes.length !== 1) fail('form: airdrops are noted (with the yearly guess) and are NOT a monthly income line')
+  const famDebt = formToItems({ ...EMPTY_FORM, debt: 'yes', debtKind: 'family', debtOwed: '500', debtMonthly: '20' }, null)
+  const dp = applyOps(normalizeProfile({ v: 2 }), famDebt.flatMap(i => i.ops))
+  if (dp.debts[0]?.type !== 'family_no_interest' || dp.debts[0]?.ratePct !== 0) fail('form: family debt with no interest typed is interest-free')
+  if (formToItems(EMPTY_FORM, null).length !== 0) fail('form: an empty form saves nothing')
+  if (formToItems({ ...EMPTY_FORM, home: '50000' }, null).length !== 0 || formToItems({ ...EMPTY_FORM, otherAssets: 'yes', home: '50000' }, null).length !== 1) fail('form: home, car, lent and business count only when the question was answered yes')
+  const btcItems = formToItems({ ...EMPTY_FORM, btc: '1000' }, { goldUsdPerOz: null, usd: { 'crypto:BTC': 100000 } })
+  if (Math.abs((btcItems[0]?.ops[0] as { holding?: { quantity?: number } }).holding?.quantity ?? 0) < 0.00999 || btcItems.length !== 1) fail('form: Bitcoin is stored as a quantity at today\'s price')
   // The plan says WHY for every step, and offers the exact deposit with the wording the "yes" is matched on.
   const shares: [number, number, number] = [31, 39, 30]
   const plan = buildPlan({ p: base, b: bal(base, 1900, 0), shares, cover: 450, vi: false })!

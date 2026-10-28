@@ -17,6 +17,8 @@ import { GlassCard } from '@/components/ui/kit'
 import { ActionCard, type ChatAction } from '@/components/chat/ActionCard'
 import { RecordCard } from '@/components/chat/RecordCard'
 import { ItemsCard } from '@/components/chat/ItemsCard'
+import { IntakeFormCard } from '@/components/chat/IntakeFormCard'
+import { EMPTY_FORM, formToItems, type FormValues } from '@/lib/intakeForm'
 import { readOps } from '@/lib/profile'
 import type { AssetType } from '@/types'
 import { AllocationPies } from '@/components/ui/AllocationPies'
@@ -39,14 +41,15 @@ function renderContent(text: string): ReactNode {
 const Avatar = () => <img src="/logo.svg" alt="" width={32} height={32} className="flex-shrink-0" />
 
 export function ChatScreen({ onError, onActions }: { onError: (m: string | null) => void; onActions: (a: AgentAction[]) => void }) {
-  const { profile, vault, math, cirBtc, vndToUsdc } = useApp()
+  const { profile, vault, math, cirBtc, vndToUsdc, prices } = useApp()
   // Deposit / withdraw / buy / DCA cards and charts under the agent's replies, by reply timestamp.
   // Stored, so a chat remounted mid-signature (wallet switching network) keeps them (real chat 2026-10-27).
   const [extras, setExtras] = useState(readChatExtras)
   useEffect(() => { writeChatExtras(extras) }, [extras])
-  const cards: ChatAction[] = extras.cards.flatMap(c => c.kind === 'record' || c.kind === 'items' ? [] : [{ ...c, amount: BigInt(c.amount), intervalDays: c.intervalDays ?? 7 }])
+  const cards: ChatAction[] = extras.cards.flatMap(c => c.kind === 'record' || c.kind === 'items' || c.kind === 'form' ? [] : [{ ...c, amount: BigInt(c.amount), intervalDays: c.intervalDays ?? 7 }])
   const records = extras.cards.flatMap(c => c.kind === 'record' ? [c] : [])
   const itemCards = extras.cards.flatMap(c => c.kind === 'items' ? [c] : [])
+  const formCards = extras.cards.flatMap(c => c.kind === 'form' ? [c] : [])
   const handleActions = (actions: AgentAction[], at: number) => {
     const screens = actions.filter(a => a.type === 'open_screen')
     if (screens.length) onActions(screens)
@@ -58,6 +61,8 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
         if (a.amount && a.holdingType && a.name) next.push({ id: Date.now() + next.length, at, kind: 'record', record: { amountUsd: a.amount.amount, holdingType: a.holdingType as AssetType, name: a.name, source: a.source ?? null } })
         continue
       }
+      // The first questions as a form to fill in.
+      if (a.type === 'intake_form') { next.push({ id: Date.now() + next.length, at, kind: 'form', keys: a.keys ?? [], seen: a.seen ?? null, values: EMPTY_FORM }); continue }
       // Several things declared at once: confirm them one by one before anything is saved.
       if (a.type === 'confirm_items') {
         const items = (a.items ?? []).map(i => ({ text: String(i.text), ops: readOps(i.ops) })).filter(i => i.ops.length)
@@ -91,6 +96,17 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
   const finishItems = (card: Extract<StoredCard, { kind: 'items' }>, summary: string) => {
     setExtras(x => ({ ...x, cards: x.cards.map(c => c.id === card.id ? { ...c, status: 'done' as const } : c) }))
     setSigned(`[app event] The user reviewed the items: ${summary}${card.ask.length ? ` Still to ask: ${card.ask.join(' | ')}.` : ''}`)
+  }
+  // The form: the draft is kept as it is typed; "Review" turns it into items for the confirm card, "Skip all" tells the agent nothing was shared.
+  const setForm = (id: number, values: FormValues) => setExtras(x => ({ ...x, cards: x.cards.map(c => c.id === id && c.kind === 'form' ? { ...c, values } : c) }))
+  const reviewForm = (card: Extract<StoredCard, { kind: 'form' }>, values: FormValues) => {
+    const items = formToItems(values, prices.prices)
+    if (!items.length) return
+    setExtras(x => ({ ...x, cards: [...x.cards.map(c => c.id === card.id ? { ...c, status: 'done' as const } : c), { id: Date.now(), at: card.at, kind: 'items' as const, items, ask: [] }] }))
+  }
+  const skipForm = (card: Extract<StoredCard, { kind: 'form' }>) => {
+    setExtras(x => ({ ...x, cards: x.cards.map(c => c.id === card.id ? { ...c, status: 'done' as const } : c) }))
+    setSigned('[app event] The user reviewed the items: saved: none. skipped: everything.')
   }
   const now = useNow()
   const [input, setInput] = useState('')
@@ -159,6 +175,7 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
               </div>
               {msg.role === 'assistant' && cards.filter(c => c.at === msg.timestamp).map(c => <ActionCard key={c.id} action={c} onFinished={(s, summary) => finishCard(c.id, s, summary)} />)}
               {msg.role === 'assistant' && records.filter(c => c.at === msg.timestamp).map(c => <RecordCard key={c.id} record={c.record} status={c.status} onFinished={(s, summary) => finishCard(c.id, s, summary)} />)}
+              {msg.role === 'assistant' && formCards.filter(c => c.at === msg.timestamp).map(c => <IntakeFormCard key={c.id} keys={c.keys} seen={c.seen} values={c.values} status={c.status} prices={prices.prices} onChange={v => setForm(c.id, v)} onReview={v => reviewForm(c, v)} onSkip={() => skipForm(c)} />)}
               {msg.role === 'assistant' && itemCards.filter(c => c.at === msg.timestamp).map(c => <ItemsCard key={c.id} items={c.items} onChange={items => setItems(c.id, items)} onSave={profile.apply} onFinished={summary => finishItems(c, summary)} />)}
               {msg.role === 'assistant' && extras.charts.filter(c => c.at === msg.timestamp).map((c, k) => <GlassCard key={k} className="ml-10 p-4">{c.kind === 'cashflow' ? <CashflowCard compact /> : <AllocationPies compact />}</GlassCard>)}
             </Fragment>

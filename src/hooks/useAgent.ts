@@ -10,6 +10,7 @@ import { authHeader, cloudSave } from '@/lib/cloud'
 import type { AiPower } from '@/hooks/useAiPower'
 import { readOps, type ProfileOp } from '@/lib/profile'
 import type { RecordRequest } from '@/lib/record'
+import type { FormValues } from '@/lib/intakeForm'
 
 const STORAGE_KEY = 'moonsafe_chat_v2'
 const MAX_KEEP = 80
@@ -65,6 +66,8 @@ export type StoredCard =
   /** A reported placement waiting for the user's confirmation (src/lib/record.ts). */
   | { id: number; at: number; kind: 'record'; record: RecordRequest; status?: 'done' | 'cancelled' }
   /** Several declared things waiting to be confirmed one by one (src/components/chat/ItemsCard.tsx); `ask` = what the agent still has to ask once they are done. */
+  /** The first questions as a form (src/components/chat/IntakeFormCard.tsx): `keys` = the sections still unknown, `values` = the draft. */
+  | { id: number; at: number; kind: 'form'; keys: string[]; seen: number | null; values: FormValues; status?: 'done' | 'cancelled' }
   | { id: number; at: number; kind: 'items'; items: Array<{ text: string; ops: ProfileOp[]; status?: 'saved' | 'skipped' }>; ask: string[]; status?: 'done' | 'cancelled' }
 export interface StoredChart { at: number; kind: 'allocation' | 'cashflow' }
 export function readChatExtras(): { cards: StoredCard[]; charts: StoredChart[] } {
@@ -91,7 +94,10 @@ export interface AgentHooks {
 }
 
 export interface AgentAction {
-  type: 'prepare_deposit' | 'prepare_withdraw' | 'prepare_buy_cirbtc' | 'propose_dca' | 'open_screen' | 'show_allocation' | 'show_cashflow' | 'confirm_record' | 'confirm_items'
+  type: 'prepare_deposit' | 'prepare_withdraw' | 'prepare_buy_cirbtc' | 'propose_dca' | 'open_screen' | 'show_allocation' | 'show_cashflow' | 'confirm_record' | 'confirm_items' | 'intake_form'
+  /** intake_form: the sections to show, and the USDC the app sees in the wallet (a hint). */
+  keys?: string[]
+  seen?: number | null
   /** confirm_items: what was declared, one entry per thing, with the operations that save it; and what is still to ask. */
   items?: Array<{ text: string; ops: unknown }>
   ask?: string[]
@@ -139,6 +145,11 @@ export function useAgent(hooks: AgentHooks) {
       if (res.status === 429 && data?.code === 'out_of_power') {
         hooksRef.current.onPower?.(data.power ?? null)
         setMessages([...history, { role: 'assistant', content: data.error ?? 'You are out of AI power for today.', timestamp: Date.now(), error: true }])
+        return
+      }
+      // The AI allowance of the day is used up: said plainly, not as a failure to retry in a few minutes.
+      if (res.status === 429 && data?.code === 'token_budget') {
+        setMessages([...history, { role: 'assistant', content: data.error ?? 'You used up today\'s AI allowance. It resets tomorrow (UTC).', timestamp: Date.now(), error: true }])
         return
       }
       if (data?.power) hooksRef.current.onPower?.(data.power)

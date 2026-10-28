@@ -33,8 +33,10 @@ export interface Meter {
   cachedTokens?: number
 }
 
-const DEFAULT_ALL = 1_500_000
-const DEFAULT_USER = 250_000
+// A message costs about 10-14k tokens (measured 2026-10-28: 26 messages used 263k), so 30 free messages need ~420k. The old 250k per user
+// stopped the owner (90 messages a day) after 19. Per user: room for 30 messages with margin; the owner has no per-user cap.
+const DEFAULT_ALL = 2_200_000
+const DEFAULT_USER = 600_000
 const TTL_SECONDS = 2 * 24 * 3600
 
 const day = () => new Date().toISOString().slice(0, 10)
@@ -48,11 +50,11 @@ async function used(kv: Kv, key: string): Promise<number> {
 }
 
 /** null = go ahead; otherwise the message to show the user. */
-export async function overBudget(env: BudgetEnv, userId: string): Promise<string | null> {
+export async function overBudget(env: BudgetEnv, userId: string, unlimitedUser = false): Promise<string | null> {
   if (!env.USERDATA) return null
   try {
     const [all, mine] = await Promise.all([used(env.USERDATA, keyAll()), used(env.USERDATA, keyUser(userId))])
-    if (mine >= limitOf(env.USER_DAILY_TOKEN_BUDGET, DEFAULT_USER)) return 'You reached the daily limit of agent messages. It resets tomorrow (UTC).'
+    if (!unlimitedUser && mine >= limitOf(env.USER_DAILY_TOKEN_BUDGET, DEFAULT_USER)) return 'You used up today\'s AI allowance. It resets tomorrow (UTC).'
     if (all >= limitOf(env.DAILY_TOKEN_BUDGET, DEFAULT_ALL)) return 'The agent reached its daily limit for everyone, to keep costs under control. Try again tomorrow (UTC).'
   } catch { /* KV unavailable: do not block the chat */ }
   return null
