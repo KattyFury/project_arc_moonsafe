@@ -5,22 +5,23 @@
 import { useState } from 'react'
 import { Check, Landmark } from 'lucide-react'
 import { useApp } from '@/state/AppState'
-import { bucketLabel, buildRecordOps, recordSummary, sourceOptions, type RecordRequest, type RecordSource } from '@/lib/record'
+import { bucketLabel, buildRecordOps, presetSource, recordSummary, sourceOptions, type RecordRequest, type RecordSource } from '@/lib/record'
 import { Btn, GlassCard, IconBox, Notice } from '@/components/ui/kit'
 import { EMPTY_PROFILE } from '@/types'
 
-type Choice = 'wallet' | 'new' | `h:${string}`
+type Choice = 'new' | `h:${string}`
 
 export function RecordCard({ record, status: saved, onFinished }: { record: RecordRequest; status?: 'done' | 'cancelled'; onFinished: (status: 'done' | 'cancelled', summary: string) => void }) {
   const { profile, fx, money } = useApp()
   const [status, setStatus] = useState<'idle' | 'done' | 'cancelled'>(saved ?? 'idle')
-  const [choice, setChoice] = useState<Choice | null>(record.source)
   const rate = fx.vndPerUsd
   const current = profile.profile ?? EMPTY_PROFILE
+  const preset = presetSource(record, current)
+  const [choice, setChoice] = useState<Choice | null>(preset ? (preset.kind === 'new' ? 'new' : `h:${preset.id}`) : null)
   const sources = sourceOptions(current, record, rate)
   const amountText = money(BigInt(Math.round(record.amountUsd * 1_000_000)))
 
-  const toSource = (c: Choice): RecordSource => c === 'wallet' ? { kind: 'wallet' } : c === 'new' ? { kind: 'new' } : { kind: 'holding', id: c.slice(2) }
+  const toSource = (c: Choice): RecordSource => c === 'new' ? { kind: 'new' } : { kind: 'holding', id: c.slice(2) }
   const confirm = () => {
     if (!choice) return
     const source = toSource(choice)
@@ -31,9 +32,8 @@ export function RecordCard({ record, status: saved, onFinished }: { record: Reco
   const cancel = () => { setStatus('cancelled'); onFinished('cancelled', 'Cancelled.') }
 
   const options: { value: Choice; label: string; sub: string }[] = [
-    { value: 'wallet', label: 'My app wallet', sub: 'USDC I hold in this app' },
-    ...sources.map(h => ({ value: `h:${h.id}` as Choice, label: h.name, sub: 'Money I already listed' })),
-    { value: 'new', label: 'New money', sub: 'Not in the app yet (salary, airdrop, a gift)' },
+    ...sources.map(h => ({ value: `h:${h.id}` as Choice, label: h.name, sub: 'Money I already listed (it goes down)' })),
+    { value: 'new', label: 'New money', sub: 'Not listed yet: salary, airdrop, a gift (your total goes up)' },
   ]
 
   return (

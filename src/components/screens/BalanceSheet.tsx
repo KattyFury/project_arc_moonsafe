@@ -9,6 +9,7 @@ import { useState } from 'react'
 import { useApp } from '@/state/AppState'
 import { KB } from '@/kb/kb'
 import { DASH, formatNumber } from '@/lib/format'
+import { appWalletHolding } from '@/lib/profile'
 import { Caps, GlassCard, Notice, Screen, Stats, Title, Toggle } from '@/components/ui/kit'
 import { AllocationPies } from '@/components/ui/AllocationPies'
 import { CashflowCard } from '@/components/ui/CashflowCard'
@@ -44,6 +45,12 @@ export function BalanceSheet(_: { onOpenChat: () => void }) {
         { label: 'Liquid', value: moneyUsd(b.liquid) },
         { label: 'Fund', value: b.fundUsd === null ? DASH : moneyUsd(b.fundUsd), sub: fundSub },
       ]} />
+
+      {b.walletSeen !== null && b.walletSeen >= 1 && (appWalletHolding(profile.profile)?.value ?? 0) < b.walletSeen - 1 && (
+        <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>
+          This wallet holds {moneyUsd(Math.floor(b.walletSeen))}. Only what you tell the agent counts here, so say how much of it is yours.
+        </p>
+      )}
 
       <div className="lg:hidden">
         <Toggle value={view} onChange={setView} options={[{ value: 'alloc', label: 'Allocation' }, { value: 'flow', label: 'Cash flow' }, { value: 'debt', label: 'Debts & other' }]} />

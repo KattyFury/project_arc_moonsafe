@@ -110,6 +110,8 @@ export interface Balance {
   target: Record<MixKey, number> | null
   /** True when the user told the agent about anything held outside the app. */
   declared: boolean
+  /** USDC seen in the connected wallet, read onchain. NOT part of liquid, assets or net worth; only declared holdings are. */
+  walletSeen: number | null
   cashflow: {
     active: number; passive: number; irregular: number; income: number | null
     fixed: number; variable: number; debtPayments: number
@@ -170,7 +172,8 @@ export function computeBalance(input: BalanceInput): Balance {
   const rate = input.vndPerUsd
   const items: Item[] = []
   const unpriced: Holding[] = []
-  if (input.walletUsd !== null && input.walletUsd > 0) items.push({ label: 'Wallet USDC', usd: input.walletUsd, group: 'idle', place: 'base' })
+  // The balance SEEN in the connected wallet is not part of the total: people use several wallets, so only what the user
+  // declares counts (Hieu, 2026-10-28). The agent reads it to know there is money, and to cap what a card can move.
   if (input.cirBtcUsd !== null && input.cirBtcUsd > 0) items.push({ label: 'cirBTC', usd: input.cirBtcUsd, group: 'btc', place: 'base' })
   if (input.vaultUsd !== null && input.vaultUsd > 0) items.push({ label: 'Emergency fund', usd: input.vaultUsd, group: null, place: 'fund' })
   for (const h of p?.holdings ?? []) {
@@ -290,7 +293,7 @@ export function computeBalance(input: BalanceInput): Balance {
 
   return {
     items, unpriced, byGroup, liquid, grey, lifestyle, fundUsd: vault, assets, debtTotal, netWorth: assets - debtTotal,
-    age, ageIsDefault: p?.age === null && !!p?.ageDeclined, target, declared: (p?.holdings.length ?? 0) > 0,
+    age, ageIsDefault: p?.age === null && !!p?.ageDeclined, target, declared: (p?.holdings.length ?? 0) > 0, walletSeen: input.walletUsd,
     cashflow, fund, debts, lock, suggest, goalUsd,
   }
 }

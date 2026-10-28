@@ -119,6 +119,7 @@ const placed: [string, { amountUsd: number; holdingType: string; source: string 
   ['I have 3000 in savings and 200 in cash', null],
   ['should I put 1000$ in the bank?', null],
   ['Oh I just accidentaly got 1000$ doing airdrop', null],
+  ['I withdraw money on this wallet to add to the bank, 600$', { amountUsd: 600, holdingType: 'savings', source: 'wallet' }],
   ['Safety, I told you before', null],
 ]
 for (const [msg, want] of placed) {
@@ -132,7 +133,7 @@ if (sourceOptions(cashP, req, null).map(h => h.id).join() !== 'h1') fail('the ca
 if (valuesOf(applyOps(cashP, buildRecordOps(cashP, req, { kind: 'holding', id: 'h1' }, null))) !== 'cash:500,savings:1000') fail('a listed source goes down, the destination goes up')
 if (valuesOf(applyOps(cashP, buildRecordOps(cashP, req, { kind: 'new' }, null))) !== 'cash:1500,savings:1000') fail('new money only adds')
 const once = applyOps(cashP, buildRecordOps(cashP, req, { kind: 'new' }, null))
-if (valuesOf(applyOps(once, buildRecordOps(once, req, { kind: 'wallet' }, null))) !== 'cash:1500,savings:2000') fail('a second placement adds to the same savings item')
+if (valuesOf(applyOps(once, buildRecordOps(once, req, { kind: 'new' }, null))) !== 'cash:1500,savings:2000') fail('a second placement adds to the same savings item')
 if (sourceOptions(cashP, { ...req, amountUsd: 2000 }, null).length) fail('a source smaller than the amount must not be offered')
 
 const hit = new Set<string>()
@@ -336,6 +337,63 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   const nearlyDone = normalizeProfile({ v: 2, age: 31, incomeStable: true, dependents: 0, debtsComplete: true, noNearGoal: true,
     incomes: [{ id: 'i1', name: 'Pay', monthly: 100, currency: 'USDC', kind: 'active', updatedAt: 1 }], expenses: [{ id: 'e1', name: 'Rent', monthly: 50, currency: 'USDC', kind: 'fixed', updatedAt: 1 }] })
   if (buildIntake(nearlyDone, 'hi', false, []) !== null) fail('intake: with fewer than 3 things missing one question is enough, no list')
+}
+
+// 13. Only DECLARED money counts (Hieu, 2026-10-28): the wallet balance the app sees is a hint, never part of the total.
+{
+  const { appWalletHolding, walletMoveOps } = await import('../src/lib/profile')
+  const { buildPlan } = await import('../functions/_lib/plan')
+  const { buildIntake } = await import('../functions/_lib/intake')
+  const H = (o: Record<string, unknown>) => ({ priceSource: 'self', rebalanceable: true, updatedAt: 1, currency: 'USDC', ...o })
+  const chat = (extra: unknown[] = []) => normalizeProfile({ v: 2, age: 31, incomeStable: true, dependents: 0, debtsComplete: true, noNearGoal: true,
+    incomes: [{ id: 'i1', name: 'Salary', monthly: 150, currency: 'USDC', kind: 'active', updatedAt: 1 }],
+    expenses: [{ id: 'e1', name: 'Spending', monthly: 150, currency: 'USDC', kind: 'fixed', updatedAt: 1 }],
+    holdings: [H({ id: 'h1', type: 'savings', name: 'Bank savings', value: 500 }), H({ id: 'h2', type: 'gold_physical', name: 'Gold', quantity: 0.5, unit: 'oz', priceSource: 'market', value: undefined }),
+      H({ id: 'hw', type: 'stable_wallet', name: 'USDC in this wallet', where: 'app wallet', value: 1900 }), ...extra] })
+  const bal = (p: FinancialProfile, wallet: number, vault = 450) => computeBalance({ profile: p, walletUsd: wallet, vaultUsd: vault, cirBtcUsd: 0, prices, vndPerUsd: 25000 })
+  const base = chat()
+  // The seen balance changes nothing: only the declared 1,900 counts.
+  const a = bal(base, 1900), b2 = bal(base, 5000), c2 = bal(chat([]), 0)
+  if (a.liquid !== b2.liquid || a.liquid !== c2.liquid) fail('wallet seen onchain must not change the total')
+  if (a.walletSeen !== 1900) fail('the wallet seen is still reported')
+  if (bal(normalizeProfile({ v: 2, age: 31 }), 3000).liquid !== 0) fail('nothing declared = no money, however much the wallet holds')
+  // The transcript of 2026-10-28: 500 from the declared wallet into the bank. Total, targets and the other buckets do not move.
+  const req = detectPlacement('I withdraw 500 USDC on this wallet, put it in the bank', null)!
+  const moved = applyOps(base, buildRecordOps(base, req, { kind: 'holding', id: 'hw' }, null))
+  const before = bal(base, 1900), after = bal(moved, 1900)
+  if (Math.abs(before.liquid - after.liquid) > 0.01) fail('moving declared money between places must not change the total')
+  const toFill = (x: ReturnType<typeof bal>) => x.liquid * x.target!.safe / 100 - x.byGroup.safe
+  if (Math.abs((toFill(before) - toFill(after)) - 500) > 0.01) fail('Safety still-to-fill must fall by exactly what was added to Safety')
+  // New money does grow the total, and each target grows by its share of it.
+  const fresh = applyOps(base, buildRecordOps(base, req, { kind: 'new' }, null))
+  const grown = bal(fresh, 1900)
+  if (Math.abs((grown.liquid - before.liquid) - 500) > 0.01) fail('new money grows the total')
+  // The app's own transactions follow the declared wallet.
+  const dep = applyOps(base, walletMoveOps(base, -450))
+  if (appWalletHolding(dep)?.value !== 1450) fail('a fund deposit lowers the declared wallet')
+  if (appWalletHolding(applyOps(dep, walletMoveOps(dep, 450)))?.value !== 1900) fail('a withdrawal raises it back')
+  if (appWalletHolding(applyOps(base, walletMoveOps(base, -99999)))?.value !== 0) fail('never below zero')
+  const none = normalizeProfile({ v: 2, age: 31 })
+  if (walletMoveOps(none, -450).length !== 0) fail('no declared wallet: a deposit takes nothing away')
+  if (applyOps(none, walletMoveOps(none, 450)).holdings[0]?.value !== 450) fail('no declared wallet: a withdrawal starts one')
+  if (appWalletHolding(normalizeProfile({ v: 2, holdings: [H({ id: 'x', type: 'stable_wallet', name: 'USDT', where: 'Binance', value: 10 })] }))) fail('an exchange balance is not the app wallet')
+  // The first list says what the app sees, but asks the user to declare it.
+  const list = buildIntake(normalizeProfile({ v: 2 }), 'I want investing', false, [], 1916)
+  if (!list?.includes('I can see 1,916 USDC in this wallet') || !list.includes('wallets included')) fail('intake: the wallet seen is named, the declaration asked')
+  // The plan says WHY for every step, and offers the exact deposit with the wording the "yes" is matched on.
+  const shares: [number, number, number] = [31, 39, 30]
+  const plan = buildPlan({ p: base, b: bal(base, 1900, 0), shares, cover: 450, vi: false })!
+  for (const [what, re] of [['fund', /Why: your income is steady/], ['safety', /Safety 31%[^\n]*any time/], ['traditional', /Traditional 39%[^\n]*stocks and index funds/], ['crypto', /Crypto 30%[^\n]*BTC[^\n]*half/]] as const) if (!re.test(plan)) fail(`plan: the reason for the ${what} is missing`)
+  if (!/prepare a deposit of \*\*450 USDC\*\* from your wallet for you to sign/.test(plan)) fail('plan: the deposit offer wording')
+  // The numbers quoted before the deposit are the numbers after it (the goalposts do not move).
+  const safeInPlan = Number(/Safety 31% = ([\d,]+) USDC/.exec(plan)?.[1].replace(/,/g, ''))
+  const afterDeposit = bal(applyOps(base, walletMoveOps(base, -450)), 1450, 450)
+  if (Math.abs(safeInPlan - afterDeposit.liquid * afterDeposit.target!.safe / 100) > 1) fail(`plan: Safety ${safeInPlan} must equal the target after the deposit ${afterDeposit.liquid * afterDeposit.target!.safe / 100}`)
+  if (!/Traditional[^\n]{0,80}\d+%/.test(plan)) fail('plan: must be recognised as the plan already given')
+  if (!/Which bucket would you like to fill first/.test(buildPlan({ p: base, b: bal(base, 1900, 450), shares, cover: null, vi: false })!)) fail('plan: with the fund full it asks the bucket')
+  const debtor = normalizeProfile({ ...base, debts: [{ id: 'd1', name: 'Card', type: 'credit_card', balance: 500, currency: 'USDC', ratePct: 20, monthlyPayment: null, updatedAt: 1 }] })
+  if (buildPlan({ p: debtor, b: bal(debtor, 1900, 0), shares, cover: 450, vi: false }) !== null) fail('plan: a priority debt goes to the model')
+  if (!buildPlan({ p: base, b: bal(base, 1900, 0), shares, cover: 450, vi: true })?.includes('Vì sao')) fail('plan: Vietnamese version') // lang-ok
 }
 
 console.log(fails ? `\n${fails} problem(s).` : `\nKB OK: ${KB.patterns.length} patterns, ${personas.length} personas + ${reals.length} real profiles, formula matches the spec table.`)

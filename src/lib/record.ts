@@ -7,7 +7,7 @@
 
 import { amountsUsd } from '../kb/facts'
 import type { AssetType, FinancialProfile, Holding } from '../types'
-import { categoryOf, defaultRebalanceable, newId, priceKindOf, type ProfileOp } from './profile'
+import { appWalletHolding, categoryOf, defaultRebalanceable, newId, priceKindOf, type ProfileOp } from './profile'
 
 /** What the user said they placed, and where. */
 export interface RecordRequest {
@@ -21,7 +21,13 @@ export interface RecordRequest {
 }
 
 /** Where the money came from, as chosen in the box. */
-export type RecordSource = { kind: 'wallet' } | { kind: 'new' } | { kind: 'holding'; id: string }
+export type RecordSource = { kind: 'new' } | { kind: 'holding'; id: string }
+
+/** The choice to preselect for a source named in the message: "from my wallet" = the USDC the user declared for this wallet (if they did). */
+export const presetSource = (req: RecordRequest, p: FinancialProfile): RecordSource | null =>
+  req.source === 'new' ? { kind: 'new' }
+    : req.source === 'wallet' ? (() => { const h = appWalletHolding(p); return h ? { kind: 'holding' as const, id: h.id } : null })()
+    : null
 
 const DEST_NAME: Partial<Record<AssetType, string>> = {
   savings: 'Bank savings', term_deposit: 'Term deposit', flexible_earn: 'Flexible earn', checking: 'Bank checking account',
@@ -40,6 +46,8 @@ const NEW_MONEY = /(?<!\p{L})(new money|airdrop|salary|bonus|earned|income|just 
 const DEST = '(?:my\\s+|the\\s+|a\\s+|an\\s+)?(?:safe|safety|savings?|bank|term deposit|fixed deposit|flexible|simple earn|earn|checking)'
 const VERB = '(?:put|putting|add|added|move|moved|moving|deposit|deposited|transfer|transferred|place|placed|save|saved|sent|wired|send)'
 // "I got 1000 new money … I put it in my bank": the amount comes first, the verb has "it" as object (real chat 2026-10-27).
+// "…to add to the bank, 600$": the amount comes after the destination (real chat 2026-10-28).
+const PLACE_AFTER = new RegExp(`(?<!\\p{L})${VERB}\\s+(?:into|in|to|on)\\s+${DEST}[^.?!\\n]{0,40}?\\d`, 'iu')
 const PLACE_IT = new RegExp(`(?<!\\p{L})${VERB}\\s+(?:it|them|that|this|the money|all of it)\\s+(?:into|in|to|on)\\s+${DEST}`, 'iu')
 // "1000 more in savings from outside" / "outside money, 1000 in the bank": an amount for the bank with a "new money" word, no verb.
 const PLACE_NEW_AFTER = new RegExp(`\\d[^.?!\\n]{0,30}?(?<!\\p{L})(?:more|extra|additional|new money|outside|airdrop|salary|bonus)(?!\\p{L})[^.?!\\n]{0,40}?(?<!\\p{L})(?:into|in|to|on)\\s+${DEST}`, 'iu')
@@ -56,7 +64,7 @@ function firstAmount(t: string, from: number, vndPerUsd: number | null): number 
 export function detectPlacement(text: string, vndPerUsd: number | null): RecordRequest | null {
   const t = text.trim()
   if (!t || t.startsWith('[app event]') || QUESTION.test(t)) return null
-  const hit = PLACE.exec(t) ?? PLACE_NEW_AFTER.exec(t) ?? PLACE_NEW_BEFORE.exec(t)
+  const hit = PLACE.exec(t) ?? PLACE_AFTER.exec(t) ?? PLACE_NEW_AFTER.exec(t) ?? PLACE_NEW_BEFORE.exec(t)
   const viaIt = !hit && PLACE_IT.test(t)
   if (!hit && !viaIt && !PLACE_VI.test(t)) return null
   // "put 1000 in my bank" has no currency word: read the first number after the verb as USD.
@@ -91,7 +99,7 @@ const inCurrency = (amountUsd: number, h: Pick<Holding, 'currency'>, rate: numbe
 
 /**
  * The operations that save a confirmed placement: the destination goes up (or is created), and a
- * tracked source goes down. The app wallet changes onchain by itself; "new money" has no source.
+ * tracked source goes down (the USDC the user declared for a wallet is such a source). "New money" has no source: it adds to the total.
  */
 export function buildRecordOps(profile: FinancialProfile, req: RecordRequest, source: RecordSource, rate: number | null, now = Date.now()): ProfileOp[] {
   const ops: ProfileOp[] = []
@@ -118,6 +126,6 @@ export function buildRecordOps(profile: FinancialProfile, req: RecordRequest, so
 
 /** One line for the agent and the card: what was saved. */
 export function recordSummary(req: RecordRequest, source: RecordSource, profile: FinancialProfile): string {
-  const from = source.kind === 'wallet' ? 'the app wallet' : source.kind === 'new' ? 'new money' : profile.holdings.find(h => h.id === source.id)?.name ?? 'a listed item'
+  const from = source.kind === 'new' ? 'new money' : profile.holdings.find(h => h.id === source.id)?.name ?? 'a listed item'
   return `${req.amountUsd.toLocaleString('en-US', { maximumFractionDigits: 2 })} USDC in ${req.name} (${bucketLabel(req.holdingType)}), from ${from}`
 }
