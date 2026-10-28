@@ -2,6 +2,7 @@
 // or a new rate updates every screen at once (Arc Studio's version gave each
 // screen its own copy, which left the invest lock stale until reload).
 
+import { CURRENCY_CHOICES } from '@/lib/features'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { usePrivy } from '@privy-io/react-auth'
 import { cloudLoad, cloudSave, readOwner, setCloudAuth, writeOwner } from '@/lib/cloud'
@@ -20,6 +21,8 @@ export type Unit = 'VND' | 'USD'
 const UNIT_KEY = 'moonsafe_unit_v1'
 
 function readUnit(): Unit {
+  // One currency for now (USD), even if VND was picked before the dropdown was locked.
+  if (!CURRENCY_CHOICES) return 'USD'
   try {
     const v = localStorage.getItem(UNIT_KEY)
     if (v === 'VND' || v === 'USD') return v

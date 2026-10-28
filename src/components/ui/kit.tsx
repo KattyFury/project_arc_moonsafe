@@ -4,7 +4,7 @@
 // Disabled states use the line/muted colors instead of opacity.
 
 import { useEffect, useState, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from 'react'
-import { AlertCircle, AlertTriangle, CheckCircle2, Copy, Info, Loader2 } from 'lucide-react'
+import { AlertCircle, AlertTriangle, CheckCircle2, Copy, Info, Loader2, ChevronDown } from 'lucide-react'
 import QRCode from 'qrcode'
 import clsx from 'clsx'
 import { cleanUsdcInput } from '@/lib/format'
@@ -56,13 +56,15 @@ export function Col({ span, className, children }: { span: keyof typeof SPAN; cl
 }
 
 /** Row of small figures on flat Mist tiles (keeps a screen short instead of one list row each). */
-export function Stats({ items }: { items: { label: string; value: ReactNode }[] }) {
+export function Stats({ items }: { items: { label: string; value: ReactNode; sub?: string }[] }) {
   return (
     <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}>
       {items.map(i => (
         <div key={i.label} className="p-2 lg:p-4 rounded-2xl flex flex-col" style={{ background: 'var(--surface-muted)' }}>
           <span className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>{i.label}</span>
           <span className="text-[14px] leading-5 lg:text-[16px] lg:leading-6 font-semibold tabular-nums break-words" style={{ color: 'var(--ink)' }}>{i.value}</span>
+          {/* A note on the figure (e.g. "0.2 / 3 months") is its own line, so it wraps inside the tile instead of spilling out of it. */}
+          {i.sub && <span className="text-[14px] leading-5 break-words" style={{ color: 'var(--subtle)' }}>{i.sub}</span>}
         </div>
       ))}
     </div>
@@ -181,6 +183,29 @@ export function Toggle<T extends string>({ value, options, onChange }: { value: 
         </button>
       ))}
     </div>
+  )
+}
+
+/**
+ * Dropdown: a label on the left, the chosen value on a Mist pill on the right with a chevron. It is a real <select>, so it opens
+ * the system list. With one option (or `disabled`) the chevron and text go grey and it cannot be opened ("coming later").
+ */
+export function Dropdown<T extends string>({ label, value, options, onChange, disabled }: {
+  label: string; value: T; options: { value: T; label: string }[]; onChange?: (v: T) => void; disabled?: boolean
+}) {
+  const locked = disabled || options.length < 2
+  return (
+    <label className="flex items-center justify-between gap-4 min-h-12">
+      <span className="text-[16px] leading-6" style={{ color: 'var(--subtle)' }}>{label}</span>
+      <span className="relative inline-flex">
+        <select value={value} disabled={locked} aria-label={label} onChange={e => onChange?.(e.target.value as T)}
+          className="appearance-none h-12 min-w-[144px] pl-4 pr-12 rounded-2xl text-[16px] leading-6 font-semibold outline-none focus-visible:outline-none border border-[var(--line)] focus:border-[var(--accent)] focus:shadow-[inset_0_0_0_1px_var(--accent)] disabled:cursor-not-allowed"
+          style={{ background: 'var(--surface-muted)', color: locked ? 'var(--muted)' : 'var(--ink)' }}>
+          {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+        <ChevronDown size={20} className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: locked ? 'var(--muted)' : 'var(--ink)' }} />
+      </span>
+    </label>
   )
 }
 

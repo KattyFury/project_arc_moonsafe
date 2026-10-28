@@ -42,7 +42,7 @@ export function BalanceSheet(_: { onOpenChat: () => void }) {
       <Stats items={[
         { label: 'Net worth', value: moneyUsd(b.netWorth) },
         { label: 'Liquid', value: moneyUsd(b.liquid) },
-        { label: 'Fund', value: <>{b.fundUsd === null ? DASH : moneyUsd(b.fundUsd)} <span className="font-normal whitespace-nowrap" style={{ color: 'var(--subtle)' }}>{fundSub}</span></> },
+        { label: 'Fund', value: b.fundUsd === null ? DASH : moneyUsd(b.fundUsd), sub: fundSub },
       ]} />
 
       <div className="lg:hidden">
