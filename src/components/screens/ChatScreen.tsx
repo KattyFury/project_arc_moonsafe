@@ -2,7 +2,7 @@
 // agent (income, spending, debts, holdings…) is saved straight to the profile; they can read it
 // in Balance, correct it by telling the agent, or clear it in Menu.
 
-import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { Loader2, Send } from 'lucide-react'
 import { toast } from 'sonner'
 import { useApp } from '@/state/AppState'
@@ -19,6 +19,9 @@ import { RecordCard } from '@/components/chat/RecordCard'
 import type { AssetType } from '@/types'
 import { AllocationPies } from '@/components/ui/AllocationPies'
 import { CashflowCard } from '@/components/ui/CashflowCard'
+
+/** The message box stops growing at 6 lines (6 x 24px + padding); longer text scrolls inside it. */
+const COMPOSER_MAX_PX = 168
 
 const FADE_TOP = { maskImage: 'linear-gradient(to bottom, transparent 0, #000 48px)', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0, #000 48px)' }
 
@@ -77,7 +80,15 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
   const now = useNow()
   const [input, setInput] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+  // Height follows the text (also back to one line after sending).
+  useLayoutEffect(() => {
+    const el = inputRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    const border = el.offsetHeight - el.clientHeight
+    el.style.height = `${Math.min(el.scrollHeight + border, COMPOSER_MAX_PX)}px`
+  }, [input])
 
   const { power, setPower, verifyOwner } = useAiPower()
   const [powerOpen, setPowerOpen] = useState(false)
@@ -165,12 +176,18 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
         {powerOpen && power && <PowerSheet power={power} verifyOwner={verifyOwner} onClose={() => setPowerOpen(false)} />}
 
         {/* Composer */}
-        <div className="flex-shrink-0 flex gap-2 items-center px-4 py-4 lg:px-6 lg:pb-6 lg:pt-0" style={{ background: 'var(--bg)' }}>
-          <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void handleSend() } }}
+        <div className="flex-shrink-0 flex gap-2 items-end px-4 py-4 lg:px-6 lg:pb-6 lg:pt-0" style={{ background: 'var(--bg)' }}>
+          {/* Grows with the text up to COMPOSER_MAX_PX, then scrolls. Enter sends on a computer, Shift+Enter starts a new line;
+              on a phone Enter starts a new line (the Send button sends). Enter while an input method is composing (Vietnamese Telex) is left alone. */}
+          <textarea ref={inputRef} rows={1} value={input} onChange={e => setInput(e.target.value)} maxLength={2000}
+            onKeyDown={e => {
+              if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return
+              if (window.matchMedia('(pointer: coarse)').matches) return
+              e.preventDefault(); void handleSend()
+            }}
             placeholder={outOfPower ? 'Out of AI power · recharge to keep chatting' : 'Message the agent…'} aria-label="Message"
-            className="flex-1 min-w-0 h-12 px-4 rounded-full text-[16px] leading-6 outline-none focus-visible:outline-none border border-[var(--line)] focus:border-2 focus:border-[var(--accent)] placeholder:text-[var(--muted)]"
-            style={{ background: 'var(--surface-muted)', color: 'var(--ink)' }} />
+            className="flex-1 min-w-0 min-h-12 py-[11px] px-4 rounded-[24px] text-[16px] leading-6 resize-none outline-none focus-visible:outline-none border border-[var(--line)] focus:border-[var(--accent)] focus:shadow-[inset_0_0_0_1px_var(--accent)] placeholder:text-[var(--muted)]"
+            style={{ background: 'var(--surface-muted)', color: 'var(--ink)', maxHeight: COMPOSER_MAX_PX }} />
           <button onClick={() => { void handleSend() }} disabled={loading || outOfPower || !input.trim()} aria-label="Send"
             className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
             style={loading || outOfPower || !input.trim()

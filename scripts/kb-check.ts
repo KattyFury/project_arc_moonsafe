@@ -319,5 +319,24 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   await recordStats({}, { tokens: 0 }, 'message', true) // without KV nothing happens and nothing throws
 }
 
+// 12. The first questions go out as one list (functions/_lib/intake.ts): no model, only what is unknown, once.
+{
+  const { BATCH_MARK, buildIntake, unknownBullets } = await import('../functions/_lib/intake')
+  const fresh = normalizeProfile({ v: 2 })
+  const invest = buildIntake(fresh, 'I want to invest in a right way', false, [])
+  if (!invest || !invest.includes('build a plan to invest the right way') || !BATCH_MARK.test(invest)) fail('intake: invest wording')
+  if (invest && (invest.match(/^• /gm) ?? []).length !== 8) fail('intake: a brand-new user is asked all 8 things')
+  if (!buildIntake(fresh, 'let me see my spending', false, [])?.includes('show you where your money goes')) fail('intake: spending wording')
+  if (!buildIntake(fresh, 'build my emergency fund', false, [])?.includes('emergency fund')) fail('intake: emergency fund wording')
+  if (!buildIntake(fresh, 'hello', true, [])?.includes('thoải mái chia sẻ')) fail('intake: the Vietnamese version') // lang-ok
+  const told = buildIntake(fresh, 'I am 31', false, ['age 31'])
+  if (!told?.startsWith('Noted: age 31.')) fail('intake: what the message recorded comes first')
+  const knownMost = normalizeProfile({ v: 2, age: 31, incomes: [{ id: 'i1', name: 'Pay', monthly: 100, currency: 'USDC', kind: 'active', updatedAt: 1 }], expenses: [{ id: 'e1', name: 'Rent', monthly: 50, currency: 'USDC', kind: 'fixed', updatedAt: 1 }] })
+  if (unknownBullets(knownMost).length !== 5) fail('intake: known things are left out of the list')
+  const nearlyDone = normalizeProfile({ v: 2, age: 31, incomeStable: true, dependents: 0, debtsComplete: true, noNearGoal: true,
+    incomes: [{ id: 'i1', name: 'Pay', monthly: 100, currency: 'USDC', kind: 'active', updatedAt: 1 }], expenses: [{ id: 'e1', name: 'Rent', monthly: 50, currency: 'USDC', kind: 'fixed', updatedAt: 1 }] })
+  if (buildIntake(nearlyDone, 'hi', false, []) !== null) fail('intake: with fewer than 3 things missing one question is enough, no list')
+}
+
 console.log(fails ? `\n${fails} problem(s).` : `\nKB OK: ${KB.patterns.length} patterns, ${personas.length} personas + ${reals.length} real profiles, formula matches the spec table.`)
 process.exit(fails ? 1 : 0)

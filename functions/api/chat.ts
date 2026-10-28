@@ -25,6 +25,7 @@ import { addUsage, overBudget, type Meter } from '../_lib/budget'
 import { callModel as openai, DEFAULT_CLAUDE_MODEL, type Keys, type ToolCall } from '../_lib/llm'
 import { powerState, takeTurn, type PowerEnv } from '../_lib/quota'
 import { recordStats } from '../_lib/stats'
+import { BATCH_MARK, INTAKE_MIN_UNKNOWN, buildIntake, unknownBullets } from '../_lib/intake'
 import { KB, fundFloorMonths, matchPatterns, patternBrief, param } from '../../src/kb/kb'
 import { computeFacts, displayFacts, amountsUsd } from '../../src/kb/facts'
 import { computeBalance, holdingUsd, priceKey, symbolOf, toUsd, GOLD_UNITS_TO_OZ, GROUP_LABEL, type Balance, type Prices } from '../../src/lib/allocation'
@@ -259,7 +260,7 @@ Reply in the language of the user's latest message (default English). ${VI_VOICE
 - They say they know nothing, are confused, or ask what to do → the big picture first, in order: know your monthly spending → build an emergency fund → pay off expensive debt → then divide the rest and invest. Tell them which step they are on and the one next step.
 
 ## The advice path (Hieu, 2026-10-27) — the app says which phase you are in
-1. COLLECT: ask what you need to advise, one question at a time, each with why. Anything they skip or do not want to say: skip it, never push. No advice yet.
+1. COLLECT: the app has already sent ONE list of what is needed ("Share whatever you're comfortable with"); never send it again. Anything they leave out is "prefer not to say": skip it, never push, never ask it one by one. If monthly spending is still unknown you may ask just that, with why. No advice yet.
 2. PLAN (once you know enough): how big their emergency fund should be and why, then how to divide the rest of their money by age, each group with its amount and its reason.
 3. START: ask whether they want to start; the first step is always the emergency fund, the most important part.
 The goal is a whole plan for their money, not BTC: never steer the talk to BTC or the cirBTC buy lock unless they ask about buying BTC.
@@ -643,7 +644,7 @@ const ASSET_TOPICS = new Set(['bank', 'stables', 'crypto', 'traditional', 'prope
 const OWED_Q = /still owe|còn nợ bao nhiêu/i // lang-ok
 const INTEREST_Q = /interest|lãi/i // lang-ok
 
-function nextQuestion(p: FinancialProfile, assistantTexts: string[], userTexts: string[], userSaidNothingElse: boolean, vi: boolean): string | null {
+function nextQuestion(p: FinancialProfile, assistantTexts: string[], userTexts: string[], userSaidNothingElse: boolean, vi: boolean, batchAsked = false): string | null {
   const questions = assistantTexts.flatMap(t => t.split(/(?<=[.!?])\s+/).filter(s => s.trim().endsWith('?')))
   // They mentioned paying a debt but it is not recorded: ask about it once, before the asset questions.
   const knownSoFar = p.incomes.length > 0 && p.expenses.length > 0
@@ -655,6 +656,8 @@ function nextQuestion(p: FinancialProfile, assistantTexts: string[], userTexts: 
   // The last debt question is asked once; asked again it reads like the agent was not listening (real chat 2026-10-26).
   const lastDebtAsked = questions.some(q => q.includes(KB.collection.last_debt_question.slice(0, 40)) || q.includes(VI_DEBT_Q.slice(0, 30)))
   for (const t of TOPICS) {
+    // The list was sent (functions/_lib/intake.ts): what the user left out is left out. Monthly spending is the one thing that cannot be skipped: the emergency fund is sized from it.
+    if (batchAsked && t.key !== 'spending') continue
     if (t.key === 'debt' && p.debts.length && lastDebtAsked) continue
     if (t.known(p)) continue
     if (t.key === 'age' && p.ageDeclined) continue
@@ -1165,7 +1168,13 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   let planIn = 0, planOut = 0, planSteps = 0
   // A signed card (ChatScreen hidden message) records nothing: the balances already come from the chain.
   const appEvent = lastUserText.startsWith('[app event]')
-  for (let step = 1; step <= (appEvent ? 0 : MAX_PLAN_STEPS); step++) {
+  // The list of first questions (functions/_lib/intake.ts) has not been sent, and this message carries nothing to record
+  // (no number, no fact words, no question, no action): the planner would only answer "no_action", so it is not called.
+  const batchAsked = assistantTexts.some(t => BATCH_MARK.test(t))
+  const skipPlan = !appEvent && !batchAsked && !placement && unknownBullets(profile).length >= INTAKE_MIN_UNKNOWN && !/\d/.test(lastUserText) && lastUserText.length <= 160
+    && !QUESTIONS_US.test(lastUserText) && !STABILITY_WORDS.test(lastUserText) && !DEPENDENT_WORDS.test(lastUserText) && !NO_DEBT.test(lastUserText) && !SAYS_NONE.test(lastUserText)
+    && !ACTION_INTENT.test(lastUserText) && !DECLINES.test(lastUserText) && !KNOWS_NOTHING.test(lastUserText) && !hasAnyData(profile)
+  for (let step = 1; step <= (appEvent || skipPlan ? 0 : MAX_PLAN_STEPS); step++) {
     const plan = await openai(apiKey, { model: MODEL, messages: planMessages, tools: PLAN_TOOLS, tool_choice: 'required', max_completion_tokens: 1500, reasoning_effort: 'none' }, meter)
     if (plan instanceof Response) return plan
     planSteps = step
@@ -1219,7 +1228,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   // The framework v2 questions (goal, insurance, 50% drop) are not in the KB collecting pattern: they keep collection open too.
   const relies = (profile.dependents ?? 0) > 0 || profile.soleEarner === true
   const v2Missing = (!profile.nearGoal && !profile.noNearGoal) || (relies && (profile.insured === null || profile.insured === undefined)) || profile.cryptoDropOk === null || profile.cryptoDropOk === undefined
-  const pending = (collecting || v2Missing) && !toAsk.length ? nextQuestion(profile, assistantTexts, messages.filter(m => m.role === 'user').map(m => m.content), userSaidNothingElse, vi) : null
+  const pending = (collecting || v2Missing) && !toAsk.length ? nextQuestion(profile, assistantTexts, messages.filter(m => m.role === 'user').map(m => m.content), userSaidNothingElse, vi, batchAsked) : null
   // "What else do you need to know?" invites the next question; it is not a question to answer first (v2 test 2026-10-27).
   const invitesNext = /what else|anything else|what (else )?do you need|next question|ask me/i.test(lastUserText)
   const next = !placement && !DECLINES.test(lastUserText) && (!userAsks || invitesNext) ? pending : null
@@ -1232,6 +1241,18 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   const cryptoFill = Math.max(0, (balance.liquid - balance.goalUsd) * tCrypto / 100 - (balance.byGroup.btc + balance.byGroup.large_cap + balance.byGroup.altcoin))
   // Spec 5.4: idle money keeps 1 month of spending for daily life before any purchase.
   const cryptoOffer = Math.floor(Math.min(cryptoFill, Math.max(0, (wallet ?? 0) - GAS_RESERVE_USDC), balance.suggest ? Math.max(0, balance.suggest.idle - balance.suggest.keep) : Infinity))
+
+  // The first questions go out as ONE list, built here (no model call); what the user leaves out is taken as "prefer not to say".
+  if (!batchAsked && !placement && !appEvent && !userAsks && !toAsk.length && !DECLINES.test(lastUserText) && !KNOWS_NOTHING.test(lastUserText)) {
+    const intake = buildIntake(profile, lastUserText, vi, readback)
+    if (intake) return json({ content: intake, ops, dcaStop, actions })
+  }
+  // After the list, a missing age is "not shared": the default (30) is used and said to be an estimate, instead of asking again.
+  if (batchAsked && profile.age === null && !profile.ageDeclined) {
+    const op: ProfileOp = { op: 'update_profile', fields: { ageDeclined: true } }
+    ops.push(op)
+    profile = applyOps(profile, [op])
+  }
 
   const replyMessages: Message[] = [
     { role: 'system', content: REPLY_PROMPT },
