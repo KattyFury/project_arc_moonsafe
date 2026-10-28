@@ -6,3 +6,9 @@
  * that is built and audited for mainnet first. Turn it on there, with small amounts.
  */
 export const DCA_AVAILABLE = false
+
+/**
+ * Display currency choices. USD only for now (Hieu, 2026-10-28): the Menu shows a currency dropdown that is locked. VND
+ * formatting still exists in the app; to offer it again, add it to CURRENCIES in SettingsScreen and set this to true.
+ */
+export const CURRENCY_CHOICES = false

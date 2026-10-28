@@ -8,12 +8,11 @@ import { useConnectWallet, usePrivy, useWallets } from '@privy-io/react-auth'
 import { useApp, type Unit } from '@/state/AppState'
 import { useWalletPref } from '@/state/WalletPref'
 import { clearChatStorage } from '@/hooks/useAgent'
-import { Btn, Caps, Col, GlassCard, Grid, Screen, Sheet, Title, Toggle } from '@/components/ui/kit'
+import { Btn, Caps, Col, Dropdown, GlassCard, Grid, Screen, Sheet, Title } from '@/components/ui/kit'
 
-const UNITS: { value: Unit; label: string }[] = [
-  { value: 'VND', label: 'VND (₫)' },
-  { value: 'USD', label: 'USD (USDC)' },
-]
+// Both lists have one entry for now, so both dropdowns are locked. To offer more, add entries here (and see CURRENCY_CHOICES in lib/features.ts).
+const LANGUAGES: { value: string; label: string }[] = [{ value: 'en', label: 'English' }]
+const CURRENCIES: { value: Unit; label: string }[] = [{ value: 'USD', label: 'USD' }]
 
 export function SettingsScreen({ onLogout }: { onLogout: () => void }) {
   const { address } = useAccount()
@@ -50,9 +49,10 @@ export function SettingsScreen({ onLogout }: { onLogout: () => void }) {
           <GlassCard className="p-4 lg:p-6 flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <Globe size={20} style={{ color: 'var(--accent)' }} />
-              <span className="text-[20px] leading-7 font-semibold" style={{ color: 'var(--ink)' }}>Display currency</span>
+              <span className="text-[20px] leading-7 font-semibold" style={{ color: 'var(--ink)' }}>Language & Currency</span>
             </div>
-            <Toggle value={unit} onChange={setUnit} options={UNITS} />
+            <Dropdown label="Language" value="en" options={LANGUAGES} disabled />
+            <Dropdown label="Currency" value={unit} options={CURRENCIES} onChange={setUnit} />
           </GlassCard>
         </Col>
 

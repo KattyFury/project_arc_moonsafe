@@ -80,7 +80,7 @@ export function FundScreen({ onOpenChat }: { onOpenChat: () => void }) {
                 </div>
               </>
             ) : (
-              <button onClick={onOpenChat} className="text-left text-[16px] leading-6 text-white underline">
+              <button onClick={onOpenChat} className="text-left text-[16px] leading-6 text-white">
                 {balance.cashflow.spending !== null ? 'No exchange rate yet to work out the floor' : 'Tell the agent your monthly spending to see how big the fund should be'}
               </button>
             )}
