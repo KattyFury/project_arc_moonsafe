@@ -17,7 +17,7 @@ export type ChatAction =
 
 type Status = 'idle' | 'busy' | 'done' | 'error' | 'cancelled'
 
-const TITLES = { deposit: 'Add to fund', withdraw: 'Withdraw to wallet', buy: 'Buy cirBTC', dca: 'Recurring buy (DCA)' } as const
+const TITLES = { deposit: 'Add to emergency fund', withdraw: 'Withdraw to wallet', buy: 'Buy cirBTC', dca: 'Recurring buy (DCA)' } as const
 const ICONS = { deposit: ArrowDownToLine, withdraw: ArrowUpFromLine, buy: TrendingUp, dca: Repeat } as const
 
 /** onFinished: the card was signed or cancelled (stored, so a remounted chat shows it the same way). */
@@ -45,10 +45,10 @@ export function ActionCard({ action, title, onFinished }: { action: ChatAction; 
   if (kind === 'deposit') {
     if (maxDeposit !== null && amount > maxDeposit) block = `More than the wallet can add (up to ${formatUsdc(maxDeposit)}, keeping ${formatUsdc(GAS_RESERVE_USDC6)} for fees).`
   } else if (kind === 'withdraw') {
-    if (vb !== null && amount > vb) block = `More than the fund holds (${formatUsdc(vb)}).`
+    if (vb !== null && amount > vb) block = `More than the emergency fund holds (${formatUsdc(vb)}).`
     else if (wb !== null && wb < GAS_ESTIMATE_USDC6) block = `The wallet needs about ${formatUsdc(GAS_ESTIMATE_USDC6)} to pay the withdrawal fee.`
     else if (math.floorUsdc !== null && vb !== null && vb - amount < math.floorUsdc) {
-      warnings.push(`After this, the fund holds ${formatUsdc(vb - amount)}, below the ${math.floorMonths}-month floor (${formatUsdc(math.floorUsdc)}). cirBTC buying locks until you top it back up.`)
+      warnings.push(`After this, the emergency fund holds ${formatUsdc(vb - amount)}, below the ${math.floorMonths}-month floor (${formatUsdc(math.floorUsdc)}). cirBTC buying locks until you top it back up.`)
     }
   } else {
     if (!math.investUnlocked) block = balance.lock.text
@@ -76,7 +76,7 @@ export function ActionCard({ action, title, onFinished }: { action: ChatAction; 
   }
   const cancel = () => { if (kind === 'buy' && q) cirBtc.clearQuote(); setStatus('cancelled'); onFinished?.('cancelled', `Cancelled: ${TITLES[kind]} ${formatUsdc(amount)}.`) }
 
-  const doneText = kind === 'deposit' ? `Added ${formatUsdc(amount)} to your fund.`
+  const doneText = kind === 'deposit' ? `Added ${formatUsdc(amount)} to your emergency fund.`
     : kind === 'withdraw' ? `Withdrew ${formatUsdc(amount)} to your wallet.`
     : kind === 'dca' ? `DCA approved: ${formatUsdc(amount)} ${everyDays(action.intervalDays)}. Each round you still review the quote and sign.`
     : 'cirBTC bought.'

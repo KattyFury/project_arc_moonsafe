@@ -32,7 +32,7 @@ export function FundScreen({ onOpenChat }: { onOpenChat: () => void }) {
     try {
       if (tab === 'deposit') await vault.deposit(parsed)
       else await vault.withdraw(parsed)
-      setDone(tab === 'deposit' ? `Added ${formatUsdc(parsed)} to your fund` : `Withdrew ${formatUsdc(parsed)} to your wallet`)
+      setDone(tab === 'deposit' ? `Added ${formatUsdc(parsed)} to your emergency fund` : `Withdrew ${formatUsdc(parsed)} to your wallet`)
       setAmount('')
     } catch (e) {
       setError(txErrorMessage(e))
@@ -91,7 +91,7 @@ export function FundScreen({ onOpenChat }: { onOpenChat: () => void }) {
           {/* Deposit / withdraw card */}
           <GlassCard className="p-4 lg:p-8 flex flex-col gap-4">
             <Toggle value={tab} onChange={t => { setTab(t); setAmount(''); setError(null); setDone(null) }}
-              options={[{ value: 'deposit', label: 'Add to fund' }, { value: 'withdraw', label: 'Withdraw' }]} />
+              options={[{ value: 'deposit', label: 'Add money' }, { value: 'withdraw', label: 'Withdraw' }]} />
             <Chips items={[
               { label: '25%', onClick: () => chip(25), disabled: !max },
               { label: '50%', onClick: () => chip(50), disabled: !max },
@@ -101,19 +101,19 @@ export function FundScreen({ onOpenChat }: { onOpenChat: () => void }) {
             <p className="text-[14px] leading-5 -mt-2" style={{ color: 'var(--subtle)' }}>
               {tab === 'deposit'
                 ? `In wallet: ${formatUsdc(wb)} · keeping ${formatUsdc(GAS_RESERVE_USDC6)} for fees`
-                : `In fund: ${formatUsdc(vb)} · goes back to your own wallet`}
+                : `In emergency fund: ${formatUsdc(vb)} · goes back to your own wallet`}
             </p>
 
             {tab === 'withdraw' && wb !== null && wb < GAS_ESTIMATE_USDC6 && (
               <Notice tone="warning">The wallet needs about {formatUsdc(GAS_ESTIMATE_USDC6)} to pay the withdrawal fee.</Notice>
             )}
-            {tooMuch && <Notice tone="danger">{tab === 'deposit' ? 'More than the wallet can add.' : 'More than the fund holds.'}</Notice>}
+            {tooMuch && <Notice tone="danger">{tab === 'deposit' ? 'More than the wallet can add.' : 'More than the emergency fund holds.'}</Notice>}
             {done && <Notice tone="success">{done}</Notice>}
             {error && <Notice tone="danger">{error}</Notice>}
 
             <Btn loading={vault.busy} disabled={parsed <= 0n || tooMuch || max === null}
               onClick={() => { if (belowFloor) setSheet(true); else void run() }}>
-              {vault.busy ? 'Waiting for wallet…' : tab === 'deposit' ? 'Add to fund' : 'Withdraw to wallet'}
+              {vault.busy ? 'Waiting for wallet…' : tab === 'deposit' ? 'Add to emergency fund' : 'Withdraw to wallet'}
             </Btn>
           </GlassCard>
         </Col>
@@ -127,7 +127,7 @@ export function FundScreen({ onOpenChat }: { onOpenChat: () => void }) {
             <div className="flex flex-col gap-2">
               <p className="font-semibold text-[20px] leading-7" style={{ color: 'var(--ink)' }}>Withdraw below the floor</p>
               <p className="text-[16px] leading-6" style={{ color: 'var(--subtle)' }}>
-                After this, the fund holds {formatUsdc(vb !== null ? vb - parsed : null)}, below the {math.floorMonths}-month floor ({formatUsdc(math.floorUsdc)}). cirBTC buying locks until you top it back up.
+                After this, the emergency fund holds {formatUsdc(vb !== null ? vb - parsed : null)}, below the {math.floorMonths}-month floor ({formatUsdc(math.floorUsdc)}). cirBTC buying locks until you top it back up.
               </p>
             </div>
           </div>

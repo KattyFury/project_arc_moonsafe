@@ -298,6 +298,46 @@ export function computeBalance(input: BalanceInput): Balance {
   }
 }
 
+/** One of the three parts of the money to divide, with its TOTAL (Hieu, 2026-10-28: "tell me the total, not only what is missing"). */
+export interface Standing {
+  key: 'safe' | 'traditional' | 'crypto'
+  name: 'Safety' | 'Traditional' | 'Crypto'
+  /** Share of the money to divide, in %. */
+  share: number
+  /** What they hold in this part now. */
+  have: number
+  /** The whole target: for Safety it includes a near-term goal (kept in savings first); otherwise the share of the money to divide. */
+  target: number
+  /** target - have, never below 0. */
+  left: number
+  /** Safety only: the near-term goal inside the target, and the share of the rest on top of it. */
+  goal?: number
+  rest?: number
+}
+
+/**
+ * Have / target / left for Safety, Traditional and Crypto. `leaving` = money about to move out of the liquid pool (the deposit that
+ * will fill the emergency fund), so the numbers quoted before the deposit are the ones after it. Safety counts a near-term goal first:
+ * target = goal + its share of what remains, so adding savings always lowers what is left (it used to vanish into the goal).
+ */
+export function bucketStanding(b: Balance, leaving = 0): Standing[] | null {
+  const t = b.target
+  if (!t) return null
+  const toDivide = Math.max(0, b.liquid - leaving - b.goalUsd)
+  const g = b.byGroup
+  const cryptoShare = t.btc + t.large_cap + t.altcoin
+  const part = (key: Standing['key'], name: Standing['name'], share: number, have: number, extra = 0): Standing => {
+    const rest = toDivide * share / 100
+    const target = rest + extra
+    return { key, name, share, have, target, left: Math.max(0, target - have), ...(extra > 0 ? { goal: extra, rest } : {}) }
+  }
+  return [
+    part('safe', 'Safety', t.safe, g.safe, b.goalUsd),
+    part('traditional', 'Traditional', t.traditional, g.traditional),
+    part('crypto', 'Crypto', cryptoShare, g.btc + g.large_cap + g.altcoin),
+  ]
+}
+
 /** Share of liquid assets in %, 0 without any. */
 export const shareOfLiquid = (b: Balance, usd: number) => b.liquid > 0 ? usd / b.liquid * 100 : 0
 /** Share of net worth in %, null when net worth is not positive. */

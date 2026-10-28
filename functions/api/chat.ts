@@ -26,10 +26,10 @@ import { callModel as openai, DEFAULT_CLAUDE_MODEL, type Keys, type ToolCall } f
 import { powerState, takeTurn, type PowerEnv } from '../_lib/quota'
 import { recordStats } from '../_lib/stats'
 import { BATCH_MARK, INTAKE_MIN_UNKNOWN, buildIntake, unknownBullets } from '../_lib/intake'
-import { buildPlan } from '../_lib/plan'
+import { buildPlan, buildStanding } from '../_lib/plan'
 import { KB, fundFloorMonths, matchPatterns, patternBrief, param } from '../../src/kb/kb'
 import { computeFacts, displayFacts, amountsUsd } from '../../src/kb/facts'
-import { computeBalance, holdingUsd, priceKey, symbolOf, toUsd, GOLD_UNITS_TO_OZ, GROUP_LABEL, type Balance, type Prices } from '../../src/lib/allocation'
+import { bucketStanding, computeBalance, holdingUsd, priceKey, symbolOf, toUsd, GOLD_UNITS_TO_OZ, GROUP_LABEL, type Balance, type Prices } from '../../src/lib/allocation'
 import {
   appWalletHolding, applyOps, categoryOf, defaultRebalanceable, hasAnyData, isAssetType, newId, normalizeProfile, priceKindOf, BTC_SYMBOLS, DEBT_TYPES, STABLECOINS, TOP10_SYMBOLS,
   type ProfileOp,
@@ -259,6 +259,12 @@ Reply in the language of the user's latest message (default English). ${VI_VOICE
 - In TEACH mode (see "Length" below), the first time a reply brings up an idea (emergency fund, the cirBTC buy lock, dividing money by age, Safety / Traditional / Crypto, expensive debt, DCA), teach it in one plain sentence: what it is and why it helps, with their numbers. Safety = bank savings you can reach any time; Traditional = stocks, index funds, gold; Crypto = mostly Bitcoin, held for the long term; cirBTC = Bitcoin you can buy in this app; DCA = buying a fixed amount on a schedule.
 - Never bring in ideas they do not need: no talk of depegs, oracles, bridges, smart-contract risk, savings-rate scores or "assumptions" unless they ask. Never ask for a seed phrase or private key.
 - They say they know nothing, are confused, or ask what to do → the big picture first, in order: know your monthly spending → build an emergency fund → pay off expensive debt → then divide the rest and invest. Tell them which step they are on and the one next step.
+
+## Words that must never be mixed (Hieu, 2026-10-28: "you confuse Safety with the emergency fund")
+- **Emergency fund** = USDC the user keeps in their MoonSafe vault, sized in MONTHS OF SPENDING (3, 6, 9 or 12). Always say "emergency fund", never "the fund" alone, never "Safety".
+- **Safety** = one of the three parts of the money to divide: bank savings or flexible earn, OUTSIDE the app. Its amount is a share of that money (plus a near-term goal if there is one). Safety never has months and is never the emergency fund.
+- Months of spending belong ONLY to the emergency fund. When the emergency fund is full, say "your emergency fund is full"; never "Safety is full" for it.
+- Whenever you give a number for a part, give the TOTAL: "X of Y, Z to go" (what they hold, the target, what is left). Never only "you need Z". After money is added, the total moves and so does "to go": say both.
 
 ## The advice path (Hieu, 2026-10-27) — the app says which phase you are in
 1. COLLECT: the app has already sent ONE list of what is needed ("Share whatever you're comfortable with"); never send it again. Anything they leave out is "prefer not to say": skip it, never push, never ask it one by one. If monthly spending is still unknown you may ask just that, with why. No advice yet.
@@ -609,11 +615,9 @@ function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: nu
     const tc = t.btc + t.large_cap + t.altcoin
     const [ts, ttr, tcr] = wholeShares([t.safe, t.traditional, tc])
     lines.push(`- Target by the MoonSafe framework at age ${b.age}${b.ageIsDefault ? ' (DEFAULT age 30: the user declined; say the split is an estimate)' : ''}: Safety ${ts}%, Traditional ${ttr}%, Crypto ${tcr}% (mostly BTC; no target for other coins)`)
-    // The plan quotes each group as an amount too (Hieu, 2026-10-27: "how much in the bank, how much in stocks").
-    const toDivide = Math.max(0, b.liquid - b.goalUsd)
-    if (toDivide > 0) lines.push(`- Target amounts of the money to divide ${show(toDivide)}${b.goalUsd > 0 ? ' (liquid assets minus the near-term goal)' : ''}: Safety ${show(toDivide * t.safe / 100)}, Traditional ${show(toDivide * t.traditional / 100)}, Crypto ${show(toDivide * tc / 100)}`)
-    // They fill one bucket at a time, in the order they choose (Hieu, 2026-10-27: "why split it up, what matters is what they pick").
-    if (toDivide > 0) lines.push(`- Still to fill to reach each target (they may fill one bucket fully before the next, in any order): Safety ${show(Math.max(0, toDivide * t.safe / 100 - Math.max(0, g.safe - b.goalUsd)))}, Traditional ${show(Math.max(0, toDivide * t.traditional / 100 - g.traditional))}, Crypto ${show(Math.max(0, toDivide * tc / 100 - cryptoNow))}`)
+    // Totals, not only what is missing (Hieu, 2026-10-28): "X of Y, Z to go" for each part; Safety carries a near-term goal first.
+    const st = bucketStanding(b)
+    if (st) lines.push(`- Where they stand in the three parts of the money to divide (${show(Math.max(0, b.liquid - b.goalUsd))}${b.goalUsd > 0 ? `, not counting the near-term goal ${show(b.goalUsd)}` : ''}). Copy "X of Y, Z to go" exactly. Safety = bank savings outside the app, it is NOT the emergency fund: ${st.map(x => `${x.name} ${show(x.have)} of ${show(x.target)}${x.goal ? ` (= goal ${show(x.goal)} + ${x.share}% of the rest ${show(x.rest ?? 0)})` : ''}, ${x.left >= 0.5 ? `${show(x.left)} to go` : 'full'}`).join('; ')}`)
   } else lines.push('- Target: AGE UNKNOWN. Ask the age before talking about any share.')
   if (!b.declared) lines.push('- Nothing is declared yet: the user has not said what they hold (the wallet balance seen onchain does not count until they declare it). If they ask how to split or invest: suggest NO split and NO purchase, turn NO percentage into an amount; ask about the next item of the collection flow instead.')
   else if (b.suggest) {
@@ -653,6 +657,9 @@ const WINDFALL = /airdrop|(few|couple of|some) times a year|(?<!\p{L})(sometimes
 const MONTHLY_FIGURE = /(per|a|each|every) month|monthly|on average|average|mỗi tháng|hàng tháng/i // lang-ok
 /** The user mentions a windfall and gives no monthly figure for it (a sentence with a windfall word and no "a month" / "average"). */
 const windfallWithoutMonthly = (text: string) => { const hits = text.split(/(?<=[.!?\n])\s*|\n/).filter(x => WINDFALL.test(x)); return hits.length > 0 && !hits.some(x => MONTHLY_FIGURE.test(x)) }
+/** "How much …" about their own money. */
+const ASKS_AMOUNT = /how much(?! (?:should|can|could|would|to|do|will|must))|what(?:'s| is) (?:my|the) total|total (?:of|in)|bao nhiêu|tổng/i // lang-ok
+const AMOUNT_TOPIC = /(bank|savings?|safety|traditional|crypto|btc|emergency|fund|net worth|everything|all (?:of )?my|portfolio|in total|ngân hàng|tiết kiệm|quỹ)/i // lang-ok
 const OWED_Q = /still owe|còn nợ bao nhiêu/i // lang-ok
 const INTEREST_Q = /interest|lãi/i // lang-ok
 
@@ -814,6 +821,8 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   const buildHolding = async (a: Record<string, unknown>): Promise<Holding | string> => {
     let type = String(a.type) as AssetType
     if (!isAssetType(type)) return `Not recorded: unknown type ${type}.`
+    // "500$ in my bank account" is savings (their Safety), not an idle checking account, unless they say checking / current account.
+    if (type === 'checking' && !/checking|current account|tài khoản thanh toán/i.test(lastUserText)) type = 'savings' // lang-ok
     let sym = typeof a.symbol === 'string' && a.symbol.trim() ? a.symbol.trim().toUpperCase() : undefined
     // The model's type corrected by the symbol (spec 3): BTC is btc, ETH eth, top-10 coins large caps, stablecoins not coins.
     if (sym && ['altcoin', 'top10', 'eth', 'btc'].includes(type)) {
@@ -1193,7 +1202,9 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   const skipPlan = !appEvent && !batchAsked && !placement && unknownBullets(profile).length >= INTAKE_MIN_UNKNOWN && !/\d/.test(lastUserText) && lastUserText.length <= 160
     && !QUESTIONS_US.test(lastUserText) && !STABILITY_WORDS.test(lastUserText) && !DEPENDENT_WORDS.test(lastUserText) && !NO_DEBT.test(lastUserText) && !SAYS_NONE.test(lastUserText)
     && !ACTION_INTENT.test(lastUserText) && !DECLINES.test(lastUserText) && !KNOWS_NOTHING.test(lastUserText) && !hasAnyData(profile)
-  for (let step = 1; step <= (appEvent || skipPlan ? 0 : MAX_PLAN_STEPS); step++) {
+  // "How much is in my bank?" records nothing: the planner is not called (the answer is built from the numbers, below).
+  const askingAmount = ASKS_AMOUNT.test(lastUserText) && AMOUNT_TOPIC.test(lastUserText) && !/\d/.test(lastUserText) && lastUserText.length <= 120
+  for (let step = 1; step <= (appEvent || skipPlan || askingAmount ? 0 : MAX_PLAN_STEPS); step++) {
     const plan = await openai(apiKey, { model: MODEL, messages: planMessages, tools: PLAN_TOOLS, tool_choice: 'required', max_completion_tokens: 1500, reasoning_effort: 'none' }, meter)
     if (plan instanceof Response) return plan
     planSteps = step
@@ -1284,6 +1295,12 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     if (built) return json({ content: built, ops, dcaStop, actions })
   }
 
+  // "How much is in my Safety / bank / crypto?": answered from the numbers, with the totals (Hieu, 2026-10-28), never by the model.
+  if (!appEvent && !placement && !ops.length && !readback.length && balance.declared && balance.target && ASKS_AMOUNT.test(lastUserText) && AMOUNT_TOPIC.test(lastUserText)) {
+    const standingText = buildStanding({ p: profile, b: balance, vi })
+    if (standingText) return json({ content: standingText, ops, dcaStop, actions })
+  }
+
   // The first questions go out as ONE list, built here (no model call); what the user leaves out is taken as "prefer not to say".
   if (!batchAsked && !placement && (!appEvent || itemsEvent) && !userAsks && !toAsk.length && !DECLINES.test(lastUserText) && !KNOWS_NOTHING.test(lastUserText)) {
     const intake = buildIntake(profile, lastUserText, vi, readback, wallet)
@@ -1326,19 +1343,19 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       profile.nearGoal ? `Near-term goal: keep the money for ${profile.nearGoal.name} in savings, not invested, because it is needed soon and markets can drop right before.` : null,
       deps && profile.insured === false ? 'Protection: people rely on them and there is no insurance yet; one option is to check health or life cover with a local professional (no product names).' : null,
       fundMet
-        ? 'The money to divide ("Target amounts"), one "- " line per bucket with its % and amount, what it is and why that share: Safety (bank savings or flexible earn: money they can reach any time), Traditional (stocks or index funds such as VOO, and gold: steady long-term growth), Crypto (mostly BTC, the long-term reserve in Web3; it can drop by about half on the way).'
+        ? 'The money to divide ("Where they stand"), one "- " line per bucket with its % and amount, what it is and why that share: Safety (bank savings or flexible earn: money they can reach any time), Traditional (stocks or index funds such as VOO, and gold: steady long-term growth), Crypto (mostly BTC, the long-term reserve in Web3; it can drop by about half on the way).'
         : 'How their money will be divided once the emergency fund is full: one "- " line per bucket with its % and ONE clause on why it exists (Safety: money they can reach any time, so a bad month never forces a sale; Traditional: stocks or index funds such as VOO, and gold, steady long-term growth; Crypto: mostly BTC, the long-term reserve in Web3, can drop by about half), no amounts yet, and why the fund comes first.',
       profile.cryptoDropOk === false ? 'They said they could not hold through a 50% crypto drop: one option is a smaller Crypto part for now and more in Safety or Traditional; their call.' : null,
       fundMet ? 'Where they stand now in ONE plain sentence: the one or two biggest gaps from "Split now", as a fact, no judging. Say they do not need to split every dollar: they can fill one bucket fully before the next, in the order they choose.' : null,
     ].filter(Boolean)
     const ending = fundMet
-      ? 'End with the start question: which bucket would they like to fill first (Safety, Traditional or Crypto), with how much each still needs from "Still to fill".'
+      ? 'End with the start question: which bucket would they like to fill first (Safety, Traditional or Crypto), each as "X of Y" with what is left, from "Where they stand".'
       : `End with the start question: "Ready to start? The first step is your emergency fund${cover !== null ? `: shall I prepare a deposit of **${usdc(cover)}** from your wallet for you to sign?` : '.'}"${cover === null ? ' If the wallet cannot fill it, suggest saving the monthly amount into it.' : ''}`
     replyMessages.push({ role: 'system', content: `PHASE 2, THE PLAN (you now know enough; give it once, plain words, numbers only from ASSET & FUND FIGURES). Layout: one short intro line, then each point on its OWN line starting with "- ", a blank line before the start question:
 ${points.map((x, k) => `${k + 1}. ${x}`).join('\n')}
 ${ending}` })
   }
-  const BUCKETS_RULE = 'Name only buckets whose "Still to fill" is above 0; a bucket at 0 is full and is never offered. If only ONE bucket is left, say what it is and ask whether they want to start with it; NEVER open with a purchase or a card: the cirBTC buy is offered only after they say they want crypto. Safety and Traditional are done outside the app. If none is left, say the plan is complete.'
+  const BUCKETS_RULE = 'Name only parts that still have room ("to go" above 0); a part marked full is never offered. Give every amount as "X of Y" (what they have of the target) plus what is left, never only what is missing. If only ONE bucket is left, say what it is and ask whether they want to start with it; NEVER open with a purchase or a card: the cirBTC buy is offered only after they say they want crypto. Safety and Traditional are done outside the app. If none is left, say the plan is complete.'
   // After the plan they fill one bucket at a time, the one they pick (Hieu, 2026-10-27).
   if (phase === 'start' && planGiven && balance.fund.met && !appEvent && !placement && !actions.some(x => x.type === 'prepare_buy_cirbtc' || x.type === 'propose_dca')) replyMessages.push({ role: 'system', content: `The plan was given and the emergency fund is full. They fill one bucket at a time, the one THEY pick, no need to split every dollar. If they pick one: Crypto → ${balance.lock.open && cryptoOffer >= 1 ? `offer exactly: "Would you like me to prepare a cirBTC buy of **${usdc(cryptoOffer)}** for you to sign?" (that fills the Crypto bucket as far as the wallet allows; ignore the split in "Suggested use of idle money")` : 'say what is missing to buy in the app'}; Safety → their own bank savings or flexible earn, outside the app, with the amount; Traditional → bought outside the app with a broker (an index fund such as VOO, or gold), with the amount. If they have not picked yet, ask which one they want to fill first. ${BUCKETS_RULE}` })
   const recordEvent = lastUserText.startsWith('[app event] The user confirmed recording')
@@ -1346,9 +1363,9 @@ ${ending}` })
   if (placement && dupBox) replyMessages.push({ role: 'system', content: boxSaved ? `The user repeats ${usdc(placement.amountUsd)} for ${placement.name}, but that amount was saved a moment ago through the box. Nothing more is recorded. Say in ONE short sentence that it is already saved and the Safety figure is unchanged. No question.` : `The user repeats ${usdc(placement.amountUsd)} for ${placement.name}: the box from your previous reply is still waiting, and nothing is saved until they pick the source in it and tap Confirm. Say that in ONE short sentence. Record nothing, no new box, no question.` })
   else if (placement) replyMessages.push({ role: 'system', content: `A confirmation box is under this reply: it saves ${usdc(placement.amountUsd)} in ${placement.name} (${bucketLabel(placement.holdingType)}) once the user picks where the money came from and taps Confirm. Say in ONE short sentence: pick where the money came from in the box and tap Confirm to save it; nothing is saved before. Nothing else: no advice, no talk about buckets, targets or what is outside the app, no question (the box asks the source), no "Noted".` })
   else if (itemsEvent) replyMessages.push({ role: 'system', content: `The latest "user" line is the app telling you the user reviewed the items you prepared in a confirm card (not their words): the saved ones are now in their profile (the figures above already include them), the skipped ones were dropped. Do not say "Noted" and do not list the items again. ${/saved: none/i.test(lastUserText) ? 'Nothing was saved: say so in one short sentence and that they can tell you again any time. No question.' : `Carry on in one or two short sentences: ${/still to ask/i.test(lastUserText) ? 'ask what the line says is still to ask (one question only)' : next ? 'ask the Next question below and nothing else' : 'say what comes next in one sentence'}.`} Numbers only from ASSET & FUND FIGURES.` })
-  else if (recordEvent) replyMessages.push({ role: 'system', content: `The latest "user" line is the app telling you the user CONFIRMED a confirmation box (not their words): the amount is now saved in their balance and the figures above already include it. In two short sentences: confirm what was saved, and what it means for them (how much that bucket holds now against its target, or what is still to fill there). Then ${next ? 'ask the Next question below' : balance.fund.met ? `ask which bucket they want to fill next, with how much each still needs from "Still to fill". ${BUCKETS_RULE}` : 'say what still remains for the emergency fund.'} Numbers only from ASSET & FUND FIGURES. Do not say "Noted" and do not explain where the bank is or that it is outside the app.` })
+  else if (recordEvent) replyMessages.push({ role: 'system', content: `The latest "user" line is the app telling you the user CONFIRMED a confirmation box (not their words): the amount is now saved in their balance and the figures above already include it. In two short sentences: confirm what was saved, and what it means for them (how much that bucket holds now against its target, or what is still to fill there). Then ${next ? 'ask the Next question below' : balance.fund.met ? `ask which bucket they want to fill next, each as "X of Y" with what is left, from "Where they stand". ${BUCKETS_RULE}` : 'say what still remains for the emergency fund.'} Numbers only from ASSET & FUND FIGURES. Do not say "Noted" and do not explain where the bank is or that it is outside the app.` })
   else if (dcaApproved) replyMessages.push({ role: 'system', content: `The latest "user" line is the app telling you the user APPROVED a DCA plan (not their words). Nothing was bought or signed yet. In ONE or TWO short sentences: the plan is set, the first round is due now and a buy card appears right below this reply (they get a quote and sign it there; later rounds show up in this chat when due). Never say "signed" or "bought". No bucket question, no recap of the plan.` })
-  else if (appEvent) replyMessages.push({ role: 'system', content: `The latest "user" line is the app telling you a card was signed (not their words). Confirm it in one sentence with what it means for them (e.g. their emergency fund now holds N months of spending), then the next step: ${balance.fund.met ? `ask which bucket they want to fill first, with how much each still needs from "Still to fill". ${BUCKETS_RULE}` : 'what still remains for the emergency fund.'} Numbers only from ASSET & FUND FIGURES.` })
+  else if (appEvent) replyMessages.push({ role: 'system', content: `The latest "user" line is the app telling you a card was signed (not their words). Confirm it in one sentence with what it means for them (e.g. their emergency fund now holds N months of spending), then the next step: ${balance.fund.met ? `ask which bucket they want to fill first, each as "X of Y" with what is left, from "Where they stand". ${BUCKETS_RULE}` : 'what still remains for the emergency fund.'} Numbers only from ASSET & FUND FIGURES.` })
   // "do it" showed the card but the reply went back to the cirBTC lock (real chat 2026-10-27).
   const buyCard = actions.find(x => x.type === 'prepare_buy_cirbtc')
   const dcaCard = actions.find(x => x.type === 'propose_dca')
@@ -1464,6 +1481,7 @@ ${ending}` })
       if (BOSSY.test(content)) problems.push(`suggest, do not order: no "you need to" / "you must"${vi ? ' / "bạn cần" / "bạn phải" / "hãy"' : ''}; say what the option does for them and let them choose`) // lang-ok
       if (ASKS_OVERVIEW.test(lastUserText) && !GIVES_REASON.test(content)) problems.push('this is a check-up from an advisor: for each point say why it matters for them and one option they could take')
       if (teach && next && content.includes('?') && !GIVES_REASON.test(content)) problems.push('say in a few words why you ask (what the answer lets you work out for them); if something useful is already known from the figures, give that one point before the question')
+      if (/Safety[^.?!\n]{0,60}months? of spending|months? of spending[^.?!\n]{0,60}\bSafety\b/i.test(plain)) problems.push('months of spending belong to the EMERGENCY FUND only; Safety is the bank-savings part of the money to divide and has no months: do not mix them')
       if (SAFE_IN_APP.test(content)) problems.push('the app cannot move money to the user\'s bank or exchange and nothing was moved: the user tops up their own savings themselves; never offer or claim a deposit / transfer to savings')
       if (SAFE_AS_FUND.test(content)) problems.push('if you meant the emergency fund, call it "emergency fund" / "quỹ dự phòng" and add no explanation about the safe part; the safe part is the user\'s own savings, NOT the emergency fund, and cannot be deposited in the app') // lang-ok
       if (!DCA_AVAILABLE && /(set up|prepare|start|approve|propose|offer|want)[^.?!\n]{0,30}DCA|DCA (plan|card)/i.test(plain) && !/not available|isn.t available|unavailable|not yet|coming/i.test(plain)) problems.push('DCA is not available yet: do not offer it or set it up; if the user asked, say it is not available yet')

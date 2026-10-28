@@ -6,6 +6,9 @@ import { Check } from 'lucide-react'
 import type { ProfileOp } from '@/lib/profile'
 import { Btn, GlassCard, IconBox } from '@/components/ui/kit'
 
+/** Same height for every step and for the summary: 16 + 72 (text) + 16 + 48 (buttons) + 16 + 32 (Confirm all) + 16. */
+const FRAME = 'min-h-[216px]'
+
 export interface PendingItem { text: string; ops: ProfileOp[]; status?: 'saved' | 'skipped' }
 
 export function ItemsCard({ items, onChange, onSave, onFinished }: {
@@ -36,7 +39,7 @@ export function ItemsCard({ items, onChange, onSave, onFinished }: {
   if (index === -1) {
     const saved = items.filter(i => i.status === 'saved').length
     return (
-      <GlassCard className="ml-10 p-4 flex items-center gap-4">
+      <GlassCard className={`ml-10 p-4 flex items-center gap-4 ${FRAME}`}>
         <IconBox tone="blue"><Check size={24} style={{ color: 'var(--accent)' }} /></IconBox>
         <p className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--ink)' }}>
           {saved === 0 ? 'Nothing saved' : `Saved ${saved} of ${total}`}
@@ -48,20 +51,21 @@ export function ItemsCard({ items, onChange, onSave, onFinished }: {
 
   const left = items.filter(i => !i.status).length
   return (
-    <GlassCard className="ml-10 p-4 flex flex-col gap-4">
+    <GlassCard className={`ml-10 p-4 flex flex-col gap-4 ${FRAME}`}>
       <div className="flex items-start justify-between gap-4">
-        <p className="text-[16px] leading-6 font-semibold break-words min-w-0" style={{ color: 'var(--ink)' }}>{items[index].text}</p>
+        {/* Room for three lines is always reserved (Hieu, 2026-10-28): a longer item never pushes the buttons, a shorter one leaves the space. */}
+        <p className="text-[16px] leading-6 font-semibold break-words min-w-0 min-h-[72px] line-clamp-3" style={{ color: 'var(--ink)' }}>{items[index].text}</p>
         <span className="text-[14px] leading-6 font-semibold tabular-nums flex-shrink-0" style={{ color: 'var(--subtle)' }}>{index + 1}/{total}</span>
       </div>
       <div className="grid grid-cols-2 gap-2">
         <Btn onClick={() => mark('saved')}>Confirm</Btn>
         <Btn variant="outline" onClick={() => mark('skipped')}>Cancel</Btn>
       </div>
-      {left >= 3 && (
-        <button onClick={confirmAll} className="text-[14px] leading-5 font-semibold text-center min-h-8" style={{ color: 'var(--accent)' }}>
-          Confirm all {left}
-        </button>
-      )}
+      {/* Always in the layout (hidden when fewer than 3 are left), so the card keeps its height from the first item to the last. */}
+      <button onClick={confirmAll} disabled={left < 3} tabIndex={left < 3 ? -1 : 0} aria-hidden={left < 3}
+        className={`text-[14px] leading-5 font-semibold text-center min-h-8 ${left < 3 ? 'invisible' : ''}`} style={{ color: 'var(--accent)' }}>
+        Confirm all {left}
+      </button>
     </GlassCard>
   )
 }

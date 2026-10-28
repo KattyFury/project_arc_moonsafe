@@ -40,10 +40,10 @@ export function RecordCard({ record, status: saved, onFinished }: { record: Reco
     <GlassCard className="ml-10 p-4 flex flex-col gap-4">
       <div className="flex items-center gap-4">
         <IconBox><Landmark size={24} style={{ color: 'var(--accent)' }} /></IconBox>
-        <div className="min-w-0">
+        <div className="min-w-0 min-h-[92px]">
           <p className="text-[14px] leading-5 font-semibold" style={{ color: 'var(--subtle)' }}>Save to your balance?</p>
           <p className="display font-bold text-[24px] leading-8 tabular-nums" style={{ color: 'var(--ink)' }}>{amountText}</p>
-          <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>In {record.name} · {bucketLabel(record.holdingType)}</p>
+          <p className="text-[14px] leading-5 line-clamp-2" style={{ color: 'var(--subtle)' }}>In {record.name} · {bucketLabel(record.holdingType)}</p>
         </div>
       </div>
 
@@ -59,7 +59,7 @@ export function RecordCard({ record, status: saved, onFinished }: { record: Reco
               const on = choice === o.value
               return (
                 <button key={o.value} type="button" role="radio" aria-checked={on} onClick={() => setChoice(o.value)}
-                  className="w-full min-h-[48px] px-4 py-2 rounded-2xl text-left flex items-center gap-4 border-2"
+                  className="w-full min-h-[80px] px-4 py-2 rounded-2xl text-left flex items-center gap-4 border-2"
                   style={{ borderColor: on ? 'var(--accent)' : 'var(--line)', background: on ? 'var(--surface-muted)' : 'transparent' }}>
                   <span className="flex-1 min-w-0">
                     <span className="block text-[16px] leading-6 font-semibold" style={{ color: 'var(--ink)' }}>{o.label}</span>
