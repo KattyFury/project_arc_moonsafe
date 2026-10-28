@@ -3,13 +3,13 @@
 // screen its own copy, which left the invest lock stale until reload).
 
 import { CURRENCY_CHOICES } from '@/lib/features'
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { usePrivy } from '@privy-io/react-auth'
 import { cloudLoad, cloudSave, readOwner, setCloudAuth, writeOwner } from '@/lib/cloud'
 import { hydrateChat, readLocalChat } from '@/hooks/useAgent'
 import { useVaultState, type VaultState } from '@/hooks/useVault'
 import { readLocalProfile, useProfileState, type ProfileState } from '@/hooks/useFinancialProfile'
-import { normalizeProfile } from '@/lib/profile'
+import { normalizeProfile, walletMoveOps } from '@/lib/profile'
 import { useExchangeRateState, vndToUsdc6, usdc6ToVnd, type FxState } from '@/hooks/useExchangeRate'
 import { useCirBtcState, type CirBtcState } from '@/hooks/useCirBtc'
 import { usePricesState, type PricesState } from '@/hooks/usePrices'
@@ -73,10 +73,30 @@ export const AppStateContext = createContext<AppState | null>(null)
 const Ctx = AppStateContext
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
-  const vault = useVaultState()
+  const vaultRaw = useVaultState()
   const profile = useProfileState()
   const fx = useExchangeRateState()
-  const cirBtc = useCirBtcState()
+  const cirBtcRaw = useCirBtcState()
+  // Only declared money counts (Hieu, 2026-10-28), so when the APP moves USDC out of or into the connected wallet (fund deposit,
+  // withdrawal, cirBTC purchase) the USDC the user declared for this wallet follows. Refs: a card keeps the function it was
+  // rendered with, and the profile has moved on by the time the transaction is confirmed.
+  const applyProfile = profile.apply
+  const live = useRef({ profile: profile.profile, quote: cirBtcRaw.quote })
+  useEffect(() => { live.current = { profile: profile.profile, quote: cirBtcRaw.quote } })
+  const vault = useMemo<VaultState>(() => ({
+    ...vaultRaw,
+    deposit: async (amount: bigint) => { await vaultRaw.deposit(amount); applyProfile(walletMoveOps(live.current.profile, -Number(amount) / 1_000_000)) },
+    withdraw: async (amount: bigint) => { await vaultRaw.withdraw(amount); applyProfile(walletMoveOps(live.current.profile, Number(amount) / 1_000_000)) },
+  }), [vaultRaw, applyProfile])
+  const cirBtc = useMemo<CirBtcState>(() => ({
+    ...cirBtcRaw,
+    execute: async () => {
+      const spent = Number(live.current.quote?.amountInUsdc ?? 0)
+      const ok = await cirBtcRaw.execute()
+      if (ok && spent > 0) applyProfile(walletMoveOps(live.current.profile, -spent))
+      return ok
+    },
+  }), [cirBtcRaw, applyProfile])
   const [unit, setUnitState] = useState<Unit>(readUnit)
   const { user, getAccessToken } = usePrivy()
   const userId = user?.id ?? null

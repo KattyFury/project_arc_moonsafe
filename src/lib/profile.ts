@@ -214,6 +214,25 @@ export const hasAnyData = (p: FinancialProfile | null | undefined): boolean =>
 
 export type ProfileFields = Partial<Pick<FinancialProfile, 'age' | 'ageDeclined' | 'incomeStable' | 'dependents' | 'soleEarner' | 'debtsComplete' | 'nearGoal' | 'noNearGoal' | 'cryptoDropOk' | 'insured'>>
 
+/** The holding the user declared for the USDC in THIS (connected) wallet, if there is one. */
+export function appWalletHolding(p: FinancialProfile | null): Holding | undefined {
+  return p?.holdings.find(h => h.type === 'stable_wallet' && h.value !== undefined && h.currency !== 'VND' && /\b(app|this wallet|my wallet|moonsafe|connected)\b|ví (này|app)/i.test(`${h.where ?? ''} ${h.name}`)) // lang-ok
+}
+
+/**
+ * The app itself moved USDC out of / into the connected wallet (fund deposit or withdrawal, cirBTC purchase). Only declared money
+ * counts, so the declared wallet amount follows (never below 0). Without a declared wallet nothing is taken away; money coming
+ * back to the wallet (withdrawal) then starts a declared wallet item.
+ */
+export function walletMoveOps(p: FinancialProfile | null, deltaUsd: number, now = Date.now()): ProfileOp[] {
+  if (!p || !Number.isFinite(deltaUsd) || Math.abs(deltaUsd) < 0.005) return []
+  const h = appWalletHolding(p)
+  const cents = (n: number) => Math.round(n * 100) / 100
+  if (h) return [{ op: 'set_holding', id: h.id, patch: { value: Math.max(0, cents((h.value ?? 0) + deltaUsd)) } }]
+  if (deltaUsd < 0) return []
+  return [{ op: 'add_holding', holding: { id: newId('h'), type: 'stable_wallet', name: 'USDC in this wallet', where: 'app wallet', value: cents(deltaUsd), currency: 'USDC', priceSource: 'self', rebalanceable: defaultRebalanceable('stable_wallet'), updatedAt: now } }]
+}
+
 export type ProfileOp =
   | { op: 'update_profile'; fields: ProfileFields }
   | { op: 'add_holding'; holding: Holding }

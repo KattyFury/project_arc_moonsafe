@@ -26,11 +26,12 @@ import { callModel as openai, DEFAULT_CLAUDE_MODEL, type Keys, type ToolCall } f
 import { powerState, takeTurn, type PowerEnv } from '../_lib/quota'
 import { recordStats } from '../_lib/stats'
 import { BATCH_MARK, INTAKE_MIN_UNKNOWN, buildIntake, unknownBullets } from '../_lib/intake'
+import { buildPlan } from '../_lib/plan'
 import { KB, fundFloorMonths, matchPatterns, patternBrief, param } from '../../src/kb/kb'
 import { computeFacts, displayFacts, amountsUsd } from '../../src/kb/facts'
 import { computeBalance, holdingUsd, priceKey, symbolOf, toUsd, GOLD_UNITS_TO_OZ, GROUP_LABEL, type Balance, type Prices } from '../../src/lib/allocation'
 import {
-  applyOps, categoryOf, defaultRebalanceable, hasAnyData, isAssetType, newId, normalizeProfile, priceKindOf, BTC_SYMBOLS, DEBT_TYPES, STABLECOINS, TOP10_SYMBOLS,
+  appWalletHolding, applyOps, categoryOf, defaultRebalanceable, hasAnyData, isAssetType, newId, normalizeProfile, priceKindOf, BTC_SYMBOLS, DEBT_TYPES, STABLECOINS, TOP10_SYMBOLS,
   type ProfileOp,
 } from '../../src/lib/profile'
 import { bucketLabel, detectPlacement } from '../../src/lib/record'
@@ -108,7 +109,7 @@ const DEBT_PAY_NAME = /loan|debt|repay|mortgage|installment|credit card|(?<!\p{L
 const OFFERS_DEPOSIT = /prepare[^.?!\n]{0,60}(card|deposit)|card to (add|deposit)/i
 const IDLE_AMOUNT = /(\d[\d,.]*\d|\d)\s*USDC\s*(?:of|in)\s*idle|idle money[^.?!\n]{0,30}?(\d[\d,.]*\d|\d)\s*USDC/gi
 const YES_NO = /^\W*(yes|yeah|yep|yup|no|nope|not really|sure|mostly|kind of|có|không|ko|ừ|uh|đúng)(?!\p{L})/iu // lang-ok
-const YOU_ARE_RIGHT = /^\W*(you('| a)re (right|correct)|that'?s (right|correct)|bạn nói đúng|đúng rồi)/i // lang-ok
+const YOU_ARE_RIGHT = /^\W*(you(['’]| a)re (right|correct)|that'?s (right|correct)|bạn nói đúng|đúng rồi)/i // lang-ok
 // Each card needs its own verb (or a plain yes): "buy 100 USDC of cirBTC" while locked once
 // came back as a deposit card (eval 2026-10-24).
 const ACTION_VERB: Record<string, RegExp> = {
@@ -315,7 +316,7 @@ const PLAN_PROMPT = `You are MoonSafe's action planner. Read the user's LATEST m
 - Each debt → add_debt (type, balance, yearly rate and monthly payment if said, lender for family). Changes → update_debt; paid off → remove_debt. Unknown type → type "unknown".
 - Each income source → set_income: active (salary, side jobs, content), passive (interest, staking, rent, dividends, interest on loans given), irregular (airdrops, trading, bonuses). A new number for a listed one → same tool with its id.
 - Spending → set_expense: fixed (rent, bills, subscriptions, school fees) or variable (food, transport, other essentials). One total ("I spend 1,000 a month") → one fixed line named "Monthly spending". Debt payments belong on the debt (monthly_payment), never as an expense. A total that includes debt payments ("600 in all: 400 must-pay and 200 to repay my debt") → set_expense with ONLY the non-debt part (400), once. A payment on a debt whose total owed was not said → record no debt (the agent asks how much is still owed).
-- USDC in THIS app wallet ("in this wallet", "in the app") is read by the app: never record it, never move it.
+- USDC in THIS app wallet ("in this wallet", "in the app") is declared like any other place: stable_wallet with where "app wallet". The app also SEES the real balance and shows it to you as "seen", but the totals use only what the user declares (people use several wallets). Never copy the seen number into the profile on your own: record what the user says they hold.
 - Money "in the bank" without saying checking / current account → savings (it is their Safe part). They say an item is in the wrong place ("I told you I have 1000$ in the bank" while it shows as idle) → set_holding with its id and the right type.
 - A loan from family / friends: family_no_interest when they say there is no interest, family_interest when there is; not said → family_interest without rate_pct (the agent asks).
 - show_allocation ONLY when they ask how their money is split, what to do with idle money, or for the chart. show_cashflow ONLY when they ask about income vs spending, how much they save, or financial freedom.
@@ -325,7 +326,7 @@ const PLAN_PROMPT = `You are MoonSafe's action planner. Read the user's LATEST m
 
 ## Asset types
 ${ASSET_TYPES_TEXT}.
-- BTC on an exchange / cold wallet = btc (cirBTC in the app wallet is read by the app: never record it). ETH = eth; BNB, SOL, XRP and other top-10 coins = top10; staked ETH / SOL = staked_large_cap; other coins and memecoins = altcoin (with symbol).
+- BTC on an exchange / cold wallet = btc (cirBTC bought in the app is read by the app: never record it). ETH = eth; BNB, SOL, XRP and other top-10 coins = top10; staked ETH / SOL = staked_large_cap; other coins and memecoins = altcoin (with symbol).
 - USDC / USDT, or dollars with no coin named ("$1,000 on an exchange"), in a wallet or on an exchange spot account = stable_wallet; in Binance Simple Earn Flexible or similar = flexible_earn; locked earn = locked_earn; lent in DeFi = defi_stable.
 - Vietnamese stocks = vn_stock (worth only). Gold bars / rings = gold_physical with quantity + unit (oz, g, kg, luong, chi; ${VI_GOLD}).
 
@@ -525,7 +526,7 @@ function listing(p: FinancialProfile, b: Balance, prices: Prices | null, rate: n
     `Debts: ${p.debts.map(d => `[${d.id}] ${d.type} "${d.name}"${d.lender ? ` from ${d.lender}` : ''} ${moneyText({ amount: d.balance, currency: d.currency })}, rate ${d.ratePct === null ? 'unknown' : `${d.ratePct}%`}, pays ${d.monthlyPayment === null ? 'unknown' : moneyText({ amount: d.monthlyPayment, currency: d.currency })}/month`).join('; ') || 'none'}`,
     `Incomes: ${p.incomes.map(i => `[${i.id}] ${i.kind} "${i.name}" ${moneyText({ amount: i.monthly, currency: i.currency })}/month`).join('; ') || 'none'}`,
     `Expenses: ${p.expenses.map(e => `[${e.id}] ${e.kind} "${e.name}" ${moneyText({ amount: e.monthly, currency: e.currency })}/month`).join('; ') || 'none'}`,
-    `App: wallet ${b.items.find(i => i.label === 'Wallet USDC') ? usdc(Math.floor(b.items.find(i => i.label === 'Wallet USDC')!.usd)) : '0 USDC'} (read onchain, never record it), emergency fund ${b.fundUsd !== null ? usdc(b.fundUsd) : 'unknown'}, fund gap ${b.fund.gap !== null ? usdc(b.fund.gap) : 'unknown'}, cirBTC buying ${b.lock.open ? 'OPEN' : 'LOCKED'}`,
+    `App: wallet seen onchain ${b.walletSeen !== null ? usdc(Math.floor(b.walletSeen)) : 'unknown'} (NOT counted: record only what the user says they hold), emergency fund ${b.fundUsd !== null ? usdc(b.fundUsd) : 'unknown'}, fund gap ${b.fund.gap !== null ? usdc(b.fund.gap) : 'unknown'}, cirBTC buying ${b.lock.open ? 'OPEN' : 'LOCKED'}`,
   ].join('\n')
 }
 
@@ -542,7 +543,7 @@ function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: nu
   // Rounded down to whole USDC: 2,300.58 shown as "2,301" was offered as a deposit above the wallet (real chat 2026-10-26).
   const spendable = wallet !== null ? Math.max(0, Math.floor(wallet - GAS_RESERVE_USDC)) : null
   const cf = b.cashflow
-  lines.push(wallet !== null ? `- App wallet: ${show(Math.floor(wallet))} (idle money; can add up to ${show(spendable ?? 0)} to the fund, keeping ${usdc(GAS_RESERVE_USDC)} for fees)` : '- App wallet: balance unknown')
+  lines.push(wallet !== null ? `- App wallet SEEN onchain: ${show(Math.floor(wallet))} (NOT part of the totals below: only what the user declares counts; a card can add up to ${show(spendable ?? 0)} to the fund, keeping ${usdc(GAS_RESERVE_USDC)} for fees)` : '- App wallet: balance unknown')
   lines.push(b.fundUsd !== null ? `- Emergency fund: ${show(b.fundUsd)}${b.fund.months !== null ? ` = ${Math.round(b.fund.months * 10) / 10} months of spending` : ''}` : '- Emergency fund: balance unknown')
   if (cir > 0) lines.push(`- cirBTC already held: ${show(cir)} (owned, NOT an amount to buy or invest)`)
 
@@ -608,7 +609,7 @@ function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: nu
     // They fill one bucket at a time, in the order they choose (Hieu, 2026-10-27: "why split it up, what matters is what they pick").
     if (toDivide > 0) lines.push(`- Still to fill to reach each target (they may fill one bucket fully before the next, in any order): Safety ${show(Math.max(0, toDivide * t.safe / 100 - Math.max(0, g.safe - b.goalUsd)))}, Traditional ${show(Math.max(0, toDivide * t.traditional / 100 - g.traditional))}, Crypto ${show(Math.max(0, toDivide * tc / 100 - cryptoNow))}`)
   } else lines.push('- Target: AGE UNKNOWN. Ask the age before talking about any share.')
-  if (!b.declared) lines.push('- Only the app wallet is known: the user has not said what else they hold. If they ask how to split or invest: suggest NO split and NO purchase from the wallet, turn NO percentage into an amount; ask about the next item of the collection flow instead.')
+  if (!b.declared) lines.push('- Nothing is declared yet: the user has not said what they hold (the wallet balance seen onchain does not count until they declare it). If they ask how to split or invest: suggest NO split and NO purchase, turn NO percentage into an amount; ask about the next item of the collection flow instead.')
   else if (b.suggest) {
     const s = b.suggest
     // No split across buckets here: they fill one bucket at a time, the one they pick (Hieu, 2026-10-27; a proportional 429 USDC crypto offer came from this line).
@@ -824,13 +825,10 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     if (type === 'us_stock' && (vnClauses.some(c => sym && c.toUpperCase().includes(sym)) || (!sym && vnClauses.length))) type = 'vn_stock'
     const kind = priceKindOf(type)
     const category = type === 'other' && ['safe', 'invest', 'idle', 'lifestyle'].includes(String(a.category)) ? a.category as Holding['category'] : undefined
-    const base = { id: newId('h'), type, name, ...(sym && kind !== 'self' ? { symbol: sym } : {}), ...(typeof a.where === 'string' && a.where.trim() ? { where: a.where.trim() } : {}), updatedAt: Date.now(), rebalanceable: defaultRebalanceable(type, category), ...(category ? { category } : {}), ...(a.loan_status === 'on_time' || a.loan_status === 'overdue' ? { loanStatus: a.loan_status as Holding['loanStatus'] } : {}) }
+    const base = { id: newId('h'), type, name, ...(sym && kind !== 'self' ? { symbol: sym } : {}), ...(typeof a.where === 'string' && a.where.trim() ? { where: a.where.trim() } : kind === 'stable' && APP_WALLET.test(lastUserText) ? { where: 'app wallet' } : {}), updatedAt: Date.now(), rebalanceable: defaultRebalanceable(type, category), ...(category ? { category } : {}), ...(a.loan_status === 'on_time' || a.loan_status === 'overdue' ? { loanStatus: a.loan_status as Holding['loanStatus'] } : {}) }
     if (kind === 'stable') {
       const amount = w ?? (quantity !== undefined ? { amount: quantity, currency: 'USDC' as Currency } : null)
       if (!amount || !stated(amount.amount)) return 'Not recorded: the amount is not in the user\'s words.'
-      // "2300$ in this wallet" is the app wallet, already read onchain: recording it counted it twice (real chat 2026-10-26).
-      const usd = toUsd(amount.amount, amount.currency, rate)
-      if (wallet !== null && usd !== null && APP_WALLET.test(lastUserText) && Math.abs(usd - wallet) <= Math.max(1, wallet * 0.05)) return 'Not recorded: that is the app wallet, which the app reads onchain by itself.'
       return { ...base, value: amount.amount, currency: amount.currency, priceSource: 'market' }
     }
     // A home or a motorbike "worth 0" (real chat 2026-10-26): an owned thing needs its value.
@@ -876,15 +874,6 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     if ((name === 'add_holding' || name === 'move') && startFacts.intent_added_to_safe) {
       return 'Not done: they did not say where the money came from. Record nothing; the agent asks "where did it come from?" first.'
     }
-    // The app wallet is read onchain: "2300$ in this wallet" reached the profile through add, set and move (real chats 2026-10-26).
-    // Only dollar-like items can be the wallet: "2000$ in gold … + money in this wallet" dropped the gold (real chat 2026-10-27).
-    const itemType = name === 'add_holding' ? String(a.type) : name === 'set_holding' ? findH(a.id)?.type : undefined
-    const walletLike = itemType === undefined || !isAssetType(itemType) || priceKindOf(itemType) === 'stable' || ['cash', 'checking'].includes(itemType)
-    if ((name === 'add_holding' || name === 'set_holding' || name === 'move') && wallet !== null && walletLike && APP_WALLET.test(lastUserText)) {
-      const amts = [moneyArg(a.worth), moneyArg(a.amount), typeof a.quantity === 'number' ? { amount: a.quantity, currency: 'USDC' as Currency } : null]
-      if (amts.some(m => m && Math.abs((toUsd(m.amount, m.currency, rate) ?? -1) - wallet) <= Math.max(1, wallet * 0.05))) return 'Not recorded: that is the app wallet, which the app reads onchain by itself.'
-    }
-
     if (name === 'update_profile') {
       const f: Record<string, unknown> = {}
       if (typeof a.age === 'number' && a.age >= 10 && a.age <= 120 && stated(a.age) && a.age !== profile.age) f.age = Math.round(a.age)
@@ -967,9 +956,9 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       const answersWhere = /where did|came from|come from|từ đâu/i.test(prevAssistantText) // lang-ok
       if (!m || !(stated(m.amount) || (answersWhere && stated(m.amount, saidBefore)))) return 'Not done: the amount is not in the user\'s words.'
       const usd = toUsd(m.amount, m.currency, rate)
-      // Source: a listed item is reduced; the app wallet changes onchain by itself; "idle" = the one idle item if there is one.
+      // Source: a listed item is reduced; "wallet" = the USDC the user declared for this wallet (if they did); "idle" = the one idle item if there is one.
       const idle = profile.holdings.filter(h => categoryOf(h) === 'idle')
-      const src = a.from === 'wallet' ? null : findH(a.from) ?? (a.from === 'idle' && idle.length === 1 ? idle[0] : null)
+      const src = a.from === 'wallet' ? appWalletHolding(profile) ?? null : findH(a.from) ?? (a.from === 'idle' && idle.length === 1 ? idle[0] : null)
       // "Bank account −1,000, Bank account +1,000" (real chat 2026-10-26): a move needs two different places,
       // and an item recorded this turn already holds what was said.
       if (src && a.to_id === src.id) return 'Not done: from and to are the same item. To change what kind of item it is, use set_holding with type.'
@@ -1062,6 +1051,8 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     } else if (name === 'set_income' || name === 'set_expense') {
       const m = moneyArg(a.monthly)
       if (!m || !stated(m.amount)) return 'Not recorded: the amount is not in the user\'s words.'
+      // "my other income is airdrop" became "airdrop 0 USDC a month" (real chat 2026-10-28): a line needs an amount above zero.
+      if (!(m.amount > 0)) return 'Not recorded: no monthly amount was given. Skip this line, it is not needed now; they can tell the usual amount per month any time.'
       const isIncome = name === 'set_income'
       // "I have to pay my mom 200$ a month" became a spending line next to the same debt payment (real chat 2026-10-26).
       if (!isIncome && (DEBT_PAY_NAME.test(String(a.name ?? '')) || profile.debts.some(d => d.monthlyPayment !== null && Math.abs(d.monthlyPayment - m.amount) <= 0.01 && d.currency === m.currency))) {
@@ -1194,8 +1185,6 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
           seen.add(key)
           result = await handle(call)
           if (/^Not recorded:.*\bask/.test(result)) toAsk.push(result.replace(/^Not recorded: /, ''))
-          // "Only 2300$ in this wallet" got an unrelated reply (real chat 2026-10-26): say why nothing was recorded.
-          if (result.includes('that is the app wallet') && !done.some(d => d.includes('app wallet'))) done.push('Nothing recorded: the money they mention is the app wallet, which the app already counts (read onchain). Say so in a few words.')
           acted = true
           if (RECORDING.has(call.function.name)) recorded = true
         }
@@ -1212,6 +1201,12 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   }
 
   // ---- 2. REPLY ---------------------------------------------------------------------
+  // After the list, a missing age is "not shared": the default (30) is used and said to be an estimate, instead of asking again.
+  if (batchAsked && profile.age === null && !profile.ageDeclined) {
+    const op: ProfileOp = { op: 'update_profile', fields: { ageDeclined: true } }
+    ops.push(op)
+    profile = applyOps(profile, [op])
+  }
   const balance = ops.length ? await balanceOf(profile) : startBalance
   const usesVnd = [...profile.incomes, ...profile.expenses, ...profile.debts, ...profile.holdings].some(x => x.currency === 'VND') || vi
   const facts = computeFacts({ balance, profile, prices, vndPerUsd: rate, message: lastUserText, changed: ops.length > 0 })
@@ -1242,16 +1237,18 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   // Spec 5.4: idle money keeps 1 month of spending for daily life before any purchase.
   const cryptoOffer = Math.floor(Math.min(cryptoFill, Math.max(0, (wallet ?? 0) - GAS_RESERVE_USDC), balance.suggest ? Math.max(0, balance.suggest.idle - balance.suggest.keep) : Infinity))
 
+  // The plan is built here too, so each step says WHY (Hieu, 2026-10-28) and the numbers always match the figures (functions/_lib/plan.ts).
+  if (phase === 'plan' && !appEvent && !placement && !userAsks && !toAsk.length && !actions.length && balance.target) {
+    const t = balance.target
+    const [ps, pt, pc] = wholeShares([t.safe, t.traditional, t.btc + t.large_cap + t.altcoin])
+    const built = buildPlan({ p: profile, b: balance, shares: [ps, pt, pc], cover, vi })
+    if (built) return json({ content: built, ops, dcaStop, actions })
+  }
+
   // The first questions go out as ONE list, built here (no model call); what the user leaves out is taken as "prefer not to say".
   if (!batchAsked && !placement && !appEvent && !userAsks && !toAsk.length && !DECLINES.test(lastUserText) && !KNOWS_NOTHING.test(lastUserText)) {
-    const intake = buildIntake(profile, lastUserText, vi, readback)
+    const intake = buildIntake(profile, lastUserText, vi, readback, wallet)
     if (intake) return json({ content: intake, ops, dcaStop, actions })
-  }
-  // After the list, a missing age is "not shared": the default (30) is used and said to be an estimate, instead of asking again.
-  if (batchAsked && profile.age === null && !profile.ageDeclined) {
-    const op: ProfileOp = { op: 'update_profile', fields: { ageDeclined: true } }
-    ops.push(op)
-    profile = applyOps(profile, [op])
   }
 
   const replyMessages: Message[] = [
@@ -1288,7 +1285,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       deps && profile.insured === false ? 'Protection: people rely on them and there is no insurance yet; one option is to check health or life cover with a local professional (no product names).' : null,
       fundMet
         ? 'The money to divide ("Target amounts"), one "- " line per bucket with its % and amount, what it is and why that share: Safety (bank savings or flexible earn: money they can reach any time), Traditional (stocks or index funds such as VOO, and gold: steady long-term growth), Crypto (mostly BTC, the long-term reserve in Web3; it can drop by about half on the way).'
-        : 'How their money will be divided once the emergency fund is full: ONE line with the three % only (Safety, Traditional, Crypto mostly BTC), no amounts yet, and why the fund comes first.',
+        : 'How their money will be divided once the emergency fund is full: one "- " line per bucket with its % and ONE clause on why it exists (Safety: money they can reach any time, so a bad month never forces a sale; Traditional: stocks or index funds such as VOO, and gold, steady long-term growth; Crypto: mostly BTC, the long-term reserve in Web3, can drop by about half), no amounts yet, and why the fund comes first.',
       profile.cryptoDropOk === false ? 'They said they could not hold through a 50% crypto drop: one option is a smaller Crypto part for now and more in Safety or Traditional; their call.' : null,
       fundMet ? 'Where they stand now in ONE plain sentence: the one or two biggest gaps from "Split now", as a fact, no judging. Say they do not need to split every dollar: they can fill one bucket fully before the next, in the order they choose.' : null,
     ].filter(Boolean)
@@ -1341,6 +1338,8 @@ ${ending}` })
       const content = msg?.content ?? ''
       const plain = content.replace(/ /g, ' ')
       const problems: string[] = []
+      // Safety, Traditional and the bank are outside the app: no card exists for them (real chat 2026-10-28: "prepare a Safety transfer of 524 USDC for you to sign").
+      if (!actions.length && /(prepare|set up|create)[^.?!\n]{0,40}(Safety|Traditional|bank|savings)[^.?!\n]{0,50}(sign|transfer)|(Safety|bank|savings)\s+(transfer|deposit)[^.?!\n]{0,40}sign/i.test(plain)) problems.push('there is NO card for Safety, Traditional or the bank: they are done outside the app. Never offer to prepare something for them to sign; the only cards are the emergency fund (deposit / withdraw) and the cirBTC buy')
       if (!actions.length && CLAIMS_ACTION.test(content)) problems.push('no action was taken, the app opened and filled NOTHING: only OFFER (e.g. "Would you like me to prepare a deposit of … for you to sign?"), never say you opened / filled / created / showed anything')
       for (const f of floors) {
         if (f.texts.some(t => plain.includes(t)) && !plain.includes(`${f.months} month`) && !plain.includes(`${f.months} tháng`)) problems.push(`the floor ${f.texts[0]} must be labelled as "${f.months} months of spending"`) // lang-ok

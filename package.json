@@ -16,6 +16,7 @@
     "contracts:build": "forge build",
     "contracts:test": "forge test",
     "tokens": "bun run scripts/token-report.ts",
+    "flow": "bun run scripts/offline-flow.ts",
     "eval:server": "bun run scripts/eval-server.ts"
   },
   "dependencies": {
