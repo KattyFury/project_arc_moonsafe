@@ -7,7 +7,7 @@
  * goes to the model as before (buildPlan returns null). A near-term goal is handled here: it is kept in savings first and added to Safety.
  */
 
-import { bucketStanding, type Balance } from '../../src/lib/allocation'
+import { bucketStanding, type Balance, type Standing } from '../../src/lib/allocation'
 import { appWalletHolding } from '../../src/lib/profile'
 import type { FinancialProfile } from '../../src/types'
 
@@ -76,14 +76,7 @@ export function buildPlan({ p, b, shares, cover, vi }: PlanInput): string | null
   // The overview first (Hieu, 2026-10-28): what is needed, in what order, before any single step. Safe + at-risk = 100.
   const risk = sTrad + sCrypto
   // Which parts still have room, each with its total. Never a purchase here: the buy is offered only after the user picks crypto.
-  const open = standing.filter(x => x.left > 0.5)
-  const names = (xs: string[]) => xs.length > 1 ? `${xs.slice(0, -1).join(', ')} ${vi ? 'hay' : 'or'} ${xs[xs.length - 1]}` : xs[0] // lang-ok
-  const tag = (x: typeof safe) => `${x.name} (${fmt(x.have)} ${vi ? 'trên' : 'of'} ${fmt(x.target)})` // lang-ok
-  const pick = open.length === 0
-    ? (vi ? 'Cả ba phần đã đạt mục tiêu. Số tiền mới bạn thêm vào có thể theo cùng tỷ lệ này.' : 'All three parts are at their targets. Any new money you add can follow the same split.') // lang-ok
-    : open.length === 1
-      ? (vi ? `Chỉ còn ${tag(open[0])} chưa đủ. Bạn muốn bắt đầu với phần này không?` : `Only ${tag(open[0])} still has room. Would you like to start with it?`) // lang-ok
-      : (vi ? `Bạn muốn lấp phần nào trước: ${names(open.map(tag))}?` : `Which part would you like to fill first: ${names(open.map(tag))}?`) // lang-ok
+  const pick = pickQuestion(standing, vi)
   const ask = fundNow
     ? pick
     : cover !== null
@@ -140,4 +133,95 @@ export function buildStanding({ p, b, vi }: { p: FinancialProfile; b: Balance; v
   const row = (x: typeof safe, detail?: string) => `**${x.name}:** ${fmt(x.have)} ${vi ? 'trên' : 'of'} ${fmt(x.target)}${x.left > 0.5 ? `, ${fmt(x.left)} ${vi ? 'nữa' : 'to go'}` : vi ? ', đã đủ' : ', full'}${detail ? ` (${detail})` : ''}.` // lang-ok
   const safeDetail = [bank.length ? bank.join(', ') : null, safe.goal ? (vi ? `gồm mục tiêu ${fmt(safe.goal)} + ${fmt(safe.rest ?? 0)}` : `target = goal ${fmt(safe.goal)} + ${fmt(safe.rest ?? 0)}`) : null].filter(Boolean).join('; ') // lang-ok
   return [fundLine, row(safe, safeDetail || undefined), row(trad), row(crypto)].join('\n')
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------------
+// The step after the plan, built here too (Hieu, 2026-10-28): the model once asked "Safety or Traditional?" right after the user
+// said yes to starting with Crypto, although Safety and Traditional were full. Which parts still have room, the amounts, and the
+// offer are all computed, never written by the model.
+// ---------------------------------------------------------------------------------------------------------------------------
+
+export type Part = 'safe' | 'traditional' | 'crypto'
+
+/** The question that follows the plan: only the parts that still have room, each with "X of Y". Never a purchase. */
+export function pickQuestion(standing: Standing[], vi: boolean): string {
+  const open = standing.filter(x => x.left > 0.5)
+  const names = (xs: string[]) => xs.length > 1 ? `${xs.slice(0, -1).join(', ')} ${vi ? 'hay' : 'or'} ${xs[xs.length - 1]}` : xs[0] // lang-ok
+  const tag = (x: Standing) => `${x.name} (${fmt(x.have)} ${vi ? 'trên' : 'of'} ${fmt(x.target)})` // lang-ok
+  if (open.length === 0) return vi ? 'Cả ba phần đã đạt mục tiêu. Số tiền mới bạn thêm vào có thể theo cùng tỷ lệ này.' : 'All three parts are at their targets. Any new money you add can follow the same split.' // lang-ok
+  if (open.length === 1) return vi ? `Chỉ còn ${tag(open[0])} chưa đủ. Bạn muốn bắt đầu với phần này không?` : `Only ${tag(open[0])} still has room. Would you like to start with it?` // lang-ok
+  return vi ? `Bạn muốn lấp phần nào trước: ${names(open.map(tag))}?` : `Which part would you like to fill first: ${names(open.map(tag))}?` // lang-ok
+}
+
+const PART_WORDS: Array<[Part, RegExp]> = [
+  ['safe', /(?<![\p{L}])(safe|safety|bank|savings?|an toàn|tiết kiệm)(?![\p{L}])/iu], // lang-ok
+  ['traditional', /(?<![\p{L}])(traditional|stocks?|gold|index|voo|etfs?|truyền thống|vàng)(?![\p{L}])/iu], // lang-ok
+  ['crypto', /(?<![\p{L}])(crypto|btc|bitcoin|coins?|cirbtc)(?![\p{L}])/iu],
+]
+const YES_SHORT = /^\s*(ok|okay|oke|sure|yes|yeah|yep|yup|go ahead|do it|sounds good|please|let'?s|i will|i'll|start|được|đồng ý|ừ|chốt)(?![\p{L}])/iu // lang-ok
+
+/**
+ * Which part the user means when they answer the "which part first?" / "start with X?" question: a single bucket word in a short
+ * message, or a plain yes to the "Only X still has room" question. Null for anything else (the model handles it).
+ */
+export function detectPartChoice(userText: string, prevAssistant: string): Part | null {
+  const t = userText.trim()
+  if (!t || t.length > 70 || /\d/.test(t) || /(why|what is|what'?s|explain|how much|vì sao|tại sao)/i.test(t)) return null // lang-ok
+  if (!/(fill first|start with|which part|which bucket|how about|what about|still has room|muốn lấp|bắt đầu với)/i.test(prevAssistant)) return null // lang-ok
+  const hit = PART_WORDS.filter(([, re]) => re.test(t)).map(([k]) => k)
+  if (hit.length === 1) return hit[0]
+  if (hit.length > 1) return null
+  if (!YES_SHORT.test(t)) return null
+  const only = prevAssistant.match(/Only (Safety|Traditional|Crypto)[^.?!]*still has room|Chỉ còn (Safety|Traditional|Crypto)/i) // lang-ok
+  const name = (only?.[1] ?? only?.[2] ?? '').toLowerCase()
+  return name === 'safety' ? 'safe' : name === 'traditional' ? 'traditional' : name === 'crypto' ? 'crypto' : null
+}
+
+/** The answer for a chosen part: where it lives, what the user has of the target, and the one next step. */
+export function buildPartAnswer({ b, vi, part, walletUsd }: { b: Balance; vi: boolean; part: Part; walletUsd: number }): string | null {
+  const standing = bucketStanding(b)
+  const row = standing?.find(x => x.key === part)
+  if (!standing || !row) return null
+  const mine = `${vi ? 'Bạn có' : 'You have'} ${fmt(row.have)} ${vi ? 'trên' : 'of'} ${fmt(row.target)}` // lang-ok
+  if (row.left <= 0.5) {
+    return vi ? `Phần ${row.name} đã đủ: ${mine}. ${pickQuestion(standing, vi)}` : `${row.name} is already full: ${mine}. ${pickQuestion(standing, vi)}` // lang-ok
+  }
+  const toGo = `${fmt(row.left)} ${vi ? 'nữa để đủ' : 'to go'}` // lang-ok
+  if (part === 'crypto') {
+    if (!b.lock.open) return `${b.lock.text}`
+    const spend = Math.floor(Math.max(0, walletUsd - 0.02))
+    const amount = Math.min(Math.floor(row.left), spend)
+    if (amount < 1) {
+      return vi ? `Crypto: ${mine}, ${toGo}. Ví này chưa có USDC để mua, hãy thêm USDC vào ví rồi nói với mình nhé.` : `Crypto: ${mine}, ${toGo}. The wallet does not have USDC to spend yet, so add some and tell me.` // lang-ok
+    }
+    return vi
+      ? `cirBTC là Bitcoin bạn có thể mua và giữ ngay trong app. Crypto: ${mine}, ${toGo}. Mình chuẩn bị một lệnh mua cirBTC **${fmt(amount)}** từ ví để bạn ký nhé?` // lang-ok
+      : `cirBTC is Bitcoin you can buy and hold in this app. Crypto: ${mine}, ${toGo}. Shall I prepare a cirBTC buy of **${fmt(amount)}** from your wallet for you to sign?`
+  }
+  if (part === 'safe') {
+    return vi
+      ? `Safety nằm ngoài app, trong tiết kiệm ngân hàng hoặc earn linh hoạt. ${mine}, ${toGo}. Khi đã chuyển tiền, hãy nói với mình (ví dụ "I put 400 in my bank") để mình ghi lại.` // lang-ok
+      : `Safety lives outside the app, in bank savings or flexible earn. ${mine}, ${toGo}. When you have moved the money, tell me (for example "I put 400 in my bank") and I will record it.`
+  }
+  return vi
+    ? `Traditional cũng nằm ngoài app: cổ phiếu hoặc quỹ chỉ số (ví dụ VOO) và vàng, qua nhà môi giới của bạn. ${mine}, ${toGo}. Khi đã mua, hãy nói với mình để mình ghi lại.` // lang-ok
+    : `Traditional lives outside the app too: stocks or index funds (for example VOO) and gold, through your broker. ${mine}, ${toGo}. When you have bought, tell me and I will record it.`
+}
+
+/** After the user signs the emergency-fund deposit, or confirms a saved amount: where things stand, then only the parts with room. */
+export function buildAfterSign({ b, vi, kind, summary }: { b: Balance; vi: boolean; kind: 'deposit' | 'record'; summary?: string }): string | null {
+  const standing = bucketStanding(b)
+  if (!standing || b.fund.floorUsd === null) return null
+  const vault = b.fundUsd ?? 0
+  const fundFull = vault >= b.fund.floorUsd - 0.005
+  if (kind === 'deposit') {
+    if (!fundFull) return null
+    return vi
+      ? `Quỹ dự phòng giờ là ${fmt(vault)} trên ${fmt(b.fund.floorUsd)} (${b.fund.floorMonths} tháng chi tiêu): đã đủ. ${pickQuestion(standing, vi)}` // lang-ok
+      : `Your emergency fund is now ${fmt(vault)} of ${fmt(b.fund.floorUsd)} (${b.fund.floorMonths} months of spending): full. ${pickQuestion(standing, vi)}`
+  }
+  const touched = /\(Safety\)/i.test(summary ?? '') ? standing[0] : /Traditional/i.test(summary ?? '') ? standing[1] : /Crypto/i.test(summary ?? '') ? standing[2] : null
+  const status = touched ? ` ${touched.name} ${vi ? 'giờ là' : 'is now'} ${fmt(touched.have)} ${vi ? 'trên' : 'of'} ${fmt(touched.target)}${touched.left > 0.5 ? `, ${fmt(touched.left)} ${vi ? 'nữa để đủ' : 'to go'}` : (vi ? ': đã đủ' : ': full')}.` : '' // lang-ok
+  return `${vi ? 'Đã lưu.' : 'Saved.'}${status} ${pickQuestion(standing, vi)}` // lang-ok
 }
