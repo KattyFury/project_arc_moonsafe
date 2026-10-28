@@ -91,9 +91,9 @@ export function buildPlan({ p, b, shares, cover, vi }: PlanInput): string | null
     : null
   const lines = vi
     ? [ // lang-ok
-      `Để đầu tư đúng cách, bạn cần ba việc theo thứ tự: trước hết là **quỹ dự phòng**; sau đó chia số tiền linh hoạt còn lại thành phần **an toàn ${sSafe}%** và phần **chấp nhận rủi ro ${risk}%** (phần an toàn bằng tuổi của bạn, ${age}${est ? ', ước tính' : ''}, vì bạn càng trẻ càng có thời gian gánh rủi ro); và trong phần rủi ro đó, lý tưởng là **Traditional ${sTrad}%** và **Crypto ${sCrypto}%**.`,
-      `1. **Quỹ dự phòng: ${fmt(b.fund.floorUsd)}** (${b.fund.floorMonths} tháng chi tiêu). Vì sao: ${fundWhy(p, b.fund.floorMonths, true)}. Hiện có ${fmt(vault)}.`,
-      `Sau khi quỹ đủ, bạn có thể cân nhắc chia số tiền linh hoạt (${fmt(toDivide)}${toFund > 0 ? ', sau khi nạp quỹ' : ''}) như sau:`,
+      `Để đầu tư đúng cách, bạn cần ba việc theo thứ tự: trước hết là **quỹ dự phòng**; sau đó chia số tiền linh hoạt còn lại thành phần **an toàn ${sSafe}%** và phần **chấp nhận rủi ro ${risk}%** (phần an toàn bằng tuổi của bạn, ${age}${est ? ', ước tính' : ''}, vì bạn càng trẻ càng có thời gian gánh rủi ro); và trong phần rủi ro đó, lý tưởng là **Traditional ${sTrad}%** và **Crypto ${sCrypto}%**.`, // lang-ok
+      `1. **Quỹ dự phòng: ${fmt(b.fund.floorUsd)}** (${b.fund.floorMonths} tháng chi tiêu). Vì sao: ${fundWhy(p, b.fund.floorMonths, true)}. Hiện có ${fmt(vault)}.`, // lang-ok
+      `Sau khi quỹ đủ, bạn có thể cân nhắc chia số tiền linh hoạt (${fmt(toDivide)}${toFund > 0 ? ', sau khi nạp quỹ' : ''}) như sau:`, // lang-ok
       `2. **Safety ${sSafe}% = ${fmt(aSafe)}** — ${WHY.safety.vi} ${now(g.safe, aSafe)}.`,
       `3. **Traditional ${sTrad}% = ${fmt(aTrad)}** — ${WHY.traditional.vi} ${now(g.traditional, aTrad)}.`,
       `4. **Crypto ${sCrypto}% = ${fmt(aCrypto)}** — ${WHY.crypto.vi} ${now(cryptoNow, aCrypto)}.`,
