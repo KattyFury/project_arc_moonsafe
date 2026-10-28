@@ -85,25 +85,24 @@ expect(formAction?.keys?.join() === 'age,income,spending,stability,goal,assets,o
 expect(formAction?.seen === 1916, 'the form is told what the app sees in the wallet (a hint)')
 expect(/Share whatever you're comfortable with/.test(hello.body.content ?? '') && !/^• /m.test(hello.body.content ?? ''), 'the message above the form is short, not a bulleted list')
 
-// 1. Everything declared in one message: NOTHING is saved yet, the app asks to confirm each thing.
+// 1. A NEW user types everything in one message: it is saved at once (no confirm card), and the plan follows in the same reply.
 const empty = normalizeProfile({ v: 2 })
 const first = await call([...history, { role: 'user', content: message }], empty)
-const card = first.body.actions?.find(a => a.type === 'confirm_items')
-console.log('step 1: status', first.status, '| model calls', first.calls, '| items', card?.items?.map(i => i.text).join(' / '))
+const firstText = first.body.content ?? ''
+console.log('step 1: status', first.status, '| model calls', first.calls, '| ops', first.body.ops?.length)
 expect(first.status === 200, 'step 1 succeeds')
 expect(first.calls === 2, `the planner records and ends (2 calls), nothing else is called (got ${first.calls})`)
-expect(JSON.stringify(first.body.ops) === '[]', 'nothing is saved before the user confirms: ops are empty')
-expect((card?.items?.length ?? 0) >= 6, 'the confirm card carries every thing that was declared')
-expect(!(card?.items ?? []).some(i => /^Airdrop \d|income/i.test(i.text) && /airdrop/i.test(i.text) && /a month/i.test(i.text)), 'an airdrop is never offered as monthly income')
-expect((card?.items ?? []).some(i => /windfalls: not counted as monthly income/i.test(i.text)), 'it is offered as a windfall that is not counted')
-expect((card?.items ?? []).some(i => /^USDC in this wallet/i.test(i.text)), 'the USDC the user declares for this wallet is an item')
-expect((card?.items ?? []).every(i => readOps(i.ops).length > 0), 'every item carries the operations that save it')
+expect(!first.body.actions?.some(a => a.type === 'confirm_items'), 'a first declaration is not put through a confirm card')
+expect((first.body.ops?.length ?? 0) >= 6, 'everything declared is saved at once (ops come back for the app to apply)')
+expect(readOps(first.body.ops).some(o => o.op === 'update_profile' && 'hasWindfalls' in o.fields), 'an airdrop is saved as a windfall flag')
+expect(!readOps(first.body.ops).some(o => o.op === 'set_income' && /airdrop/i.test(o.income.name)), 'an airdrop is never saved as monthly income')
+expect(/To invest the right way you need three things/.test(firstText) && /About airdrops: they arrive in bursts/.test(firstText), 'the plan (overview + airdrop note) follows without a model call')
+let saved = applyOps(empty, readOps(first.body.ops))
 
-// 2. The user confirms everything: the app applies the ops, tells the agent, and the plan follows (built by the server, no model call).
-let saved = empty
-for (const i of card?.items ?? []) saved = applyOps(saved, readOps(i.ops))
-const event = `[app event] The user reviewed the items: saved: ${(card?.items ?? []).map(i => i.text).join('; ')}. skipped: none.`
-const second = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: first.body.content ?? '' }, { role: 'user', content: event }], saved)
+// 2. A returning user confirms a card: the app applies the ops, tells the agent, and the plan follows (built by the server, no model call).
+const crafted = 'I picked up 10 things. Confirm or cancel each one below; nothing is saved until you do.'
+const event = '[app event] The user reviewed the items: saved: Age 31; Salary 150 USDC a month (active). skipped: none.'
+const second = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: crafted }, { role: 'user', content: event }], saved)
 const text = second.body.content ?? ''
 console.log('\nstep 2: status', second.status, '| model calls', second.calls)
 if (process.env.FLOW_DEBUG) console.log(second.body.content)
@@ -116,7 +115,7 @@ expect(/prepare a deposit of \*\*450 USDC\*\*/.test(text), 'the plan offers the 
 expect(/3,950 USDC, after the emergency fund/.test(text), 'the plan is quoted on the money left after the fund (the wallet seen onchain is not added)')
 
 // 2b. The same answer from someone whose emergency fund is ALREADY full: the overview still comes first, never a straight offer to buy.
-const full = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: first.body.content ?? '' }, { role: 'user', content: event }], saved, 900)
+const full = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: crafted }, { role: 'user', content: event }], saved, 900)
 const fullText = full.body.content ?? ''
 console.log('\nstep 2b: model calls', full.calls)
 expect(/To invest the right way you need three things/.test(fullText), 'fund already full: the overview comes first')
@@ -124,7 +123,7 @@ expect(!/cirBTC|prepare a|for you to sign/i.test(fullText), 'fund already full: 
 expect(/Which part would you like to fill first|Only [^.]* still has room/.test(fullText), 'fund already full: it asks which part to fill')
 
 // 3. The user cancels everything: nothing saved, the agent does not run the plan.
-const none = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: first.body.content ?? '' }, { role: 'user', content: '[app event] The user reviewed the items: saved: none. skipped: everything.' }], empty)
+const none = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: crafted }, { role: 'user', content: '[app event] The user reviewed the items: saved: none. skipped: everything.' }], empty)
 console.log('\nstep 3: status', none.status, '| model calls', none.calls)
 expect(!/Here is your plan/.test(none.body.content ?? ''), 'with nothing saved there is no plan')
 
@@ -140,7 +139,7 @@ planMode = 'full'
 
 // 4. Length (Hieu, 2026-10-28): short when collecting or asking, long only to educate.
 expect(/MODE THIS TURN: BRIEF/.test(replySystem), 'after a card with nothing saved the reply is BRIEF')
-await call([...history, { role: 'user', content: message }, { role: 'assistant', content: first.body.content ?? '' }, { role: 'user', content: 'why do I need an emergency fund?' }], saved, 0)
+await call([...history, { role: 'user', content: message }, { role: 'assistant', content: crafted }, { role: 'user', content: 'why do I need an emergency fund?' }], saved, 0)
 expect(/MODE THIS TURN: TEACH/.test(replySystem), 'a "why" question is answered in TEACH mode')
 
 // 5. "How much is in my bank / Safety?": answered with the totals by the server, the emergency fund on its own line (never mixed with Safety).

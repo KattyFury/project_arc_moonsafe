@@ -67,7 +67,7 @@ export type StoredCard =
   | { id: number; at: number; kind: 'record'; record: RecordRequest; status?: 'done' | 'cancelled' }
   /** Several declared things waiting to be confirmed one by one (src/components/chat/ItemsCard.tsx); `ask` = what the agent still has to ask once they are done. */
   /** The first questions as a form (src/components/chat/IntakeFormCard.tsx): `keys` = the sections still unknown, `values` = the draft. */
-  | { id: number; at: number; kind: 'form'; keys: string[]; seen: number | null; values: FormValues; status?: 'done' | 'cancelled' }
+  | { id: number; at: number; kind: 'form'; keys: string[]; seen: number | null; values: FormValues; status?: 'done' | 'cancelled'; saved?: number }
   | { id: number; at: number; kind: 'items'; items: Array<{ text: string; ops: ProfileOp[]; status?: 'saved' | 'skipped' }>; ask: string[]; status?: 'done' | 'cancelled' }
 export interface StoredChart { at: number; kind: 'allocation' | 'cashflow' }
 export function readChatExtras(): { cards: StoredCard[]; charts: StoredChart[] } {
