@@ -43,7 +43,7 @@ export function BalanceSheet(_: { onOpenChat: () => void }) {
       <Stats items={[
         { label: 'Net worth', value: moneyUsd(b.netWorth) },
         { label: 'Liquid', value: moneyUsd(b.liquid) },
-        { label: 'Fund', value: b.fundUsd === null ? DASH : moneyUsd(b.fundUsd), sub: fundSub },
+        { label: 'Emergency fund', value: b.fundUsd === null ? DASH : moneyUsd(b.fundUsd), sub: fundSub },
       ]} />
 
       {b.walletSeen !== null && b.walletSeen >= 1 && (appWalletHolding(profile.profile)?.value ?? 0) < b.walletSeen - 1 && (

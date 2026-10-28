@@ -8,7 +8,7 @@
 // has a text label + share, so colour is never alone.
 
 import { useApp } from '@/state/AppState'
-import { GROUP_LABEL, shareOfLiquid, shareOfNetWorth } from '@/lib/allocation'
+import { GROUP_LABEL, bucketStanding, shareOfLiquid, shareOfNetWorth } from '@/lib/allocation'
 
 type Segment = 'safe' | 'traditional' | 'crypto' | 'idle' | 'grey'
 
@@ -108,14 +108,10 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
     </div>
   )
 
-  // What is still missing to match the plan, per part (the same arithmetic as the agent's "Still to fill"): plain amounts, no jargon.
+  // What is still missing to match the plan, per part: the same totals as the agent's (bucketStanding).
+  const standing = bucketStanding(b)
+  const missing = (standing ?? []).filter(x => x.left >= 0.5)
   const toDivide = Math.max(0, liquid - b.goalUsd)
-  const cryptoTarget = target ? target.btc + target.large_cap + target.altcoin : 0
-  const missing = target && toDivide > 0 ? ([
-    ['Safety', toDivide * target.safe / 100 - Math.max(0, byGroup.safe - b.goalUsd)],
-    ['Traditional', toDivide * target.traditional / 100 - byGroup.traditional],
-    ['Crypto', toDivide * cryptoTarget / 100 - (byGroup.btc + byGroup.large_cap + byGroup.altcoin)],
-  ] as Array<[string, number]>).filter(([, v]) => v >= 0.5) : []
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-4">
@@ -145,10 +141,10 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
         </tbody>
       </table>
 
-      {walletOnly || (target && toDivide > 0 && (
+      {walletOnly || (target && (toDivide > 0 || b.goalUsd > 0) && (
         <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>
           {missing.length
-            ? <>Left to reach your plan: {missing.map(([name, v], i) => <span key={name}>{i > 0 && ' · '}{name} <strong style={{ color: 'var(--ink)' }}>{moneyUsd(v)}</strong></span>)}.</>
+            ? <>Left to reach your plan: {missing.map((x, i) => <span key={x.key}>{i > 0 && ' · '}{x.name} <strong style={{ color: 'var(--ink)' }}>{moneyUsd(x.left)}</strong> <span style={{ color: 'var(--muted)' }}>({moneyUsd(x.have)} of {moneyUsd(x.target)})</span></span>)}.</>
             : 'You match your plan. New money can follow the same split.'}
         </p>
       ))}

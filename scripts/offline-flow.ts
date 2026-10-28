@@ -100,9 +100,9 @@ expect(second.status === 200, 'step 2 succeeds')
 expect(second.calls === 0, `after the card the plan is built by the server: no model call (got ${second.calls})`)
 expect(/To invest the right way you need three things/.test(text) && /safe part of 31%/.test(text) && /takes risk, 69%/.test(text), 'the plan opens with the overview: what is needed and the safe / at-risk split')
 expect(/About airdrops: they arrive in bursts/.test(text), 'the plan explains that airdrops are not a stable job')
-for (const [what, re] of [['the fund', /Emergency fund: 450 USDC[^\n]*Why:/], ['Safety', /Safety 31%[^\n]*any time/], ['Traditional', /Traditional 39%[^\n]*index funds/], ['Crypto', /Crypto 30%[^\n]*BTC/]] as const) expect(re.test(text), `the plan says why for ${what}`)
+for (const [what, re] of [['the fund', /Emergency fund: 450 USDC[^\n]*Why 3 months:/], ['Safety', /Safety 31%[^\n]*any time/], ['Traditional', /Traditional 39%[^\n]*index funds/], ['Crypto', /Crypto 30%[^\n]*BTC/]] as const) expect(re.test(text), `the plan says why for ${what}`)
 expect(/prepare a deposit of \*\*450 USDC\*\*/.test(text), 'the plan offers the deposit')
-expect(/3,950 USDC, after the fund/.test(text), 'the plan is quoted on the money left after the fund (the wallet seen onchain is not added)')
+expect(/3,950 USDC, after the emergency fund/.test(text), 'the plan is quoted on the money left after the fund (the wallet seen onchain is not added)')
 
 // 2b. The same answer from someone whose emergency fund is ALREADY full: the overview still comes first, never a straight offer to buy.
 const full = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: first.body.content ?? '' }, { role: 'user', content: event }], saved, 900)
@@ -110,7 +110,7 @@ const fullText = full.body.content ?? ''
 console.log('\nstep 2b: model calls', full.calls)
 expect(/To invest the right way you need three things/.test(fullText), 'fund already full: the overview comes first')
 expect(!/cirBTC|prepare a|for you to sign/i.test(fullText), 'fund already full: no purchase is offered before they pick a part')
-expect(/Which part would you like to fill first|Only \w+ still has room/.test(fullText), 'fund already full: it asks which part to fill')
+expect(/Which part would you like to fill first|Only [^.]* still has room/.test(fullText), 'fund already full: it asks which part to fill')
 
 // 3. The user cancels everything: nothing saved, the agent does not run the plan.
 const none = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: first.body.content ?? '' }, { role: 'user', content: '[app event] The user reviewed the items: saved: none. skipped: everything.' }], empty)
@@ -121,6 +121,14 @@ expect(!/Here is your plan/.test(none.body.content ?? ''), 'with nothing saved t
 expect(/MODE THIS TURN: BRIEF/.test(replySystem), 'after a card with nothing saved the reply is BRIEF')
 await call([...history, { role: 'user', content: message }, { role: 'assistant', content: first.body.content ?? '' }, { role: 'user', content: 'why do I need an emergency fund?' }], saved, 0)
 expect(/MODE THIS TURN: TEACH/.test(replySystem), 'a "why" question is answered in TEACH mode')
+
+// 5. "How much is in my bank / Safety?": answered with the totals by the server, the emergency fund on its own line (never mixed with Safety).
+const how = await call([...history, { role: 'user', content: 'how much is in my bank savings?' }], saved, 900)
+const howText = how.body.content ?? ''
+console.log('\nstep 5: model calls', how.calls, '\n' + howText)
+expect(how.calls === 0, 'a "how much" question is answered by the server: no model call')
+expect(/\*\*Emergency fund:\*\*[^\n]*months of spending/.test(howText) && /\*\*Safety:\*\* [^\n]* of [^\n]*(to go|full)/.test(howText), 'the emergency fund and Safety are separate lines, each with "X of Y"')
+expect(!/Safety[^\n]*months of spending/.test(howText), 'Safety never carries months of spending')
 
 console.log(bad ? `${bad} problem(s)` : 'flow OK')
 if (bad) process.exit(1)
