@@ -150,5 +150,41 @@ expect(how.calls === 0, 'a "how much" question is answered by the server: no mod
 expect(/\*\*Emergency fund:\*\*[^\n]*months of spending/.test(howText) && /\*\*Safety:\*\* [^\n]* of [^\n]*(to go|full)/.test(howText), 'the emergency fund and Safety are separate lines, each with "X of Y"')
 expect(!/Safety[^\n]*months of spending/.test(howText), 'Safety never carries months of spending')
 
+
+// 6. Safety and Traditional are full, only Crypto has room: "Yep" to "start with it?" gets the cirBTC offer, never "Safety or Traditional?"
+const base = normalizeProfile({ v: 2, age: 21, incomeStable: false, dependents: 0, debtsComplete: true, noNearGoal: true,
+  incomes: [{ id: 'i1', name: 'Salary', monthly: 150, currency: 'USDC', kind: 'active' }],
+  expenses: [{ id: 'e1', name: 'Spending', monthly: 150, currency: 'USDC', kind: 'fixed' }],
+  holdings: [
+    { id: 'h1', type: 'stable_wallet', name: 'USDC in this wallet', where: 'app wallet', value: 1000, currency: 'USDC', priceSource: 'self', rebalanceable: true },
+    { id: 'h2', type: 'savings', name: 'Bank savings', value: 1000, currency: 'USDC', priceSource: 'self', rebalanceable: true },
+    { id: 'h3', type: 'gold_physical', name: 'Gold', value: 2000, currency: 'USDC', priceSource: 'self', rebalanceable: true },
+  ] })
+const onlyCrypto = 'Your emergency fund is now 900 USDC of 900 USDC. Only Crypto (0 USDC of 1,360 USDC) still has room. Would you like to start with it?'
+const yep = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: firstText }, { role: 'user', content: '[app event] The user signed the card: Added 900 USDC to your emergency fund.' }, { role: 'assistant', content: onlyCrypto }, { role: 'user', content: 'Yep. I will start with that' }], base, 900)
+const yepText = yep.body.content ?? ''
+console.log('\nstep 6: model calls', yep.calls, '\n' + yepText)
+expect(yep.calls === 0, `choosing a part costs no model call (got ${yep.calls})`)
+expect(/prepare a cirBTC buy of \*\*\d[\d,]* USDC\*\* from your wallet/.test(yepText), 'a yes to "start with Crypto?" gets the offer to prepare the cirBTC buy')
+expect(!/Safety or Traditional|Which (part|bucket)/i.test(yepText), 'full parts are never offered')
+
+// 6b. After the user signs the emergency-fund deposit, the next step names only the parts that still have room.
+const signed = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: firstText }, { role: 'user', content: '[app event] The user signed the card: Added 900 USDC to your emergency fund.' }], base, 900)
+const signedText = signed.body.content ?? ''
+console.log('\nstep 6b: model calls', signed.calls, '\n' + signedText)
+expect(signed.calls === 0 && /emergency fund is now 900 USDC of 900 USDC/.test(signedText) && /Only Crypto/.test(signedText) && !/Safety|Traditional/.test(signedText.split('Only Crypto')[1] ?? ''), 'after the deposit: the fund status, then only Crypto (the only part with room)')
+
+// 6c. A saved amount (record box) is acknowledged, with the part it touched, then only the parts that have room.
+const rec = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: firstText }, { role: 'user', content: '[app event] The user confirmed recording: Recorded 500 USDC in Bank savings (Safety), from Binance.' }], base, 900)
+const recText = rec.body.content ?? ''
+console.log('\nstep 6c: model calls', rec.calls, '\n' + recText)
+expect(rec.calls === 0 && /^Saved\. Safety is now [\d,]+ USDC of [\d,]+ USDC/.test(recText) && /Only Crypto/.test(recText), 'after a saved amount: which part it touched, then only the part with room')
+
+// 6d. Naming a part answers where it lives and what is left; Safety is outside the app.
+const safe = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: firstText }, { role: 'user', content: '[app event] The user signed the card: Added 900 USDC to your emergency fund.' }, { role: 'assistant', content: 'Which part would you like to fill first: Safety (300 USDC of 840 USDC) or Crypto (0 USDC of 1,354 USDC)?' }, { role: 'user', content: 'How about the "safe" part' }], { ...base, holdings: base.holdings.map(h => h.id === 'h2' ? { ...h, value: 300 } : h) }, 900)
+const safeText = safe.body.content ?? ''
+console.log('\nstep 6d: model calls', safe.calls, '\n' + safeText)
+expect(safe.calls === 0 && /Safety lives outside the app/.test(safeText) && /You have 300 USDC of/.test(safeText), 'naming Safety explains it lives outside the app, with the totals')
+
 console.log(bad ? `${bad} problem(s)` : 'flow OK')
 if (bad) process.exit(1)

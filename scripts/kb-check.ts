@@ -452,5 +452,27 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   if (/Safety[^\n]*months of spending/.test(st)) fail('standing: Safety never carries months')
 }
 
+{
+  const { detectPartChoice, pickQuestion } = await import('../functions/_lib/plan')
+  const only = 'Only Crypto (0 USDC of 1,354 USDC) still has room. Would you like to start with it?'
+  const which = 'Which part would you like to fill first: Safety (300 USDC of 840 USDC) or Crypto (0 USDC of 1,354 USDC)?'
+  const cases: Array<[string, string, string | null]> = [
+    ['Yep. I will start with that', only, 'crypto'], ['yes', only, 'crypto'], ['ok let us do it', only, 'crypto'],
+    ['safe', which, 'safe'], ['How about the "safe" part', which, 'safe'], ['stocks and gold', which, 'traditional'], ['crypto first', which, 'crypto'],
+    ['Yep', which, null], ['safe or crypto', which, null], ['why crypto?', which, null], ['I put 500 in the bank', which, null],
+    ['Yep', 'Hello there', null], ['safe', 'Ready to start? shall I prepare a deposit of 450 USDC?', null],
+  ]
+  for (const [text, prev, want] of cases) if (detectPartChoice(text, prev) !== want) fail(`part choice: "${text}" after "${prev.slice(0, 24)}…" should be ${want}`)
+  const rows = [
+    { key: 'safe' as const, name: 'Safety' as const, share: 21, have: 1000, target: 840, left: 0 },
+    { key: 'traditional' as const, name: 'Traditional' as const, share: 45, have: 2000, target: 1800, left: 0 },
+    { key: 'crypto' as const, name: 'Crypto' as const, share: 34, have: 0, target: 1354, left: 1354 },
+  ]
+  if (!/^Only Crypto \(0 USDC of 1,354 USDC\) still has room/.test(pickQuestion(rows, false))) fail('pick: only the part with room is named')
+  if (/Safety|Traditional/.test(pickQuestion(rows, false))) fail('pick: full parts are never named')
+  if (!/All three parts are at their targets/.test(pickQuestion(rows.map(r => ({ ...r, left: 0 })), false))) fail('pick: all full')
+  if (!/Which part would you like to fill first: Safety \(300 USDC of 840 USDC\) or Crypto/.test(pickQuestion([{ ...rows[0], have: 300, left: 540 }, rows[1], rows[2]], false))) fail('pick: two parts with room, each as "X of Y"')
+}
+
 console.log(fails ? `\n${fails} problem(s).` : `\nKB OK: ${KB.patterns.length} patterns, ${personas.length} personas + ${reals.length} real profiles, formula matches the spec table.`)
 process.exit(fails ? 1 : 0)

@@ -26,7 +26,7 @@ import { callModel as openai, DEFAULT_CLAUDE_MODEL, type Keys, type ToolCall } f
 import { powerState, takeTurn, type PowerEnv } from '../_lib/quota'
 import { recordStats } from '../_lib/stats'
 import { BATCH_MARK, INTAKE_MIN_UNKNOWN, buildIntake, intakeKeys, unknownBullets } from '../_lib/intake'
-import { buildPlan, buildStanding } from '../_lib/plan'
+import { buildAfterSign, buildPartAnswer, buildPlan, buildStanding, detectPartChoice } from '../_lib/plan'
 import { KB, fundFloorMonths, matchPatterns, patternBrief, param } from '../../src/kb/kb'
 import { computeFacts, displayFacts, amountsUsd } from '../../src/kb/facts'
 import { bucketStanding, computeBalance, holdingUsd, priceKey, symbolOf, toUsd, GOLD_UNITS_TO_OZ, GROUP_LABEL, type Balance, type Prices } from '../../src/lib/allocation'
@@ -1210,7 +1210,9 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     && !ACTION_INTENT.test(lastUserText) && !DECLINES.test(lastUserText) && !KNOWS_NOTHING.test(lastUserText) && !hasAnyData(profile)
   // "How much is in my bank?" records nothing: the planner is not called (the answer is built from the numbers, below).
   const askingAmount = ASKS_AMOUNT.test(lastUserText) && AMOUNT_TOPIC.test(lastUserText) && !/\d/.test(lastUserText) && lastUserText.length <= 120
-  for (let step = 1; step <= (appEvent || skipPlan || askingAmount ? 0 : MAX_PLAN_STEPS); step++) {
+  // The answer to "which part first?" / "start with Crypto?" is a choice, not a fact to record: no planner call either (Hieu, 2026-10-28).
+  const partChoice = appEvent ? null : detectPartChoice(lastUserText, assistantTexts[assistantTexts.length - 1] ?? '')
+  for (let step = 1; step <= (appEvent || skipPlan || askingAmount || partChoice ? 0 : MAX_PLAN_STEPS); step++) {
     const plan = await openai(apiKey, { model: MODEL, messages: planMessages, tools: PLAN_TOOLS, tool_choice: 'required', max_completion_tokens: 1500, reasoning_effort: 'none' }, meter)
     if (plan instanceof Response) return plan
     planSteps = step
@@ -1318,6 +1320,16 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   if (!appEvent && !placement && !ops.length && !readback.length && balance.declared && balance.target && ASKS_AMOUNT.test(lastUserText) && AMOUNT_TOPIC.test(lastUserText)) {
     const standingText = buildStanding({ p: profile, b: balance, vi })
     if (standingText) return json({ content: standingText, ops, dcaStop, actions })
+  }
+
+  // After the plan: the user picks a part, signs the emergency-fund deposit, or confirms a saved amount. The next step is built from the
+  // numbers (only parts that still have room, "X of Y", the offer to buy cirBTC only after they pick crypto), never written by the model.
+  if (planGiven && balance.target && balance.declared && !placement) {
+    const next = partChoice && !readback.length ? buildPartAnswer({ b: balance, vi, part: partChoice, walletUsd: wallet ?? 0 })
+      : /^\[app event\] The user signed the card: Added .*emergency fund/i.test(lastUserText) ? buildAfterSign({ b: balance, vi, kind: 'deposit' })
+      : lastUserText.startsWith('[app event] The user confirmed recording') ? buildAfterSign({ b: balance, vi, kind: 'record', summary: lastUserText })
+      : null
+    if (next) return json({ content: next, ops, dcaStop, actions })
   }
 
   // The first questions go out as ONE form, built here (no model call); what the user leaves out is taken as "prefer not to say".
