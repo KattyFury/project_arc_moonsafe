@@ -24,7 +24,7 @@ export interface Keys {
 export interface ToolCall { id: string; function: { name: string; arguments: string } }
 export interface Completion {
   choices: Array<{ message: { role: string; content: string | null; tool_calls?: ToolCall[] } }>
-  usage?: { prompt_tokens?: number; completion_tokens?: number }
+  usage?: { prompt_tokens?: number; completion_tokens?: number; prompt_tokens_details?: { cached_tokens?: number } }
 }
 
 /** The cheapest Claude model ($0.10 / $0.50 per million tokens, 2026-10). */
@@ -112,7 +112,13 @@ function openAiFailure(status: number, err: string): Response {
 }
 
 function count(c: Completion, meter: Meter): Completion {
-  meter.tokens += (c.usage?.prompt_tokens ?? 0) + (c.usage?.completion_tokens ?? 0)
+  const prompt = c.usage?.prompt_tokens ?? 0
+  const completion = c.usage?.completion_tokens ?? 0
+  meter.tokens += prompt + completion
+  meter.promptTokens = (meter.promptTokens ?? 0) + prompt
+  meter.completionTokens = (meter.completionTokens ?? 0) + completion
+  meter.cachedTokens = (meter.cachedTokens ?? 0) + (c.usage?.prompt_tokens_details?.cached_tokens ?? 0)
+  meter.modelCalls = (meter.modelCalls ?? 0) + 1
   return c
 }
 
