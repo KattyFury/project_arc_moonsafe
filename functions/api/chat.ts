@@ -24,6 +24,7 @@ import { privyUserId } from '../_lib/privyAuth'
 import { addUsage, overBudget, type Meter } from '../_lib/budget'
 import { callModel as openai, DEFAULT_CLAUDE_MODEL, type Keys, type ToolCall } from '../_lib/llm'
 import { powerState, takeTurn, type PowerEnv } from '../_lib/quota'
+import { recordStats } from '../_lib/stats'
 import { KB, fundFloorMonths, matchPatterns, patternBrief, param } from '../../src/kb/kb'
 import { computeFacts, displayFacts, amountsUsd } from '../../src/kb/facts'
 import { computeBalance, holdingUsd, priceKey, symbolOf, toUsd, GOLD_UNITS_TO_OZ, GROUP_LABEL, type Balance, type Prices } from '../../src/lib/allocation'
@@ -317,7 +318,7 @@ const PLAN_PROMPT = `You are MoonSafe's action planner. Read the user's LATEST m
 - Money "in the bank" without saying checking / current account → savings (it is their Safe part). They say an item is in the wrong place ("I told you I have 1000$ in the bank" while it shows as idle) → set_holding with its id and the right type.
 - A loan from family / friends: family_no_interest when they say there is no interest, family_interest when there is; not said → family_interest without rate_pct (the agent asks).
 - show_allocation ONLY when they ask how their money is split, what to do with idle money, or for the chart. show_cashflow ONLY when they ask about income vs spending, how much they save, or financial freedom.
-- They want to add to the fund → prepare_deposit; withdraw → prepare_withdraw; buy cirBTC → prepare_buy_cirbtc; recurring buys → propose_dca; stop them → stop_dca; open a screen → open_screen.
+- They want to add to the fund → prepare_deposit; withdraw → prepare_withdraw; buy cirBTC → prepare_buy_cirbtc;${DCA_AVAILABLE ? ' recurring buys → propose_dca; stop them → stop_dca;' : ''} open a screen → open_screen.
 - A plain yes right after the agent's offer ("ok", "yes", "do it", "as you said", ${VI_YES}) → that exact action with the offered amount. A message that adds information is not a yes.
 - prepare_deposit is ONLY for the emergency fund, never for the Safe part (their own savings).
 
@@ -347,7 +348,7 @@ const fn = (name: string, description: string, properties: Record<string, unknow
 
 const ASSET_TYPE_KEYS = KB.asset_types.map(t => t.key).filter(k => k !== 'moonsafe_fund' && k !== 'cirbtc')
 
-const PLAN_TOOLS = [
+const ALL_PLAN_TOOLS = [
   fn('update_profile', 'Record facts about the user just stated. Pass only fields just learned.', {
     age: { type: 'integer' },
     age_declined: { type: 'boolean', description: 'true when they decline to give their age' },
@@ -437,6 +438,8 @@ const PLAN_TOOLS = [
   }, ['screen']),
   fn('no_action', 'Nothing to do in the app (question, greeting, conversation).'),
 ]
+// While DCA is off, its two tools are not offered to the planner: they cost ~170 tokens on every plan call and could only be refused.
+const PLAN_TOOLS = DCA_AVAILABLE ? ALL_PLAN_TOOLS : ALL_PLAN_TOOLS.filter(t => !['propose_dca', 'stop_dca'].includes(t.function.name))
 
 const REPLY_TOOLS = [
   fn('web_search', 'Look up finance, markets, interest rates, exchange rates or recent news.', {
@@ -709,6 +712,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   } finally {
     if (!ok) await turn.refund() // a message that got no answer is not charged
     await addUsage(context.env, userId, meter.tokens)
+    await recordStats(context.env, meter, lastUser.startsWith('[app event]') ? 'event' : 'message', ok)
   }
 }
 
@@ -1165,6 +1169,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     const plan = await openai(apiKey, { model: MODEL, messages: planMessages, tools: PLAN_TOOLS, tool_choice: 'required', max_completion_tokens: 1500, reasoning_effort: 'none' }, meter)
     if (plan instanceof Response) return plan
     planSteps = step
+    meter.planSteps = step
     planIn += plan.usage?.prompt_tokens ?? 0
     planOut += plan.usage?.completion_tokens ?? 0
     const calls = plan.choices[0]?.message.tool_calls ?? []
@@ -1409,6 +1414,7 @@ ${ending}` })
       if (!problems.length && content.replace(/\*\*/g, '').length > maxChars && !actions.some(x => x.type === 'show_allocation' || x.type === 'show_cashflow')) problems.push(`too long (${content.length} chars): cut to at most ${maxChars === 800 ? '7' : '5'} short sentences including one question; first sentence = the direct answer; keep every point it makes now (key numbers, the reason why, advice on debt or saving), drop only preambles, repeats and filler`)
       if (problems.length && rewrites < 2 && round < 4) {
         rewrites++
+        meter.rewrites = rewrites
         lastDraft = content
         replyMessages.push({ role: 'assistant', content })
         replyMessages.push({ role: 'system', content: `That reply needs fixing: ${problems.join('; ')}. Rewrite the whole reply in ${replyLang}, keeping the correct figures.` })

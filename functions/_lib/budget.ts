@@ -20,7 +20,18 @@ export interface BudgetEnv {
 }
 
 /** Tokens used by one request, filled in by every model call. */
-export interface Meter { tokens: number; /** Set once a request has moved to the standby model. */ provider?: 'claude' }
+export interface Meter {
+  tokens: number
+  /** Set once a request has moved to the standby model. */
+  provider?: 'claude'
+  // Collected for functions/_lib/stats.ts
+  modelCalls?: number
+  planSteps?: number
+  rewrites?: number
+  promptTokens?: number
+  completionTokens?: number
+  cachedTokens?: number
+}
 
 const DEFAULT_ALL = 1_500_000
 const DEFAULT_USER = 250_000

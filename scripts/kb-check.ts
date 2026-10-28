@@ -304,5 +304,20 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   } finally { globalThis.fetch = realFetch }
 }
 
+// 11. Usage statistics collected from real traffic (replaces test chats as the way to find where tokens go).
+{
+  const { readStats, recordStats } = await import('../functions/_lib/stats')
+  const store = new Map<string, string>()
+  const kv = { get: async (k: string) => store.get(k) ?? null, put: async (k: string, v: string) => { store.set(k, v) } }
+  const env = { USERDATA: kv }
+  await recordStats(env, { tokens: 0, modelCalls: 3, planSteps: 2, rewrites: 1, promptTokens: 9000, completionTokens: 300, cachedTokens: 6000 }, 'message', true)
+  await recordStats(env, { tokens: 0, modelCalls: 1, planSteps: 0, rewrites: 0, promptTokens: 4000, completionTokens: 100, cachedTokens: 0, provider: 'claude' }, 'event', true)
+  await recordStats(env, { tokens: 0 }, 'message', false)
+  const today = (await readStats(env, 1))[0]
+  if (today.turns !== 2 || today.events !== 1 || today.failed !== 1 || today.modelCalls !== 4 || today.standbyTurns !== 1) fail(`stats: wrong counts ${JSON.stringify(today)}`)
+  if (today.promptTokens !== 13000 || today.cachedTokens !== 6000 || today.cachedShare !== 0.46) fail(`stats: wrong tokens or cached share ${JSON.stringify(today)}`)
+  await recordStats({}, { tokens: 0 }, 'message', true) // without KV nothing happens and nothing throws
+}
+
 console.log(fails ? `\n${fails} problem(s).` : `\nKB OK: ${KB.patterns.length} patterns, ${personas.length} personas + ${reals.length} real profiles, formula matches the spec table.`)
 process.exit(fails ? 1 : 0)
