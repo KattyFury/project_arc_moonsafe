@@ -41,6 +41,12 @@ const history = [
   { role: 'user', content: 'yes' },
   { role: 'assistant', content: 'Your emergency fund is now 900 USDC. Which bucket do you want to fill next: Safety, Traditional, or Crypto?' },
 ]
+// First messages of a brand-new user: the list of first questions is built by the server, so NO model is called.
+const firstMessages: Record<string, string> = {
+  'new user: invest': 'I want to invest in a right way',
+  'new user: spending': 'I want to see where my money goes',
+  'new user: emergency fund': 'help me build an emergency fund',
+}
 const scenarios: Record<string, string> = {
   'pick a bucket': 'now we move to crypto',
   'ask a concept': 'what is the emergency fund for?',
@@ -80,6 +86,17 @@ for (const [name, text] of Object.entries(scenarios)) {
   const plan = calls.find(c => c.kind === 'plan'); const reply = calls.find(c => c.kind === 'reply')
   first ??= plan
   console.log(`${name.padEnd(24)} PLAN ${String(plan?.total ?? '-').padStart(5)} (system ${plan?.system}, tools ${plan?.tools})   REPLY ${String(reply?.total ?? '-').padStart(5)} (system ${reply?.system})`)
+}
+console.log('\nBrand-new user, first message (model calls; the answer is the list of first questions):')
+for (const [name, text] of Object.entries(firstMessages)) {
+  calls = []
+  const request = new Request('http://local/api/chat', {
+    method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+    body: JSON.stringify({ messages: [{ role: 'user', content: text }], context: { profile: normalizeProfile({ v: 2 }), vaultUsdc: 0, walletUsdc: 0, cirBtcUsdc: 0 } }),
+  })
+  const res = await onRequestPost({ request, env: { OPENAI_API_KEY: 'fake' } })
+  const body = await res.json() as { content?: string }
+  console.log(`${name.padEnd(24)} model calls: ${calls.length}   list sent: ${/Share whatever you're comfortable with/.test(body.content ?? '') ? 'yes' : 'NO'}`)
 }
 if (first) console.log(`\nPlan tools by size: ${first.toolSizes.sort((a, b) => b[1] - a[1]).map(([n, t]) => `${n} ${t}`).join(', ')}`)
 console.log('\nA turn is at least 1 PLAN step + 1 REPLY call (more when the planner records something or a reply is rewritten).')
