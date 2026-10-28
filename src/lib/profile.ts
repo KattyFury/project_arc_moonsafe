@@ -191,6 +191,7 @@ export function normalizeProfile(raw: Record<string, unknown> | null | undefined
     expenses: list(raw.expenses, x => readFlow<Expense>(x, ['fixed', 'variable'], 'e', now)),
     ...(readNearGoal(raw.nearGoal) ? { nearGoal: readNearGoal(raw.nearGoal) } : {}),
     ...(raw.noNearGoal === true ? { noNearGoal: true } : {}),
+    ...(raw.hasWindfalls === true ? { hasWindfalls: true } : {}),
     ...(bool(raw.cryptoDropOk) !== null ? { cryptoDropOk: bool(raw.cryptoDropOk) } : {}),
     ...(bool(raw.insured) !== null ? { insured: bool(raw.insured) } : {}),
     ...(num(raw.savedAt) !== null ? { savedAt: num(raw.savedAt)! } : {}),
@@ -212,7 +213,7 @@ export const hasAnyData = (p: FinancialProfile | null | undefined): boolean =>
 
 // ---- operations (what the agent's tools become) ---------------------------------------------
 
-export type ProfileFields = Partial<Pick<FinancialProfile, 'age' | 'ageDeclined' | 'incomeStable' | 'dependents' | 'soleEarner' | 'debtsComplete' | 'nearGoal' | 'noNearGoal' | 'cryptoDropOk' | 'insured'>>
+export type ProfileFields = Partial<Pick<FinancialProfile, 'age' | 'ageDeclined' | 'incomeStable' | 'dependents' | 'soleEarner' | 'debtsComplete' | 'nearGoal' | 'noNearGoal' | 'hasWindfalls' | 'cryptoDropOk' | 'insured'>>
 
 /** The holding the user declared for the USDC in THIS (connected) wallet, if there is one. */
 export function appWalletHolding(p: FinancialProfile | null): Holding | undefined {
@@ -295,7 +296,7 @@ export function readOps(raw: unknown, now = Date.now()): ProfileOp[] {
         const f = (o.fields && typeof o.fields === 'object' ? o.fields : {}) as Record<string, unknown>
         const fields: ProfileFields = {}
         if (num(f.age) !== null) fields.age = num(f.age)!
-        for (const k of ['ageDeclined', 'incomeStable', 'soleEarner', 'debtsComplete', 'noNearGoal', 'cryptoDropOk', 'insured'] as const) if (typeof f[k] === 'boolean') fields[k] = f[k] as boolean
+        for (const k of ['ageDeclined', 'incomeStable', 'soleEarner', 'debtsComplete', 'noNearGoal', 'hasWindfalls', 'cryptoDropOk', 'insured'] as const) if (typeof f[k] === 'boolean') fields[k] = f[k] as boolean
         if (num(f.dependents) !== null) fields.dependents = num(f.dependents)!
         const goal = readNearGoal(f.nearGoal)
         if (goal) fields.nearGoal = goal

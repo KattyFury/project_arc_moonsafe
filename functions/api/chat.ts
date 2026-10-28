@@ -314,7 +314,7 @@ const PLAN_PROMPT = `You are MoonSafe's action planner. Read the user's LATEST m
 - Something they hold → add_holding, one call per item, with the right type. A new amount for an item already listed → set_holding with its id. Sold everything / closed it → remove_holding.
 - Money moved between their own places ("I moved 1,000 from my wallet into savings") → move. Money PUT / moved into savings, the bank or Safe ("I put 1,000 in my bank", "1,000 more in savings from outside", "I got X and put it in the bank") → record NOTHING and call no_action: the app shows a confirmation box where the user picks the source and the app saves it. An amount with "more", "extra", "new" or "outside" is an ADDITION, never the new total: never set_holding it over an existing amount.
 - Each debt → add_debt (type, balance, yearly rate and monthly payment if said, lender for family). Changes → update_debt; paid off → remove_debt. Unknown type → type "unknown".
-- Each income source → set_income: active (salary, side jobs, content), passive (interest, staking, rent, dividends, interest on loans given), irregular (airdrops, trading, bonuses). A new number for a listed one → same tool with its id.
+- Each income source → set_income: active (salary, side jobs, content), passive (interest, staking, rent, dividends, interest on loans given), irregular (trading, bonuses) ONLY when the user gives a monthly figure. Airdrops, trading wins and anything that "comes a few times a year" / "sometimes" is a WINDFALL: it is not a job and is not counted as monthly income, so do NOT call set_income for it and never ask for a monthly figure; call update_profile with has_windfalls true. A new number for a listed one → same tool with its id.
 - Spending → set_expense: fixed (rent, bills, subscriptions, school fees) or variable (food, transport, other essentials). One total ("I spend 1,000 a month") → one fixed line named "Monthly spending". Debt payments belong on the debt (monthly_payment), never as an expense. A total that includes debt payments ("600 in all: 400 must-pay and 200 to repay my debt") → set_expense with ONLY the non-debt part (400), once. A payment on a debt whose total owed was not said → record no debt (the agent asks how much is still owed).
 - USDC in THIS app wallet ("in this wallet", "in the app") is declared like any other place: stable_wallet with where "app wallet". The app also SEES the real balance and shows it to you as "seen", but the totals use only what the user declares (people use several wallets). Never copy the seen number into the profile on your own: record what the user says they hold.
 - Money "in the bank" without saying checking / current account → savings (it is their Safe part). They say an item is in the wrong place ("I told you I have 1000$ in the bank" while it shows as idle) → set_holding with its id and the right type.
@@ -361,6 +361,7 @@ const ALL_PLAN_TOOLS = [
     near_goal_name: { type: 'string', description: 'A big expense within 5 years they told: "car", "wedding", "school fees"' },
     near_goal_amount: MONEY,
     near_goal_years: { type: 'number', description: 'Years until they need it, if said' },
+    has_windfalls: { type: 'boolean', description: 'true when part of their money comes in bursts they cannot count on (airdrops, trading wins, bonuses, "a few times a year"). Use this INSTEAD of recording a monthly income for it.' },
     no_near_goal: { type: 'boolean', description: 'true when they said there is no big expense coming in the next 5 years' },
     crypto_drop_ok: { type: 'boolean', description: 'Answer to "if your crypto dropped by half, could you hold it without selling to live?": yes = true, no = false; unsure = leave out' },
     insured: { type: 'boolean', description: 'They have health or life insurance protecting the people who rely on them' },
@@ -644,6 +645,11 @@ const TOPICS: { key: string; ask: string; asked: RegExp; known: (p: FinancialPro
 ]
 const ASSET_TOPICS = new Set(['bank', 'stables', 'crypto', 'traditional', 'property', 'lending'])
 
+/** Money that comes in bursts: airdrops, trading wins, bonuses, "a few times a year". */
+const WINDFALL = /airdrop|(few|couple of|some) times a year|(?<!\p{L})(sometimes?|occasionally)(?!\p{L})|once in a while|now and then|trading (profit|win)s?|hên xui|lâu lâu|thỉnh thoảng/iu // lang-ok
+const MONTHLY_FIGURE = /(per|a|each|every) month|monthly|on average|average|mỗi tháng|hàng tháng/i // lang-ok
+/** The user mentions a windfall and gives no monthly figure for it (a sentence with a windfall word and no "a month" / "average"). */
+const windfallWithoutMonthly = (text: string) => { const hits = text.split(/(?<=[.!?\n])\s*|\n/).filter(x => WINDFALL.test(x)); return hits.length > 0 && !hits.some(x => MONTHLY_FIGURE.test(x)) }
 const OWED_Q = /still owe|còn nợ bao nhiêu/i // lang-ok
 const INTEREST_Q = /interest|lãi/i // lang-ok
 
@@ -898,6 +904,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
         f.nearGoal = { name: typeof a.near_goal_name === 'string' && a.near_goal_name.trim() ? a.near_goal_name.trim() : 'Goal', amount: goalAmt.amount, currency: goalAmt.currency, years }
       }
       if (a.no_near_goal === true && !profile.nearGoal && SAYS_NONE.test(lastUserText)) f.noNearGoal = true
+      if (a.has_windfalls === true && !profile.hasWindfalls && WINDFALL.test(lastUserText)) f.hasWindfalls = true
       if (typeof a.crypto_drop_ok === 'boolean' && a.crypto_drop_ok !== profile.cryptoDropOk && (YES_NO.test(lastUserText) || /drop|half|giảm|một nửa/i.test(prevAssistantText))) f.cryptoDropOk = a.crypto_drop_ok // lang-ok
       if (typeof a.insured === 'boolean' && a.insured !== profile.insured && (YES_NO.test(lastUserText) || /insur|bảo hiểm/i.test(lastUserText + prevAssistantText))) f.insured = a.insured // lang-ok
       if (!Object.keys(f).length) { console.log(`dropped update_profile ${call.function.arguments}: not stated or unchanged`); return 'Nothing changed (not stated in the latest message, or already known).' }
@@ -910,6 +917,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       if (f.debtsComplete) parts.push([{ debtsComplete: true }, 'no other debt'])
       if (f.nearGoal) { const g = f.nearGoal as NearGoal; parts.push([{ nearGoal: g }, `${g.name} ${moneyText({ amount: g.amount, currency: g.currency })}${g.years ? ` in ${g.years} year${g.years === 1 ? '' : 's'}` : ''}`]) }
       if (f.noNearGoal) parts.push([{ noNearGoal: true }, 'no big expense in the next 5 years'])
+      if (f.hasWindfalls) parts.push([{ hasWindfalls: true }, 'airdrops and other windfalls: not counted as monthly income'])
       if (f.cryptoDropOk !== undefined) parts.push([{ cryptoDropOk: f.cryptoDropOk }, f.cryptoDropOk ? 'could hold through a 50% crypto drop' : 'could not hold through a 50% crypto drop'])
       if (f.insured !== undefined) parts.push([{ insured: f.insured }, f.insured ? 'insured' : 'no insurance yet'])
       for (const [fields, text] of parts) record({ op: 'update_profile', fields }, text)
@@ -1065,6 +1073,10 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       // "my other income is airdrop" became "airdrop 0 USDC a month" (real chat 2026-10-28): a line needs an amount above zero.
       if (!(m.amount > 0)) return 'Not recorded: no monthly amount was given. Skip this line, it is not needed now; they can tell the usual amount per month any time.'
       const isIncome = name === 'set_income'
+      // Airdrops "a few times a year" are not monthly income (real chat 2026-10-28): the planner should say so instead, via has_windfalls.
+      if (isIncome && String(a.kind) === 'irregular' && windfallWithoutMonthly(lastUserText)) {
+        return 'Not recorded as monthly income: airdrops and other windfalls arrive in bursts and cannot be counted on (not a stable job). Call update_profile with has_windfalls true instead, and never ask for a monthly figure.'
+      }
       // "I have to pay my mom 200$ a month" became a spending line next to the same debt payment (real chat 2026-10-26).
       if (!isIncome && (DEBT_PAY_NAME.test(String(a.name ?? '')) || profile.debts.some(d => d.monthlyPayment !== null && Math.abs(d.monthlyPayment - m.amount) <= 0.01 && d.currency === m.currency))) {
         return 'Not recorded: a debt payment belongs on the debt (update_debt monthly_payment), never as spending; it already counts in spending.'
@@ -1251,7 +1263,9 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   const next = !placement && !DECLINES.test(lastUserText) && (!userAsks || invitesNext) ? pending : null
   // The advice path (Hieu, 2026-10-27): collect → the plan, once → start with the emergency fund.
   // A full emergency fund proves the plan was given even when the history sent to the server no longer holds it (real chat 2026-10-27: the plan was recited again).
-  const planGiven = assistantTexts.some(a => PLAN_GIVEN.test(a)) || balance.fund.met
+  // After the list of first questions the overview is ALWAYS given once, even when the fund is already full (real chat 2026-10-28:
+  // a returning user went straight to a cirBTC offer); the full-fund shortcut is only for chats whose history no longer holds the plan.
+  const planGiven = assistantTexts.some(a => PLAN_GIVEN.test(a)) || (balance.fund.met && !batchAsked)
   const phase: 'collect' | 'plan' | 'start' = pending || toAsk.length ? 'collect' : !planGiven && balance.target ? 'plan' : 'start'
   // Crypto to buy now: the smaller of what the Crypto bucket still needs and what the wallet can spend.
   const tCrypto = balance.target ? balance.target.btc + balance.target.large_cap + balance.target.altcoin : 0
@@ -1318,7 +1332,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
 ${points.map((x, k) => `${k + 1}. ${x}`).join('\n')}
 ${ending}` })
   }
-  const BUCKETS_RULE = 'Name only buckets whose "Still to fill" is above 0; a bucket at 0 is full and is never offered. If only ONE bucket is left, do not ask which: offer it directly (Crypto → the cirBTC buy offer; Safety / Traditional → outside the app). If none is left, say the plan is complete.'
+  const BUCKETS_RULE = 'Name only buckets whose "Still to fill" is above 0; a bucket at 0 is full and is never offered. If only ONE bucket is left, say what it is and ask whether they want to start with it; NEVER open with a purchase or a card: the cirBTC buy is offered only after they say they want crypto. Safety and Traditional are done outside the app. If none is left, say the plan is complete.'
   // After the plan they fill one bucket at a time, the one they pick (Hieu, 2026-10-27).
   if (phase === 'start' && planGiven && balance.fund.met && !appEvent && !placement && !actions.some(x => x.type === 'prepare_buy_cirbtc' || x.type === 'propose_dca')) replyMessages.push({ role: 'system', content: `The plan was given and the emergency fund is full. They fill one bucket at a time, the one THEY pick, no need to split every dollar. If they pick one: Crypto → ${balance.lock.open && cryptoOffer >= 1 ? `offer exactly: "Would you like me to prepare a cirBTC buy of **${usdc(cryptoOffer)}** for you to sign?" (that fills the Crypto bucket as far as the wallet allows; ignore the split in "Suggested use of idle money")` : 'say what is missing to buy in the app'}; Safety → their own bank savings or flexible earn, outside the app, with the amount; Traditional → bought outside the app with a broker (an index fund such as VOO, or gold), with the amount. If they have not picked yet, ask which one they want to fill first. ${BUCKETS_RULE}` })
   const recordEvent = lastUserText.startsWith('[app event] The user confirmed recording')

@@ -60,11 +60,11 @@ function Donut({ slices, size, center, sub, label }: { slices: { seg: Segment; s
 
 /**
  * compact = one row of two small donuts + a share legend (Invest and the chat). The full version
- * (Balance) adds amounts, the share of net worth and how to place idle money.
+ * (Balance) adds amounts, the share of net worth and what is left to reach the plan.
  */
 export function AllocationPies({ compact = false }: { compact?: boolean }) {
   const { balance: b, moneyUsd, prices } = useApp()
-  const { target, liquid, grey, byGroup, suggest, unpriced, declared } = b
+  const { target, liquid, grey, byGroup, unpriced, declared } = b
   const size = compact ? 72 : 112
   // Crypto is one bucket: BTC plus any other coins held; its target is all of the crypto share.
   const held: Record<Segment, number> = { safe: byGroup.safe, traditional: byGroup.traditional, crypto: byGroup.btc + byGroup.large_cap + byGroup.altcoin, idle: byGroup.idle, grey }
@@ -85,7 +85,7 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
   const ofNetWorth = (s: Segment) => { const v = shareOfNetWorth(b, held[s]); return v === null ? '–' : `${r(v)}%` }
   const rows = ORDER.filter(s => s !== 'grey' || grey > 0)
   const targetLabel = target ? `Target, age ${b.age}${b.ageIsDefault ? ' (default)' : ''}` : 'Target (needs your age)'
-  const walletOnly = !declared && <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>Only your app wallet is counted. Tell the agent what else you hold.</p>
+  const walletOnly = !declared && <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>Nothing is counted yet. Tell the agent what you hold, wallets included.</p>
 
   if (compact) return (
     // One row: target donut, current donut, legend. In a narrow place (the chat bubble column)
@@ -108,8 +108,14 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
     </div>
   )
 
-  const placeTo = suggest ? { safe: suggest.to.safe, traditional: suggest.to.traditional, crypto: suggest.to.btc + suggest.to.large_cap + suggest.to.altcoin } : null
-  const place = placeTo && (['safe', 'traditional', 'crypto'] as const).filter(g => placeTo[g] >= 0.01)
+  // What is still missing to match the plan, per part (the same arithmetic as the agent's "Still to fill"): plain amounts, no jargon.
+  const toDivide = Math.max(0, liquid - b.goalUsd)
+  const cryptoTarget = target ? target.btc + target.large_cap + target.altcoin : 0
+  const missing = target && toDivide > 0 ? ([
+    ['Safety', toDivide * target.safe / 100 - Math.max(0, byGroup.safe - b.goalUsd)],
+    ['Traditional', toDivide * target.traditional / 100 - byGroup.traditional],
+    ['Crypto', toDivide * cryptoTarget / 100 - (byGroup.btc + byGroup.large_cap + byGroup.altcoin)],
+  ] as Array<[string, number]>).filter(([, v]) => v >= 0.5) : []
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-4">
@@ -139,13 +145,11 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
         </tbody>
       </table>
 
-      {walletOnly || (place && place.length > 0 && (
+      {walletOnly || (target && toDivide > 0 && (
         <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>
-          Idle money, keeping {moneyUsd(suggest!.keep)} for daily spending:
-          {suggest!.toFund >= 0.01 && <> <strong style={{ color: 'var(--ink)' }}>{moneyUsd(suggest!.toFund)}</strong> to the fund,</>}
-          {suggest!.toDebt >= 0.01 && <> <strong style={{ color: 'var(--ink)' }}>{moneyUsd(suggest!.toDebt)}</strong> to priority debt,</>}
-          {suggest!.toGoal >= 0.01 && <> <strong style={{ color: 'var(--ink)' }}>{moneyUsd(suggest!.toGoal)}</strong> kept in savings for your goal,</>}
-          {place.map((g, i) => <span key={g}> <strong style={{ color: 'var(--ink)' }}>{moneyUsd(placeTo![g])}</strong> {g === 'safe' ? 'to your own savings' : g === 'crypto' ? 'to crypto, mostly BTC' : SEG_NAME[g].toLowerCase()}{i < place.length - 1 ? ',' : '.'}</span>)}
+          {missing.length
+            ? <>Left to reach your plan: {missing.map(([name, v], i) => <span key={name}>{i > 0 && ' · '}{name} <strong style={{ color: 'var(--ink)' }}>{moneyUsd(v)}</strong></span>)}.</>
+            : 'You match your plan. New money can follow the same split.'}
         </p>
       ))}
       {unpriced.length > 0 && (

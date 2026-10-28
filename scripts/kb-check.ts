@@ -390,7 +390,16 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   const afterDeposit = bal(applyOps(base, walletMoveOps(base, -450)), 1450, 450)
   if (Math.abs(safeInPlan - afterDeposit.liquid * afterDeposit.target!.safe / 100) > 1) fail(`plan: Safety ${safeInPlan} must equal the target after the deposit ${afterDeposit.liquid * afterDeposit.target!.safe / 100}`)
   if (!/Traditional[^\n]{0,80}\d+%/.test(plan)) fail('plan: must be recognised as the plan already given')
-  if (!/Which bucket would you like to fill first/.test(buildPlan({ p: base, b: bal(base, 1900, 450), shares, cover: null, vi: false })!)) fail('plan: with the fund full it asks the bucket')
+  const fullPlan = buildPlan({ p: base, b: bal(base, 1900, 450), shares, cover: null, vi: false })!
+  if (!/Which part would you like to fill first: Safety or Crypto|Only \w+ still has room/.test(fullPlan)) fail('plan: with the fund full it asks which part to fill, naming only the parts that still have room')
+  if (/Traditional\?|, Traditional/.test(fullPlan.split('\n').pop() ?? '')) fail('plan: a part that is already full is not offered')
+  if (/cirBTC|prepare a|for you to sign/i.test(fullPlan)) fail('plan: never opens with a purchase')
+  // The overview at 21 (Hieu, 2026-10-28): safe 21%, at risk 79% = Traditional 45% + Crypto 34%.
+  const young = buildPlan({ p: normalizeProfile({ ...base, age: 21 }), b: bal(normalizeProfile({ ...base, age: 21 }), 1900, 0), shares: [21, 45, 34], cover: 450, vi: false })!
+  if (!/safe part of 21%/.test(young) || !/takes risk, 79%/.test(young) || !/Traditional 45%\*\* and \*\*Crypto 34%/.test(young)) fail('plan: the overview at 21 reads 21% safe / 79% at risk = 45% + 34%')
+  const withAirdrops = buildPlan({ p: normalizeProfile({ ...base, hasWindfalls: true }), b: bal(base, 1900, 0), shares, cover: 450, vi: false })!
+  if (!/About airdrops: they arrive in bursts and cannot be counted on, so they are not a stable job/.test(withAirdrops)) fail('plan: airdrops are explained as not a stable job')
+  if (/About airdrops/.test(plan)) fail('plan: no airdrop note without airdrops')
   const debtor = normalizeProfile({ ...base, debts: [{ id: 'd1', name: 'Card', type: 'credit_card', balance: 500, currency: 'USDC', ratePct: 20, monthlyPayment: null, updatedAt: 1 }] })
   if (buildPlan({ p: debtor, b: bal(debtor, 1900, 0), shares, cover: 450, vi: false }) !== null) fail('plan: a priority debt goes to the model')
   if (!buildPlan({ p: base, b: bal(base, 1900, 0), shares, cover: 450, vi: true })?.includes('Vì sao')) fail('plan: Vietnamese version') // lang-ok

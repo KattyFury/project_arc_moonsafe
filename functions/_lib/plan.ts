@@ -69,28 +69,45 @@ export function buildPlan({ p, b, shares, cover, vi }: PlanInput): string | null
   const est = b.ageIsDefault ? (vi ? ' (ước tính theo tuổi mặc định 30)' : ' (an estimate: the default age of 30 is used)') : '' // lang-ok
   const vault = b.fundUsd ?? 0
   const fundNow = vault >= b.fund.floorUsd - 0.005
+  const age = b.age ?? 30
+  // The overview first (Hieu, 2026-10-28): what is needed, in what order, before any single step. Safe + at-risk = 100.
+  const risk = sTrad + sCrypto
+  // Which parts still have room. Never a purchase here: the buy is offered only after the user picks crypto.
+  const open: Array<[string, number]> = ([['Safety', aSafe - g.safe], ['Traditional', aTrad - g.traditional], ['Crypto', aCrypto - cryptoNow]] as Array<[string, number]>).filter(([, left]) => left > 0.5)
+  const names = (xs: string[]) => xs.length > 1 ? `${xs.slice(0, -1).join(', ')} ${vi ? 'hay' : 'or'} ${xs[xs.length - 1]}` : xs[0] // lang-ok
+  const pick = open.length === 0
+    ? (vi ? 'Cả ba phần đã đạt mục tiêu. Số tiền mới bạn thêm vào có thể theo cùng tỷ lệ này.' : 'All three parts are at their targets. Any new money you add can follow the same split.') // lang-ok
+    : open.length === 1
+      ? (vi ? `Chỉ còn ${open[0][0]} chưa đủ. Bạn muốn bắt đầu với phần này không?` : `Only ${open[0][0]} still has room. Would you like to start with it?`) // lang-ok
+      : (vi ? `Bạn muốn lấp phần nào trước: ${names(open.map(o => o[0]))}?` : `Which part would you like to fill first: ${names(open.map(o => o[0]))}?`) // lang-ok
   const ask = fundNow
-    ? (vi ? 'Bạn muốn lấp nhóm nào trước: Safety, Traditional hay Crypto?' : 'Which bucket would you like to fill first: Safety, Traditional or Crypto?') // lang-ok
+    ? pick
     : cover !== null
       ? (vi ? `Sẵn sàng bắt đầu chưa? Bước đầu là quỹ dự phòng: mình chuẩn bị một lệnh nạp **${fmt(cover)}** từ ví để bạn ký nhé?` : `Ready to start? The first step is your emergency fund: shall I prepare a deposit of **${fmt(cover)}** from your wallet for you to sign?`) // lang-ok
       : (vi ? 'Bước đầu là quỹ dự phòng. Ví chưa đủ USDC để nạp, nên hãy thêm USDC vào ví rồi nói với mình nhé.' : 'The first step is your emergency fund. The wallet does not have enough USDC to add yet, so add some USDC to it and tell me.') // lang-ok
+  // Airdrops and other bursts are not a job: said once, here, because the plan is built only on steady income.
+  const windfall = p.hasWindfalls
+    ? (vi ? 'Về airdrop: chúng đến theo từng đợt và không thể trông cậy, nên không phải một nghề ổn định. Kế hoạch này chỉ dựa trên thu nhập ổn định của bạn; khi nhận một khoản airdrop, hãy coi đó là tiền thêm để đặt vào đúng kế hoạch này.' : 'About airdrops: they arrive in bursts and cannot be counted on, so they are not a stable job. This plan is built on your steady income only; when an airdrop lands, treat it as extra money to place by this same plan.') // lang-ok
+    : null
   const lines = vi
     ? [ // lang-ok
-      'Đây là kế hoạch của bạn, từng bước một.', // lang-ok
-      `1. **Quỹ dự phòng: ${fmt(b.fund.floorUsd)}** (${b.fund.floorMonths} tháng chi tiêu). Vì sao: ${fundWhy(p, b.fund.floorMonths, true)}. Hiện có ${fmt(vault)}.`, // lang-ok
-      `Sau khi quỹ đủ, theo khung MoonSafe${est}, bạn có thể cân nhắc chia số tiền linh hoạt (${fmt(toDivide)}${toFund > 0 ? ', sau khi nạp quỹ' : ''}) như sau:`, // lang-ok
+      `Để đầu tư đúng cách, bạn cần ba việc theo thứ tự: trước hết là **quỹ dự phòng**; sau đó chia số tiền linh hoạt còn lại thành phần **an toàn ${sSafe}%** và phần **chấp nhận rủi ro ${risk}%** (phần an toàn bằng tuổi của bạn, ${age}${est ? ', ước tính' : ''}, vì bạn càng trẻ càng có thời gian gánh rủi ro); và trong phần rủi ro đó, lý tưởng là **Traditional ${sTrad}%** và **Crypto ${sCrypto}%**.`,
+      `1. **Quỹ dự phòng: ${fmt(b.fund.floorUsd)}** (${b.fund.floorMonths} tháng chi tiêu). Vì sao: ${fundWhy(p, b.fund.floorMonths, true)}. Hiện có ${fmt(vault)}.`,
+      `Sau khi quỹ đủ, bạn có thể cân nhắc chia số tiền linh hoạt (${fmt(toDivide)}${toFund > 0 ? ', sau khi nạp quỹ' : ''}) như sau:`,
       `2. **Safety ${sSafe}% = ${fmt(aSafe)}** — ${WHY.safety.vi} ${now(g.safe, aSafe)}.`,
       `3. **Traditional ${sTrad}% = ${fmt(aTrad)}** — ${WHY.traditional.vi} ${now(g.traditional, aTrad)}.`,
       `4. **Crypto ${sCrypto}% = ${fmt(aCrypto)}** — ${WHY.crypto.vi} ${now(cryptoNow, aCrypto)}.`,
+      ...(windfall ? [windfall] : []),
       ask,
     ]
     : [
-      'Here is your plan, step by step.',
+      `To invest the right way you need three things, in this order: first an **emergency fund**; then your other liquid money split into a **safe part of ${sSafe}%** and a part that **takes risk, ${risk}%** (the safe share equals your age, ${age}${est ? ', an estimate' : ''}, because the younger you are the more time you have to ride out risk); and inside the risky part, the ideal is **Traditional ${sTrad}%** and **Crypto ${sCrypto}%**.`,
       `1. **Emergency fund: ${fmt(b.fund.floorUsd)}** (${b.fund.floorMonths} months of spending). Why: ${fundWhy(p, b.fund.floorMonths, false)}. You have ${fmt(vault)} in it.`,
-      `Once it is full, by the MoonSafe framework${est}, you could consider dividing your liquid money (${fmt(toDivide)}${toFund > 0 ? ', after the fund' : ''}) like this:`,
+      `Once it is full, you could consider dividing your liquid money (${fmt(toDivide)}${toFund > 0 ? ', after the fund' : ''}) like this:`,
       `2. **Safety ${sSafe}% = ${fmt(aSafe)}**: ${WHY.safety.en} ${now(g.safe, aSafe)}.`,
       `3. **Traditional ${sTrad}% = ${fmt(aTrad)}**: ${WHY.traditional.en} ${now(g.traditional, aTrad)}.`,
       `4. **Crypto ${sCrypto}% = ${fmt(aCrypto)}**: ${WHY.crypto.en} ${now(cryptoNow, aCrypto)}.`,
+      ...(windfall ? [windfall] : []),
       ask,
     ]
   return lines.join('\n\n')
