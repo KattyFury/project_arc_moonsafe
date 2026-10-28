@@ -3,6 +3,7 @@
 
 import { AlertTriangle } from 'lucide-react'
 import { KB } from '@/kb/kb'
+import { IS_MAINNET } from '@/lib/network'
 
 interface WarningModalProps { onAcknowledge: () => void }
 
@@ -39,7 +40,7 @@ export function WarningModal({ onAcknowledge }: WarningModalProps) {
             </li>
           ))}
         </ul>
-        <p className="text-[14px] leading-5 -mt-2" style={{ color:'var(--muted)' }}>Test version on Arc Testnet: USDC and cirBTC here are test tokens with no real value. You sign every transaction in your own wallet.</p>
+        <p className="text-[14px] leading-5 -mt-2" style={{ color:'var(--muted)' }}>{IS_MAINNET ? 'This version runs on Arc mainnet with real USDC and cirBTC. You sign every transaction in your own wallet, and a signed transaction cannot be undone.' : 'Test version on Arc Testnet: USDC and cirBTC here are test tokens with no real value. You sign every transaction in your own wallet.'}</p>
 
         <button
           onClick={onAcknowledge}

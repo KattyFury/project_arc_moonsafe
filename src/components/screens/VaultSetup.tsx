@@ -4,6 +4,8 @@
 import { useState } from 'react'
 import { CheckCircle2, ExternalLink, Lock, Shield } from 'lucide-react'
 import { useAccount } from 'wagmi'
+import { FACTORY_CONFIGURED } from '@/hooks/useVault'
+import { IS_MAINNET, NET } from '@/lib/network'
 import { useApp } from '@/state/AppState'
 import { GAS_ESTIMATE_USDC6, txErrorMessage } from '@/hooks/useVault'
 import { formatUsdc } from '@/lib/format'
@@ -42,7 +44,7 @@ export function VaultSetup() {
           <div className="overflow-hidden" style={{ border: '1px solid var(--border)', borderRadius: 16 }}>
             <Row label="Vault fee" value={formatUsdc(vault.fee, 6)} />
             <Row label="Estimated gas" value={`~${formatUsdc(GAS_ESTIMATE_USDC6)}`} />
-            <Row label="Network" value="Arc Testnet" />
+            <Row label="Network" value={NET.name} />
             <Row label="Total" value={`~${formatUsdc(total, 6)}`} last />
           </div>
           <Notice tone="info">Your wallet asks you to sign once: the fee and the vault go in the same transaction.</Notice>
@@ -83,9 +85,10 @@ export function VaultSetup() {
           </div>
         </div>
         <p className="text-[14px] leading-relaxed" style={{ color: 'var(--subtle)' }}>
-          The vault is a separate smart contract on Arc Testnet, apart from your wallet. Only your wallet address can withdraw.
+          The vault is a separate smart contract on {NET.name}, apart from your wallet. Only your wallet address can withdraw.
         </p>
 
+        {!FACTORY_CONFIGURED && <Notice tone="danger" title="No vault factory configured">This build has no factory address, so vaults cannot be opened yet.</Notice>}
         {vault.readError && wallet === null && <Notice tone="warning">Could not read your balance yet, the app will retry.</Notice>}
 
         {wallet !== null && total !== null && !enough && address && (
@@ -96,10 +99,14 @@ export function VaultSetup() {
               <QrImage value={address} />
               <p className="mono text-[14px] text-center break-all" style={{ color: 'var(--subtle)' }}>{address}</p>
               <CopyButton text={address} />
-              <a href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-2 text-[14px] font-semibold" style={{ color: 'var(--accent)' }}>
-                Get testnet USDC from the Circle Faucet <ExternalLink size={13} />
-              </a>
+              {IS_MAINNET ? (
+                <p className="text-[14px] text-center" style={{ color: 'var(--danger)' }}>Send USDC on Arc to this address, then come back. This is real money.</p>
+              ) : (
+                <a href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-[14px] font-semibold" style={{ color: 'var(--accent)' }}>
+                  Get testnet USDC from the Circle Faucet <ExternalLink size={13} />
+                </a>
+              )}
             </div>
           </div>
         )}
@@ -113,7 +120,7 @@ export function VaultSetup() {
         )}
       </GlassCard>
 
-      <Btn disabled={!enough} onClick={() => setStep('confirm')}>Open vault</Btn>
+      <Btn disabled={!enough || !FACTORY_CONFIGURED} onClick={() => setStep('confirm')}>Open vault</Btn>
     </Screen>
   )
 }

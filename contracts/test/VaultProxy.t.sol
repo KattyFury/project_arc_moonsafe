@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import {Vm} from "forge-std/Vm.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {VaultTestBase} from "./VaultFactory.Base.t.sol";
@@ -66,7 +67,7 @@ contract VaultProxyTest is VaultTestBase {
 
     function test_Deposit_RevertsNonOwner() public {
         vm.prank(bob);
-        vm.expectRevert(VaultProxy.Unauthorized.selector);
+        vm.expectRevert(abi.encodeWithSelector(VaultProxy.Unauthorized.selector, bob));
         vault.deposit{value: 1 ether}();
     }
 
@@ -155,7 +156,7 @@ contract VaultProxyTest is VaultTestBase {
     function test_Withdraw_RevertsNonOwner() public {
         _fund(1 ether);
         vm.prank(bob);
-        vm.expectRevert(VaultProxy.Unauthorized.selector);
+        vm.expectRevert(abi.encodeWithSelector(VaultProxy.Unauthorized.selector, bob));
         vault.withdraw(1 ether, payable(bob));
         assertEq(vault.getBalance(), 1 ether);
     }
@@ -170,13 +171,15 @@ contract VaultProxyTest is VaultTestBase {
     function test_Withdraw_RevertsOverBalance() public {
         _fund(1 ether);
         vm.prank(alice);
-        vm.expectRevert(VaultProxy.InsufficientBalance.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(VaultProxy.InsufficientBalance.selector, 1 ether + 1, 1 ether)
+        );
         vault.withdraw(1 ether + 1, payable(alice));
     }
 
     function test_Withdraw_RevertsEmptyVault() public {
         vm.prank(alice);
-        vm.expectRevert(VaultProxy.InsufficientBalance.selector);
+        vm.expectRevert(abi.encodeWithSelector(VaultProxy.InsufficientBalance.selector, 1, 0));
         vault.withdraw(1, payable(alice));
     }
 
@@ -191,14 +194,16 @@ contract VaultProxyTest is VaultTestBase {
         _fund(1 ether);
         RejectingReceiver bad = new RejectingReceiver();
         vm.prank(alice);
-        vm.expectRevert(VaultProxy.NativeTransferFailed.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(VaultProxy.NativeTransferFailed.selector, address(bad), 1 ether)
+        );
         vault.withdraw(1 ether, payable(address(bad)));
         assertEq(vault.getBalance(), 1 ether);
     }
 
     function test_Withdraw_ImplementationHasNoOwnerSoNobodyCanWithdraw() public {
         vm.prank(alice);
-        vm.expectRevert(VaultProxy.Unauthorized.selector);
+        vm.expectRevert(abi.encodeWithSelector(VaultProxy.Unauthorized.selector, alice));
         impl.withdraw(1, payable(alice));
     }
 
@@ -209,7 +214,7 @@ contract VaultProxyTest is VaultTestBase {
         bobVault.deposit{value: 1 ether}();
 
         vm.prank(alice);
-        vm.expectRevert(VaultProxy.Unauthorized.selector);
+        vm.expectRevert(abi.encodeWithSelector(VaultProxy.Unauthorized.selector, alice));
         bobVault.withdraw(1 ether, payable(alice));
         assertEq(bobVault.getBalance(), 1 ether);
         assertEq(vault.getBalance(), 2 ether);
@@ -243,9 +248,84 @@ contract VaultProxyTest is VaultTestBase {
         VaultProxy v = actor.vault();
         actor.deposit{value: 2 ether}();
         actor.setMode(VaultActor.Mode.Reject);
-        vm.expectRevert(VaultProxy.NativeTransferFailed.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(VaultProxy.NativeTransferFailed.selector, address(actor), 1 ether)
+        );
         actor.withdraw(1 ether, payable(address(actor)));
         assertEq(v.getBalance(), 2 ether);
+    }
+
+    // ---------------------------------------------------------------- event ordering / atomicity
+
+    bytes32 internal constant WITHDRAWN_SIG = keccak256("Withdrawn(address,uint256)");
+    bytes32 internal constant RECEIVED_SIG = keccak256("Received(uint256)");
+
+    function test_Withdraw_WithdrawnEmittedBeforeTransfer() public {
+        VaultActor actor = new VaultActor(factory);
+        actor.create{value: FEE}();
+        VaultProxy v = actor.vault();
+        actor.deposit{value: 5 ether}();
+
+        vm.recordLogs();
+        actor.withdraw(2 ether, payable(address(actor)));
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+
+        uint256 withdrawn = _indexOfLog(logs, address(v), WITHDRAWN_SIG);
+        uint256 received = _indexOfLog(logs, address(actor), RECEIVED_SIG);
+        assertTrue(withdrawn != type(uint256).max, "Withdrawn emitted");
+        assertTrue(received != type(uint256).max, "recipient was called");
+        assertLt(withdrawn, received, "Withdrawn precedes the native transfer");
+        assertEq(address(v.owner()), address(actor));
+    }
+
+    function test_Withdraw_WithdrawnEventArgs() public {
+        _fund(3 ether);
+        vm.recordLogs();
+        vm.prank(alice);
+        vault.withdraw(3 ether, payable(bob));
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        assertEq(_countLogs(logs, address(vault), WITHDRAWN_SIG), 1);
+        Vm.Log memory l = logs[_indexOfLog(logs, address(vault), WITHDRAWN_SIG)];
+        assertEq(address(uint160(uint256(l.topics[1]))), bob);
+        assertEq(abi.decode(l.data, (uint256)), 3 ether);
+    }
+
+    function test_Withdraw_FailedTransferRollsBackEverything() public {
+        _fund(2 ether);
+        RejectingReceiver bad = new RejectingReceiver();
+        vm.prank(alice);
+        try vault.withdraw(1 ether, payable(address(bad))) {
+            fail("withdraw to rejecting recipient must revert");
+        } catch (bytes memory data) {
+            assertEq(
+                data,
+                abi.encodeWithSelector(VaultProxy.NativeTransferFailed.selector, address(bad), 1 ether)
+            );
+        }
+        // The whole call frame reverted: balances are untouched (the event cannot persist in a reverted tx).
+        assertEq(vault.getBalance(), 2 ether);
+        assertEq(address(bad).balance, 0);
+    }
+
+    function test_Withdraw_CheckOrder_InsufficientBeforeZeroRecipient() public {
+        _fund(1 ether);
+        vm.prank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(VaultProxy.InsufficientBalance.selector, 2 ether, 1 ether)
+        );
+        vault.withdraw(2 ether, payable(address(0)));
+    }
+
+    function test_Withdraw_CheckOrder_ZeroAmountBeforeZeroRecipient() public {
+        vm.prank(alice);
+        vm.expectRevert(VaultProxy.ZeroAmount.selector);
+        vault.withdraw(0, payable(address(0)));
+    }
+
+    function test_Withdraw_UnauthorizedCheckedFirst() public {
+        vm.prank(bob);
+        vm.expectRevert(abi.encodeWithSelector(VaultProxy.Unauthorized.selector, bob));
+        vault.withdraw(0, payable(address(0)));
     }
 
     // ---------------------------------------------------------------- views

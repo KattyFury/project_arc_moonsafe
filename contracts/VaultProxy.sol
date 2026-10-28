@@ -5,17 +5,22 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 
 /// @title MoonSafe native-USDC emergency-fund vault
 /// @notice Each clone has one permanent owner and holds native value, not ERC-20 tokens.
+/// @dev Intended for Arc mainnet (chain ID 5042), where native USDC has 18 decimals.
+/// Native transfers to zero or to/from Circle-blocklisted addresses can revert even with sufficient funds.
+/// @custom:upgrade-strategy Clones permanently delegate to the fixed implementation with no upgrade path.
+/// Vault ownership is permanent: NO transfer and NO recovery in this version. A lost owner key means
+/// lost funds. A recovery design remains an open decision and is not implemented here.
 contract VaultProxy is ReentrancyGuard {
     address private _owner;
     bool private _initialized;
 
     error AlreadyInitialized();
     error ZeroOwner();
-    error Unauthorized();
+    error Unauthorized(address caller);
     error ZeroAmount();
-    error InsufficientBalance();
+    error InsufficientBalance(uint256 requested, uint256 available);
     error ZeroRecipient();
-    error NativeTransferFailed();
+    error NativeTransferFailed(address to, uint256 amount);
     error DirectDepositDisabled();
 
     event Deposited(address indexed from, uint256 amount);
@@ -27,7 +32,7 @@ contract VaultProxy is ReentrancyGuard {
     }
 
     modifier onlyOwner() {
-        if (msg.sender != _owner) revert Unauthorized();
+        if (msg.sender != _owner) revert Unauthorized(msg.sender);
         _;
     }
 
@@ -59,16 +64,19 @@ contract VaultProxy is ReentrancyGuard {
     }
 
     /// @notice Sends native USDC to a nonzero recipient, exclusively at the owner's request.
+    /// @dev Emits before the native call; transfer failure reverts the entire transaction, including the event.
+    /// Circle blocklisting of the source or recipient can cause failure despite sufficient funds.
     /// @param amount The amount in native base units (18 decimals on Arc).
     /// @param to The recipient of the withdrawal.
     function withdraw(uint256 amount, address payable to) external onlyOwner nonReentrant {
         if (amount == 0) revert ZeroAmount();
-        if (amount > address(this).balance) revert InsufficientBalance();
+        uint256 available = address(this).balance;
+        if (amount > available) revert InsufficientBalance(amount, available);
         if (to == address(0)) revert ZeroRecipient();
 
-        (bool success, ) = to.call{value: amount}("");
-        if (!success) revert NativeTransferFailed();
         emit Withdrawn(to, amount);
+        (bool success, ) = to.call{value: amount}("");
+        if (!success) revert NativeTransferFailed(to, amount);
     }
 
     /// @notice Returns this vault's native-USDC balance in base units.

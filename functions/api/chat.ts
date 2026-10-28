@@ -26,6 +26,7 @@ import { callModel as openai, DEFAULT_CLAUDE_MODEL, type Keys, type ToolCall } f
 import { powerState, takeTurn, type PowerEnv } from '../_lib/quota'
 import { recordStats } from '../_lib/stats'
 import { BATCH_MARK, INTAKE_MIN_UNKNOWN, buildIntake, intakeKeys, unknownBullets } from '../_lib/intake'
+import { getConfig, isBlocked, effectiveEnv } from '../_lib/config'
 import { buildAfterSign, buildPartAnswer, buildPlan, buildStanding, detectPartChoice } from '../_lib/plan'
 import { KB, fundFloorMonths, matchPatterns, patternBrief, param } from '../../src/kb/kb'
 import { computeFacts, displayFacts, amountsUsd } from '../../src/kb/facts'
@@ -711,11 +712,20 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   const userId = await privyUserId(context.request, context.env)
   if (!userId) return json({ error: 'Please sign in again' }, 401)
 
+  const meter0: Meter = { tokens: 0 }
+  const meter = meter0
   const text = await context.request.text()
   if (text.length > MAX_BODY_CHARS) return json({ error: 'That message is too long' }, 413)
   let body: RequestBody
   try { body = JSON.parse(text) as RequestBody } catch { return json({ error: 'Invalid JSON' }, 400) }
   if (Array.isArray(body.messages)) body.messages = body.messages.map(m => typeof m?.content === 'string' ? { ...m, content: m.content.slice(0, MAX_MESSAGE_CHARS) } : m)
+
+  // What the admin switched (functions/_lib/config.ts): the agent can be paused, an account can be blocked, the limits can be changed.
+  const cfg = await getConfig(context.env)
+  if (!cfg.chatEnabled) return json({ error: cfg.notice || 'The agent is paused for a moment. Please try again later.', code: 'paused' }, 503)
+  if (await isBlocked(context.env, userId)) return json({ error: 'This account is paused. Please contact MoonSafe.', code: 'blocked' }, 403)
+  if (cfg.primaryProvider === 'claude' && apiKey.claude) meter0.provider = 'claude'
+  context = { ...context, env: effectiveEnv(context.env, cfg) }
 
   // A safety valve on tokens (functions/_lib/budget.ts) and the user's daily "AI power" (functions/_lib/quota.ts).
   // The verified owner has no per-user token cap (only the global one): 90 messages a day must be possible (real chat 2026-10-28).
@@ -726,7 +736,6 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   const turn = await takeTurn(context.env, userId, lastUser.startsWith('[app event]') ? 'event' : 'message')
   if (!turn.ok) return json({ error: turn.message, code: 'out_of_power', power: await powerState(context.env, userId) }, 429)
 
-  const meter: Meter = { tokens: 0 }
   let ok = false
   try {
     const res = await handleChat(context, apiKey, meter, body)
@@ -743,6 +752,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
 }
 
 async function handleChat(context: { request: Request; env: Env }, apiKey: Keys, meter: Meter, body: RequestBody): Promise<Response> {
+  const cardsPaused = (await getConfig(context.env)).cardsEnabled === false
 
   const messages = (Array.isArray(body.messages) ? body.messages : [])
     .filter(m => (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
@@ -1129,6 +1139,11 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       done.push('BLOCKED propose_dca: DCA is not available yet (it comes on mainnet). Nothing was set up. Say so in one sentence; a single cirBTC buy card is still possible.')
       return done[done.length - 1]
     } else if (UI_ACTIONS.has(name)) {
+      // The admin paused transactions (functions/_lib/config.ts): no card is prepared, whatever the user asked.
+      if (cardsPaused && /^(prepare_|propose_)/.test(name)) {
+        done.push('BLOCKED: transactions are paused by MoonSafe right now. Nothing was prepared. Say so in one short sentence and do not offer any deposit, withdrawal or purchase.')
+        return 'Not done: transactions are paused.'
+      }
       // "just doing as you said" / "just BTC" right after the agent offered this action is a yes (real chat 2026-10-24).
       // A message with numbers ("I have 2000$ of gold") tells something new, it does not accept the offer.
       const acceptsOffer = !!OFFERED[name]?.test(prevAssistantText) && !lastUserText.includes('?') && !/\d/.test(lastUserText) && lastUserText.trim().split(/\s+/).length <= 5

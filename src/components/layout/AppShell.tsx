@@ -5,6 +5,8 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { usePrivy, useWallets } from '@privy-io/react-auth'
 import { useAccount } from 'wagmi'
+import { NET, networkLine } from '@/lib/network'
+import { useServiceStatus } from '@/hooks/useServiceStatus'
 import type { AgentAction } from '@/hooks/useAgent'
 import { AlertCircle, Loader2 } from 'lucide-react'
 import { NavBar, type NavTab } from './NavBar'
@@ -26,7 +28,7 @@ function SetupHeader({ onLogout }: { onLogout: () => void }) {
     <div className="flex-shrink-0 px-4 pt-14 pb-4 flex items-center gap-2" style={{ background: 'white', borderBottom: '1px solid var(--border)' }}>
       <div>
         <h1><Wordmark size={22} /></h1>
-        <p className="text-[14px] mono" style={{ color: 'var(--muted)' }}>Arc Testnet</p>
+        <p className="text-[14px] mono" style={{ color: 'var(--muted)' }}>{NET.name}</p>
       </div>
       <button onClick={onLogout} className="ml-auto text-[14px] font-semibold" style={{ color: 'var(--accent)' }}>Log out</button>
     </div>
@@ -38,6 +40,7 @@ const WALLET_SYNC_MS = 8000
 
 export function AppShell({ onLogout }: { onLogout: () => void }) {
   const { vault, math, cloud } = useApp()
+  const service = useServiceStatus()
   const { connectWallet } = usePrivy()
   const { ready: walletsReady, wallets } = useWallets()
   const { address } = useAccount()
@@ -98,7 +101,7 @@ export function AppShell({ onLogout }: { onLogout: () => void }) {
         <SetupHeader onLogout={onLogout} />
         {vault.readError ? (
           <div className="flex-1 px-4 py-6 flex flex-col gap-4">
-            <Notice tone="warning" title="Could not read data from Arc Testnet">The network may be slow. The app retries every 15 seconds.</Notice>
+            <Notice tone="warning" title={`Could not read data from ${NET.name}`}>The network may be slow. The app retries every 15 seconds.</Notice>
             <Btn variant="outline" onClick={() => { void vault.refresh() }}>Try again</Btn>
           </div>
         ) : <VaultSetup />}
@@ -113,6 +116,11 @@ export function AppShell({ onLogout }: { onLogout: () => void }) {
       {cloud.error && (
         <div className="flex-shrink-0 px-4 py-2 text-[14px] leading-5 text-center" style={{ background: '#FEF5D9', color: '#8A5F00' }}>
           Could not load your saved data, using the copy on this device. Reload the page to try again.
+        </div>
+      )}
+      {(service.notice || !service.chatEnabled || !service.cardsEnabled) && (
+        <div className="flex-shrink-0 px-4 py-2 text-[14px] leading-5 text-center" style={{ background: '#FEF5D9', color: '#8A5F00' }}>
+          {service.notice || (!service.chatEnabled ? 'The agent is paused for a moment.' : 'Deposits, withdrawals and purchases from the agent are paused for now.')}
         </div>
       )}
       <main className="flex-1 overflow-hidden flex flex-col min-h-0">
@@ -131,7 +139,7 @@ export function AppShell({ onLogout }: { onLogout: () => void }) {
             <p className="text-[14px] leading-tight line-clamp-1" style={{ color: 'var(--danger)' }}>{error}</p>
           </div>
         ) : (
-          <p className="text-[14px] w-full text-center mono" style={{ color: 'var(--muted)' }}>Arc Testnet · chain 5042002</p>
+          <p className="text-[14px] w-full text-center mono" style={{ color: 'var(--muted)' }}>{networkLine}</p>
         )}
       </div>
     </Column>

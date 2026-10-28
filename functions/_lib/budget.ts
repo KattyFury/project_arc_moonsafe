@@ -11,6 +11,9 @@
 export interface Kv {
   get(key: string): Promise<string | null>
   put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>
+  // Cloudflare KV has both; the small fakes used in tests may not.
+  delete?(key: string): Promise<void>
+  list?(options?: { prefix?: string; limit?: number; cursor?: string }): Promise<{ keys: Array<{ name: string }>; list_complete: boolean; cursor?: string }>
 }
 
 export interface BudgetEnv {
@@ -35,8 +38,8 @@ export interface Meter {
 
 // A message costs about 10-14k tokens (measured 2026-10-28: 26 messages used 263k), so 30 free messages need ~420k. The old 250k per user
 // stopped the owner (90 messages a day) after 19. Per user: room for 30 messages with margin; the owner has no per-user cap.
-const DEFAULT_ALL = 2_200_000
-const DEFAULT_USER = 600_000
+export const DEFAULT_ALL = 2_200_000
+export const DEFAULT_USER = 600_000
 const TTL_SECONDS = 2 * 24 * 3600
 
 const day = () => new Date().toISOString().slice(0, 10)

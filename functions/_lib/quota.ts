@@ -22,8 +22,8 @@ export interface PowerEnv extends BudgetEnv {
   POWER_PAYMENT_ADDRESS?: string
 }
 
-const DEFAULT_FREE = 30
-const DEFAULT_OWNER = 90
+export const DEFAULT_FREE = 30
+export const DEFAULT_OWNER = 90
 const EVENT_CAP = 20
 const DEFAULT_OWNER_WALLET = '0xeb2d222d28f35fe7beb5387f8bc4ebf65f2652f6'
 const CHALLENGE_MAX_AGE_MS = 10 * 60 * 1000

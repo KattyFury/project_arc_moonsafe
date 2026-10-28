@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
+import {Vm} from "forge-std/Vm.sol";
 import {VaultProxy} from "../VaultProxy.sol";
 import {VaultFactory} from "../VaultFactory.sol";
 
@@ -30,5 +31,28 @@ abstract contract VaultTestBase is Test {
     function _create(address who, uint256 value) internal returns (VaultProxy v) {
         vm.prank(who);
         v = VaultProxy(payable(factory.createVault{value: value}()));
+    }
+
+    /// @dev Index of the first log with `sig` as topic0 emitted by `emitter`, or type(uint256).max.
+    function _indexOfLog(Vm.Log[] memory logs, address emitter, bytes32 sig)
+        internal
+        pure
+        returns (uint256)
+    {
+        for (uint256 i; i < logs.length; i++) {
+            if (logs[i].emitter == emitter && logs[i].topics[0] == sig) return i;
+        }
+        return type(uint256).max;
+    }
+
+    /// @dev Number of logs with `sig` as topic0 emitted by `emitter`.
+    function _countLogs(Vm.Log[] memory logs, address emitter, bytes32 sig)
+        internal
+        pure
+        returns (uint256 n)
+    {
+        for (uint256 i; i < logs.length; i++) {
+            if (logs[i].emitter == emitter && logs[i].topics[0] == sig) n++;
+        }
     }
 }

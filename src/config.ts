@@ -5,17 +5,19 @@
  */
 
 import { http } from 'wagmi'
-import { arcTestnet } from 'viem/chains'
+import type { arcTestnet } from 'viem/chains'
+import { CHAIN_ID, NET } from './lib/network'
 import { createConfig } from '@privy-io/wagmi'
 import { registerChain } from './tracing'
 
 // Pre-register chain RPC URLs so trace events show correct chain names immediately
-registerChain(arcTestnet.id, arcTestnet.rpcUrls.default.http[0])
+registerChain(NET.chainId, NET.rpc)
 
 export const config = createConfig({
-  chains: [arcTestnet],
+  // NET.chain is Arc or Arc Testnet depending on the build; typed as the testnet chain so the wagmi Register type stays simple.
+  chains: [NET.chain as unknown as typeof arcTestnet],
   transports: {
-    [arcTestnet.id]: http(),
+    [CHAIN_ID]: http(NET.rpc),
   },
 })
 

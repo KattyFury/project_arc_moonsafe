@@ -7,13 +7,13 @@ import { AppKit, type SwapEstimate } from '@circle-fin/app-kit'
 import { createViemAdapterFromProvider } from '@circle-fin/adapter-viem-v2'
 import type { EIP1193Provider } from 'viem'
 import { useAccount, usePublicClient, useSwitchChain } from 'wagmi'
-import { arcTestnet } from 'viem/chains'
+import { CHAIN_ID, NET } from '@/lib/network'
 import type { DcaPlan } from '@/types'
 import { ensureArcChain } from '@/lib/chain'
 import { DCA_AVAILABLE } from '@/lib/features'
 
 /** docs.arc.network/arc/references/contract-addresses — testnet cirBTC. */
-export const CIRBTC_ADDRESS = '0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF' as const
+export const CIRBTC_ADDRESS = NET.cirBtc
 export const CIRBTC_DECIMALS = 8
 const SLIPPAGE_BPS = 300
 const POLL_MS = 30_000
@@ -75,7 +75,7 @@ export const toAppKitAmount = (u: bigint) => {
 export function useCirBtcState(): CirBtcState {
   const { address, connector } = useAccount()
   const { switchChainAsync } = useSwitchChain()
-  const publicClient = usePublicClient({ chainId: arcTestnet.id })
+  const publicClient = usePublicClient({ chainId: CHAIN_ID })
 
   const [balance, setBalance] = useState<bigint | null>(null)
   const [btcUsd, setBtcUsd] = useState<number | null>(null)
@@ -123,7 +123,7 @@ export function useCirBtcState(): CirBtcState {
       const adapter = await getAdapter()
       const amountIn = toAppKitAmount(amountUsdc6)
       const est = await kit.estimateSwap({
-        from: { adapter, chain: 'Arc_Testnet' },
+        from: { adapter, chain: NET.appKitChain },
         tokenIn: 'USDC', tokenOut: 'cirBTC', amountIn,
         config: { slippageBps: SLIPPAGE_BPS },
       })
@@ -142,7 +142,7 @@ export function useCirBtcState(): CirBtcState {
     try {
       const adapter = await getAdapter()
       const res = await kit.swap({
-        from: { adapter, chain: 'Arc_Testnet' },
+        from: { adapter, chain: NET.appKitChain },
         tokenIn: 'USDC', tokenOut: 'cirBTC', amountIn: quote.amountInUsdc,
         config: { slippageBps: SLIPPAGE_BPS },
       })

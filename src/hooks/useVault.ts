@@ -6,13 +6,15 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAccount, usePublicClient, useSendTransaction, useSwitchChain } from 'wagmi'
 import { encodeFunctionData, zeroAddress } from 'viem'
-import { arcTestnet } from 'viem/chains'
+import { CHAIN_ID as NET_CHAIN_ID, FACTORY } from '@/lib/network'
 import { nativeToUsdc6, usdc6ToNative } from '@/lib/format'
 import { ensureArcChain } from '@/lib/chain'
 
-const CHAIN_ID = arcTestnet.id // 5042002
-// Current factory (HANDOFF -25, public); VITE_FACTORY_ADDRESS overrides it.
-export const FACTORY_ADDRESS = (import.meta.env.VITE_FACTORY_ADDRESS || '0xAd064AdD8d4C6C36964981d1f1aeBFF697e3941b') as `0x${string}`
+const CHAIN_ID = NET_CHAIN_ID
+// The factory of this build (src/lib/network.ts). A mainnet build without VITE_FACTORY_ADDRESS has none: FACTORY_CONFIGURED is false
+// and nothing is read or sent (the zero address stands in only so the types stay simple).
+export const FACTORY_CONFIGURED = FACTORY !== null
+export const FACTORY_ADDRESS = (FACTORY ?? zeroAddress) as `0x${string}`
 /**
  * Earlier factories whose vaults the app should still find (optional, comma-separated env).
  * Empty since the 2026-10-26 factory: the old ones (0x358e, 0x7E0f) held no funds, so every
@@ -73,7 +75,7 @@ export function useVaultState(): VaultState {
   const [busy, setBusy] = useState(false)
 
   const refresh = useCallback(async () => {
-    if (!address || !publicClient) return
+    if (!address || !publicClient || !FACTORY_CONFIGURED) return
     try {
       const [vault, walletNative, feeNative] = await Promise.all([
         publicClient.readContract({ address: FACTORY_ADDRESS, abi: VAULT_FACTORY_ABI, functionName: 'getVault', args: [address] }),
@@ -119,6 +121,7 @@ export function useVaultState(): VaultState {
 
   const send = useCallback(async (tx: { to: `0x${string}`; value?: bigint; data: `0x${string}` }) => {
     if (!publicClient) throw new Error('Not connected to the Arc network')
+    if (!FACTORY_CONFIGURED) throw new Error('This build has no vault factory address')
     setBusy(true)
     try {
       await ensureArcChain(connector, switchChainAsync)

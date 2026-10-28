@@ -5,6 +5,7 @@
 import { useState } from 'react'
 import { ArrowDownToLine, ArrowRight, ArrowUpFromLine, ExternalLink, Repeat, TrendingUp } from 'lucide-react'
 import { useApp } from '@/state/AppState'
+import { explorerTx } from '@/lib/network'
 import { GAS_ESTIMATE_USDC6, GAS_RESERVE_USDC6, txErrorMessage } from '@/hooks/useVault'
 import { toAppKitAmount } from '@/hooks/useCirBtc'
 import { overTargetWarning, spendable } from '@/lib/invest'
@@ -114,7 +115,7 @@ export function ActionCard({ action, title, onFinished }: { action: ChatAction; 
         <Notice tone="success" title={doneText}>
           {kind === 'buy' && cirBtc.lastTxHash && (
             <a className="inline-flex items-center gap-2 underline" target="_blank" rel="noopener noreferrer"
-              href={`https://explorer.testnet.arc.io/tx/${cirBtc.lastTxHash}`}>View transaction <ExternalLink size={16} /></a>
+              href={explorerTx(cirBtc.lastTxHash)}>View transaction <ExternalLink size={16} /></a>
           )}
         </Notice>
       ) : status === 'cancelled' ? (
