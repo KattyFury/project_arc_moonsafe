@@ -95,6 +95,8 @@ export interface FinancialProfile {
   nearGoal?: NearGoal | null
   /** The user said there is no such goal. */
   noNearGoal?: boolean
+  /** Money that comes in bursts (airdrops, trading wins, bonuses, "a few times a year"): not counted as monthly income, said once in the plan. */
+  hasWindfalls?: boolean
   /** "If your crypto dropped by half, could you hold it without selling to live?" null = not asked / unsure. */
   cryptoDropOk?: boolean | null
   /** Health / life cover, asked only when people rely on their income. */
