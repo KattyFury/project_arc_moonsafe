@@ -107,9 +107,12 @@ export function AdminPage() {
         <p className="text-[16px] leading-6" style={{ color: 'var(--subtle)' }}>Prove you hold an admin wallet: choose one of your linked wallets and sign the message. Nothing is sent onchain and it costs nothing. The proof lasts 30 minutes in this tab.</p>
         {error && <Notice tone="danger" title="Could not sign in">{error}</Notice>}
         {wallets.length === 0 && <Notice tone="warning">No wallet is linked to this account.</Notice>}
-        {wallets.map((w, i) => (
+        {wallets.map((w, i) => ({ w, i })).filter(({ w }, k, all) => all.findIndex(x => x.w.address.toLowerCase() === w.address.toLowerCase()) === k).map(({ w, i }) => (
           <div key={w.address} className="flex items-center gap-4">
-            <span className="mono text-[14px] break-all" style={{ color: 'var(--ink)' }}>{w.address}</span>
+            <div className="flex flex-col min-w-0">
+              <span className="mono text-[14px] break-all" style={{ color: 'var(--ink)' }}>{w.address}</span>
+              <span className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>{w.walletClientType === 'privy' ? 'Email wallet' : w.walletClientType}</span>
+            </div>
             <AB className="ml-auto" loading={busy} onClick={() => { void signIn(i) }}>Sign in as admin</AB>
           </div>
         ))}
