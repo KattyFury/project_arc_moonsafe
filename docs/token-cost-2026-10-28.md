@@ -32,6 +32,17 @@ Phần lớn mỗi lệnh gọi là **phần tĩnh** (lời nhắc + công cụ 
 | Chọn model nhỏ hơn cho PLAN | giá/token thấp hơn | Đã từng bỏ sót món khi kể nhiều món (gpt-4o-mini) |
 | Giảm số vòng viết lại bằng cách sửa NGUYÊN NHÂN các lỗi bị bắt nhiều nhất | −4.000 mỗi vòng tránh được | Cần biết lỗi nào hay gặp: lấy từ `/api/usage` (số vòng viết lại mỗi lượt) |
 
-## Cách kiểm chứng an toàn (đề xuất, chờ Hiếu duyệt)
+## Cách kiểm chứng an toàn (đã dựng công cụ, chờ Hiếu duyệt ngân sách)
 
-Chạy cùng một bộ câu chat cố định trước và sau mỗi thay đổi, so các câu trả lời và hành động (thẻ, ghi dữ liệu) cạnh nhau. Bộ 12 lượt khoảng **190.000 token đầu vào + 6.000 đầu ra** mỗi lần chạy (chưa trừ phần cache); so trước/sau là khoảng **400.000 token**, bằng ~16% mức miễn phí 2,5 triệu/ngày. Chỉ chạy khi Hiếu đồng ý con số này, với đúng khóa Hiếu chỉ định.
+Bộ kiểm tra có sẵn `scripts/agent-eval.mjs` (49 đến 54 lượt, mỗi lượt có kiểm tra đạt/không đạt tự động) chạy với **máy chủ eval có trần token cứng**:
+
+```
+bun run eval:server -- --budget 250000      # cửa sổ 1: bản sao /api/chat, tự dừng khi đủ token
+bun scripts/agent-eval.mjs http://localhost:8788 --only "tên ca"     # cửa sổ 2 (lặp --only cho từng ca)
+curl localhost:8788/__stats                 # số thật đã dùng: lệnh gọi, bước PLAN, vòng viết lại, token vào/ra/cache
+```
+
+- Trần do chính máy chủ giữ, tính từ số token OpenAI báo về: đủ `--budget` thì mọi yêu cầu sau bị từ chối (429), không tốn thêm; vượt tối đa một lượt. (Đã thử bằng model giả: dừng đúng sau lượt chạm trần.)
+- Chỉ dùng OpenAI (không đi qua Claude), đúng mã production, đăng nhập thật bằng token ký tại chỗ. `EVAL_FAKE=1` để thử chính công cụ không tốn gì.
+- Ước tính mỗi lượt ~15.000 token đầu vào (2 bước PLAN + 1,5 vòng trả lời; chưa trừ phần cache): bộ nhỏ 12 ca (~16 lượt) ≈ 250.000; cả bộ (~54 lượt) ≈ 810.000. Mỗi thay đổi cần 2 lần chạy (trước và sau), nhưng "trước" chỉ chạy một lần.
+- Tiêu chí duyệt một thay đổi: các lượt đạt/không đạt giống hoặc tốt hơn bản trước (cùng tập lượt lỗi hoặc ít hơn), số vòng viết lại mỗi lượt không tăng, token đầu vào mỗi lượt giảm.

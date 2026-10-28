@@ -15,7 +15,8 @@
     "check": "bash scripts/check.sh",
     "contracts:build": "forge build",
     "contracts:test": "forge test",
-    "tokens": "bun run scripts/token-report.ts"
+    "tokens": "bun run scripts/token-report.ts",
+    "eval:server": "bun run scripts/eval-server.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.3.0",
