@@ -10,7 +10,7 @@
 
 import { SignJWT, exportJWK, generateKeyPair } from 'jose'
 import { buildIntake } from '../functions/_lib/intake'
-import { normalizeProfile } from '../src/lib/profile'
+import { applyOps, normalizeProfile, readOps } from '../src/lib/profile'
 
 // The chat function is loaded by a computed path: the app's tsconfig does not know the Cloudflare types the functions use.
 const chatModule = '../functions/api/chat'
@@ -61,22 +61,47 @@ const history = [
   { role: 'user', content: 'I want investing' },
   { role: 'assistant', content: buildIntake(normalizeProfile({ v: 2 }), 'I want investing', false, [], 1916) ?? '' },
 ]
-const request = new Request('http://local/api/chat', { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
-  body: JSON.stringify({ messages: [...history, { role: 'user', content: message }], context: { profile: normalizeProfile({ v: 2 }), vaultUsdc: 0, walletUsdc: 1916, cirBtcUsdc: 0 } }) })
-const res = await onRequestPost({ request, env: { OPENAI_API_KEY: 'fake' } })
-const body = await res.json() as { content?: string; ops?: Array<{ op: string; holding?: { name: string; value?: number; where?: string }; income?: { name: string; monthly: number } }>; error?: string }
-console.log('status', res.status, '| model calls', modelCalls)
+async function call(messages: Array<{ role: string; content: string }>, profile: ReturnType<typeof normalizeProfile>) {
+  modelCalls = 0
+  const request = new Request('http://local/api/chat', { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+    body: JSON.stringify({ messages, context: { profile, vaultUsdc: 0, walletUsdc: 1916, cirBtcUsdc: 0 } }) })
+  const res = await onRequestPost({ request, env: { OPENAI_API_KEY: 'fake' } })
+  const body = await res.json() as { content?: string; ops?: unknown[]; actions?: Array<{ type: string; items?: Array<{ text: string; ops: unknown }>; ask?: string[] }>; error?: string }
+  return { status: res.status, body, calls: modelCalls }
+}
 let bad = 0
 const expect = (ok: boolean, what: string) => { if (!ok) { bad++; console.log('FAIL', what) } }
-console.log('ops:', JSON.stringify((body.ops ?? []).map(o => o.op === 'add_holding' ? `${o.holding?.name}=${o.holding?.value}${o.holding?.where ? `@${o.holding.where}` : ''}` : o.op === 'set_income' ? `income ${o.income?.name}=${o.income?.monthly}` : o.op)))
-console.log('\n' + (body.content ?? body.error))
-expect(res.status === 200, 'the request succeeds')
-expect(modelCalls === 2, `the planner records and ends (2 calls), the plan is built by the server: no reply call (got ${modelCalls})`)
-expect(!(body.ops ?? []).some(o => o.op === 'set_income' && o.income?.name === 'Airdrop'), 'an income line without an amount (airdrop 0) is not recorded')
-expect((body.ops ?? []).some(o => o.op === 'add_holding' && o.holding?.where === 'app wallet' && o.holding?.value === 1900), 'the USDC the user declares for this wallet is recorded')
-const text = body.content ?? ''
+
+// 1. Everything declared in one message: NOTHING is saved yet, the app asks to confirm each thing.
+const empty = normalizeProfile({ v: 2 })
+const first = await call([...history, { role: 'user', content: message }], empty)
+const card = first.body.actions?.find(a => a.type === 'confirm_items')
+console.log('step 1: status', first.status, '| model calls', first.calls, '| items', card?.items?.map(i => i.text).join(' / '))
+expect(first.status === 200, 'step 1 succeeds')
+expect(first.calls === 2, `the planner records and ends (2 calls), nothing else is called (got ${first.calls})`)
+expect(JSON.stringify(first.body.ops) === '[]', 'nothing is saved before the user confirms: ops are empty')
+expect((card?.items?.length ?? 0) >= 6, 'the confirm card carries every thing that was declared')
+expect(!(card?.items ?? []).some(i => /airdrop/i.test(i.text)), 'an income line without an amount (airdrop 0) is not offered')
+expect((card?.items ?? []).some(i => /^USDC in this wallet/i.test(i.text)), 'the USDC the user declares for this wallet is an item')
+expect((card?.items ?? []).every(i => readOps(i.ops).length > 0), 'every item carries the operations that save it')
+
+// 2. The user confirms everything: the app applies the ops, tells the agent, and the plan follows (built by the server, no model call).
+let saved = empty
+for (const i of card?.items ?? []) saved = applyOps(saved, readOps(i.ops))
+const event = `[app event] The user reviewed the items: saved: ${(card?.items ?? []).map(i => i.text).join('; ')}. skipped: none.`
+const second = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: first.body.content ?? '' }, { role: 'user', content: event }], saved)
+const text = second.body.content ?? ''
+console.log('\nstep 2: status', second.status, '| model calls', second.calls)
+expect(second.status === 200, 'step 2 succeeds')
+expect(second.calls === 0, `after the card the plan is built by the server: no model call (got ${second.calls})`)
 for (const [what, re] of [['the fund', /Emergency fund: 450 USDC[^\n]*Why:/], ['Safety', /Safety 31%[^\n]*any time/], ['Traditional', /Traditional 39%[^\n]*index funds/], ['Crypto', /Crypto 30%[^\n]*BTC/]] as const) expect(re.test(text), `the plan says why for ${what}`)
 expect(/prepare a deposit of \*\*450 USDC\*\*/.test(text), 'the plan offers the deposit')
 expect(/3,950 USDC, after the fund/.test(text), 'the plan is quoted on the money left after the fund (the wallet seen onchain is not added)')
+
+// 3. The user cancels everything: nothing saved, the agent does not run the plan.
+const none = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: first.body.content ?? '' }, { role: 'user', content: '[app event] The user reviewed the items: saved: none. skipped: everything.' }], empty)
+console.log('\nstep 3: status', none.status, '| model calls', none.calls)
+expect(!/Here is your plan/.test(none.body.content ?? ''), 'with nothing saved there is no plan')
+
 console.log(bad ? `${bad} problem(s)` : 'flow OK')
 if (bad) process.exit(1)
