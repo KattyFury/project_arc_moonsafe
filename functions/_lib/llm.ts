@@ -1,22 +1,24 @@
 /**
- * The model call for the agent: OpenAI first, Gemini as the standby (Hieu, 2026-10-27: the OpenAI credit ran out and the
- * agent went quiet). Both speak the OpenAI chat format (Gemini through its OpenAI-compatible endpoint), so the agent's
- * prompts, tools and checks are the same for both.
+ * The model call for the agent: OpenAI first, Claude as the standby (Hieu, 2026-10-28: primary = OpenAI mini, standby = the
+ * cheapest Claude; it replaces the Gemini standby of 2026-10-27, whose free key allowed only 5 requests a minute).
+ * The agent speaks the OpenAI chat format; for Claude the request is translated to the Messages API (official SDK
+ * @anthropic-ai/sdk) and the answer translated back, so the agent's prompts, tools and checks are the same for both.
  *
- * Falls back to Gemini when OpenAI cannot answer for a reason that is not our request's fault: bad or revoked key (401/403),
+ * Falls back to Claude when OpenAI cannot answer for a reason that is not our request's fault: bad or revoked key (401/403),
  * no credit (402, 429), rate limit (429), a server error (5xx) or no connection. A request that OpenAI rejects as invalid
- * (400) is NOT retried elsewhere. Once a request has moved to Gemini it stays there, and after "no credit" OpenAI is
+ * (400) is NOT retried elsewhere. Once a request has moved to Claude it stays there, and after "no credit" OpenAI is
  * skipped for a few minutes so each message does not pay a failed call first.
  *
- * Quality on Gemini is not measured yet (no side-by-side run): it is the standby, not the primary.
+ * Claude runs with thinking off (as reasoning_effort 'none' on OpenAI), so no thinking blocks ever enter the history.
  */
 
+import Anthropic from '@anthropic-ai/sdk'
 import type { Meter } from './budget'
 
 export interface Keys {
   openai?: string
-  gemini?: string
-  geminiModel: string
+  claude?: string
+  claudeModel: string
 }
 
 export interface ToolCall { id: string; function: { name: string; arguments: string } }
@@ -25,8 +27,8 @@ export interface Completion {
   usage?: { prompt_tokens?: number; completion_tokens?: number }
 }
 
-export const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash'
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'
+/** The cheapest Claude model ($0.10 / $0.50 per million tokens, 2026-10). */
+export const DEFAULT_CLAUDE_MODEL = 'claude-haiku-5-5'
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions'
 /** After a key or credit problem on OpenAI, skip it for this long (per worker instance). */
 const OPENAI_PAUSE_MS = 5 * 60_000
@@ -37,25 +39,69 @@ const json = (body: unknown, status = 200) =>
 
 const fallbackWorthy = (status: number) => status === 401 || status === 402 || status === 403 || status === 429 || status >= 500
 
+interface OpenAiMessage { role: string; content?: string | null; tool_calls?: ToolCall[]; tool_call_id?: string }
+interface OpenAiTool { function: { name: string; description?: string; parameters?: Record<string, unknown> } }
+
+const parseArgs = (s: string): Record<string, unknown> => {
+  try { return JSON.parse(s || '{}') as Record<string, unknown> } catch { return {} }
+}
+
 /**
- * The same messages, shaped for Gemini's OpenAI-compatible endpoint:
- *  - system messages after the opening ones become user messages: Gemini pulls every system message into one instruction,
- *    so a request whose last message is a system note would end with a model turn and be refused (400);
- *  - tool calls made by another model carry a "thought signature" marker that Gemini 3 accepts for foreign history.
+ * The same request, shaped for the Claude Messages API:
+ *  - the opening system messages become `system`; a system message later in the conversation becomes a user message
+ *    (as it was for Gemini), so the request never ends on a system note;
+ *  - tool results (role 'tool') become tool_result blocks, and messages of the same role are merged.
  */
-function forGemini(body: Record<string, unknown>, model: string): Record<string, unknown> {
-  let opening = true
-  const messages = (body.messages as Array<Record<string, unknown>>).map(m => {
+function forClaude(body: Record<string, unknown>, model: string): Anthropic.MessageCreateParamsNonStreaming {
+  const system: string[] = []
+  const messages: Anthropic.MessageParam[] = []
+  const push = (role: 'user' | 'assistant', blocks: Anthropic.ContentBlockParam[]) => {
+    if (!blocks.length) return
+    const last = messages[messages.length - 1]
+    if (last?.role === role) (last.content as Anthropic.ContentBlockParam[]).push(...blocks)
+    else messages.push({ role, content: blocks })
+  }
+  const text = (s: unknown): Anthropic.TextBlockParam[] => (s ? [{ type: 'text', text: String(s) }] : [])
+  for (const m of body.messages as OpenAiMessage[]) {
     if (m.role === 'system') {
-      if (opening) return m
-      return { role: 'user', content: `[Instruction for your next reply] ${String(m.content ?? '')}` }
+      if (!messages.length) system.push(String(m.content ?? ''))
+      else push('user', text(`[Instruction for your next reply] ${String(m.content ?? '')}`))
+    } else if (m.role === 'tool') {
+      push('user', [{ type: 'tool_result', tool_use_id: String(m.tool_call_id), content: String(m.content ?? '') || '(empty)' }])
+    } else if (m.role === 'assistant') {
+      const calls: Anthropic.ToolUseBlockParam[] = (m.tool_calls ?? []).map(c => ({ type: 'tool_use', id: c.id, name: c.function.name, input: parseArgs(c.function.arguments) }))
+      push('assistant', [...text(m.content), ...calls])
+    } else {
+      push('user', text(m.content))
     }
-    opening = false
-    const calls = m.tool_calls as Array<Record<string, unknown>> | undefined
-    if (m.role !== 'assistant' || !calls?.length) return m
-    return { ...m, tool_calls: calls.map(c => c.extra_content ? c : { ...c, extra_content: { google: { thought_signature: 'skip_thought_signature_validator' } } }) }
-  })
-  return { ...body, model, messages }
+  }
+  const params: Anthropic.MessageCreateParamsNonStreaming = {
+    model,
+    max_tokens: Number(body.max_completion_tokens) || 1500,
+    system: system.join('\n\n'),
+    messages,
+    thinking: { type: 'disabled' },
+    cache_control: { type: 'ephemeral' },
+  }
+  const tools = body.tools as OpenAiTool[] | undefined
+  if (tools?.length) {
+    params.tools = tools.map(t => ({ name: t.function.name, description: t.function.description ?? '', input_schema: (t.function.parameters ?? { type: 'object', properties: {} }) as Anthropic.Tool.InputSchema }))
+    const choice = body.tool_choice
+    params.tool_choice = choice === 'required' ? { type: 'any' } : choice === 'none' ? { type: 'none' } : { type: 'auto' }
+  }
+  return params
+}
+
+/** Claude's answer in the OpenAI shape the agent reads. */
+function fromClaude(msg: Anthropic.Message): Completion {
+  const content = msg.content.filter((b): b is Anthropic.TextBlock => b.type === 'text').map(b => b.text).join('')
+  const calls = msg.content.filter((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use')
+    .map(b => ({ id: b.id, type: 'function', function: { name: b.name, arguments: JSON.stringify(b.input) } }))
+  const u = msg.usage
+  return {
+    choices: [{ message: { role: 'assistant', content: content || null, ...(calls.length ? { tool_calls: calls } : {}) } }],
+    usage: { prompt_tokens: u.input_tokens + (u.cache_read_input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0), completion_tokens: u.output_tokens },
+  }
 }
 
 function openAiFailure(status: number, err: string): Response {
@@ -70,46 +116,47 @@ function count(c: Completion, meter: Meter): Completion {
   return c
 }
 
-async function callGemini(keys: Keys, body: Record<string, unknown>, meter: Meter): Promise<Completion | Response> {
-  meter.provider = 'gemini'
-  const payload = JSON.stringify(forGemini(body, keys.geminiModel))
-  // Gemini answers "high demand" (503) now and then: one more try after a short pause.
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    let res: Response
-    try {
-      res = await fetch(GEMINI_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${keys.gemini}` }, body: payload })
-    } catch (e) {
-      console.error('Gemini network error:', (e as Error).message)
-      if (attempt === 2) return json({ error: 'the standby AI cannot be reached' }, 502)
-      await new Promise(r => setTimeout(r, 800)); continue
+async function callClaude(keys: Keys, body: Record<string, unknown>, meter: Meter): Promise<Completion | Response> {
+  meter.provider = 'claude'
+  // Made per call so it uses the fetch of the moment (Workers runtime, or the fake one in kb-check). The SDK retries
+  // 429 / 5xx / connection errors once by itself.
+  const client = new Anthropic({ apiKey: keys.claude, maxRetries: 1 })
+  try {
+    const msg = await client.messages.create(forClaude(body, keys.claudeModel))
+    if (msg.stop_reason === 'refusal') {
+      console.error('Claude refused:', msg.stop_details?.category ?? 'no category')
+      return json({ error: 'the standby AI declined this message' }, 502)
     }
-    if (res.ok) {
-      console.log(`provider=gemini model=${keys.geminiModel}`)
-      return count(await res.json() as Completion, meter)
+    console.log(`provider=claude model=${keys.claudeModel}`)
+    return count(fromClaude(msg), meter)
+  } catch (e) {
+    if (e instanceof Anthropic.APIError) {
+      console.error('Claude error:', e.status, e.message.slice(0, 300))
+      if (e.status === 401) return json({ error: 'invalid Claude key' }, 502)
+      if (e.status === 402 || /credit balance/i.test(e.message)) return json({ error: 'the Claude account is out of credit' }, 502)
+      if (e.status === 429 || e.status === 529) return json({ error: 'the AI is busy right now, try again in a minute' }, 502)
+      return json({ error: `standby AI error ${e.status ?? ''}`.trim() }, 502)
     }
-    const err = await res.text()
-    console.error('Gemini error:', res.status, err.slice(0, 300))
-    if ((res.status === 503 || res.status === 429) && attempt === 1) { await new Promise(r => setTimeout(r, 800)); continue }
-    return json({ error: res.status === 503 || res.status === 429 ? 'the AI is busy right now, try again in a minute' : `standby AI error ${res.status}` }, 502)
+    console.error('Claude network error:', (e as Error).message)
+    return json({ error: 'the standby AI cannot be reached' }, 502)
   }
-  return json({ error: 'the AI is busy right now, try again in a minute' }, 502)
 }
 
 export async function callModel(keys: Keys, body: Record<string, unknown>, meter: Meter): Promise<Completion | Response> {
-  if (!keys.openai && !keys.gemini) return json({ error: 'The agent has no AI key configured' }, 503)
-  if (meter.provider === 'gemini' || !keys.openai || Date.now() < openaiPausedUntil) {
-    return keys.gemini ? callGemini(keys, body, meter) : openAiFailure(401, '')
+  if (!keys.openai && !keys.claude) return json({ error: 'The agent has no AI key configured' }, 503)
+  if (meter.provider === 'claude' || !keys.openai || Date.now() < openaiPausedUntil) {
+    return keys.claude ? callClaude(keys, body, meter) : openAiFailure(401, '')
   }
   try {
     const res = await fetch(OPENAI_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${keys.openai}` }, body: JSON.stringify(body) })
     if (res.ok) return count(await res.json() as Completion, meter)
     const err = await res.text()
     console.error('OpenAI error:', res.status, err.slice(0, 300))
-    if (!keys.gemini || !fallbackWorthy(res.status)) return openAiFailure(res.status, err)
+    if (!keys.claude || !fallbackWorthy(res.status)) return openAiFailure(res.status, err)
     if (res.status === 401 || res.status === 402 || res.status === 403 || /insufficient_quota/.test(err)) openaiPausedUntil = Date.now() + OPENAI_PAUSE_MS
   } catch (e) {
     console.error('OpenAI network error:', (e as Error).message)
-    if (!keys.gemini) return json({ error: 'OpenAI cannot be reached' }, 502)
+    if (!keys.claude) return json({ error: 'OpenAI cannot be reached' }, 502)
   }
-  return callGemini(keys, body, meter)
+  return callClaude(keys, body, meter)
 }

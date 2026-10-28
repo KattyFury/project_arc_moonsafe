@@ -22,7 +22,7 @@
 import { getPrices } from './prices'
 import { privyUserId } from '../_lib/privyAuth'
 import { addUsage, overBudget, type Meter } from '../_lib/budget'
-import { callModel as openai, DEFAULT_GEMINI_MODEL, type Keys, type ToolCall } from '../_lib/llm'
+import { callModel as openai, DEFAULT_CLAUDE_MODEL, type Keys, type ToolCall } from '../_lib/llm'
 import { powerState, takeTurn, type PowerEnv } from '../_lib/quota'
 import { KB, fundFloorMonths, matchPatterns, patternBrief, param } from '../../src/kb/kb'
 import { computeFacts, displayFacts, amountsUsd } from '../../src/kb/facts'
@@ -37,8 +37,8 @@ import type { AssetType, Currency, Debt, DebtType, Expense, FinancialProfile, Ho
 interface Env extends PowerEnv {
   OPENAI_API_KEY?: string
   /** Standby model, used when OpenAI cannot answer (functions/_lib/llm.ts). */
-  GEMINI_API_KEY?: string
-  GEMINI_MODEL?: string
+  ANTHROPIC_API_KEY?: string
+  CLAUDE_MODEL?: string
   PRIVY_APP_ID?: string
 }
 
@@ -678,8 +678,8 @@ const MAX_BODY_CHARS = 64_000
 const MAX_MESSAGE_CHARS = 2_000
 
 export async function onRequestPost(context: { request: Request; env: Env }): Promise<Response> {
-  const apiKey: Keys = { openai: context.env.OPENAI_API_KEY, gemini: context.env.GEMINI_API_KEY, geminiModel: context.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL }
-  if (!apiKey.openai && !apiKey.gemini) return json({ error: 'The agent has no AI key configured' }, 503)
+  const apiKey: Keys = { openai: context.env.OPENAI_API_KEY, claude: context.env.ANTHROPIC_API_KEY, claudeModel: context.env.CLAUDE_MODEL || DEFAULT_CLAUDE_MODEL }
+  if (!apiKey.openai && !apiKey.claude) return json({ error: 'The agent has no AI key configured' }, 503)
   // Signed-in users only, so nobody else can spend the OpenAI credit.
   const userId = await privyUserId(context.request, context.env)
   if (!userId) return json({ error: 'Please sign in again' }, 401)

@@ -263,7 +263,7 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
 }
 
 
-// 10. Model call: OpenAI first, Gemini as the standby (fetch is faked, nothing leaves this machine).
+// 10. Model call: OpenAI first, Claude as the standby (fetch is faked, nothing leaves this machine).
 {
   const { callModel } = await import('../functions/_lib/llm')
   const realFetch = globalThis.fetch
@@ -272,32 +272,34 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   const ok = (text: string) => new Response(JSON.stringify({ choices: [{ message: { role: 'assistant', content: text } }], usage: { prompt_tokens: 10, completion_tokens: 5 } }), { status: 200 })
   globalThis.fetch = (async (url: string, init?: { body?: string }) => {
     const u = String(url)
-    calls.push(u.includes('openai.com') ? 'openai' : u.includes('googleapis') ? 'gemini' : 'other')
+    calls.push(u.includes('openai.com') ? 'openai' : u.includes('anthropic.com') ? 'claude' : 'other')
     if (u.includes('openai.com')) return openaiStatus === 200 ? ok('from openai') : new Response(JSON.stringify({ error: { code: openaiStatus === 429 ? 'insufficient_quota' : 'x' } }), { status: openaiStatus })
-    const sent = JSON.parse(init?.body ?? '{}') as { model: string; messages: Array<{ role: string }> }
-    if (sent.messages[sent.messages.length - 1].role === 'system') return new Response('{"error":"ends with a system note"}', { status: 400 })
-    return ok('from gemini')
+    const sent = JSON.parse(init?.body ?? '{}') as { model: string; system?: string; messages: Array<{ role: string }> }
+    // Claude: roles must alternate starting with user, and only user/assistant (system goes in its own field)
+    if (sent.messages.some((m, i) => m.role !== (i % 2 ? 'assistant' : 'user'))) return new Response('{"type":"error","error":{"type":"invalid_request_error","message":"bad roles"}}', { status: 400 })
+    if (sent.system !== 'a') return new Response('{"type":"error","error":{"type":"invalid_request_error","message":"system not set"}}', { status: 400 })
+    return new Response(JSON.stringify({ id: 'msg_1', type: 'message', role: 'assistant', model: sent.model, content: [{ type: 'text', text: 'from claude' }], stop_reason: 'end_turn', stop_sequence: null, usage: { input_tokens: 10, output_tokens: 5 } }), { status: 200, headers: { 'Content-Type': 'application/json' } })
   }) as typeof fetch
   const body = { model: 'gpt-x', messages: [{ role: 'system', content: 'a' }, { role: 'user', content: 'hi' }, { role: 'system', content: 'late note' }] }
   const text = (r: unknown) => (r as { choices: Array<{ message: { content: string } }> }).choices[0].message.content
   try {
-    let meter: { tokens: number; provider?: 'gemini' } = { tokens: 0 }
-    const both = { openai: 'k1', gemini: 'k2', geminiModel: 'gemini-test' }
+    let meter: { tokens: number; provider?: 'claude' } = { tokens: 0 }
+    const both = { openai: 'k1', claude: 'k2', claudeModel: 'claude-test' }
     let r = await callModel(both, body, meter)
-    if (text(r) !== 'from gemini' || meter.provider !== 'gemini' || meter.tokens !== 15) fail('llm: a 401 from OpenAI must fall back to Gemini and count its tokens')
-    if (calls.join() !== 'openai,gemini') fail(`llm: expected openai then gemini, got ${calls.join()}`)
+    if (text(r) !== 'from claude' || meter.provider !== 'claude' || meter.tokens !== 15) fail('llm: a 401 from OpenAI must fall back to Claude and count its tokens')
+    if (calls.join() !== 'openai,claude') fail(`llm: expected openai then claude, got ${calls.join()}`)
     calls.length = 0
     r = await callModel(both, body, meter)
-    if (calls.join() !== 'gemini') fail('llm: once on Gemini, the same request stays there')
+    if (calls.join() !== 'claude') fail('llm: once on Claude, the same request stays there')
     calls.length = 0
     meter = { tokens: 0 }
     r = await callModel(both, body, meter)
-    if (calls.join() !== 'gemini') fail('llm: after a key problem OpenAI is skipped for a few minutes')
-    if (JSON.stringify({}) && text(r) !== 'from gemini') fail('llm: a late system note must not end the Gemini request (it becomes a user message)')
+    if (calls.join() !== 'claude') fail('llm: after a key problem OpenAI is skipped for a few minutes')
+    if (text(r) !== 'from claude') fail('llm: a late system note must become a user message for Claude (roles alternate, system set)')
     calls.length = 0
-    const onlyOpenAi = await callModel({ openai: 'k1', geminiModel: 'g' }, body, { tokens: 0 })
+    const onlyOpenAi = await callModel({ openai: 'k1', claudeModel: 'c' }, body, { tokens: 0 })
     if (!(onlyOpenAi instanceof Response) || onlyOpenAi.status !== 502) fail('llm: with no standby, an OpenAI failure is an error response')
-    const none = await callModel({ geminiModel: 'g' }, body, { tokens: 0 })
+    const none = await callModel({ claudeModel: 'c' }, body, { tokens: 0 })
     if (!(none instanceof Response) || none.status !== 503) fail('llm: with no key at all the answer is 503')
   } finally { globalThis.fetch = realFetch }
 }
