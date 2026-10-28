@@ -97,6 +97,8 @@ export interface FinancialProfile {
   noNearGoal?: boolean
   /** Money that comes in bursts (airdrops, trading wins, bonuses, "a few times a year"): not counted as monthly income, said once in the plan. */
   hasWindfalls?: boolean
+  /** What those windfalls add up to in a year, USD, if the user said (a note in the plan; never counted as monthly income). */
+  windfallsYearly?: number
   /** "If your crypto dropped by half, could you hold it without selling to live?" null = not asked / unsure. */
   cryptoDropOk?: boolean | null
   /** Health / life cover, asked only when people rely on their income. */

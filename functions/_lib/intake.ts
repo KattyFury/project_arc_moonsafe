@@ -44,15 +44,19 @@ function purpose(text: string): { en: string; vi: string } {
   return { en: 'build a plan for your money', vi: 'lập kế hoạch cho tiền của bạn' } // lang-ok
 }
 
-/** The list, or null when so little is missing that one question is enough. `readback` is what this message already recorded. */
-export function buildIntake(p: FinancialProfile, userText: string, vi: boolean, readback: string[], walletSeen: number | null = null): string | null {
-  const missing = unknownBullets(p)
-  if (missing.length < INTAKE_MIN_UNKNOWN) return null
+/** The sections the form should show: what is still unknown. */
+export const intakeKeys = (p: FinancialProfile): string[] => unknownBullets(p).map(b => b.key)
+
+/**
+ * The short message above the form (Hieu, 2026-10-28: the first questions are a form to fill in, not a list to answer in words).
+ * Null when so little is missing that one question is enough. `readback` is what this message already recorded.
+ * The sentence "Share whatever you're comfortable with" marks it as sent (BATCH_MARK).
+ */
+export function buildIntake(p: FinancialProfile, userText: string, vi: boolean, readback: string[], _walletSeen: number | null = null): string | null {
+  if (unknownBullets(p).length < INTAKE_MIN_UNKNOWN) return null
   const why = purpose(userText)
-  const sw = seen(walletSeen)
-  const lines = missing.map(b => `• ${vi ? b.vi : b.en}${b.key === 'assets' && sw ? (vi ? ` (mình thấy ${sw} USDC trong ví này)` : ` (I can see ${sw} USDC in this wallet)`) : ''}`).join('\n') // lang-ok
   const noted = readback.length ? (vi ? `Mình ghi: ${readback.join(', ')}.\n\n` : `Noted: ${readback.join(', ')}.\n\n`) : '' // lang-ok
   return vi
-    ? `${noted}Mình cần một số thông tin dưới đây để ${why.vi}. Bạn cứ chia sẻ những gì bạn thoải mái chia sẻ, mình sẽ dựa vào đó để làm tiếp:\n${lines}\n\nPhần nào bạn không nói, mình hiểu là bạn không muốn chia sẻ và sẽ bỏ qua.` // lang-ok
-    : `${noted}I need some information below to ${why.en}. Share whatever you're comfortable with, and I'll work from that:\n${lines}\n\nAnything you leave out, I'll take as "prefer not to say" and skip it.`
+    ? `${noted}Mình cần một số thông tin để ${why.vi}. Bạn cứ điền những gì bạn thoải mái chia sẻ ở biểu mẫu bên dưới; ô nào để trống mình hiểu là bạn không muốn chia sẻ và sẽ bỏ qua.` // lang-ok
+    : `${noted}I need some information to ${why.en}. Share whatever you're comfortable with in the form below; anything you leave empty I'll take as "prefer not to say" and skip it.`
 }

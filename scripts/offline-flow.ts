@@ -34,6 +34,7 @@ const T = (name: string, args: unknown) => ({ id: 'c' + Math.random(), type: 'fu
 const M = (amount: number) => ({ amount, currency: 'USDC' })
 let modelCalls = 0
 let replySystem = ''
+let planMode: 'full' | 'noop' = 'full'
 const realFetch = globalThis.fetch
 globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
   const u = String(url)
@@ -44,7 +45,7 @@ globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
   if (body.tool_choice !== 'required') replySystem = body.messages.filter(m => m.role === 'system').map(m => m.content).join('\n')
   const toolMsgs = body.messages.filter(m => m.role === 'tool').length
   const message = body.tool_choice === 'required'
-    ? (toolMsgs === 0
+    ? (toolMsgs === 0 && planMode === 'full'
       ? { role: 'assistant', content: null, tool_calls: [
           T('update_profile', { age: 31, income_stable: true, dependents: 0, debts_complete: true, no_near_goal: true }),
           T('set_income', { name: 'Salary', monthly: M(150), kind: 'active' }),
@@ -75,6 +76,15 @@ async function call(messages: Array<{ role: string; content: string }>, profile:
 let bad = 0
 const expect = (ok: boolean, what: string) => { if (!ok) { bad++; console.log('FAIL', what) } }
 
+// 0. A brand-new user's first message: the questions come as a FORM to fill in (server-built, no model call).
+const hello = await call([{ role: 'user', content: 'investing' }], normalizeProfile({ v: 2 }), 0)
+const formAction = hello.body.actions?.find(a => a.type === 'intake_form') as { keys?: string[]; seen?: number | null } | undefined
+console.log('step 0: model calls', hello.calls, '| form sections', formAction?.keys?.join(','), '| wallet seen', formAction?.seen)
+expect(hello.calls === 0, 'the first message costs no model call')
+expect(formAction?.keys?.join() === 'age,income,spending,stability,goal,assets,other,debt', 'the form carries every section for a brand-new user')
+expect(formAction?.seen === 1916, 'the form is told what the app sees in the wallet (a hint)')
+expect(/Share whatever you're comfortable with/.test(hello.body.content ?? '') && !/^• /m.test(hello.body.content ?? ''), 'the message above the form is short, not a bulleted list')
+
 // 1. Everything declared in one message: NOTHING is saved yet, the app asks to confirm each thing.
 const empty = normalizeProfile({ v: 2 })
 const first = await call([...history, { role: 'user', content: message }], empty)
@@ -96,6 +106,7 @@ const event = `[app event] The user reviewed the items: saved: ${(card?.items ??
 const second = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: first.body.content ?? '' }, { role: 'user', content: event }], saved)
 const text = second.body.content ?? ''
 console.log('\nstep 2: status', second.status, '| model calls', second.calls)
+if (process.env.FLOW_DEBUG) console.log(second.body.content)
 expect(second.status === 200, 'step 2 succeeds')
 expect(second.calls === 0, `after the card the plan is built by the server: no model call (got ${second.calls})`)
 expect(/To invest the right way you need three things/.test(text) && /safe part of 31%/.test(text) && /takes risk, 69%/.test(text), 'the plan opens with the overview: what is needed and the safe / at-risk split')
@@ -116,6 +127,16 @@ expect(/Which part would you like to fill first|Only [^.]* still has room/.test(
 const none = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: first.body.content ?? '' }, { role: 'user', content: '[app event] The user reviewed the items: saved: none. skipped: everything.' }], empty)
 console.log('\nstep 3: status', none.status, '| model calls', none.calls)
 expect(!/Here is your plan/.test(none.body.content ?? ''), 'with nothing saved there is no plan')
+
+// 3b. Safety net: the planner records NOTHING for "2500 in USDC, 500 in cash, 2000 in gold" (real chat 2026-10-28): the server still does.
+planMode = 'noop'
+const known = normalizeProfile({ v: 2, age: 21, incomeStable: false, dependents: 0, debtsComplete: true, noNearGoal: true })
+const net = await call([...history, { role: 'user', content: '2500 in USDC, 500 in cash, 2000 in gold that\'s all' }], known, 0)
+const netCard = net.body.actions?.find(a => a.type === 'confirm_items')
+console.log('\nstep 3b: items', netCard?.items?.map(i => i.text).join(' / '))
+expect((netCard?.items ?? []).length === 3, 'the three phrases become three items to confirm')
+expect(/USDC.*2,?500/.test((netCard?.items ?? [])[0]?.text ?? '') && /Cash 500 USDC/.test((netCard?.items ?? [])[1]?.text ?? '') && /Gold/.test((netCard?.items ?? [])[2]?.text ?? ''), 'USDC, cash and gold with the right amounts')
+planMode = 'full'
 
 // 4. Length (Hieu, 2026-10-28): short when collecting or asking, long only to educate.
 expect(/MODE THIS TURN: BRIEF/.test(replySystem), 'after a card with nothing saved the reply is BRIEF')

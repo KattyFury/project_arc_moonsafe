@@ -25,7 +25,7 @@ import { addUsage, overBudget, type Meter } from '../_lib/budget'
 import { callModel as openai, DEFAULT_CLAUDE_MODEL, type Keys, type ToolCall } from '../_lib/llm'
 import { powerState, takeTurn, type PowerEnv } from '../_lib/quota'
 import { recordStats } from '../_lib/stats'
-import { BATCH_MARK, INTAKE_MIN_UNKNOWN, buildIntake, unknownBullets } from '../_lib/intake'
+import { BATCH_MARK, INTAKE_MIN_UNKNOWN, buildIntake, intakeKeys, unknownBullets } from '../_lib/intake'
 import { buildPlan, buildStanding } from '../_lib/plan'
 import { KB, fundFloorMonths, matchPatterns, patternBrief, param } from '../../src/kb/kb'
 import { computeFacts, displayFacts, amountsUsd } from '../../src/kb/facts'
@@ -177,7 +177,7 @@ const PLAN_GIVEN = /Traditional[^\n]{0,80}\d+(\.\d+)?\s*%|Truyền thống[^\n]{
 const NOT_AT_ALL = /^\W*(no|nope|not at all|none|zero|nothing|never)(?!\p{L})/iu
 const PAID_Q = /paid (it )?off|still owe|trả hết|còn nợ/i // lang-ok
 const SOLE_WORDS = /(only|sole|single|main)[^.?!\n]{0,20}(earner|income|breadwinner|one (who )?work)|breadwinner|trụ cột|một mình (kiếm|lo)|duy nhất (kiếm|có thu nhập)/i // lang-ok
-const NO_DEBT = /(no|not any|zero|without)\s+(other\s+)?(debts?|loans?)|debt[- ]free|(không|chưa|ko)\s+(còn\s+)?(nợ|vay)|hết nợ/i // lang-ok
+const NO_DEBT = /(no|not any|zero|without)\s+(other\s+)?(debts?|loans?)|(?:don'?t|do not|doesn'?t) (?:have|owe)\s+(?:any\s+|a\s+)?(?:other\s+)?(?:debts?|loans?)|(?<![\d.,])0\s+(?:debts?|loans?)|(?:have|got)\s+no\s+(?:debts?|loans?)|debt[- ]free|(không|chưa|ko)\s+(còn\s+)?(nợ|vay)|hết nợ/i // lang-ok
 const LOCK_TALK = /(open|unlock|opens)[^.?!\n]{0,30}cirBTC|cirBTC (buying|buy)|buy lock|mở (khóa|khoá)? ?mua cirBTC/i // lang-ok
 const KNOWS_NOTHING = /(don'?t|do not) know (anything|much|where to start|what to do)|no idea|i'?m (lost|confused|new to)|never (managed|done this)|beginner|(không|chả|chẳng) biết (gì|bắt đầu)|mới bắt đầu/i // lang-ok
 const INTERNAL_LABEL = /(?<!\p{L})(floor|surplus|liquid assets?|idle( money| cash)?|priority debt)(?!\p{L})/iu
@@ -660,6 +660,8 @@ const windfallWithoutMonthly = (text: string) => { const hits = text.split(/(?<=
 /** "How much …" about their own money. */
 const ASKS_AMOUNT = /how much(?! (?:should|can|could|would|to|do|will|must))|what(?:'s| is) (?:my|the) total|total (?:of|in)|bao nhiêu|tổng/i // lang-ok
 const AMOUNT_TOPIC = /(bank|savings?|safety|traditional|crypto|btc|emergency|fund|net worth|everything|all (?:of )?my|portfolio|in total|ngân hàng|tiết kiệm|quỹ)/i // lang-ok
+/** "2500 in USDC", "500 in cash", "2000$ in gold", "500 in my bank account", "1k in stocks". */
+const HOLDING_PHRASE = /(\d[\d,]*(?:\.\d+)?)\s?(k|m)?\s*(?:\$|usd|usdc|usdt|dollars?)?\s*(?:in|of|on)\s+(?:my\s+)?(usdc|usdt|stablecoins?|cash|gold|bank(?: account)?|savings?|stocks?|shares|funds?|etfs?)(?![\p{L}])/giu
 const OWED_Q = /still owe|còn nợ bao nhiêu/i // lang-ok
 const INTEREST_Q = /interest|lãi/i // lang-ok
 
@@ -716,8 +718,10 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   if (Array.isArray(body.messages)) body.messages = body.messages.map(m => typeof m?.content === 'string' ? { ...m, content: m.content.slice(0, MAX_MESSAGE_CHARS) } : m)
 
   // A safety valve on tokens (functions/_lib/budget.ts) and the user's daily "AI power" (functions/_lib/quota.ts).
-  const limit = await overBudget(context.env, userId)
-  if (limit) return json({ error: limit }, 429)
+  // The verified owner has no per-user token cap (only the global one): 90 messages a day must be possible (real chat 2026-10-28).
+  const before = await powerState(context.env, userId)
+  const limit = await overBudget(context.env, userId, before?.boosted === true)
+  if (limit) return json({ error: limit, code: 'token_budget' }, 429)
   const lastUser = [...(Array.isArray(body.messages) ? body.messages : [])].reverse().find(m => m?.role === 'user')?.content ?? ''
   const turn = await takeTurn(context.env, userId, lastUser.startsWith('[app event]') ? 'event' : 'message')
   if (!turn.ok) return json({ error: turn.message, code: 'out_of_power', power: await powerState(context.env, userId) }, 429)
@@ -1240,6 +1244,18 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   }
 
   // ---- 2. REPLY ---------------------------------------------------------------------
+  // Safety net (real chat 2026-10-28: "2500 in USDC, 500 in cash, 2000 in gold" left the planner with no holding at all): when the planner
+  // recorded none, the plain "N in <place>" phrases are recorded here, through the same add_holding checks (price, duplicates).
+  if (!appEvent && !placement && !QUESTIONS_US.test(lastUserText) && !skipPlan && !askingAmount && !/vnd|₫|triệu|nghìn/i.test(lastUserText) && !ops.some(o => o.op === 'add_holding' || o.op === 'set_holding')) { // lang-ok
+    for (const m of lastUserText.matchAll(HOLDING_PHRASE)) {
+      const amount = Number(m[1].replace(/,/g, '')) * ({ k: 1e3, m: 1e6 }[(m[2] ?? '').toLowerCase()] ?? 1)
+      const place = m[3].toLowerCase()
+      if (!(amount > 0)) continue
+      const spec = /usd[ct]|stable/.test(place) ? { type: 'stable_wallet', name: 'USDC' } : place === 'cash' ? { type: 'cash', name: 'Cash' } : place === 'gold' ? { type: 'gold_physical', name: 'Gold', unit: 'oz' }
+        : /bank|saving/.test(place) ? { type: 'savings', name: 'Bank savings' } : { type: 'fund_bond', name: 'Stocks and funds' }
+      await handle({ id: `fallback-${spec.type}`, function: { name: 'add_holding', arguments: JSON.stringify({ ...spec, worth: { amount, currency: 'USDC' } }) } })
+    }
+  }
   // Several things declared in one message are NOT saved on the spot: the app shows them one by one to confirm or cancel (Hieu,
   // 2026-10-28). The server only prepares them (ops stay empty); the card applies the confirmed ones and then tells the agent.
   if (!appEvent && readback.length >= CONFIRM_MIN_ITEMS) {
@@ -1301,10 +1317,10 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     if (standingText) return json({ content: standingText, ops, dcaStop, actions })
   }
 
-  // The first questions go out as ONE list, built here (no model call); what the user leaves out is taken as "prefer not to say".
+  // The first questions go out as ONE form, built here (no model call); what the user leaves out is taken as "prefer not to say".
   if (!batchAsked && !placement && (!appEvent || itemsEvent) && !userAsks && !toAsk.length && !DECLINES.test(lastUserText) && !KNOWS_NOTHING.test(lastUserText)) {
     const intake = buildIntake(profile, lastUserText, vi, readback, wallet)
-    if (intake) return json({ content: intake, ops, dcaStop, actions })
+    if (intake) return json({ content: intake, ops, dcaStop, actions: [...actions, { type: 'intake_form', keys: intakeKeys(profile), seen: wallet }] })
   }
 
   // BRIEF unless the turn is meant to educate: a plan the model writes, the user asking why / what something means, or an overview.
