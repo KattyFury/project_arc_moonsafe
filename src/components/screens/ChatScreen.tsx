@@ -20,7 +20,7 @@ import type { AssetType } from '@/types'
 import { AllocationPies } from '@/components/ui/AllocationPies'
 import { CashflowCard } from '@/components/ui/CashflowCard'
 
-/** The message box stops growing at 6 lines (6 x 24px + padding); longer text scrolls inside it. */
+/** The message box stops growing at 6 lines (6 x 24px + padding); longer text scrolls inside it, without a scrollbar. */
 const COMPOSER_MAX_PX = 168
 
 const FADE_TOP = { maskImage: 'linear-gradient(to bottom, transparent 0, #000 48px)', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0, #000 48px)' }
@@ -87,7 +87,11 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
     if (!el) return
     el.style.height = 'auto'
     const border = el.offsetHeight - el.clientHeight
-    el.style.height = `${Math.min(el.scrollHeight + border, COMPOSER_MAX_PX)}px`
+    const wanted = el.scrollHeight + border
+    el.style.height = `${Math.min(wanted, COMPOSER_MAX_PX)}px`
+    // No scrollbar is ever drawn: text that fits never scrolls (a 1px rounding gap must not show one), and past the cap it
+    // scrolls with the bar hidden (the classes below).
+    el.style.overflowY = wanted > COMPOSER_MAX_PX ? 'auto' : 'hidden'
   }, [input])
 
   const { power, setPower, verifyOwner } = useAiPower()
@@ -186,7 +190,7 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
               e.preventDefault(); void handleSend()
             }}
             placeholder={outOfPower ? 'Out of AI power · recharge to keep chatting' : 'Message the agent…'} aria-label="Message"
-            className="flex-1 min-w-0 min-h-12 py-[11px] px-4 rounded-[24px] text-[16px] leading-6 resize-none outline-none focus-visible:outline-none border border-[var(--line)] focus:border-[var(--accent)] focus:shadow-[inset_0_0_0_1px_var(--accent)] placeholder:text-[var(--muted)]"
+            className="flex-1 min-w-0 min-h-12 py-[11px] px-4 rounded-[24px] text-[16px] leading-6 resize-none overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden outline-none focus-visible:outline-none border border-[var(--line)] focus:border-[var(--accent)] focus:shadow-[inset_0_0_0_1px_var(--accent)] placeholder:text-[var(--muted)]"
             style={{ background: 'var(--surface-muted)', color: 'var(--ink)', maxHeight: COMPOSER_MAX_PX }} />
           <button onClick={() => { void handleSend() }} disabled={loading || outOfPower || !input.trim()} aria-label="Send"
             className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
