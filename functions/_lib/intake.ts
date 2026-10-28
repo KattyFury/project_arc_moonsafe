@@ -25,13 +25,13 @@ const OTHER_TYPES = ['home', 'car', 'rental_property', 'loan_given', 'business_s
 
 const BULLETS: Bullet[] = [
   { key: 'age', en: 'Your age', vi: 'Tuổi của bạn', known: p => p.age !== null || p.ageDeclined }, // lang-ok
-  { key: 'income', en: 'What you earn each month, and from what (salary, side jobs, interest…)', vi: 'Thu nhập mỗi tháng và từ đâu (lương, việc làm thêm, lãi…)', known: p => p.incomes.length > 0 }, // lang-ok
+  { key: 'income', en: 'What you earn each month, and from what', vi: 'Thu nhập mỗi tháng và từ đâu', known: p => p.incomes.length > 0 }, // lang-ok
   { key: 'spending', en: 'What you spend each month (an estimate is fine)', vi: 'Chi tiêu mỗi tháng (ước chừng là được)', known: p => p.expenses.length > 0 }, // lang-ok
   { key: 'stability', en: 'Whether your income is steady, and whether anyone relies on it', vi: 'Thu nhập có ổn định không, và có ai phụ thuộc vào bạn không', known: p => p.incomeStable !== null && p.dependents !== null }, // lang-ok
-  { key: 'goal', en: 'A big expense you are saving for in the next 5 years, if any (a car, a wedding, school fees)', vi: 'Khoản chi lớn bạn đang dành tiền trong 5 năm tới, nếu có (xe, đám cưới, học phí)', known: p => !!p.nearGoal || !!p.noNearGoal }, // lang-ok
-  { key: 'assets', en: 'What you keep in your wallets, in the bank, on exchanges, in coins, and any gold or stocks (every balance counts only once you tell me, wallets included)', vi: 'Bạn đang giữ gì: trong các ví, ngân hàng, sàn, coin, vàng hoặc cổ phiếu (mọi số dư chỉ được tính khi bạn khai, kể cả ví)', known: p => p.holdings.some(h => ASSET_TYPES.includes(h.type)) }, // lang-ok
-  { key: 'other', en: 'A home, land or a car, money you have lent, or a business you own', vi: 'Nhà, đất hoặc xe, tiền bạn đã cho vay, hoặc doanh nghiệp bạn sở hữu', known: p => p.holdings.some(h => OTHER_TYPES.includes(h.type)) }, // lang-ok
-  { key: 'debt', en: 'Any debt: credit cards, loans, and money borrowed from family (even interest-free)', vi: 'Các khoản nợ: thẻ tín dụng, vay ngân hàng, và tiền mượn người thân (kể cả không lãi)', known: p => p.debtsComplete || p.debts.length > 0 }, // lang-ok
+  { key: 'goal', en: 'A big expense in the next 5 years, if any', vi: 'Khoản chi lớn trong 5 năm tới, nếu có', known: p => !!p.nearGoal || !!p.noNearGoal }, // lang-ok
+  { key: 'assets', en: 'What you hold: wallets, bank, exchanges, coins, gold, stocks (a balance counts only once you tell me)', vi: 'Bạn đang giữ gì: ví, ngân hàng, sàn, coin, vàng, cổ phiếu (số dư chỉ được tính khi bạn khai)', known: p => p.holdings.some(h => ASSET_TYPES.includes(h.type)) }, // lang-ok
+  { key: 'other', en: 'A home, land or car, money lent, or a business', vi: 'Nhà, đất hoặc xe, tiền cho vay, hoặc doanh nghiệp', known: p => p.holdings.some(h => OTHER_TYPES.includes(h.type)) }, // lang-ok
+  { key: 'debt', en: 'Any debt, family loans included', vi: 'Các khoản nợ, kể cả mượn người thân', known: p => p.debtsComplete || p.debts.length > 0 }, // lang-ok
 ]
 
 export const unknownBullets = (p: FinancialProfile) => BULLETS.filter(b => !b.known(p))

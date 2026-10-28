@@ -33,13 +33,15 @@ const message = [
 const T = (name: string, args: unknown) => ({ id: 'c' + Math.random(), type: 'function', function: { name, arguments: JSON.stringify(args) } })
 const M = (amount: number) => ({ amount, currency: 'USDC' })
 let modelCalls = 0
+let replySystem = ''
 const realFetch = globalThis.fetch
 globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
   const u = String(url)
   if (u.includes('auth.privy.io')) return new Response(JSON.stringify({ keys: [jwk] }), { status: 200 })
   if (!u.includes('openai.com')) return realFetch(url as never, init)
   modelCalls++
-  const body = JSON.parse(String(init?.body)) as { tool_choice?: string; messages: Array<{ role: string }> }
+  const body = JSON.parse(String(init?.body)) as { tool_choice?: string; messages: Array<{ role: string; content?: string }> }
+  if (body.tool_choice !== 'required') replySystem = body.messages.filter(m => m.role === 'system').map(m => m.content).join('\n')
   const toolMsgs = body.messages.filter(m => m.role === 'tool').length
   const message = body.tool_choice === 'required'
     ? (toolMsgs === 0
@@ -114,6 +116,11 @@ expect(/Which part would you like to fill first|Only \w+ still has room/.test(fu
 const none = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: first.body.content ?? '' }, { role: 'user', content: '[app event] The user reviewed the items: saved: none. skipped: everything.' }], empty)
 console.log('\nstep 3: status', none.status, '| model calls', none.calls)
 expect(!/Here is your plan/.test(none.body.content ?? ''), 'with nothing saved there is no plan')
+
+// 4. Length (Hieu, 2026-10-28): short when collecting or asking, long only to educate.
+expect(/MODE THIS TURN: BRIEF/.test(replySystem), 'after a card with nothing saved the reply is BRIEF')
+await call([...history, { role: 'user', content: message }, { role: 'assistant', content: first.body.content ?? '' }, { role: 'user', content: 'why do I need an emergency fund?' }], saved, 0)
+expect(/MODE THIS TURN: TEACH/.test(replySystem), 'a "why" question is answered in TEACH mode')
 
 console.log(bad ? `${bad} problem(s)` : 'flow OK')
 if (bad) process.exit(1)

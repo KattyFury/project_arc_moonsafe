@@ -379,7 +379,7 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   if (appWalletHolding(normalizeProfile({ v: 2, holdings: [H({ id: 'x', type: 'stable_wallet', name: 'USDT', where: 'Binance', value: 10 })] }))) fail('an exchange balance is not the app wallet')
   // The first list says what the app sees, but asks the user to declare it.
   const list = buildIntake(normalizeProfile({ v: 2 }), 'I want investing', false, [], 1916)
-  if (!list?.includes('I can see 1,916 USDC in this wallet') || !list.includes('wallets included')) fail('intake: the wallet seen is named, the declaration asked')
+  if (!list?.includes('I can see 1,916 USDC in this wallet') || !list.includes('a balance counts only once you tell me')) fail('intake: the wallet seen is named, the declaration asked')
   // The plan says WHY for every step, and offers the exact deposit with the wording the "yes" is matched on.
   const shares: [number, number, number] = [31, 39, 30]
   const plan = buildPlan({ p: base, b: bal(base, 1900, 0), shares, cover: 450, vi: false })!
