@@ -186,5 +186,75 @@ const safeText = safe.body.content ?? ''
 console.log('\nstep 6d: model calls', safe.calls, '\n' + safeText)
 expect(safe.calls === 0 && /Safety lives outside the app/.test(safeText) && /You have 300 USDC of/.test(safeText), 'naming Safety explains it lives outside the app, with the totals')
 
+
+// 7. The admin page's API: who may call it, what it changes, and that it never shows a secret.
+{
+  const { generatePrivateKey, privateKeyToAccount } = await import('viem/accounts')
+  const adminModule = '../functions/api/admin'
+  const { onRequestGet: adminGet, onRequestPost: adminPost } = await import(adminModule) as {
+    onRequestGet: (c: { request: Request; env: unknown }) => Promise<Response>
+    onRequestPost: (c: { request: Request; env: unknown }) => Promise<Response>
+  }
+  class MemKv {
+    m = new Map<string, string>()
+    get = async (k: string) => this.m.get(k) ?? null
+    put = async (k: string, v: string) => { this.m.set(k, v) }
+    delete = async (k: string) => { this.m.delete(k) }
+    list = async (o: { prefix?: string; limit?: number } = {}) => ({ keys: [...this.m.keys()].filter(k => k.startsWith(o.prefix ?? '')).sort().slice(0, o.limit ?? 1000).map(name => ({ name })), list_complete: true })
+  }
+  const kv = new MemKv()
+  const admin = privateKeyToAccount(generatePrivateKey())
+  const stranger = privateKeyToAccount(generatePrivateKey())
+  const env = { OPENAI_API_KEY: 'fake-secret-key-123', ADMIN_WALLETS: admin.address, USERDATA: kv }
+  const proof = async (who = admin, account = 'did:privy:token-report', age = 0) => {
+    const message = `MoonSafe admin sign-in\nAccount: ${account}\nIssued: ${Date.now() - age}`
+    return JSON.stringify({ message, signature: await who.signMessage({ message }) })
+  }
+  const headers = (p?: string) => ({ authorization: `Bearer ${token}`, 'content-type': 'application/json', ...(p ? { 'x-admin-proof': p } : {}) })
+  const get = (q: string, p?: string) => adminGet({ request: new Request(`http://local/api/admin?${q}`, { headers: headers(p) }), env })
+  const post = (body: unknown, p?: string) => adminPost({ request: new Request('http://local/api/admin', { method: 'POST', headers: headers(p), body: JSON.stringify(body) }), env })
+  const chatText = async () => { const r = await onRequestPost({ request: new Request('http://local/api/chat', { method: 'POST', headers: headers(), body: JSON.stringify({ messages: [{ role: 'user', content: 'hello' }], context: {} }) }), env: env as never }); return { status: r.status, body: await r.json() as { error?: string; code?: string } } }
+
+  expect((await get('op=challenge')).status === 200, 'admin: a signed-in account can ask for the challenge')
+  expect((await get('op=overview')).status === 403, 'admin: no proof, no entry')
+  expect((await get('op=overview', await proof(stranger))).status === 403, 'admin: a wallet that is not on the list is refused')
+  expect((await get('op=overview', await proof(admin, 'did:privy:somebody-else'))).status === 403, 'admin: a proof made for another account is refused')
+  expect((await get('op=overview', await proof(admin, 'did:privy:token-report', 31 * 60_000))).status === 403, 'admin: a proof older than 30 minutes is refused')
+  const okProof = await proof()
+  const ov = await get('op=overview', okProof)
+  const ovText = await ov.text()
+  expect(ov.status === 200 && /"openai":true/.test(ovText) && /"claude":false/.test(ovText), 'admin: the overview says which AI keys exist')
+  expect(!ovText.includes('fake-secret-key-123'), 'admin: a secret is never returned')
+  expect(/"freeTurnsPerDay":30/.test(ovText) && /"userTokenBudget":600000/.test(ovText), 'admin: the effective limits are shown')
+
+  await kv.put('u:did:privy:alice', JSON.stringify({ profile: { holdings: [{}, {}], debts: [], age: 30 }, chat: [1, 2, 3], updatedAt: 1000 }))
+  const users = await (await get('op=users', okProof)).json() as { users: Array<{ id: string; holdings: number; messages: number }> }
+  expect(users.users.some(u => u.id === 'did:privy:alice' && u.holdings === 2 && u.messages === 3), 'admin: the user list summarizes stored accounts')
+
+  const grant = await post({ op: 'user', id: 'did:privy:alice', action: 'grant_power', messages: 50 }, okProof)
+  const detail = await (await get('op=user&id=did:privy:alice', okProof)).json() as { extraPower: number }
+  expect(grant.status === 200 && detail.extraPower === 50, 'admin: granting power adds messages')
+
+  const blockedRes = await post({ op: 'user', id: 'did:privy:token-report', action: 'block' }, okProof)
+  const blockedChat = await chatText()
+  expect(blockedRes.status === 200 && blockedChat.status === 403 && blockedChat.body.code === 'blocked', 'admin: a blocked account gets no answer')
+  await post({ op: 'user', id: 'did:privy:token-report', action: 'unblock' }, okProof)
+
+  await post({ op: 'config', patch: { chatEnabled: false, notice: 'Back in ten minutes' } }, okProof)
+  const paused = await chatText()
+  expect(paused.status === 503 && paused.body.code === 'paused' && paused.body.error === 'Back in ten minutes', 'admin: pausing the agent shows the notice and stops answers')
+  await post({ op: 'config', patch: { chatEnabled: true, notice: '', freeTurnsPerDay: 5 } }, okProof)
+  expect((await (await get('op=overview', okProof)).text()).includes('"freeTurnsPerDay":5'), 'admin: a changed daily limit is used')
+  const bad = await post({ op: 'config', patch: { freeTurnsPerDay: -4, primaryProvider: 'evil' } }, okProof)
+  expect(bad.status === 200 && /"freeTurnsPerDay":null/.test(await bad.text()), 'admin: invalid settings fall back to the defaults')
+
+  expect((await post({ op: 'user', id: 'did:privy:alice', action: 'delete_data' }, okProof)).status === 400, 'admin: deleting data needs a confirmation')
+  await post({ op: 'user', id: 'did:privy:alice', action: 'delete_data', confirm: true }, okProof)
+  expect(!kv.m.has('u:did:privy:alice'), 'admin: confirmed deletion removes the account data')
+
+  const log = await (await get('op=log', okProof)).json() as { log: Array<{ action: string }> }
+  expect(log.log.length >= 6 && log.log.some(l => l.action === 'config') && log.log.some(l => l.action === 'delete_data'), 'admin: every change is in the audit log')
+}
+
 console.log(bad ? `${bad} problem(s)` : 'flow OK')
 if (bad) process.exit(1)

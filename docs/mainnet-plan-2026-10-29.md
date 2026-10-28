@@ -58,3 +58,23 @@ Nguồn: `docs/audit-2026-10-27.md` (rà soát mức tối đa, 86 test, Slither
 
 ## 6. Có thể làm gì "ngày mai" (29/10)
 Một mình ngày mai **không đủ** để ra mainnet an toàn (cần kiểm toán độc lập, triển khai và kiểm tra thật). Phần Arc Studio làm được trong ngày: A.1 đến A.7 trên nhánh, chưa deploy, kèm bộ test. Kết quả cuối ngày: một bản "sẵn sàng mainnet" nằm sau công tắc mạng, hợp đồng bản mới đã test, runbook triển khai. Việc còn lại (kiểm toán, triển khai, bật) do Hiếu quyết định sau.
+
+
+## Decisions taken on 2026-10-28 and what was built the same day (branch `arc-studio/mainnet-prep-2026-10-28`)
+
+Hieu's answers: (1) moonsafe.app becomes the mainnet app, plus an `/admin` page; (2) the factory owner is a **Safe multisig of his two wallets** (`0xeb2d…2f6`, which also receives fees, and `0xb0A8…c071`, his security wallet); (3) contract changes agreed, vault recovery to be discussed; (4) public launch; (5) cirBTC liquidity not a concern, DCA wanted at launch; (6) audit: he does not know the options and asks Arc Studio.
+
+Built (nothing deployed to mainnet; the default build is still the testnet app):
+- **Network switch** `src/lib/network.ts`: `VITE_NETWORK=mainnet` builds the mainnet app (chain 5042, `https://rpc.mainnet.arc.io`, `explorer.arc.io`, App Kit chain `Arc`, cirBTC `0x171A…AA0`). Mainnet has NO default factory: it needs `VITE_FACTORY_ADDRESS`, otherwise the vault screen says no factory is configured and nothing is sent. Texts that said "test tokens" switch to "real funds" on mainnet; the faucet link is testnet only.
+- **Contracts v2** (`contracts/VaultFactory.sol`, `VaultProxy.sol`): `Ownable2Step`, pull-based fees (`accruedFees`, permissionless `withdrawFees()` to `feeRecipient`; a bad recipient can no longer block vault creation), creation-only pause, errors with context, events before external calls, `InvalidImplementation(address)`. 154 Foundry tests pass; the max-severity review has no open findings; Slither reports 0 results; `evm_version` moved to `cancun`.
+- **Safe**: `scripts/safe-plan.ts` prints the one transaction that creates the 2-of-2 Safe (official Safe 1.4.1 contracts, confirmed to have code on Arc mainnet) and the address it will have; `--check` reads it back. Predicted address with the defaults: `0xC4c428c635913e5937BA0DA6E060E495f5a664b9` (confirm with `--check` after you send the transaction).
+- **Deploy script** `contracts/script/DeployMainnet.s.sol`: deploys implementation + factory with `FACTORY_OWNER` (the Safe), `FEE_RECIPIENT`, `VAULT_FEE`; refuses any chain except 5042 (unless `DRY_RUN=1`, simulation only); checks owner, implementation, fee and pause state after deployment. You run it with your own keystore or hardware wallet.
+- **Admin page** `/admin` (see HANDOFF): sign-in by a signed message from an admin wallet, overview of agent statistics, accounts, settings (pause the agent or the cards, notice, limits, which AI answers first), AI key status and connection test, audit log.
+
+Still open: DCA (see below), vault recovery, the independent audit, the mainnet deployment itself (yours), verification of the contracts on the explorer, funding the deployer with gas USDC.
+
+### Audit options (Hieu asked)
+Arc Studio's review (two reviewers at maximum depth, Slither, 154 tests) is a strong internal check but is **not** an independent audit and the warning you accepted says to obtain one before mainnet. The code to review is small (two contracts, about 350 lines with comments), which keeps an independent review short. Cheapest sensible routes, in order of cost: (a) one independent smart-contract reviewer or a small audit firm for these two contracts only; (b) a time-boxed public contest on one of the open audit platforms; (c) meanwhile limit the damage if something is missed: launch with the pause switch ready, the multisig as owner, and an app-side cap on how much one vault is asked to hold in the first weeks. Prices vary a lot and change; ask for quotes with this repository and `docs/audit-2026-10-27.md` attached.
+
+### DCA at launch
+DCA holds user money for many days and depends on three things not yet proven: the Circle swap adapter accepting a contract as the sender (the quote API accepted it on testnet; the on-chain call is unproven), a Pyth price feed pushed by a keeper (Hermes needs an access key), and a keeper that runs every day. Shipping it unaudited next to the vault contract raises the risk of the whole launch. Recommended: launch without DCA (`DCA_AVAILABLE=false` stays), build `DcaVault` + keeper next, spike it on testnet with a wide deviation, audit it, then switch it on.

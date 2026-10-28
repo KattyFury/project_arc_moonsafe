@@ -12,6 +12,7 @@ import { PrivyProvider } from '@privy-io/react-auth'
 import { Toaster } from 'sonner'
 import { PRIVY_APP_ID, privyConfig } from './privyConfig'
 import App from './App'
+import { AdminPage } from './components/screens/AdminPage'
 import { WalletPrefProvider } from './state/WalletPref'
 import './index.css'
 
@@ -48,7 +49,8 @@ createRoot(document.getElementById('root')!).render(
       <PrivyProvider appId={PRIVY_APP_ID} config={privyConfig}>
         <QueryClientProvider client={queryClient}>
           <WalletPrefProvider>
-            <App />
+            {/* /admin is the control page for the people who run MoonSafe (src/components/screens/AdminPage.tsx). */}
+            {window.location.pathname.replace(/\/+$/, '') === '/admin' ? <AdminPage /> : <App />}
             <Toaster position="top-center" />
           </WalletPrefProvider>
         </QueryClientProvider>

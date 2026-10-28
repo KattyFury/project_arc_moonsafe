@@ -5,6 +5,7 @@
 import { useState } from 'react'
 import { ArrowRight, ExternalLink, Lock } from 'lucide-react'
 import { useApp } from '@/state/AppState'
+import { explorerTx } from '@/lib/network'
 import { overTargetWarning, spendable } from '@/lib/invest'
 import { dcaNextRun, formatCirBtc } from '@/hooks/useCirBtc'
 import { DCA_AVAILABLE } from '@/lib/features'
@@ -123,7 +124,7 @@ function InvestOpen() {
                 {cirBtc.lastTxHash && (
                   <Notice tone="success" title="cirBTC bought">
                     <a className="inline-flex items-center gap-2 underline" target="_blank" rel="noopener noreferrer"
-                      href={`https://explorer.testnet.arc.io/tx/${cirBtc.lastTxHash}`}>View transaction <ExternalLink size={16} /></a>
+                      href={explorerTx(cirBtc.lastTxHash)}>View transaction <ExternalLink size={16} /></a>
                   </Notice>
                 )}
                 <Btn loading={cirBtc.busy && !q} disabled={parsed <= 0n || overWallet || room === null}

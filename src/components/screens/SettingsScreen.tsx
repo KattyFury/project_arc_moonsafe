@@ -4,6 +4,7 @@
 import { useState } from 'react'
 import { Check, ChevronRight, Copy, ExternalLink, Globe, LogOut, Plus, Trash2, Wallet } from 'lucide-react'
 import { useAccount } from 'wagmi'
+import { explorerAddress } from '@/lib/network'
 import { useConnectWallet, usePrivy, useWallets } from '@privy-io/react-auth'
 import { useApp, type Unit } from '@/state/AppState'
 import { useWalletPref } from '@/state/WalletPref'
@@ -35,7 +36,7 @@ export function SettingsScreen({ onLogout }: { onLogout: () => void }) {
             <span className="display font-bold tabular-nums text-[32px] leading-10" style={{ color: 'var(--ink)' }}>{money(vault.walletBalance)}</span>
             {vault.vaultAddress && (
               <a className="flex items-center justify-between gap-2" target="_blank" rel="noopener noreferrer"
-                href={`https://explorer.testnet.arc.io/address/${vault.vaultAddress}`}>
+                href={explorerAddress(vault.vaultAddress)}>
                 <span className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>Your vault</span>
                 <span className="text-[14px] leading-5 font-semibold flex items-center gap-2" style={{ color: 'var(--accent)' }}>
                   {vault.vaultAddress.slice(0, 6)}…{vault.vaultAddress.slice(-4)} <ExternalLink size={16} />
