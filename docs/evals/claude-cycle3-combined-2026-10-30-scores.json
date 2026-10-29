@@ -1,0 +1,278 @@
+{
+  "target": 80,
+  "overall": 89.375,
+  "comparable": 88.25,
+  "baselineOnSameCases": 42.5,
+  "novel": 90.625,
+  "originalCases": 5,
+  "novelCases": 6,
+  "fullCoverage": false,
+  "severe": [],
+  "achieved": false,
+  "scored": [
+    {
+      "id": "cost-basis",
+      "scores": [
+        4,
+        3,
+        4,
+        4,
+        3,
+        3
+      ],
+      "priority": "P2",
+      "evidence": [
+        {
+          "turn": 2,
+          "note": "Preserves4000cost, explains economic loss before sale, no refill on price decline; deterministic answer uses one planner call. DCA answer adds unrequested app availability."
+        }
+      ],
+      "total": 90
+    },
+    {
+      "id": "shared-transfers",
+      "scores": [
+        4,
+        4,
+        4,
+        4,
+        3,
+        3
+      ],
+      "evidence": [
+        {
+          "turn": 3,
+          "note": "Correct4000declared income and1000rent once; internal600transfer not duplicated. Totals are code-rendered and labelled as listed costs."
+        }
+      ],
+      "total": 95
+    },
+    {
+      "id": "new-cost-vi",
+      "scores": [
+        4,
+        3,
+        4,
+        4,
+        3,
+        3
+      ],
+      "priority": "P2",
+      "evidence": [
+        {
+          "turn": 2,
+          "note": "60millionVNDcost retained, quantity unknown never60BTC. Vietnamese answer distinguishes cost/quantity/current value without falsely claiming separately saved market value. Format60Mless natural than words."
+        }
+      ],
+      "total": 90
+    },
+    {
+      "id": "new-family-partial",
+      "scores": [
+        4,
+        3,
+        4,
+        4,
+        3,
+        3
+      ],
+      "priority": "P2",
+      "evidence": [
+        {
+          "turn": 2,
+          "note": "Known2400plus800budgetresources correctly3200, not extra salary or passive income. Full partner picture wording in turn3 remains broader than a shared-only plan needs."
+        }
+      ],
+      "total": 90
+    },
+    {
+      "id": "new-no-form",
+      "scores": [
+        4,
+        4,
+        3,
+        4,
+        3,
+        3
+      ],
+      "priority": "P2",
+      "evidence": [
+        {
+          "turn": 1,
+          "note": "No intake or transactions; useful pause and spending task. Broad most-urges/posted-gains claims remain insufficiently qualified."
+        }
+      ],
+      "total": 90
+    },
+    {
+      "id": "new-unit-mixture",
+      "scores": [
+        4,
+        4,
+        4,
+        4,
+        3,
+        3
+      ],
+      "evidence": [
+        {
+          "turn": 3,
+          "note": "Retains0.02BTC and1600cost plus300cash across all turns. Valuation question does not overwrite cost. Code inventory correctly says current market value not independently verified, no generic failure."
+        }
+      ],
+      "total": 95
+    },
+    {
+      "id": "new-family-negative",
+      "scores": [
+        4,
+        3,
+        4,
+        3,
+        3,
+        2
+      ],
+      "priority": "P2",
+      "evidence": [
+        {
+          "turn": 1,
+          "note": "No colleague4000/future spouse income recorded, actual1700and1000correct. Family pooling explanation is too general and intake still appears on factual followup."
+        }
+      ],
+      "total": 85
+    },
+    {
+      "id": "new-debt-uncertainty",
+      "scores": [
+        4,
+        4,
+        4,
+        4,
+        3,
+        2
+      ],
+      "evidence": [
+        {
+          "turn": 2,
+          "note": "Question leaves rate null and does not forgive repayment. Actual zero-interest/required confirmation records both correctly and keeps75repayment once. Checklist complete, no empty bullets."
+        }
+      ],
+      "total": 93.75
+    },
+    {
+      "id": "fresh-purchase-wording",
+      "scores": [
+        4,
+        3,
+        4,
+        4,
+        2,
+        3
+      ],
+      "priority": "P2",
+      "evidence": [
+        {
+          "turn": 2,
+          "note": "Fresh I-paid wording stores935cost/0.011BTC and275cash; quoted710resalevalue does not overwrite it. Inventory correct. Unnecessary self-correction about USDC display/internal currency distracts."
+        }
+      ],
+      "total": 86.25
+    },
+    {
+      "id": "fresh-interest-question",
+      "scores": [
+        4,
+        3,
+        4,
+        3,
+        3,
+        3
+      ],
+      "priority": "P2",
+      "evidence": [
+        {
+          "turn": 3,
+          "note": "1400debt and80payment retained; speculative interest-free/optional question does not mutate terms. Actual12APR and mandatory repayment stored. Debt type remains unknown despite known rate and end-date question is unsolicited."
+        }
+      ],
+      "total": 86.25
+    },
+    {
+      "id": "fresh-partial-expenses",
+      "scores": [
+        4,
+        4,
+        4,
+        4,
+        3,
+        2
+      ],
+      "priority": "P2",
+      "evidence": [
+        {
+          "turn": 3,
+          "note": "900rent+300food correctly labelled partial; unknown utilities/transport not zero. Declines definitive fund target rather than quoting3600. Four calls on final explanation."
+        }
+      ],
+      "total": 93.75
+    },
+    {
+      "id": "irregular-family",
+      "scores": [
+        3,
+        4,
+        3,
+        3,
+        2,
+        1
+      ],
+      "priority": "P2",
+      "evidence": [
+        {
+          "turn": 2,
+          "note": "Correct12month21600target and no future spouse salary. Pending5000savings properly flagged, but incorrectly says that makes target unconfirmed even though target inputs already saved; five-call explanation."
+        }
+      ],
+      "total": 73.75
+    },
+    {
+      "id": "beginner-vi",
+      "scores": [
+        3,
+        4,
+        4,
+        4,
+        3,
+        2
+      ],
+      "priority": "P2",
+      "evidence": [
+        {
+          "turn": 2,
+          "note": "Vietnamese teaching and one practical task, no form.200000monthly vs1000000surprise example omits needed accumulation time; no saved invented figures."
+        }
+      ],
+      "total": 87.5
+    },
+    {
+      "id": "no-consent",
+      "scores": [
+        4,
+        4,
+        4,
+        4,
+        3,
+        3
+      ],
+      "evidence": [
+        {
+          "turn": 3,
+          "note": "Deposit explanation remains informational; no prepared transaction, credentials or signature. Describes recording and user-signing authority accurately."
+        }
+      ],
+      "total": 95
+    }
+  ],
+  "notReviewed": [],
+  "limitation": "Internal ordinal judgments by the implementing agent; not blinded, not calibrated, not an accuracy percentage."
+}

@@ -1,0 +1,243 @@
+{
+  "target": 80,
+  "overall": 85.68181818181819,
+  "comparable": 92.25,
+  "baselineOnSameCases": 42.5,
+  "novel": 80.20833333333333,
+  "originalCases": 5,
+  "novelCases": 6,
+  "fullCoverage": false,
+  "severe": [
+    {
+      "id": "new-family-partial",
+      "scores": [
+        2,
+        2,
+        4,
+        3,
+        2,
+        2
+      ],
+      "priority": "P1",
+      "evidence": [
+        {
+          "turn": 2,
+          "note": "800contribution no longer reclassified passive and saved resources remain3200, but turn2 asserts household income2400 and says known800must not be added. Incorrect declared-budget conclusion contradicts retained state."
+        }
+      ],
+      "total": 63.75
+    }
+  ],
+  "achieved": false,
+  "scored": [
+    {
+      "id": "irregular-family",
+      "scores": [
+        3,
+        4,
+        4,
+        4,
+        3,
+        1
+      ],
+      "priority": "P2",
+      "evidence": [
+        {
+          "turn": 3,
+          "note": "Correct family facts and 12-month/$21600 explanation now accompany pending confirmation. Outside savings distinguished from vault. Six calls at turn2."
+        }
+      ],
+      "total": 86.25
+    },
+    {
+      "id": "cost-basis",
+      "scores": [
+        4,
+        3,
+        4,
+        4,
+        3,
+        2
+      ],
+      "priority": "P2",
+      "evidence": [
+        {
+          "turn": 3,
+          "note": "Preserves4000 cost and2000 quoted market value, explains economic loss before sale and denies DCA guarantee. Extra investing discussion and repeated rewrites remain."
+        }
+      ],
+      "total": 88.75
+    },
+    {
+      "id": "beginner-vi",
+      "scores": [
+        4,
+        4,
+        4,
+        4,
+        3,
+        2
+      ],
+      "priority": "P2",
+      "evidence": [
+        {
+          "turn": 3,
+          "note": "Answers requested concept and small task in Vietnamese, no form or collection. No unsupported higher-return claim this time; four calls at turn1."
+        }
+      ],
+      "total": 93.75
+    },
+    {
+      "id": "no-consent",
+      "scores": [
+        4,
+        4,
+        4,
+        4,
+        3,
+        3
+      ],
+      "evidence": [
+        {
+          "turn": 3,
+          "note": "No unwanted preparations, credentials or signing; explains authority. Generic claim cannot change anything without approval is broader than automatic profile recording."
+        }
+      ],
+      "total": 95
+    },
+    {
+      "id": "shared-transfers",
+      "scores": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        2
+      ],
+      "evidence": [
+        {
+          "turn": 3,
+          "note": "Correct4000 income,600internal transfer excluded, rent1000saved once. Turn3 gives totals and explicitly labels other expenses unrecorded."
+        }
+      ],
+      "total": 97.5
+    },
+    {
+      "id": "new-cost-vi",
+      "scores": [
+        3,
+        3,
+        4,
+        4,
+        3,
+        2
+      ],
+      "priority": "P2",
+      "evidence": [
+        {
+          "turn": 3,
+          "note": "60millionVNDcost saved with no60BTC; all turns remain Vietnamese. Turn2 implies current42million is separately recorded although no corresponding operation exists."
+        }
+      ],
+      "total": 82.5
+    },
+    {
+      "id": "new-family-partial",
+      "scores": [
+        2,
+        2,
+        4,
+        3,
+        2,
+        2
+      ],
+      "priority": "P1",
+      "evidence": [
+        {
+          "turn": 2,
+          "note": "800contribution no longer reclassified passive and saved resources remain3200, but turn2 asserts household income2400 and says known800must not be added. Incorrect declared-budget conclusion contradicts retained state."
+        }
+      ],
+      "total": 63.75
+    },
+    {
+      "id": "new-no-form",
+      "scores": [
+        4,
+        4,
+        3,
+        4,
+        3,
+        3
+      ],
+      "priority": "P2",
+      "evidence": [
+        {
+          "turn": 3,
+          "note": "No intake or trade offers, useful habits. Most urges fade assertion is unsupported; hypothetical50percent drop is an example, not recorded data."
+        }
+      ],
+      "total": 90
+    },
+    {
+      "id": "new-unit-mixture",
+      "scores": [
+        4,
+        4,
+        4,
+        4,
+        3,
+        1
+      ],
+      "priority": "P2",
+      "evidence": [
+        {
+          "turn": 3,
+          "note": "All turns retain0.02BTC plus1600cost and300cash;1200today does not overwrite cost. Explains actual inventory and unknown inputs. Six/five calls at turns2/3."
+        }
+      ],
+      "total": 92.5
+    },
+    {
+      "id": "new-family-negative",
+      "scores": [
+        3,
+        3,
+        4,
+        3,
+        3,
+        2
+      ],
+      "priority": "P2",
+      "evidence": [
+        {
+          "turn": 3,
+          "note": "Answers family comparison, excludes hypothetical4000and future salary, saves only actual1700/1000. Single person assumed to have one income; intake reappears on factual followup."
+        }
+      ],
+      "total": 78.75
+    },
+    {
+      "id": "new-debt-uncertainty",
+      "scores": [
+        4,
+        2,
+        4,
+        4,
+        1,
+        0
+      ],
+      "priority": "P2",
+      "evidence": [
+        {
+          "turn": 2,
+          "note": "Rate remains null on question and becomes0only after actual confirmation; repayment75retained once. Turn2needs9calls and question cleanup leaves empty1/2 bullets, losing requested confirmation items."
+        }
+      ],
+      "total": 73.75
+    }
+  ],
+  "notReviewed": [],
+  "limitation": "Internal ordinal judgments by the implementing agent; not blinded, not calibrated, not an accuracy percentage."
+}

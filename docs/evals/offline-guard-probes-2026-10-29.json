@@ -1,0 +1,234 @@
+{
+  "mode": "offline",
+  "paidCalls": 0,
+  "checks": 32,
+  "passed": 27,
+  "failed": [
+    {
+      "id": "negated-btc",
+      "expected": false,
+      "actual": true,
+      "passed": false
+    },
+    {
+      "id": "vi-negated-btc",
+      "expected": false,
+      "actual": true,
+      "passed": false
+    },
+    {
+      "id": "not-owned-btc",
+      "expected": false,
+      "actual": true,
+      "passed": false
+    },
+    {
+      "id": "uncertain-btc",
+      "expected": false,
+      "actual": true,
+      "passed": false
+    },
+    {
+      "id": "skip-questionnaire-persists",
+      "expected": true,
+      "actual": false,
+      "passed": false
+    }
+  ],
+  "rows": [
+    {
+      "id": "money-is-not-btc",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "id": "real-btc-quantity",
+      "expected": true,
+      "actual": true,
+      "passed": true
+    },
+    {
+      "id": "wrong-symbol",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "id": "shares-have-units",
+      "expected": true,
+      "actual": true,
+      "passed": true
+    },
+    {
+      "id": "gold-has-units",
+      "expected": true,
+      "actual": true,
+      "passed": true
+    },
+    {
+      "id": "bare-number-is-not-quantity",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "id": "negated-btc",
+      "expected": false,
+      "actual": true,
+      "passed": false
+    },
+    {
+      "id": "vi-negated-btc",
+      "expected": false,
+      "actual": true,
+      "passed": false
+    },
+    {
+      "id": "not-owned-btc",
+      "expected": false,
+      "actual": true,
+      "passed": false
+    },
+    {
+      "id": "uncertain-btc",
+      "expected": false,
+      "actual": true,
+      "passed": false
+    },
+    {
+      "id": "education-persists",
+      "expected": true,
+      "actual": true,
+      "passed": true
+    },
+    {
+      "id": "listen-persists",
+      "expected": true,
+      "actual": true,
+      "passed": true
+    },
+    {
+      "id": "new-action-overrides",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "id": "skip-questionnaire-persists",
+      "expected": true,
+      "actual": false,
+      "passed": false
+    },
+    {
+      "id": "vi-no-form-persists",
+      "expected": true,
+      "actual": true,
+      "passed": true
+    },
+    {
+      "id": "do-not-invest-persists",
+      "expected": true,
+      "actual": true,
+      "passed": true
+    },
+    {
+      "id": "explanation-is-not-action",
+      "expected": true,
+      "actual": true,
+      "passed": true
+    },
+    {
+      "id": "explicit-action-is-action",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "id": "conditional-is-not-consent",
+      "expected": true,
+      "actual": true,
+      "passed": true
+    },
+    {
+      "id": "married-family",
+      "expected": true,
+      "actual": true,
+      "passed": true
+    },
+    {
+      "id": "natural-vi-family",
+      "expected": true,
+      "actual": true,
+      "passed": true
+    },
+    {
+      "id": "friend-not-family",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "id": "hypothetical-not-family",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "id": "separated-not-auto",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "id": "individual-optout",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "id": "explicit-refusal",
+      "expected": true,
+      "actual": true,
+      "passed": true
+    },
+    {
+      "id": "ordinary-fact-not-refusal",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "id": "actual-savings-recovery",
+      "expected": true,
+      "actual": true,
+      "passed": true
+    },
+    {
+      "id": "hypothetical-no-recovery",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "id": "uncertain-no-recovery",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "id": "quote-no-recovery",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "id": "age-recovery",
+      "expected": true,
+      "actual": true,
+      "passed": true
+    }
+  ],
+  "testedCommit": "d1e3a1aa5ecf70d192bb20ec62fd84f394abd16e",
+  "phase": "deployed baseline, before offline repairs"
+}

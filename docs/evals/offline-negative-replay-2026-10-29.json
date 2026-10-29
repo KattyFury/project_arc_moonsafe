@@ -1,0 +1,190 @@
+{
+  "mode": "offline",
+  "paidCalls": 0,
+  "replay": [
+    {
+      "id": "negated-btc",
+      "user": "I do not have 0.5 BTC",
+      "status": 200,
+      "ops": [
+        {
+          "op": "add_holding",
+          "holding": {
+            "id": "h1lgsrk",
+            "type": "btc",
+            "name": "BTC",
+            "symbol": "BTC",
+            "updatedAt": 1793289322296,
+            "rebalanceable": true,
+            "quantity": 0.5,
+            "unit": "coins",
+            "priceSource": "market"
+          }
+        }
+      ],
+      "actions": [
+        {
+          "type": "intake_form",
+          "keys": [
+            "age",
+            "income",
+            "spending",
+            "stability",
+            "goal",
+            "other",
+            "debt"
+          ],
+          "seen": null
+        }
+      ],
+      "savedQuantity": [
+        0.5
+      ],
+      "failed": true
+    },
+    {
+      "id": "vi-negated-btc",
+      "user": "Mình bỏ 60 triệu VND mua Bitcoin, không phải mình có 60 BTC",
+      "status": 200,
+      "ops": [
+        {
+          "op": "add_holding",
+          "holding": {
+            "id": "h5coqsm",
+            "type": "btc",
+            "name": "BTC",
+            "symbol": "BTC",
+            "updatedAt": 1793289322320,
+            "rebalanceable": true,
+            "quantity": 60,
+            "unit": "coins",
+            "priceSource": "market"
+          }
+        }
+      ],
+      "actions": [
+        {
+          "type": "intake_form",
+          "keys": [
+            "age",
+            "income",
+            "spending",
+            "stability",
+            "goal",
+            "other",
+            "debt"
+          ],
+          "seen": null
+        }
+      ],
+      "savedQuantity": [
+        60
+      ],
+      "failed": true
+    },
+    {
+      "id": "not-owned-btc",
+      "user": "That 2 BTC belongs to my brother, not me",
+      "status": 200,
+      "ops": [
+        {
+          "op": "add_holding",
+          "holding": {
+            "id": "h22ix9w",
+            "type": "btc",
+            "name": "BTC",
+            "symbol": "BTC",
+            "updatedAt": 1793289322327,
+            "rebalanceable": true,
+            "quantity": 2,
+            "unit": "coins",
+            "priceSource": "market"
+          }
+        }
+      ],
+      "actions": [
+        {
+          "type": "intake_form",
+          "keys": [
+            "age",
+            "income",
+            "spending",
+            "stability",
+            "goal",
+            "other",
+            "debt"
+          ],
+          "seen": null
+        }
+      ],
+      "savedQuantity": [
+        2
+      ],
+      "failed": true
+    },
+    {
+      "id": "uncertain-btc",
+      "user": "I am not sure if I own 0.5 BTC",
+      "status": 200,
+      "ops": [
+        {
+          "op": "add_holding",
+          "holding": {
+            "id": "h3woeha",
+            "type": "btc",
+            "name": "BTC",
+            "symbol": "BTC",
+            "updatedAt": 1793289322329,
+            "rebalanceable": true,
+            "quantity": 0.5,
+            "unit": "coins",
+            "priceSource": "market"
+          }
+        }
+      ],
+      "actions": [
+        {
+          "type": "intake_form",
+          "keys": [
+            "age",
+            "income",
+            "spending",
+            "stability",
+            "goal",
+            "other",
+            "debt"
+          ],
+          "seen": null
+        }
+      ],
+      "savedQuantity": [
+        0.5
+      ],
+      "failed": true
+    },
+    {
+      "id": "skip-questionnaire-persists",
+      "status": 200,
+      "ops": [],
+      "actions": [
+        {
+          "type": "intake_form",
+          "keys": [
+            "age",
+            "income",
+            "spending",
+            "stability",
+            "goal",
+            "assets",
+            "other",
+            "debt"
+          ],
+          "seen": null
+        }
+      ],
+      "failed": true
+    }
+  ],
+  "testedCommit": "d1e3a1aa5ecf70d192bb20ec62fd84f394abd16e",
+  "phase": "deployed baseline, before offline repairs"
+}

@@ -135,7 +135,7 @@ try {
       checks++
     }
     const before = calls
-    await ask('Explain the difference between needs and wants')
+    await ask('Explain opportunity cost in budgeting')
     assert.ok(calls > before, 'Unknown questions must still reach the agent')
     assert.ok(JSON.stringify(prompts[prompts.length - 1]).includes('Onboarding, bucket selection and deposit offers wait'))
     checks++

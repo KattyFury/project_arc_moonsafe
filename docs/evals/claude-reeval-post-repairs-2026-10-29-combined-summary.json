@@ -1,0 +1,48 @@
+{
+  "ceiling": 1000000,
+  "used": 972324,
+  "remaining": 27676,
+  "input": 961684,
+  "output": 10640,
+  "cacheRead": 87083,
+  "cacheCreated5m": 873651,
+  "cacheCreated1h": 0,
+  "unknown": 0,
+  "calls": 104,
+  "statusCounts": {
+    "200": 103,
+    "400": 1
+  },
+  "estimatedCostUsd": 0.115492205,
+  "initial": {
+    "commit": "3ab46a6aca01becd5f062f56120fa16eae461723",
+    "used": 114323,
+    "stop": "provider-http-400",
+    "completeTurns": 4,
+    "recordedTurns": 5
+  },
+  "continuation": {
+    "commit": "c8cbcae220c007d39f5e6725d4fa7cfee93f92b1",
+    "used": 858001,
+    "stop": "dataset-complete",
+    "conversations": 11,
+    "turns": 33
+  },
+  "comparison": {
+    "previousClaudeSameFiveCases": 78.5,
+    "currentSameFiveCases": 82,
+    "currentNewWordingCases": 57.083333333333336,
+    "currentOverall": 68.4090909090909
+  },
+  "severe": [
+    {
+      "case": "new-unit-mixture",
+      "priority": "P1"
+    },
+    {
+      "case": "new-debt-uncertainty",
+      "priority": "P1"
+    }
+  ],
+  "targetAchieved": false
+}

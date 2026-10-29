@@ -1,0 +1,198 @@
+[
+  {
+    "id": "irregular-family",
+    "scores": [
+      3,
+      4,
+      3,
+      3,
+      3,
+      1
+    ],
+    "priority": "P2",
+    "evidence": [
+      {
+        "turn": 2,
+        "note": "Correct12month21600target; uses unconfirmed5000savings to compute16600gap without clearly provisional framing. Other facts remain correct."
+      }
+    ]
+  },
+  {
+    "id": "cost-basis",
+    "scores": [
+      4,
+      4,
+      4,
+      4,
+      3,
+      2
+    ],
+    "priority": "P2",
+    "evidence": [
+      {
+        "turn": 2,
+        "note": "Correct4000cost/2000market distinction, economically real decline before sale; no guarantee or forced refill. Three-call explanation."
+      }
+    ]
+  },
+  {
+    "id": "beginner-vi",
+    "scores": [
+      4,
+      4,
+      4,
+      4,
+      3,
+      2
+    ],
+    "priority": "P2",
+    "evidence": [
+      {
+        "turn": 1,
+        "note": "Requested concept and practical exercise remain Vietnamese without intake. Illustrative500000repair example is explicitly an example; still repeated rewrites."
+      }
+    ]
+  },
+  {
+    "id": "no-consent",
+    "scores": [
+      3,
+      4,
+      3,
+      4,
+      3,
+      2
+    ],
+    "priority": "P2",
+    "evidence": [
+      {
+        "turn": 2,
+        "note": "No actions/key/signing; fund explanation says never need expensive borrowing, an overly absolute outcome."
+      }
+    ]
+  },
+  {
+    "id": "shared-transfers",
+    "scores": [
+      4,
+      4,
+      4,
+      4,
+      3,
+      3
+    ],
+    "evidence": [
+      {
+        "turn": 3,
+        "note": "Income4000, rent1000once; deterministic totals label incomplete costs and internal transfers correctly."
+      }
+    ]
+  },
+  {
+    "id": "new-cost-vi",
+    "scores": [
+      3,
+      3,
+      4,
+      4,
+      3,
+      1
+    ],
+    "priority": "P2",
+    "evidence": [
+      {
+        "turn": 2,
+        "note": "Correct60millionVNDcost and no60BTC. Correct language. Explains quantity as requiring purchase price although actual wallet quantity can be declared directly; four-call explanation."
+      }
+    ]
+  },
+  {
+    "id": "new-family-partial",
+    "scores": [
+      4,
+      4,
+      4,
+      4,
+      3,
+      2
+    ],
+    "evidence": [
+      {
+        "turn": 2,
+        "note": "Deterministic declared resources3200 and listed bills1900 distinguish partner800contribution from unknown full salary. No passive reclassification."
+      }
+    ]
+  },
+  {
+    "id": "new-no-form",
+    "scores": [
+      4,
+      4,
+      3,
+      4,
+      3,
+      3
+    ],
+    "priority": "P2",
+    "evidence": [
+      {
+        "turn": 1,
+        "note": "No intake/actions; useful habit task, but broad most-urges statement remains unsupported."
+      }
+    ]
+  },
+  {
+    "id": "new-unit-mixture",
+    "scores": [
+      4,
+      2,
+      3,
+      3,
+      1,
+      1
+    ],
+    "priority": "P2",
+    "evidence": [
+      {
+        "turn": 3,
+        "note": "Financial state preserves0.02BTC/1600cost/300cash. Turn2says no money lost until sale, a missed paraphrase. Turn3returns generic reliable-explanation failure instead of requested inventory."
+      }
+    ]
+  },
+  {
+    "id": "new-family-negative",
+    "scores": [
+      4,
+      3,
+      4,
+      4,
+      3,
+      2
+    ],
+    "priority": "P2",
+    "evidence": [
+      {
+        "turn": 3,
+        "note": "No third-party/future income saved; answers initial comparison. Intake returns after real factual followup."
+      }
+    ]
+  },
+  {
+    "id": "new-debt-uncertainty",
+    "scores": [
+      1,
+      3,
+      3,
+      2,
+      3,
+      1
+    ],
+    "priority": "P1",
+    "evidence": [
+      {
+        "turn": 2,
+        "note": "Rate stays null and deterministic checklist preserves requested confirmation items. However unsupported tool sets required:false on the question, treating debt repayment as optional before confirmation. Turn3requires repayment again."
+      }
+    ]
+  }
+]

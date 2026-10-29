@@ -48,8 +48,7 @@ const parseArgs = (s: string): Record<string, unknown> => {
 
 /**
  * The same request, shaped for the Claude Messages API:
- *  - the opening system messages become `system`; a system message later in the conversation becomes a user message
- *    (as it was for Gemini), so the request never ends on a system note;
+ *  - server-owned system messages retain their instruction role, including runtime figures and revision guidance;
  *  - tool results (role 'tool') become tool_result blocks, and messages of the same role are merged.
  */
 function forClaude(body: Record<string, unknown>, model: string): Anthropic.MessageCreateParamsNonStreaming {
@@ -64,8 +63,7 @@ function forClaude(body: Record<string, unknown>, model: string): Anthropic.Mess
   const text = (s: unknown): Anthropic.TextBlockParam[] => (s ? [{ type: 'text', text: String(s) }] : [])
   for (const m of body.messages as OpenAiMessage[]) {
     if (m.role === 'system') {
-      if (!messages.length) system.push(String(m.content ?? ''))
-      else push('user', text(`[Instruction for your next reply] ${String(m.content ?? '')}`))
+      system.push(String(m.content ?? ''))
     } else if (m.role === 'tool') {
       push('user', [{ type: 'tool_result', tool_use_id: String(m.tool_call_id), content: String(m.content ?? '') || '(empty)' }])
     } else if (m.role === 'assistant') {
@@ -75,6 +73,9 @@ function forClaude(body: Record<string, unknown>, model: string): Anthropic.Mess
       push('user', text(m.content))
     }
   }
+  // Haiku 5.5 rejects assistant prefill. A rewrite ends in a draft followed by system guidance;
+  // keep that guidance privileged, and request a fresh answer in a final user turn.
+  if (messages[messages.length - 1]?.role === 'assistant') push('user', text('Please answer the latest user request.'))
   const params: Anthropic.MessageCreateParamsNonStreaming = {
     model,
     max_tokens: Number(body.max_completion_tokens) || 1500,

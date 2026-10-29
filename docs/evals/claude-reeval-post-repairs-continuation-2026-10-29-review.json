@@ -1,0 +1,287 @@
+[
+  {
+    "id": "irregular-family",
+    "scores": [
+      3,
+      3,
+      3,
+      3,
+      2,
+      1
+    ],
+    "priority": "P2",
+    "evidence": [
+      {
+        "turn": 1,
+        "note": "Correct household scope, age38, three dependents, sole earner, income3000 and spending1800 saved; verbose automatic intake."
+      },
+      {
+        "turn": 2,
+        "note": "Now answers the question with the correct 12-month/$21600 target alongside pending confirmations. However says outside $5000 does not count toward target yet, conflating app accounting with usable reserves. Three reply attempts."
+      },
+      {
+        "turn": 3,
+        "note": "No future spouse salary recorded, but repeats latest-request commentary and takes five calls."
+      }
+    ]
+  },
+  {
+    "id": "cost-basis",
+    "scores": [
+      3,
+      3,
+      3,
+      4,
+      2,
+      2
+    ],
+    "priority": "P2",
+    "evidence": [
+      {
+        "turn": 1,
+        "note": "Records $4000 invested cost, no4000BTC quantity. Automatic intake still intrusive."
+      },
+      {
+        "turn": 2,
+        "note": "Correct no refill solely because price fell and correct $4000/$2000 distinction. Says gap becomes real only if sold; guard misses this paraphrase. Editorial latest-question preamble."
+      },
+      {
+        "turn": 3,
+        "note": "Clearly denies DCA recovery/profit/loss-prevention guarantee."
+      }
+    ]
+  },
+  {
+    "id": "beginner-vi",
+    "scores": [
+      3,
+      4,
+      3,
+      4,
+      3,
+      3
+    ],
+    "priority": "P2",
+    "evidence": [
+      {
+        "turn": 1,
+        "note": "Answers needs versus wants in Vietnamese without form or personal spending question; four model calls."
+      },
+      {
+        "turn": 2,
+        "note": "Useful small-savings cushion and accurate labelled illustrative200000x6=1200000. Unqualified investing yields more statement needs nuance."
+      },
+      {
+        "turn": 3,
+        "note": "One practical spending-tracking exercise, no coin offer."
+      }
+    ]
+  },
+  {
+    "id": "no-consent",
+    "scores": [
+      4,
+      4,
+      4,
+      4,
+      3,
+      3
+    ],
+    "evidence": [
+      {
+        "turn": 1,
+        "note": "Unknown fund target and no prepared transaction in deposit explanation."
+      },
+      {
+        "turn": 2,
+        "note": "Education only respected; no mutation or preparation."
+      },
+      {
+        "turn": 3,
+        "note": "Refuses key disclosure/signing, explains authority and signature boundary; no API credential present, no action."
+      }
+    ]
+  },
+  {
+    "id": "shared-transfers",
+    "scores": [
+      4,
+      3,
+      4,
+      4,
+      3,
+      2
+    ],
+    "priority": "P2",
+    "evidence": [
+      {
+        "turn": 1,
+        "note": "Correct2200+1800 household salaries; default household retained."
+      },
+      {
+        "turn": 2,
+        "note": "Explains internal600transfer is not additional income; correct4000 total, no bogus holding."
+      },
+      {
+        "turn": 3,
+        "note": "Saves shared1000rent once. Final answer gives rent but omits requested income/spending totals and says it already answered a draft not visible to user. Four calls."
+      }
+    ]
+  },
+  {
+    "id": "new-cost-vi",
+    "scores": [
+      2,
+      1,
+      4,
+      2,
+      1,
+      1
+    ],
+    "priority": "P2",
+    "evidence": [
+      {
+        "turn": 1,
+        "note": "No60BTC invented, but explicit60millionVND invested cost not saved; instead shows intake."
+      },
+      {
+        "turn": 2,
+        "note": "Final answer switches to English, refers to an unseen prior draft, refuses to repeat requested explanation and discusses internal prohibition on arithmetic. No cost fact saved."
+      },
+      {
+        "turn": 3,
+        "note": "Correct no obligation to refill, but English and editorial latest-request phrasing persist. Four calls per explanatory turn."
+      }
+    ]
+  },
+  {
+    "id": "new-family-partial",
+    "scores": [
+      1,
+      2,
+      4,
+      2,
+      2,
+      1
+    ],
+    "priority": "P2",
+    "evidence": [
+      {
+        "turn": 1,
+        "note": "Records2400salary plus800partner contribution and1900bills; does not invent partner full salary. Active contribution initially labelled."
+      },
+      {
+        "turn": 2,
+        "note": "Changes800contribution from active to passive without evidence of a passive income source. Text says income basis2400 plus1900bills while retained state sums3200. Confuses known shared-budget resources with full spouse salary."
+      },
+      {
+        "turn": 3,
+        "note": "Correctly declines complete allocation with missing assets/debts/age, but again excludes known800contribution in text while it remains in saved income."
+      }
+    ]
+  },
+  {
+    "id": "new-no-form",
+    "scores": [
+      4,
+      4,
+      3,
+      4,
+      3,
+      3
+    ],
+    "priority": "P2",
+    "evidence": [
+      {
+        "turn": 1,
+        "note": "Practical24hour delay, no intake or action. Unsupported most urges fade generalization."
+      },
+      {
+        "turn": 2,
+        "note": "Responds to social comparison and habits without buy offer; assumes screenshots only show wins. No personal data demanded."
+      },
+      {
+        "turn": 3,
+        "note": "One small spending-tracking task, no form; two calls."
+      }
+    ]
+  },
+  {
+    "id": "new-unit-mixture",
+    "scores": [
+      1,
+      1,
+      3,
+      1,
+      1,
+      1
+    ],
+    "priority": "P1",
+    "evidence": [
+      {
+        "turn": 1,
+        "note": "Records0.02BTC quantity and300cash separately but drops explicit1600purchase cost."
+      },
+      {
+        "turn": 2,
+        "note": "Sets BTC value1200 and priceSource self while retaining quantity0.02. Final text falsely claims app keeps1600cost and shows1200separately; saved profile has no1600cost. A consequential state/text mismatch, not merely a missed acknowledgment."
+      },
+      {
+        "turn": 3,
+        "note": "Fails requested known/unknown valuation inventory, says it already gave it, drifts to spending intake. Wrong self valuation persists."
+      }
+    ]
+  },
+  {
+    "id": "new-family-negative",
+    "scores": [
+      4,
+      2,
+      4,
+      3,
+      2,
+      2
+    ],
+    "priority": "P2",
+    "evidence": [
+      {
+        "turn": 1,
+        "note": "Does not record colleague spouse4000 or auto-enable household for single user. However knowledge comparison is swallowed by intake form."
+      },
+      {
+        "turn": 2,
+        "note": "Correctly rejects imaginary future spouse salary and keeps present profile unchanged."
+      },
+      {
+        "turn": 3,
+        "note": "Only actual1700income and1000spending saved, no hypothetical salary. Answers in scope."
+      }
+    ]
+  },
+  {
+    "id": "new-debt-uncertainty",
+    "scores": [
+      1,
+      2,
+      3,
+      1,
+      1,
+      0
+    ],
+    "priority": "P1",
+    "evidence": [
+      {
+        "turn": 1,
+        "note": "900debt and75repayment plus650living expense saved. Rate remains null, but debt type family_interest is premature."
+      },
+      {
+        "turn": 2,
+        "note": "Question explicitly asks whether interest-free can be assumed. Agent nevertheless updates type to family_no_interest and ratePct0 before confirmation. Final text both says cannot assume and calls it recorded interest-free. Seven model calls."
+      },
+      {
+        "turn": 3,
+        "note": "User now actually confirms zero interest; final state matches that later confirmation and75payment is counted once. This does not erase premature zero-interest mutation at turn2. Mixed English/Vietnamese wording."
+      }
+    ]
+  }
+]

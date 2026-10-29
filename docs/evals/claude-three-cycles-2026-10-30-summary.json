@@ -1,0 +1,63 @@
+{
+  "authorizedCeiling": 3000000,
+  "totalTokens": 2606246,
+  "estimatedCostUsd": 0.31112291000000003,
+  "turnsIncludingRepeatedScenarios": 108,
+  "rounds": [
+    {
+      "cycle": 1,
+      "label": "claude-cycle1-2026-10-29",
+      "commit": "844a4d96c2c77fc73aed395feb36d72c6e5fbc25",
+      "cap": 1000000,
+      "tokens": 911002,
+      "calls": 96,
+      "conversations": 11,
+      "turns": 33,
+      "score": 85.68181818181819,
+      "sameElevenScore": 85.68181818181819,
+      "freshThreeScore": null,
+      "severe": [
+        "new-family-partial"
+      ],
+      "costUsd": 0.1090156
+    },
+    {
+      "cycle": 2,
+      "label": "claude-cycle2-2026-10-29",
+      "commit": "fd5f24c40980703e450465de3151ac5663d22b6d",
+      "cap": 1000000,
+      "tokens": 807933,
+      "calls": 85,
+      "conversations": 11,
+      "turns": 33,
+      "score": 83.52272727272727,
+      "sameElevenScore": 83.52272727272727,
+      "freshThreeScore": null,
+      "severe": [
+        "new-debt-uncertainty"
+      ],
+      "costUsd": 0.095830895
+    },
+    {
+      "cycle": 3,
+      "label": "claude-cycle3-combined-2026-10-30",
+      "commit": "23a541b40392d5a938a78574345b429bce88cfe4",
+      "cap": 1000000,
+      "tokens": 887311,
+      "calls": 93,
+      "conversations": 14,
+      "turns": 42,
+      "score": 89.375,
+      "sameElevenScore": 89.54545454545455,
+      "freshThreeScore": 88.75,
+      "severe": [],
+      "costUsd": 0.106276415
+    }
+  ],
+  "previousSameElevenScore": 68.4090909090909,
+  "finalSameElevenCalls": 72,
+  "finalSameElevenTokens": 687694,
+  "fullOriginalSuiteCoverage": false,
+  "broadReleaseCertified": false,
+  "limitation": "Internal same-author single-sample iterative review, familiar scenarios and three fresh wording probes; no independent or production certification."
+}

@@ -1,0 +1,932 @@
+{
+  "commit": "3ab46a6aca01becd5f062f56120fa16eae461723",
+  "cases": [
+    {
+      "id": "loss-listening",
+      "turns": 3
+    },
+    {
+      "id": "irregular-family",
+      "turns": 3
+    },
+    {
+      "id": "cost-basis",
+      "turns": 3
+    },
+    {
+      "id": "beginner-vi",
+      "turns": 3
+    },
+    {
+      "id": "no-consent",
+      "turns": 3
+    },
+    {
+      "id": "shared-transfers",
+      "turns": 3
+    },
+    {
+      "id": "family-en",
+      "turns": 4
+    },
+    {
+      "id": "family-vi",
+      "turns": 4
+    },
+    {
+      "id": "personal-opt-out",
+      "turns": 3
+    },
+    {
+      "id": "revenge-vi",
+      "turns": 3
+    },
+    {
+      "id": "recovery-scam",
+      "turns": 3
+    },
+    {
+      "id": "hypothetical",
+      "turns": 3
+    },
+    {
+      "id": "salary-correction",
+      "turns": 3
+    },
+    {
+      "id": "debt-priority",
+      "turns": 3
+    },
+    {
+      "id": "zero-interest",
+      "turns": 3
+    },
+    {
+      "id": "testnet-reality",
+      "turns": 3
+    },
+    {
+      "id": "education-follow-up",
+      "turns": 3
+    },
+    {
+      "id": "unknown-vs-zero",
+      "turns": 3
+    },
+    {
+      "id": "mixed-currency",
+      "turns": 3
+    },
+    {
+      "id": "near-goal",
+      "turns": 3
+    },
+    {
+      "id": "family-natural-language",
+      "turns": 3
+    },
+    {
+      "id": "risk-choice",
+      "turns": 3
+    },
+    {
+      "id": "new-cost-vi",
+      "turns": 3
+    },
+    {
+      "id": "new-family-partial",
+      "turns": 3
+    },
+    {
+      "id": "new-no-form",
+      "turns": 3
+    },
+    {
+      "id": "new-unit-mixture",
+      "turns": 3
+    },
+    {
+      "id": "new-family-negative",
+      "turns": 3
+    },
+    {
+      "id": "new-debt-uncertainty",
+      "turns": 3
+    }
+  ],
+  "model": "claude-haiku-5-5",
+  "provider": "anthropic",
+  "comparisonLimit": "OpenAI baseline used an older app commit; this is not a paired model-only comparison.",
+  "cap": 1000000,
+  "started": "2026-10-29T16:32:59.527Z",
+  "ended": "2026-10-29T16:33:19.620Z",
+  "input": 113080,
+  "output": 1243,
+  "cached": 0,
+  "cacheCreated": 112958,
+  "cacheCreated5m": 112958,
+  "cacheCreated1h": 0,
+  "calls": 13,
+  "conservativeUnknownUsage": 0,
+  "stopped": "provider-http-400",
+  "fixture": {
+    "vndPerUsd": 25000,
+    "walletUsdc": 50,
+    "vaultUsdc": 0,
+    "hasVault": true,
+    "prices": "unavailable"
+  },
+  "apiCalls": [
+    {
+      "case": "loss-listening",
+      "turn": 1,
+      "status": 200,
+      "ms": 1174,
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 9320,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 9320,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "loss-listening",
+      "turn": 1,
+      "status": 200,
+      "ms": 1674,
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 8703,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 8703,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 101,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "loss-listening",
+      "turn": 2,
+      "status": 200,
+      "ms": 914,
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 9414,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 9414,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "loss-listening",
+      "turn": 2,
+      "status": 200,
+      "ms": 2070,
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 8336,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 8336,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 146,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "loss-listening",
+      "turn": 3,
+      "status": 200,
+      "ms": 1129,
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 9579,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 9579,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "loss-listening",
+      "turn": 3,
+      "status": 200,
+      "ms": 4285,
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 8528,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 8528,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 88,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "irregular-family",
+      "turn": 1,
+      "status": 200,
+      "ms": 1686,
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 9485,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 9485,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 336,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "update_profile",
+          "arguments": {
+            "age": 38,
+            "sole_earner": true,
+            "dependents": 3,
+            "income_stable": false
+          }
+        },
+        {
+          "name": "set_income",
+          "arguments": {
+            "name": "Freelance income",
+            "monthly": {
+              "amount": 3000,
+              "currency": "USDC"
+            },
+            "kind": "irregular"
+          }
+        },
+        {
+          "name": "set_expense",
+          "arguments": {
+            "name": "Household spending",
+            "monthly": {
+              "amount": 1800,
+              "currency": "USDC"
+            },
+            "kind": "fixed"
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "irregular-family",
+      "turn": 1,
+      "status": 200,
+      "ms": 1051,
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 10233,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 10233,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 19,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "show_cashflow",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "irregular-family",
+      "turn": 1,
+      "status": 200,
+      "ms": 758,
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 10330,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 10330,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "irregular-family",
+      "turn": 2,
+      "status": 200,
+      "ms": 1509,
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 9758,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 9758,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 271,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "update_profile",
+          "arguments": {
+            "age": 38,
+            "income_stable": false,
+            "dependents": 3,
+            "sole_earner": true,
+            "debts_complete": true,
+            "no_near_goal": true
+          }
+        },
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "savings",
+            "name": "Household savings",
+            "worth": {
+              "amount": 5000,
+              "currency": "USDC"
+            }
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "irregular-family",
+      "turn": 2,
+      "status": 200,
+      "ms": 1173,
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 10412,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 10412,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "irregular-family",
+      "turn": 2,
+      "status": 200,
+      "ms": 1952,
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 8860,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 8860,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 202,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "irregular-family",
+      "turn": 2,
+      "status": 400,
+      "ms": 386,
+      "phase": "reply",
+      "tools": []
+    }
+  ],
+  "transcript": [
+    {
+      "case": "loss-listening",
+      "category": "coaching",
+      "turn": 1,
+      "user": "I lost $8700 in speculative coins. I feel ashamed and only want someone to listen, not a plan.",
+      "status": 200,
+      "content": "That sounds really painful, and I'm sorry you're carrying this. Losing that much money, on top of the shame, is a heavy thing to sit with.\n\nI'm glad to just listen. You don't have to explain the trades or decide anything right now. If you feel like sharing more about what happened, I'm here for that too.",
+      "ops": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "tokens": 18158,
+      "calls": 2,
+      "ms": 2908,
+      "complete": true
+    },
+    {
+      "case": "loss-listening",
+      "category": "coaching",
+      "turn": 2,
+      "user": "My partner does not know. I am scared to discuss it. Please do not ask me to invest or fill a form.",
+      "status": 200,
+      "content": "That fear makes complete sense. Keeping something like this from someone you love can feel like carrying it alone twice over: once for the loss, and again for the secret. You don't have to tell them today, or in any particular way. Whether and when to talk to your partner is entirely your call.\n\nI won't ask you to invest or fill anything in. If it helps to talk about how you're feeling, or what you're afraid might happen when you tell them, I'm happy to keep listening.",
+      "ops": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "tokens": 17930,
+      "calls": 2,
+      "ms": 3013,
+      "complete": true
+    },
+    {
+      "case": "loss-listening",
+      "category": "coaching",
+      "turn": 3,
+      "user": "I am ready for one small step now. I have $600 in savings and bills due soon. What should I check first?",
+      "status": 200,
+      "content": "Good that you're ready for a small step. Start with the bills: list each one with its due date and amount, and see whether your $600 covers them. That tells you how much room you really have, and nothing else needs deciding today.\n\nOnce you know that, we can look at what's left, if you'd like.",
+      "ops": [
+        {
+          "op": "add_holding",
+          "holding": {
+            "id": "henudcc",
+            "type": "savings",
+            "name": "Bank savings",
+            "updatedAt": 1793291586762,
+            "rebalanceable": true,
+            "value": 600,
+            "currency": "USDC",
+            "priceSource": "self"
+          }
+        }
+      ],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "henudcc",
+            "type": "savings",
+            "name": "Bank savings",
+            "updatedAt": 1793291586762,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 600,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "tokens": 18229,
+      "calls": 2,
+      "ms": 5437,
+      "complete": true
+    },
+    {
+      "case": "irregular-family",
+      "category": "household",
+      "turn": 1,
+      "user": "I am married and 38. I am the only earner supporting my spouse and two children. My freelance income varies; it averages $3000 monthly. Household spending is $1800.",
+      "status": 200,
+      "content": "Noted: I will default to a household plan based on what you shared about your marriage. Existing entries stay; we still need to confirm whether they cover you or the household. You can choose an individual plan., age 38, income irregular, 3 dependents, sole earner, Freelance income 3,000 USDC a month (irregular), Household spending 1,800 USDC a month (fixed).\n\nI need some information to show you where your money goes. Share whatever you're comfortable with in the form below; anything you leave empty I'll take as \"prefer not to say\" and skip it.",
+      "ops": [
+        {
+          "op": "update_profile",
+          "fields": {
+            "planningScope": "household"
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "age": 38
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "incomeStable": false
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "dependents": 3
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "soleEarner": true
+          }
+        },
+        {
+          "op": "set_income",
+          "income": {
+            "id": "i040oif",
+            "name": "Freelance income",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "irregular",
+            "updatedAt": 1793291592752
+          }
+        },
+        {
+          "op": "set_expense",
+          "expense": {
+            "id": "ezndny0",
+            "name": "Household spending",
+            "monthly": 1800,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793291592752
+          }
+        }
+      ],
+      "actions": [
+        {
+          "type": "show_cashflow"
+        },
+        {
+          "type": "intake_form",
+          "keys": [
+            "goal",
+            "assets",
+            "other",
+            "debt"
+          ],
+          "seen": 50
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": 38,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 3,
+        "soleEarner": true,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [
+          {
+            "id": "i040oif",
+            "name": "Freelance income",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "irregular",
+            "updatedAt": 1793291592752
+          }
+        ],
+        "expenses": [
+          {
+            "id": "ezndny0",
+            "name": "Household spending",
+            "monthly": 1800,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793291592752
+          }
+        ],
+        "planningScope": "household"
+      },
+      "tokens": 30457,
+      "calls": 3,
+      "ms": 3519,
+      "complete": true
+    },
+    {
+      "case": "irregular-family",
+      "category": "household",
+      "turn": 2,
+      "user": "We have $5000 in savings, no debts and no near-term goals. Explain how irregular income and being the only earner change the fund target.",
+      "status": 200,
+      "content": "Your emergency fund is the money set aside for surprises, like a lost client or a medical bill, so your family can keep paying bills without selling investments at a bad moment.\n\nYour situation points to the top of the scale. With irregular income, a bad month can hit hard, and as the only earner with three dependents, nothing else covers the household if your income stops. Together that means the framework's highest target: **12 months of spending**. At your **$1,800** a month, that is **$21,600**.\n\nYour **$5,000** in savings is not part of the app's fund yet; the in-app fund is currently $0. Those savings are still a real cushion for your family.\n\nI picked up 3 things. Confirm or cancel each one below; nothing is saved until you do.",
+      "ops": [],
+      "actions": [
+        {
+          "type": "confirm_items",
+          "items": [
+            {
+              "text": "No other debt",
+              "ops": [
+                {
+                  "op": "update_profile",
+                  "fields": {
+                    "debtsComplete": true
+                  }
+                }
+              ]
+            },
+            {
+              "text": "No big expense in the next 5 years",
+              "ops": [
+                {
+                  "op": "update_profile",
+                  "fields": {
+                    "noNearGoal": true
+                  }
+                }
+              ]
+            },
+            {
+              "text": "Household savings 5,000 USDC",
+              "ops": [
+                {
+                  "op": "add_holding",
+                  "holding": {
+                    "id": "h4t9kdi",
+                    "type": "savings",
+                    "name": "Household savings",
+                    "updatedAt": 1793291596087,
+                    "rebalanceable": true,
+                    "value": 5000,
+                    "currency": "USDC",
+                    "priceSource": "self"
+                  }
+                }
+              ]
+            }
+          ],
+          "ask": []
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": 38,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 3,
+        "soleEarner": true,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [
+          {
+            "id": "i040oif",
+            "name": "Freelance income",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "irregular",
+            "updatedAt": 1793291592752
+          }
+        ],
+        "expenses": [
+          {
+            "id": "ezndny0",
+            "name": "Household spending",
+            "monthly": 1800,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793291592752
+          }
+        ],
+        "planningScope": "household"
+      },
+      "profile": {
+        "v": 2,
+        "age": 38,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 3,
+        "soleEarner": true,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [
+          {
+            "id": "i040oif",
+            "name": "Freelance income",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "irregular",
+            "updatedAt": 1793291592752
+          }
+        ],
+        "expenses": [
+          {
+            "id": "ezndny0",
+            "name": "Household spending",
+            "monthly": 1800,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793291592752
+          }
+        ],
+        "planningScope": "household"
+      },
+      "tokens": 29549,
+      "calls": 4,
+      "ms": 5047,
+      "complete": false
+    }
+  ]
+}
