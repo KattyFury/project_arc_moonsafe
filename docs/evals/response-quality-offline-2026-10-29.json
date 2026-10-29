@@ -1,9 +1,9 @@
 {
   "mode": "offline",
   "paidCalls": 0,
-  "checks": 86,
-  "mockCalls": 46,
-  "mockedExternal": 18,
+  "checks": 92,
+  "mockCalls": 47,
+  "mockedExternal": 19,
   "results": [
     {
       "name": "live-discovered cost and unknown-interest mutations repaired at handler boundary",

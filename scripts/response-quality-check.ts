@@ -80,10 +80,24 @@ try {
   const uncertainProfile = applyOps(debtor, readOps(uncertain.data.ops))
   assert.equal(uncertainProfile.debts[0].ratePct, null)
   assert.equal(uncertainProfile.debts[0].type, 'unknown')
+  assert.match(uncertain.data.content ?? '', /annual rate/)
+  assert.match(uncertain.data.content ?? '', /repayment schedule/)
+  checks += 2
   const actual = await ask('I checked: zero interest, and I still must repay it. Keep the $75 repayment counted once.', true, [], { profile: debtor })
   const actualProfile = applyOps(debtor, readOps(actual.data.ops))
   assert.equal(actualProfile.debts[0].ratePct, 0)
   assert.equal(actualProfile.debts[0].monthlyPayment, 75)
+  checks += 4
+  const shared = normalizeProfile({ v: 2, planningScope: 'household', incomes: [
+    { id: 'mine', name: 'My salary', monthly: 2400, currency: 'USDC', kind: 'active', updatedAt: 0 },
+    { id: 'partner', name: 'Partner contribution', monthly: 800, currency: 'USDC', kind: 'active', updatedAt: 0 },
+  ], expenses: [{ id: 'bills', name: 'Shared bills', monthly: 1900, currency: 'USDC', kind: 'fixed', updatedAt: 0 }] })
+  forcedTools = [tools('set_income', { id: 'partner', name: 'Partner contribution', monthly: { amount: 800, currency: 'USDC' }, kind: 'passive' })]
+  const contribution = await ask('Do not count the $800 contribution as an extra salary on top of a salary you have not been told. What income basis can we actually use?', true, [], { profile: shared })
+  assert.match(contribution.data.content ?? '', /3,200/)
+  assert.match(contribution.data.content ?? '', /1,900/)
+  assert.match(contribution.data.content ?? '', /not their full salary/)
+  assert.equal(applyOps(shared, readOps(contribution.data.ops)).incomes.find(i => i.id === 'partner')?.kind, 'active')
   checks += 4
   results.push({ name: 'live-discovered cost and unknown-interest mutations repaired at handler boundary', status: 'pass' })
   forcedTools = []

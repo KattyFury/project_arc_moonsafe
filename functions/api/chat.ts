@@ -116,7 +116,7 @@ const DEBT_PAY_NAME = /loan|debt|repay|mortgage|installment|credit card|(?<!\p{L
 // A plain "no" to an offer (real chat 2026-10-29: "no" to the deposit offer got the same offer again). Short answers only, so
 // "no, make it 10" or "no I already have savings" still go through the normal path.
 const SAYS_NO = /^\s*(no+|nope|nah|not (now|yet|today)|maybe later|later|no,? thanks?( you)?|i('?m| am) (good|fine)|i don'?t want( to)?( do (it|that))?|not interested|skip( it)?|không|chưa|thôi|để sau|ko|k)\s*[.!]*\s*$/iu // lang-ok
-// A new amount right after our buy / deposit offer ("make it 1$", "1 đô thôi", "buy $5 instead"; real chat 2026-10-29: "make it 1$"
+// A new amount right after our buy / deposit offer ("make it 1$", "1 đô thôi", "buy $5 instead"; real chat 2026-10-29: "make it 1$" // lang-ok
 // got the same question again). A dollar amount, no question, no VND.
 const OFFERED_BUY = /cirBTC buy of|first buy of|lệnh mua cirBTC|lần mua đầu/i // lang-ok
 const OFFERED_DEPOSIT = /prepare a deposit of|lệnh nạp/i // lang-ok
@@ -1367,6 +1367,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   // What the user told but could not be recorded yet (a home without its value, a debt payment without the total owed).
   const toAsk: string[] = []
   let planIn = 0, planOut = 0, planSteps = 0
+  let noProgress = 0
   // A signed card (ChatScreen hidden message) records nothing: the balances already come from the chain.
   const appEvent = lastUserText.startsWith('[app event]')
   // The app tells us what the user did with the confirm card for several declared items (saved / skipped).
@@ -1394,6 +1395,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     if (!calls.length) break
     planMessages.push({ role: 'assistant', content: plan.choices[0].message.content ?? '', tool_calls: calls } as Message)
     let acted = false, recorded = false
+    const changesBefore = ops.length + readback.length + actions.length + done.length
     for (const call of calls) {
       const key = call.function.name + call.function.arguments
       let result = 'Done.'
@@ -1410,6 +1412,8 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       planMessages.push({ role: 'tool', content: result, tool_call_id: call.id })
     }
     if (!acted) break
+    noProgress = ops.length + readback.length + actions.length + done.length === changesBefore ? noProgress + 1 : 0
+    if (noProgress >= 2) break // Rejected proposals do not justify six paid retries.
     planMessages.push({ role: 'system', content: `${recorded ? `${stateText()}\n` : ''}Anything else the user's latest message asked for or told that is not done yet? If not, call no_action.` })
   }
   console.log(`plan steps=${planSteps} tokens in=${planIn} out=${planOut} ops=${ops.length}`)
@@ -1464,6 +1468,24 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     profile = applyOps(profile, [op])
   }
   const balance = ops.length ? await balanceOf(profile) : startBalance
+  // Deterministic answers for accounting facts: language models explain, code owns the totals.
+  if (!pendingNote && !appEvent && policy.question && /income basis|total income|combined income|explain the totals|total income and spending|tổng thu nhập/iu.test(lastUserText) && balance.cashflow.income !== null) { // lang-ok
+    const show = (n: number) => vi && rate ? moneyText({ amount: n * rate, currency: 'VND' }) : dollars(n)
+    const contributions = profile.incomes.filter(i => /contribut|đóng góp/iu.test(i.name)) // lang-ok
+    const income = show(balance.cashflow.income)
+    const spending = balance.cashflow.spending === null ? (vi ? 'chưa xác định' : 'unknown') : show(balance.cashflow.spending) // lang-ok
+    const content = vi
+      ? `Nguồn tiền đã khai cho ngân sách mỗi tháng: **${income}**. Chi tiêu đã ghi: **${spending}**; đây chỉ là các khoản đã liệt kê, chưa chắc đầy đủ. ${contributions.length ? 'Khoản đóng góp của vợ/chồng được tính một lần vào ngân sách chung; đó không phải toàn bộ lương của người ấy. Không cần đoán phần lương chưa chia sẻ.' : 'Chuyển tiền giữa các tài khoản của cùng gia đình không tạo thêm thu nhập.'}` // lang-ok
+      : `Declared monthly budget resources: **${income}**. Recorded spending: **${spending}**; these are the listed entries, not necessarily all household costs. ${contributions.length ? 'The partner contribution counts once as money available to this shared budget; it is not their full salary. Unshared salary remains unknown and is not added.' : 'Transfers between accounts within the same household do not create additional income.'}`
+    return json({ content, ops, dcaStop, actions })
+  }
+  const unknownRateDebt = profile.debts.length === 1 && profile.debts[0].ratePct === null ? profile.debts[0] : null
+  if (!pendingNote && !appEvent && policy.question && unknownRateDebt && /interest|gift|lãi/iu.test(lastUserText) && /assume|confirm|gift|giả định|xác nhận/iu.test(lastUserText)) { // lang-ok
+    const content = vi
+      ? 'Chưa thể coi khoản vay là quà tặng hoặc không lãi. Bạn có thể xác nhận với người cho vay ba điều: đây là tiền phải trả hay quà tặng; có tính lãi không và mức lãi theo năm; lịch trả và các khoản phí. Trước khi có câu trả lời, lãi suất vẫn chưa biết và lịch trả đã khai vẫn được giữ nguyên.' // lang-ok
+      : 'A family loan is not automatically a gift or interest-free. Confirm three things with the lender: whether repayment is required; whether interest is charged and the annual rate; and the repayment schedule and any fees. Until confirmed, the rate stays unknown and the declared monthly repayment stays in spending exactly once.'
+    return json({ content, ops, dcaStop, actions })
+  }
   // Critical financial targets come from code, never a model's guessed X-of-Y.
   if (policy.question && !actions.length && !placement && /fund|quỹ/iu.test(lastUserText) && /target|how much|mục tiêu|tính|bao nhiêu/iu.test(lastUserText)) { // lang-ok
     const show = (n: number) => vi && rate ? moneyText({ amount: n * rate, currency: 'VND' }) : usdc(n)
