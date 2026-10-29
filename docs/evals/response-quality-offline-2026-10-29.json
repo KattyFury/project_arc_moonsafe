@@ -1,10 +1,22 @@
 {
   "mode": "offline",
   "paidCalls": 0,
-  "checks": 51,
-  "mockCalls": 25,
-  "mockedExternal": 9,
+  "checks": 75,
+  "mockCalls": 35,
+  "mockedExternal": 13,
   "results": [
+    {
+      "name": "reviewed needs/wants lesson uses zero model calls",
+      "status": "pass"
+    },
+    {
+      "name": "unknown dependents suppress default targets in context and final output",
+      "status": "pass"
+    },
+    {
+      "name": "irregular household needs sole-earner evidence before quoting 9 or 12 months",
+      "status": "pass"
+    },
     {
       "name": "pending facts preserve confirmation and answer",
       "status": "pass"

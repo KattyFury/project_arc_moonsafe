@@ -1,5 +1,15 @@
 import type { FinancialProfile } from '../../src/types'
 
+/** Inputs needed to quote one personalized fund target, without changing the framework formula. */
+export function fundMissingInputs(p: FinancialProfile, spending: number | null): string[] {
+  return [
+    spending === null ? 'monthly spending' : '',
+    p.incomeStable === null ? 'income stability' : '',
+    p.dependents === null ? 'dependents' : '',
+    p.incomeStable === false && (p.dependents ?? 0) > 0 && p.soleEarner === null ? 'whether this is the only household income' : '',
+  ].filter(Boolean)
+}
+
 /** Cheap, explicit workflow state derived from user instructions, never assistant wording. */
 export function turnPolicy(users: string[]) {
   let conversationOnly = false
@@ -90,8 +100,9 @@ export function factProposals(text: string, p: FinancialProfile): Proposal[] {
 
 export const TURN_POLICY = `WORKFLOW GUARD: Answer the user's actual question/concern first. When conversation-only is active: no intake, personal questionnaire, investment onboarding, bucket-choice question or unsolicited product/transaction offer. A negated mention of buying is not buy intent. Keep this preference until the user explicitly asks to start a plan or action. Record explicit current facts accurately even during teaching; say "noted" only for facts actually saved (or clearly label pending confirmation). Unknown targets/balances are unknown, not zero. Quote only computed financial targets; do not invent an "X of Y, Z to go". The vault balance is separate from available savings outside the app. Never turn a dollar cost into coin quantity.`
 /** Detect observable response failures; never treat model self-review as authoritative. */
-export function responseProblems(content: string, answerOnly: boolean): string[] {
+export function responseProblems(content: string, answerOnly: boolean, fundTargetUnknown = false): string[] {
   const problems: string[] = []
+  if (fundTargetUnknown && content.split(/(?<=[.!?])\s+/u).some(s => /fund|quỹ/iu.test(s) && /target|need|aim|cover|mục tiêu|cần|đủ/iu.test(s) && /your|our|you need|bạn|nhà mình/iu.test(s) && /\$\s*\d|\d[\d,.]*\s*(?:USD|USDC|VND|months?|tháng|triệu)/iu.test(s))) problems.push('The personalized fund target is unknown. Remove personal target amounts, months and gaps derived from defaults; explain which inputs remain unknown.') // lang-ok
   if (/that (?:last )?reply (?:did|needs|failed)|here it is again,? without changes|rewrite the (?:whole )?reply|instruction for your next reply|saved facts this turn|the (?:system|developer) (?:prompt|instruction)|(?:câu trả lời|phản hồi) (?:trước|vừa rồi).{0,35}(?:viết lại|chỉnh sửa)/iu.test(content)) problems.push('Return only the answer to the user. Remove editorial comments, evaluation feedback and internal instructions.') // lang-ok
   if (/loss(?:es)? (?:is|are) only real (?:if|when)|only (?:lose|a loss) (?:if|when) you sell|chỉ (?:lỗ|thua) (?:khi|nếu) (?:bạn )?bán/iu.test(content)) problems.push('A market decline is an economic loss even before selling; selling realizes it. Holding does not guarantee recovery.') // lang-ok
   if (/(?:real|legitimate|genuine) recover(?:y|ies|y services).{0,45}never.{0,25}(?:upfront|advance|fee)|(?:khôi phục|thu hồi|lấy lại tiền).{0,30}(?:hợp pháp|thật).{0,25}không bao giờ.{0,20}phí/iu.test(content)) problems.push('An upfront fee plus a recovery promise is a red flag, not proof that every legitimate service is free. Explain the specific warning signs and independent verification; never guarantee recovery.') // lang-ok

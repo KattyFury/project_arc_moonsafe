@@ -15,6 +15,14 @@ export const EDUCATION_POLICY = `## Answer the actual request
 
 export const LESSONS = [
   {
+    id: 'needs-wants',
+    queries: ['what are needs and wants', 'explain needs versus wants', 'explain the difference between needs and wants', 'giải thích cách phân biệt nhu cầu thiết yếu và mong muốn', 'phân biệt nhu cầu và mong muốn'], // lang-ok
+    en: 'Needs are expenses that support basic living, such as housing, food and essential transport. Wants add comfort or enjoyment and can often be postponed; the distinction depends on your situation. For one small practice, label your next purchase as a need or a want before paying. You can do this privately without sharing income or spending here.',
+    vi: 'Nhu cầu là khoản phục vụ sinh hoạt thiết yếu, như chỗ ở, thực phẩm và đi lại cần thiết. Mong muốn tăng sự thoải mái hoặc niềm vui và thường có thể hoãn; cách phân biệt tùy hoàn cảnh. Một việc nhỏ để tập là tự đánh dấu lần mua tiếp theo thuộc nhu cầu hay mong muốn trước khi trả tiền. Bạn không cần khai thu nhập hay chi tiêu để thử.', // lang-ok
+    source: 'https://www.canada.ca/en/financial-consumer-agency/services/make-budget.html',
+    label: 'FCAC',
+  },
+  {
     id: 'budget',
     queries: ['what is a budget', 'how do i start budgeting', 'ngân sách cá nhân là gì', 'bắt đầu quản lý chi tiêu thế nào'], // lang-ok
     en: 'A budget is a plan for income, spending and saving. Start with money you can reliably expect, essential bills and debt payments; then choose what to set aside and what can wait. Review actual spending regularly so the plan fits your life.',

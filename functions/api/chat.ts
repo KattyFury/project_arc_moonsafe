@@ -21,7 +21,7 @@
 
 import { getPrices } from './prices'
 import { educationAnswer, EDUCATION_POLICY } from '../_lib/education'
-import { explicitAgeRefusal, factProposals, investmentCost, quantityEvidence, turnPolicy, TURN_POLICY, responseProblems, REPLY_DISCIPLINE } from '../_lib/agentGuards'
+import { explicitAgeRefusal, factProposals, investmentCost, quantityEvidence, turnPolicy, TURN_POLICY, responseProblems, REPLY_DISCIPLINE, fundMissingInputs } from '../_lib/agentGuards'
 import { coachingBrief, recordingEvidence, COACH_POLICY, ALTCOIN_CHECK } from '../_lib/coaching'
 import { dependentEvidence, householdDefault, incomeUpdate, profileAgeAllowed, scopeBrief, scopeChoice, scopeQuestion } from '../../src/lib/planningScope'
 import { privyUserId } from '../_lib/privyAuth'
@@ -33,7 +33,7 @@ import { recordStats } from '../_lib/stats'
 import { BATCH_MARK, INTAKE_MIN_UNKNOWN, buildIntake, intakeKeys, unknownBullets } from '../_lib/intake'
 import { getConfig, isBlocked, effectiveEnv } from '../_lib/config'
 import { buildAfterSign, buildPartAnswer, buildPlan, buildStanding, detectPartChoice, openVaultOffer } from '../_lib/plan'
-import { KB, fundFloorMonths, matchPatterns, patternBrief, param } from '../../src/kb/kb'
+import { KB, matchPatterns, patternBrief, param } from '../../src/kb/kb'
 import { computeFacts, displayFacts, amountsUsd } from '../../src/kb/facts'
 import { bucketStanding, computeBalance, holdingUsd, priceKey, symbolOf, toUsd, GOLD_UNITS_TO_OZ, GROUP_LABEL, type Balance, type Prices } from '../../src/lib/allocation'
 import {
@@ -595,18 +595,21 @@ function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: nu
   // Rounded down to whole USDC: 2,300.58 shown as "2,301" was offered as a deposit above the wallet (real chat 2026-10-26).
   const spendable = wallet !== null ? Math.max(0, Math.floor(wallet - GAS_RESERVE_USDC)) : null
   const cf = b.cashflow
+  const missing = fundMissingInputs(p, cf.spending)
+  const fundTargetKnown = missing.length === 0
   lines.push(wallet !== null ? `- App wallet SEEN onchain: ${show(Math.floor(wallet))} (NOT part of the totals below: only what the user declares counts; a card can add up to ${show(spendable ?? 0)} to the fund, keeping ${usdc(GAS_RESERVE_USDC)} for fees)` : '- App wallet: balance unknown')
-  lines.push(b.fundUsd !== null ? `- Emergency fund: ${show(b.fundUsd)}${b.fund.months !== null ? ` = ${Math.round(b.fund.months * 10) / 10} months of spending` : ''}` : '- Emergency fund: balance unknown')
+  lines.push(b.fundUsd !== null ? `- App vault portion of the emergency fund: ${show(b.fundUsd)}${b.fund.months !== null ? ` = ${Math.round(b.fund.months * 10) / 10} months of spending` : ''}; outside reserves are separate and may be unknown` : '- App vault portion of the emergency fund: balance unknown; outside reserves are separate')
   if (cir > 0) lines.push(`- cirBTC already held: ${show(cir)} (owned, NOT an amount to buy or invest)`)
 
-  // Fund floor (spec 5.1). Stability unknown → both floors, so the agent can ask.
-  if (cf.spending === null) lines.push('- Fund floor: UNKNOWN, monthly spending is not known yet. Nobody can say how much the fund needs: never present any amount as needed. If asked: the floor is 3 months of spending (more with irregular income or dependents), then ask how much they spend a month.')
-  else {
+  // Only expose a personalized target when its inputs are known. Missing dependents are not zero.
+  if (!fundTargetKnown) {
+    lines.push(`- Emergency fund target: UNKNOWN until ${missing.join(', ')} are known. Do not quote a personalized target, gap, months-to-fill or deposit offer from defaults. Explain the concept without asking personal questions unless a personal plan is invited.`)
+    if (cf.spending !== null) lines.push(`- Declared spending per month: ${show(cf.spending)} (known spending alone does not establish the fund target)`)
+  } else if (cf.spending !== null) {
     // Spelled out so the agent can show how the floor is made when asked "why 2,400?" (real chat 2026-10-26).
     const lineSum = cf.fixed - cf.debtPayments + cf.variable
     lines.push(`- Spending per month: ${show(cf.spending)} = spending lines ${show(lineSum)}${cf.debtPayments > 0 ? ` + debt payments ${show(cf.debtPayments)} (${b.debts.lines.filter(l => l.monthlyUsd).map(l => `${l.debt.name} ${show(l.monthlyUsd!)}`).join(', ')})` : ''}`)
-    const irregularFloor = fundFloorMonths({ income_stable: false, dependents: p.dependents ?? 0, sole_earner: p.soleEarner ?? false })
-    const cases = p.incomeStable === null ? [{ months: b.fund.floorMonths, who: 'If income is stable' }, { months: irregularFloor, who: 'If income is irregular' }] : [{ months: b.fund.floorMonths, who: `Floor (income ${p.incomeStable ? 'stable' : 'irregular'}, dependents ${p.dependents ?? 0}${p.soleEarner ? ', sole earner' : ''})` }]
+    const cases = [{ months: b.fund.floorMonths, who: `Floor (income ${p.incomeStable ? 'stable' : 'irregular'}, dependents ${p.dependents}${p.soleEarner ? ', sole earner' : ''})` }]
     for (const c of cases) {
       const floor = cf.spending * c.months
       let status = 'cannot work out the gap yet (no fund balance)'
@@ -661,13 +664,15 @@ function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: nu
     if (st) lines.push(`- Where they stand in the three parts of the money to divide (${show(Math.max(0, b.liquid - b.goalUsd))}${b.goalUsd > 0 ? `, not counting the near-term goal ${show(b.goalUsd)}` : ''}). Copy "X of Y, Z to go" exactly. Safety = bank savings outside the app, it is NOT the emergency fund: ${st.map(x => `${x.name} ${show(x.have)} of ${show(x.target)}${x.goal ? ` (= goal ${show(x.goal)} + ${x.share}% of the rest ${show(x.rest ?? 0)})` : ''}, ${!x.full ? `${show(x.left)} to go` : 'full'}`).join('; ')}`)
   } else lines.push('- Target: AGE UNKNOWN. Ask the age before talking about any share.')
   if (!b.declared) lines.push('- Nothing is declared yet: the user has not said what they hold (the wallet balance seen onchain does not count until they declare it). If they ask how to split or invest: suggest NO split and NO purchase, turn NO percentage into an amount; ask about the next item of the collection flow instead.')
-  else if (b.suggest) {
+  else if (b.suggest && fundTargetKnown) {
     const s = b.suggest
     // No split across buckets here: they fill one bucket at a time, the one they pick (Hieu, 2026-10-27; a proportional 429 USDC crypto offer came from this line).
     const rest = Object.values(s.to).reduce((x, y) => x + y, 0)
     lines.push(`- Suggested use of idle money ${show(s.idle)}: keep ${show(s.keep)} for daily spending${s.toFund > 0.01 ? `; emergency fund ${show(s.toFund)}` : ''}${s.toDebt > 0.01 ? `; priority debt ${show(s.toDebt)}` : ''}${s.toGoal > 0.01 ? `; near-term goal (savings) ${show(s.toGoal)}` : ''}${rest >= 0.01 ? `; the rest, ${show(rest)}, goes to the bucket they pick (see Still to fill)` : ''}${rest < 0.01 && s.toFund < 0.01 && s.toDebt < 0.01 && s.toGoal < 0.01 ? '; nothing to place' : ''}`)
   }
-  lines.push(`- Buy lock: ${b.lock.open ? 'cirBTC buying is OPEN' : `LOCKED. ${b.lock.text}`}`)
+  lines.push(fundTargetKnown
+    ? `- Buy lock: ${b.lock.open ? 'cirBTC buying is OPEN' : `LOCKED. ${b.lock.text}`}`
+    : `- In-app buy lock state: ${b.lock.open ? 'OPEN' : 'LOCKED'}. A personalized emergency fund target is still unknown; do not turn the lock's default calculation into a personal target or deposit recommendation.`)
   if (surplusDca && b.lock.open && cf.surplus !== null && cf.surplus > 0) lines.push(`- DCA suggestion: ${show(cf.surplus * param('dca_share_of_surplus'))} a month into cirBTC (50% of the surplus; the user adjusts)`)
   return { partial, text: `ASSET & FUND FIGURES (computed by the server at live prices; quote them VERBATIM, never add, subtract, multiply, divide or convert):\n${lines.join('\n')}`, floors, cover }
 }
@@ -1459,8 +1464,8 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   // Critical financial targets come from code, never a model's guessed X-of-Y.
   if (policy.question && !actions.length && !placement && /fund|quỹ/iu.test(lastUserText) && /target|how much|mục tiêu|tính|bao nhiêu/iu.test(lastUserText)) { // lang-ok
     const show = (n: number) => vi && rate ? moneyText({ amount: n * rate, currency: 'VND' }) : usdc(n)
-    const content = balance.fund.floorUsd === null || profile.incomeStable === null || profile.dependents === null
-      ? (vi ? 'Chưa đủ dữ liệu về chi tiêu tháng, độ ổn định thu nhập hoặc người phụ thuộc để chốt mục tiêu quỹ. Số dư vault và tiền tiết kiệm bên ngoài là hai khoản riêng; khoản chưa khai không được coi là bằng 0.' : 'The fund target is not final until monthly spending, income stability and dependents are known. The vault balance and savings outside the app are separate; undeclared amounts are not zero.') // lang-ok
+    const content = balance.fund.floorUsd === null || fundMissingInputs(profile, balance.cashflow.spending).length > 0
+      ? (vi ? 'Chưa đủ dữ liệu về chi tiêu tháng và rủi ro thu nhập gia đình để chốt mục tiêu quỹ, gồm độ ổn định, người phụ thuộc và nguồn thu của cả nhà khi có liên quan. Số dư vault và tiền tiết kiệm bên ngoài là hai khoản riêng; khoản chưa khai không được coi là bằng 0.' : 'The fund target is not final until monthly spending and relevant household income risks are known: income stability, dependents and whether there is another earner when that changes the target. The vault balance and savings outside the app are separate; undeclared amounts are not zero.') // lang-ok
       : (vi ? `Theo framework hiện có: ${show(balance.cashflow.spending!)} chi tiêu tháng × ${balance.fund.floorMonths} tháng = **${show(balance.fund.floorUsd)}** mục tiêu quỹ dự phòng. Đây là mục tiêu theo dữ liệu đã khai; tiền trong vault và tiết kiệm bên ngoài cần phân biệt, không phải toàn bộ gia đình chỉ có số dư vault.` : `Using the existing framework: ${show(balance.cashflow.spending!)} monthly spending × ${balance.fund.floorMonths} months = **${show(balance.fund.floorUsd)}** emergency fund target. This uses the declared expenses. The app vault and savings outside it are separate; a zero vault does not mean the household has no available savings.`) // lang-ok
     return json({ content, ops, dcaStop, actions })
   }
@@ -1614,6 +1619,7 @@ ${ending}` })
   const grounding = [figs, wishLine, brief, usdc(cryptoOffer), ...done, readback.join(', '), ...messages.filter(m => m.role === 'user').map(m => m.content)]
   const prevAssistant = assistantTexts[assistantTexts.length - 1] ?? ''
   const recordedStable = ops.some(o => o.op === 'update_profile' && o.fields.incomeStable !== undefined)
+  const fundTargetUnknown = fundMissingInputs(profile, balance.cashflow.spending).length > 0
   let rewrites = 0
   const withPendingNote = (text: string) => text + (pendingNote ? `\n\n${pendingNote}` : '')
   const unreliableReply = () => (vi
@@ -1626,7 +1632,7 @@ ${ending}` })
     // Function tools need reasoning_effort 'none' on chat/completions.
     const reply = await openai(apiKey, { model: MODEL, messages: replyMessages, tools: REPLY_TOOLS, tool_choice: round >= 3 ? 'none' : 'auto', max_completion_tokens: 1200, reasoning_effort: 'none' }, meter)
     if (reply instanceof Response) {
-      if (lastDraft) return json({ content: responseProblems(lastDraft, policy.answerFirst).length ? unreliableReply() : withPendingNote(lastDraft), ops, dcaStop, actions })
+      if (lastDraft) return json({ content: responseProblems(lastDraft, policy.answerFirst, fundTargetUnknown).length ? unreliableReply() : withPendingNote(lastDraft), ops, dcaStop, actions })
       return reply
     }
     const msg = reply.choices[0]?.message
@@ -1634,7 +1640,7 @@ ${ending}` })
     if (!msg?.tool_calls?.length) {
       const content = msg?.content ?? ''
       const plain = content.replace(/ /g, ' ')
-      const problems: string[] = responseProblems(content, policy.answerFirst)
+      const problems: string[] = responseProblems(content, policy.answerFirst, fundTargetUnknown)
       if (policy.answerFirst && !/cirbtc|vault|this app|in the app|trong app/iu.test(lastUserText) && /cirBTC|buying is locked|buy lock/iu.test(content)) problems.push('answer only the question or concern; remove unsolicited cirBTC and buy-lock onboarding') // lang-ok
       // Safety, Traditional and the bank are outside the app: no card exists for them (real chat 2026-10-28: "prepare a Safety transfer of 524 USDC for you to sign").
       if (!actions.length && /(prepare|set up|create)[^.?!\n]{0,40}(Safety|Traditional|bank|savings)[^.?!\n]{0,50}(sign|transfer)|(Safety|bank|savings)\s+(transfer|deposit)[^.?!\n]{0,40}sign/i.test(plain)) problems.push('there is NO card for Safety, Traditional or the bank: they are done outside the app. Never offer to prepare something for them to sign; the only cards are the emergency fund (deposit / withdraw) and the cirBTC buy')
@@ -1742,7 +1748,7 @@ ${ending}` })
       }
       // Still asking twice after the rewrites: drop the extra questions rather than send them.
       // A read-back with nothing recorded survived the rewrites once ("Mình ghi: Bạn muốn mua…"): drop it.
-      if (responseProblems(content, policy.answerFirst).length) return json({ content: unreliableReply(), ops, dcaStop, actions })
+      if (responseProblems(content, policy.answerFirst, fundTargetUnknown).length) return json({ content: unreliableReply(), ops, dcaStop, actions })
       const noFalseNote = ops.length ? content : content.replace(/^\s*(\*\*)?(Noted|Mình ghi)(\*\*)?:\s*/i, '').replace(/\s*(Right\?|Đúng chưa\?)\s*$/i, '') // lang-ok
       const oneAsk = (noFalseNote.match(/\?/g) ?? []).length > 1 ? noFalseNote.replace(/\s*(Right\?|Đúng chưa\?)\s*$/i, '') : noFalseNote // lang-ok
       const tidy = tidyQuestions(oneAsk, ASKS_STABLE.test(prevAssistant) && !recordedStable)
