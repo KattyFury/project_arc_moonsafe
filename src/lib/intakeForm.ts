@@ -12,6 +12,7 @@ export type YesNo = 'yes' | 'no' | null
 
 /** Everything the form can hold; numbers are USDC (USD) typed as text, empty = "prefer not to say". */
 export interface FormValues {
+  planningScope?: 'individual' | 'household' | null
   age: string
   salary: string
   otherIncome: YesNo
@@ -20,6 +21,7 @@ export interface FormValues {
   windfallsYearly: string
   spending: string
   steady: YesNo
+  onlyEarner?: YesNo
   reliers: YesNo
   reliersCount: string
   goal: YesNo
@@ -50,6 +52,8 @@ export interface FormValues {
 }
 
 export const EMPTY_FORM: FormValues = {
+  planningScope: null,
+  onlyEarner: null,
   age: '', salary: '', otherIncome: null, passive: '', windfalls: null, windfallsYearly: '', spending: '', steady: null, reliers: null, reliersCount: '1',
   goal: null, goalName: '', goalAmount: '', goalYears: '', usdcThis: '', usdcElsewhere: '', bank: '', cash: '', btc: '', coins: '', gold: '', stocks: '',
   otherAssets: null, home: '', car: '', lent: '', business: '', debt: null, debtKind: null, debtOwed: '', debtRate: '', debtMonthly: '',
@@ -84,10 +88,12 @@ export function formToItems(v: FormValues, _prices: Prices | null, now = Date.no
   }
 
   const age = parseAmount(v.age)
+  const household = v.planningScope === 'household'
+  if (v.planningScope === 'individual' || v.planningScope === 'household') add(household ? 'Household plan' : 'Individual plan', { op: 'update_profile', fields: { planningScope: v.planningScope } })
   if (age !== null && age >= 10 && age <= 120) add(`Age ${Math.round(age)}`, { op: 'update_profile', fields: { age: Math.round(age) } })
 
   const salary = parseAmount(v.salary)
-  if (salary !== null) add(`Salary ${usd(salary)} a month (active)`, { op: 'set_income', income: { id: newId('i'), name: 'Salary', monthly: salary, currency: 'USDC', kind: 'active', updatedAt: now } })
+  if (salary !== null) add(`${household ? 'Combined household salary' : 'Salary'} ${usd(salary)} a month (active)`, { op: 'set_income', income: { id: newId('i'), name: household ? 'Combined household salary' : 'Salary', monthly: salary, currency: 'USDC', kind: 'active', updatedAt: now } })
   const passive = v.otherIncome === 'yes' ? parseAmount(v.passive) : null
   if (passive !== null) add(`Passive income ${usd(passive)} a month`, { op: 'set_income', income: { id: newId('i'), name: 'Passive income', monthly: passive, currency: 'USDC', kind: 'passive', updatedAt: now } })
   if (v.otherIncome === 'yes' && v.windfalls === 'yes') {
@@ -99,6 +105,7 @@ export function formToItems(v: FormValues, _prices: Prices | null, now = Date.no
   if (spending !== null) add(`Monthly spending ${usd(spending)} a month (fixed)`, { op: 'set_expense', expense: { id: newId('e'), name: 'Monthly spending', monthly: spending, currency: 'USDC', kind: 'fixed', updatedAt: now } })
 
   if (v.steady !== null) add(`Income ${v.steady === 'yes' ? 'steady' : 'not steady'}`, { op: 'update_profile', fields: { incomeStable: v.steady === 'yes' } })
+  if (v.onlyEarner === 'yes' || v.onlyEarner === 'no') add(v.onlyEarner === 'yes' ? 'One household earner' : 'More than one household earner', { op: 'update_profile', fields: { soleEarner: v.onlyEarner === 'yes' } })
   if (v.reliers === 'no') add('Nobody relies on your income', { op: 'update_profile', fields: { dependents: 0 } })
   if (v.reliers === 'yes') {
     const n = Math.max(1, Math.round(parseAmount(v.reliersCount) ?? 1))

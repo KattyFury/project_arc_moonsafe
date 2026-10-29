@@ -132,7 +132,7 @@ export function buildPlan({ p, b, shares, cover, partial = null, vi, hasVault = 
       `1. **Quỹ dự phòng: ${fmt(b.fund.floorUsd)}** = ${b.fund.floorMonths} tháng chi tiêu, vì ${fundWhy(p, b.fund.floorMonths, true)}. Hiện có ${fmt(vault)}.`, // lang-ok
       ...(goalLine ? [goalLine] : []),
       `2. Sau đó chia phần còn lại (${fmt(toDivide)}${toFund > 0 ? ', sau khi nạp quỹ' : ''}) theo tuổi của bạn, ${age}${est}:\n- **Safety ${sSafe}%${safeTarget ? ` (${safeTarget})` : ` = ${fmt(safe.target)}`}**: tiết kiệm rút được bất cứ lúc nào. ${have(safe)}\n- **Traditional ${sTrad}% = ${fmt(trad.target)}**: quỹ chỉ số như VOO và vàng. ${have(trad)}\n- **Crypto ${sCrypto}% = ${fmt(crypto.target)}**: chủ yếu Bitcoin, có lúc giảm một nửa. ${have(crypto)}`, // lang-ok
-      'Traditional và Crypto chia cân bằng: bên này giảm thì bên kia đỡ, cả hai cùng giảm vẫn còn quỹ dự phòng và Safety. Đây là gợi ý, bạn quyết định.', // lang-ok
+      'Traditional và Crypto chia cân bằng để không phụ thuộc vào một thị trường. Cả hai có thể cùng giảm; quỹ dự phòng và Safety giữ riêng tiền cho nhu cầu gần. Đây là gợi ý, bạn quyết định.', // lang-ok
       ...(windfall ? [windfall] : []),
       ask,
     ]
@@ -141,11 +141,12 @@ export function buildPlan({ p, b, shares, cover, partial = null, vi, hasVault = 
       `1. **Emergency fund: ${fmt(b.fund.floorUsd)}** = ${b.fund.floorMonths} months of spending, because ${fundWhy(p, b.fund.floorMonths, false)}. You have ${fmt(vault)}.`,
       ...(goalLine ? [goalLine] : []),
       `2. Then split the rest (${fmt(toDivide)}${toFund > 0 ? ', after the emergency fund' : ''}) by your age, ${age}${est}:\n- **Safety ${sSafe}%${safeTarget ? ` (${safeTarget})` : ` = ${fmt(safe.target)}`}**: savings you can reach any time. ${have(safe)}\n- **Traditional ${sTrad}% = ${fmt(trad.target)}**: index funds such as VOO, and gold. ${have(trad)}\n- **Crypto ${sCrypto}% = ${fmt(crypto.target)}**: mostly Bitcoin, which can halve on the way. ${have(crypto)}`,
-      'Traditional and Crypto are kept even: if one falls the other can carry you, and if both fall your emergency fund and Safety still stand. A suggestion, your call.',
+      'Traditional and Crypto are kept even so the plan does not depend on one market. Both can fall together; the emergency fund and Safety keep near-term needs separate. A suggestion, your call.',
       ...(windfall ? [windfall] : []),
       ask,
     ]
-  return lines.join('\n\n')
+  const basis = p.planningScope === 'household' ? (vi ? 'Kế hoạch gia đình: dùng thu nhập và chi tiêu chung đã khai, mỗi khoản tính một lần. Tỷ lệ tham khảo vẫn theo tuổi của bạn.' : 'Household plan: uses the shared income and spending you declared, counted once. The reference split still uses your age.') : null // lang-ok
+  return [basis, ...lines].filter(Boolean).join('\n\n')
 }
 
 /**
@@ -163,7 +164,7 @@ export function buildStanding({ p, b, vi }: { p: FinancialProfile; b: Balance; v
   const bank = p.holdings.filter(h => h.value !== undefined && ['savings', 'term_deposit', 'checking'].includes(h.type)).map(h => `${h.name} ${fmt(h.value!)}`)
   const row = (x: typeof safe, detail?: string) => `**${x.name}:** ${fmt(x.have)} ${vi ? 'trên' : 'of'} ${fmt(x.target)}${!x.full ? `, ${fmt(x.left)} ${vi ? 'nữa' : 'to go'}` : vi ? ', đã đủ' : ', full'}${detail ? ` (${detail})` : ''}.` // lang-ok
   const safeDetail = [bank.length ? bank.join(', ') : null, safe.goal ? (vi ? `gồm mục tiêu ${fmt(safe.goal)} + ${fmt(safe.rest ?? 0)}` : `target = goal ${fmt(safe.goal)} + ${fmt(safe.rest ?? 0)}`) : null].filter(Boolean).join('; ') // lang-ok
-  return [fundLine, row(safe, safeDetail || undefined), row(trad), row(crypto)].join('\n')
+  return [p.planningScope === 'household' ? (vi ? 'Tổng quan gia đình:' : 'Household totals:') : null, fundLine, row(safe, safeDetail || undefined), row(trad), row(crypto)].filter(Boolean).join('\n') // lang-ok
 }
 
 
@@ -236,8 +237,8 @@ export function buildPartAnswer({ b, vi, part, walletUsd }: { b: Balance; vi: bo
         : `cirBTC is Bitcoin you can buy and hold in this app. Crypto: ${mine}, ${toGo}. Shall I prepare a cirBTC buy of **${tok(amount)}** from your wallet for you to sign?`
     }
     return vi
-      ? `cirBTC là Bitcoin bạn có thể mua và giữ ngay trong app. Crypto: ${mine}, ${toGo}. Không ai biết đâu là đỉnh hay đáy, nên nếu bạn không theo dõi chart thì chia nhỏ ra mua đều mỗi tháng (DCA) an toàn hơn mua một lần: khoảng **${tok(slice)}** mỗi tháng trong ${DCA_MONTHS} tháng, dựa vào đà tăng dài hạn chứ không đoán thời điểm. Mình chuẩn bị lần mua đầu **${tok(slice)}** để bạn ký nhé? Nếu muốn mua một lần cả **${tok(amount)}** thì cứ nói.` // lang-ok
-      : `cirBTC is Bitcoin you can buy and hold in this app. Crypto: ${mine}, ${toGo}. Nobody knows where the top or the bottom is, so unless you trade by the charts, spreading it into equal monthly buys (DCA) is safer than one big buy: about **${tok(slice)}** a month for ${DCA_MONTHS} months, riding the long-term growth instead of guessing the moment. Shall I prepare the first buy of **${tok(slice)}** for you to sign? If you prefer all **${tok(amount)}** at once, just say so.`
+      ? `cirBTC là Bitcoin bạn có thể mua và giữ ngay trong app. Crypto: ${mine}, ${toGo}. Không ai biết đâu là đỉnh hay đáy, nên nếu bạn không theo dõi chart thì chia nhỏ ra mua đều mỗi tháng (DCA) giúp phân tán giá mua: khoảng **${tok(slice)}** mỗi tháng trong ${DCA_MONTHS} tháng, thay vì đoán thời điểm; cách này không bảo đảm tránh lỗ. Mình chuẩn bị lần mua đầu **${tok(slice)}** để bạn ký nhé? Nếu muốn mua một lần cả **${tok(amount)}** thì cứ nói.` // lang-ok
+      : `cirBTC is Bitcoin you can buy and hold in this app. Crypto: ${mine}, ${toGo}. Nobody knows where the top or the bottom is, so unless you trade by the charts, spreading it into equal monthly buys (DCA) spreads the entry prices: about **${tok(slice)}** a month for ${DCA_MONTHS} months, instead of guessing the moment; this does not prevent losses. Shall I prepare the first buy of **${tok(slice)}** for you to sign? If you prefer all **${tok(amount)}** at once, just say so.`
   }
   if (part === 'safe') {
     return vi
@@ -246,8 +247,8 @@ export function buildPartAnswer({ b, vi, part, walletUsd }: { b: Balance; vi: bo
   }
   const tSlice = Math.floor(row.left / DCA_MONTHS)
   const spread = tSlice >= 1
-    ? (vi ? ` Không ai biết đâu là đỉnh hay đáy, nên nếu bạn không theo dõi chart thì chia ra mua đều mỗi tháng (DCA), khoảng **${fmt(tSlice)}** mỗi tháng trong ${DCA_MONTHS} tháng, an toàn hơn mua một lần.` // lang-ok
-      : ` Nobody knows where the top or the bottom is, so unless you trade by the charts, equal monthly buys (DCA), about **${fmt(tSlice)}** a month for ${DCA_MONTHS} months, are safer than one big buy.`)
+    ? (vi ? ` Không ai biết đâu là đỉnh hay đáy, nên nếu bạn không theo dõi chart thì chia ra mua đều mỗi tháng (DCA), khoảng **${fmt(tSlice)}** mỗi tháng trong ${DCA_MONTHS} tháng, giúp phân tán giá mua nhưng không bảo đảm tránh lỗ.` // lang-ok
+      : ` Nobody knows where the top or the bottom is, so unless you trade by the charts, equal monthly buys (DCA), about **${fmt(tSlice)}** a month for ${DCA_MONTHS} months, spread entry prices but do not prevent losses.`)
     : ''
   return vi
     ? `Traditional cũng nằm ngoài app: cổ phiếu hoặc quỹ chỉ số (ví dụ VOO) và vàng, qua nhà môi giới của bạn. ${mine}, ${toGo}.${spread} Khi đã mua, hãy nói với mình để mình ghi lại.` // lang-ok

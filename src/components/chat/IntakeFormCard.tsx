@@ -49,12 +49,13 @@ function Ask({ label, value, onChange }: { label: string; value: YesNo; onChange
 
 interface Step { key: string; title: string; fields: (keyof FormValues)[]; view: ReactNode }
 
-export function IntakeFormCard({ keys, seen, values, status, saved, prices, onChange, onReview, onSkip }: {
+export function IntakeFormCard({ keys, seen, values, planningScope, status, saved, prices, onChange, onReview, onSkip }: {
   /** The sections still unknown (functions/_lib/intake.ts keys). */
   keys: string[]
   /** USDC the app sees in the connected wallet: a hint, never a total. */
   seen: number | null
   values: FormValues
+  planningScope?: 'individual' | 'household'
   status?: 'done' | 'cancelled'
   /** How many details the form saved when it was sent. */
   saved?: number
@@ -64,6 +65,7 @@ export function IntakeFormCard({ keys, seen, values, status, saved, prices, onCh
   onSkip: () => void
 }) {
   const [at, setAt] = useState(0)
+  const household = (values.planningScope ?? planningScope) === 'household'
 
   if (status) {
     return (
@@ -84,15 +86,17 @@ export function IntakeFormCard({ keys, seen, values, status, saved, prices, onCh
   // From 640px wide the fields sit two to a row (debt: three), so a card stays short on a laptop (Hieu, 2026-10-29).
   if (has('age') || has('income') || has('spending')) step('you', 'About you', ['age', 'salary', 'spending'], (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      {has('age') && <Num label="Your age" value={values.age} onChange={set('age')} money={false} />}
-      {has('income') && <Num label="Salary a month" value={values.salary} onChange={set('salary')} />}
-      {has('spending') && <div className="sm:col-span-2"><Num label="Spending a month (an estimate is fine)" value={values.spending} onChange={set('spending')} /></div>}
+      {has('age') && <Num label={household ? 'Your age (used for this plan)' : 'Your age'} value={values.age} onChange={set('age')} money={false} />}
+      {has('income') && <Num label={household ? 'Combined monthly salary (both partners)' : 'Salary a month'} value={values.salary} onChange={set('salary')} />}
+      {has('spending') && <div className="sm:col-span-2"><Num label={household ? 'Household spending a month' : 'Spending a month (an estimate is fine)'} value={values.spending} onChange={set('spending')} /></div>}
     </div>
   ))
-  if (has('stability')) step('income', 'Your income', ['steady', 'reliers'], (
+  if (has('stability')) step('income', household ? 'Household income' : 'Your income', ['steady', 'reliers', 'reliersCount', 'onlyEarner'], (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <Ask label="Is your income steady?" value={values.steady} onChange={set('steady')} />
-      <Ask label="Does anyone rely on it?" value={values.reliers} onChange={set('reliers')} />
+      <Ask label={household ? 'Is the combined income steady?' : 'Is your income steady?'} value={values.steady} onChange={set('steady')} />
+      <Ask label={household ? 'Does anyone depend on this income?' : 'Does anyone rely on it?'} value={values.reliers} onChange={set('reliers')} />
+      {values.reliers === 'yes' && <Num label="How many dependents?" value={values.reliersCount} onChange={set('reliersCount')} money={false} />}
+      {household && <Ask label="Is there only one person earning income?" value={values.onlyEarner ?? null} onChange={set('onlyEarner')} />}
     </div>
   ))
   if (has('assets')) {
@@ -136,14 +140,14 @@ export function IntakeFormCard({ keys, seen, values, status, saved, prices, onCh
   const i = Math.min(at, steps.length - 1)
   const cur = steps[i]
   const last = i === steps.length - 1
-  const count = formToItems({ ...EMPTY_FORM, ...values }, prices).length
-  const next = (v: FormValues) => { if (last) onReview(v); else setAt(i + 1) }
+  const count = formToItems({ ...EMPTY_FORM, ...values, planningScope: values.planningScope ?? planningScope }, prices).length
+  const next = (v: FormValues) => { if (last) onReview({ ...v, planningScope: v.planningScope ?? planningScope }); else setAt(i + 1) }
   // Skip: this question's answer is cleared ("prefer not to say"), then the next question (or save, on the last one).
   const skip = () => {
     const cleared: FormValues = { ...values }
     for (const f of cur.fields) (cleared as unknown as Record<string, unknown>)[f] = EMPTY_FORM[f]
     onChange(cleared)
-    if (last && formToItems({ ...EMPTY_FORM, ...cleared }, prices).length === 0) onSkip()
+    if (last && formToItems({ ...EMPTY_FORM, ...cleared, planningScope: cleared.planningScope ?? planningScope }, prices).length === 0) onSkip()
     else next(cleared)
   }
 
@@ -161,7 +165,13 @@ export function IntakeFormCard({ keys, seen, values, status, saved, prices, onCh
       </div>
 
       {/* Fixed height: room for the biggest card (three amounts with a hint, or debt with its details), so every card is the same size. */}
-      <div key={cur.key} className="h-[288px] sm:h-[200px] flex flex-col gap-4">{cur.view}</div>
+      <div className="flex flex-col gap-2">
+        <span className="text-[14px] leading-5 font-semibold" style={{ color: 'var(--subtle)' }}>Plan for</span>
+        <Toggle value={values.planningScope ?? planningScope ?? 'individual'} options={[{ value: 'individual' as const, label: 'Just me' }, { value: 'household' as const, label: 'Household' }]} onChange={set('planningScope')} />
+        {household && <p className="text-[14px] leading-5" style={{ color: 'var(--muted)' }}>Shared totals count once. The allocation uses your age; a working partner is not automatically a dependent.</p>}
+        <p className="text-[14px] leading-5" style={{ color: 'var(--muted)' }}>One current plan. Changing scope keeps existing entries; review them.</p>
+      </div>
+      <div key={cur.key} className="h-[288px] sm:h-[200px] flex flex-col gap-4 overflow-y-auto">{cur.view}</div>
 
       <div className="grid grid-cols-2 gap-2">
         <Btn variant="outline" onClick={skip}>Skip</Btn>

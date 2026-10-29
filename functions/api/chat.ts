@@ -22,6 +22,7 @@
 import { getPrices } from './prices'
 import { educationAnswer, EDUCATION_POLICY } from '../_lib/education'
 import { coachingBrief, recordingEvidence, COACH_POLICY, ALTCOIN_CHECK } from '../_lib/coaching'
+import { dependentEvidence, incomeUpdate, profileAgeAllowed, scopeBrief, scopeChoice, scopeQuestion } from '../../src/lib/planningScope'
 import { privyUserId } from '../_lib/privyAuth'
 import { addUsage, overBudget, type Meter } from '../_lib/budget'
 import { callModel as openai, DEFAULT_CLAUDE_MODEL, type Keys, type ToolCall } from '../_lib/llm'
@@ -355,6 +356,7 @@ You are MoonSafe's action planner. Read the user's LATEST message (earlier ones 
 - Something they hold → add_holding, one call per item, with the right type. A new amount for an item already listed → set_holding with its id. Sold everything / closed it → remove_holding.
 - Money moved between their own places ("I moved 1,000 from my wallet into savings") → move. Money PUT / moved into savings, the bank or Safe ("I put 1,000 in my bank", "1,000 more in savings from outside", "I got X and put it in the bank") → record NOTHING and call no_action: the app shows a confirmation box where the user picks the source and the app saves it. An amount with "more", "extra", "new" or "outside" is an ADDITION, never the new total: never set_holding it over an existing amount.
 - Each debt → add_debt (type, balance, yearly rate and monthly payment if said, lender for family). Changes → update_debt; paid off → remove_debt. Unknown type → type "unknown".
+- In a household plan, give each partner's salary a distinct name. A combined salary total is an alternative to component salaries, never an additional income source. Transfers between partners are not extra household earnings. A working partner is not automatically a dependent.
 - Each income source → set_income: active (salary, side jobs, content), passive (interest, staking, rent, dividends, interest on loans given), irregular (trading, bonuses) ONLY when the user gives a monthly figure. Airdrops, trading wins and anything that "comes a few times a year" / "sometimes" is a WINDFALL: it is not a job and is not counted as monthly income, so do NOT call set_income for it and never ask for a monthly figure; call update_profile with has_windfalls true. A new number for a listed one → same tool with its id.
 - Spending → set_expense: fixed (rent, bills, subscriptions, school fees) or variable (food, transport, other essentials). One total ("I spend 1,000 a month") → one fixed line named "Monthly spending". Debt payments belong on the debt (monthly_payment), never as an expense. A total that includes debt payments ("600 in all: 400 must-pay and 200 to repay my debt") → set_expense with ONLY the non-debt part (400), once. A payment on a debt whose total owed was not said → record no debt (the agent asks how much is still owed).
 - USDC in THIS app wallet ("in this wallet", "in the app") is declared like any other place: stable_wallet with where "app wallet". The app also SEES the real balance and shows it to you as "seen", but the totals use only what the user declares (people use several wallets). Never copy the seen number into the profile on your own: record what the user says they hold.
@@ -568,6 +570,7 @@ function listing(p: FinancialProfile, b: Balance, prices: Prices | null, rate: n
   const flags = [`age ${p.age ?? (p.ageDeclined ? 'declined (default 30)' : 'unknown')}`, `income stable: ${p.incomeStable ?? 'unknown'}`, `dependents: ${p.dependents ?? 'unknown'}`,
     `sole earner: ${p.soleEarner ?? 'unknown'}`, `debts answered: ${p.debtsComplete ? 'yes' : 'no'}`]
   return [
+    `Planning basis: ${p.planningScope ?? 'individual'}`,
     `Profile: ${flags.join(' | ')}`,
     `Holdings: ${p.holdings.map(h => `[${h.id}] ${h.type} "${h.name}"${h.where ? ` at ${h.where}` : ''} ${val(h)}`).join('; ') || 'none'}`,
     `Debts: ${p.debts.map(d => `[${d.id}] ${d.type} "${d.name}"${d.lender ? ` from ${d.lender}` : ''} ${moneyText({ amount: d.balance, currency: d.currency })}, rate ${d.ratePct === null ? 'unknown' : `${d.ratePct}%`}, pays ${d.monthlyPayment === null ? 'unknown' : moneyText({ amount: d.monthlyPayment, currency: d.currency })}/month`).join('; ') || 'none'}`,
@@ -807,6 +810,15 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   const latest = [...messages].reverse().find(m => m.role === 'user')?.content ?? ''
   const lesson = educationAnswer(latest, VI_LETTERS.test(latest))
   if (lesson) return json({ content: lesson.content, ops: [], dcaStop: false, actions: [], ...(body.debug ? { education: lesson.id } : {}) })
+  const scope = scopeChoice(latest)
+  if (scope) {
+    const previous = normalizeProfile((ctx.profile && typeof ctx.profile === 'object' ? ctx.profile : null) as Record<string, unknown> | null)
+    const vi = VI_LETTERS.test(latest)
+    const content = vi
+      ? (scope === 'household' ? 'Mình sẽ lập kế hoạch theo ngân sách gia đình. Các mục đang có vẫn giữ nguyên; mình và bạn sẽ rà lại để chỉ tính các khoản thuộc ngân sách chung một lần. Công thức vẫn dùng tuổi của bạn, không lấy trung bình tuổi hai người.' : 'Mình sẽ lập kế hoạch cho riêng bạn. Các mục đang có vẫn giữ nguyên; bạn có thể rà lại những khoản cần đưa vào kế hoạch cá nhân.') // lang-ok
+      : (scope === 'household' ? 'I will plan around the household budget. Existing entries stay as they are; we can review them so shared amounts count once. The existing allocation still uses your age, not an average of partners’ ages.' : 'I will plan for you individually. Existing entries stay as they are; you can review which amounts belong in your personal plan.')
+    return json({ content, ops: previous.planningScope === scope ? [] : [{ op: 'update_profile', fields: { planningScope: scope } }], dcaStop: false, actions: [] })
+  }
   const rate = await vndPerUsd()
   const num = (v: unknown) => typeof v === 'number' && Number.isFinite(v) ? v : null
   const wallet = num(ctx.walletUsdc), vault = num(ctx.vaultUsdc), cir = num(ctx.cirBtcUsdc) ?? 0
@@ -1030,12 +1042,12 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     }
     if (name === 'update_profile') {
       const f: Record<string, unknown> = {}
-      if (typeof a.age === 'number' && a.age >= 10 && a.age <= 120 && stated(a.age) && a.age !== profile.age) f.age = Math.round(a.age)
+      if (typeof a.age === 'number' && a.age >= 10 && a.age <= 120 && stated(a.age) && profileAgeAllowed(lastUserText, a.age) && a.age !== profile.age) f.age = Math.round(a.age)
       // A bare "ok" after "How old are you?" was recorded as declining (beginner test 2026-10-27).
       if (a.age_declined === true && !profile.ageDeclined && profile.age === null && (DECLINES.test(lastUserText) || (AGE_WORD.test(prevAssistantText) && !BARE_OK.test(lastUserText)))) f.ageDeclined = true
       // An answer about something else ("I bring it all onchain") once became "income stable" (real chat 2026-10-26): it needs a yes / no or a stability word.
       if (typeof a.income_stable === 'boolean' && a.income_stable !== profile.incomeStable && (STABILITY_WORDS.test(lastUserText) || (ASKS_STABLE.test(prevAssistantText) && YES_NO.test(lastUserText)))) f.incomeStable = a.income_stable
-      if (typeof a.dependents === 'number' && a.dependents >= 0 && a.dependents !== profile.dependents && (a.dependents === 0 ? SAYS_NONE.test(lastUserText) : stated(a.dependents) || DEPENDENT_WORDS.test(lastUserText))) f.dependents = Math.round(a.dependents)
+      if (typeof a.dependents === 'number' && a.dependents >= 0 && a.dependents !== profile.dependents && (profile.planningScope !== 'household' || dependentEvidence(lastUserText, prevAssistantText)) && (a.dependents === 0 ? SAYS_NONE.test(lastUserText) : stated(a.dependents) || DEPENDENT_WORDS.test(lastUserText))) f.dependents = Math.round(a.dependents)
       // "Sole earner" was recorded from a bare "no" to the debt question (replay 2026-10-27): it needs their words or an answer to that question.
       if (typeof a.sole_earner === 'boolean' && a.sole_earner !== profile.soleEarner && (SOLE_WORDS.test(lastUserText) || (SOLE_WORDS.test(prevAssistantText) && YES_NO.test(lastUserText)))) f.soleEarner = a.sole_earner
       // "nobody depends on me" once closed the debt checklist (2026-10-27): the no has to be about debt.
@@ -1229,8 +1241,10 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       const nm = typeof a.name === 'string' && a.name.trim() ? a.name.trim() : isIncome ? 'Income' : 'Monthly spending'
       const listItems: (Income | Expense)[] = isIncome ? profile.incomes : profile.expenses
       // Same id, else the same name, else a single migrated v1 line ("Income" / "Spending") is the one being corrected.
-      const old = listItems.find(x => x.id === a.id) ?? listItems.find(x => x.name.toLowerCase() === nm.toLowerCase())
-        ?? (listItems.length === 1 && ['income', 'spending', 'monthly spending'].includes(listItems[0].name.toLowerCase()) && listItems[0].kind === kind ? listItems[0] : undefined)
+      const match = isIncome ? incomeUpdate(profile.incomes, { id: a.id, name: nm, kind }, lastUserText, profile.planningScope ?? 'individual') : null
+      if (match?.error) return match.error
+      const old = isIncome ? match?.old : listItems.find(x => x.id === a.id) ?? listItems.find(x => x.name.toLowerCase() === nm.toLowerCase())
+        ?? (listItems.length === 1 && ['spending', 'monthly spending'].includes(listItems[0].name.toLowerCase()) && listItems[0].kind === kind ? listItems[0] : undefined)
       // Told again with the same number ("2 sources bring me 600 a month"): nothing to record or read back.
       if (old && old.monthly === m.amount && old.currency === m.currency && old.kind === kind && !ops.some(o => (o.op === 'set_income' && o.income.id === old.id) || (o.op === 'set_expense' && o.expense.id === old.id))) return 'Already recorded with this amount, nothing changed.'
       const item = { id: old?.id ?? newId(isIncome ? 'i' : 'e'), name: old && ['income', 'spending'].includes(old.name.toLowerCase()) ? nm : old?.name ?? nm, monthly: m.amount, currency: m.currency, kind, updatedAt: Date.now() }
@@ -1324,7 +1338,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   // Every step must call a tool (tool_choice "required"); it sees each result, plus the fresh
   // listing after something was recorded, and ends with no_action. Repeats are refused.
   const stateText = () => `Profile and app state (real, latest; ids in brackets):\n${listing(profile, startBalance, prices, rate)}${evidence.excluded ? '\nSome amounts describe losses, quotes, other people or hypotheticals. They are not recordable personal balances. Ask if unclear.' : ''}`
-  const planMessages: Message[] = [{ role: 'system', content: PLAN_PROMPT }, ...messages.slice(-4), { role: 'system', content: `${stateText()}${wishLine}` }]
+  const planMessages: Message[] = [{ role: 'system', content: PLAN_PROMPT }, ...messages.slice(-4), { role: 'system', content: `${scopeBrief(profile.planningScope)}\n${stateText()}${wishLine}` }]
   const seen = new Set<string>()
   // What the user told but could not be recorded yet (a home without its value, a debt payment without the total owed).
   const toAsk: string[] = []
@@ -1421,7 +1435,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   const { text: figs, floors, cover, partial } = figures(balance, profile, wallet, cir, rate, usesVnd, !usedOnce.has('lock_open_surplus'))
   const collecting = matched.some(p => p.id === 'collecting' || p.id === 'age_unknown')
   // A question or a doubt from the user is answered first; the collection flow waits a turn.
-  const directQuestion = QUESTIONS_US.test(lastUserText) || ASKS_WHY.test(lastUserText) || /^(explain|teach|help me understand|tell me about|giải thích)(?!\p{L})/iu.test(lastUserText.trim()) // lang-ok
+  const directQuestion = QUESTIONS_US.test(lastUserText) || ASKS_WHY.test(lastUserText) || scopeQuestion(lastUserText) || /^(explain|teach|help me understand|tell me about|giải thích)(?!\p{L})/iu.test(lastUserText.trim()) // lang-ok
   const userAsks = coach.active || directQuestion
   // The framework v2 questions (goal, insurance, 50% drop) are not in the KB collecting pattern: they keep collection open too.
   const relies = (profile.dependents ?? 0) > 0 || profile.soleEarner === true
@@ -1549,6 +1563,8 @@ ${ending}` })
   replyMessages.push({ role: 'system', content: EDUCATION_POLICY + (userAsks && !ops.length && !actions.length && !appEvent ? '\nThis turn: answer their question directly. Onboarding, bucket selection and deposit offers wait. No unsolicited action offer or personal question.' : '') })
 
   if (coach.active) replyMessages.push({ role: 'system', content: `${COACH_POLICY}\n${coach.text}\nAnswer the concern first. No onboarding or unsolicited transaction offer. At most one optional question only if it helps their immediate concern; respect a refusal to share.` })
+
+  replyMessages.push({ role: 'system', content: scopeBrief(profile.planningScope) })
 
   const grounding = [figs, wishLine, brief, usdc(cryptoOffer), ...done, readback.join(', '), ...messages.filter(m => m.role === 'user').map(m => m.content)]
   const prevAssistant = assistantTexts[assistantTexts.length - 1] ?? ''

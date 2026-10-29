@@ -1,5 +1,10 @@
 # MoonSafe — HANDOFF
 
+## Household planning continuation — 2026-10-29 (PR #30, not deployed)
+
+The same review branch now adds explicit individual/household scope, combined-salary intake, partner-income/total guards and a household planning context. One active dataset; switching keeps entries for review. The profile holder's age still drives the unchanged formula. See `docs/AGENT-FRAMEWORK.md` and `docs/evals/household-2026-10-29.md` (225 offline checks, no new paid calls). Existing financial tests remain in use. Do not claim partner login or joint wallet permissions.
+
+
 ## Agent coaching extension — 2026-10-29 (review branch)
 
 Branch `codex/finance-coach-depth` extends the existing framework rather than replacing it. Allocation math, cost basis, emergency-fund floors, priority-debt rules, buy locks and signature requirements are unchanged. Adds loss/FOMO/fraud guidance, conservative numeric evidence filtering, and five reviewed bilingual lessons (10 total). See `docs/evals/coaching-2026-10-29.md` for evidence and limits. `bun run eval:education` is offline; `--live --coaching` is opt-in with the existing 12-call/100k-token cap. No database, contract, wallet or deployment changes. Merge/deploy only when requested.

@@ -183,6 +183,7 @@ export function normalizeProfile(raw: Record<string, unknown> | null | undefined
     v: 2,
     age: num(raw.age),
     ageDeclined: raw.ageDeclined === true,
+    ...(raw.planningScope === 'individual' || raw.planningScope === 'household' ? { planningScope: raw.planningScope } : {}),
     incomeStable: bool(raw.incomeStable),
     dependents: num(raw.dependents),
     soleEarner: bool(raw.soleEarner),
@@ -216,7 +217,7 @@ export const hasAnyData = (p: FinancialProfile | null | undefined): boolean =>
 
 // ---- operations (what the agent's tools become) ---------------------------------------------
 
-export type ProfileFields = Partial<Pick<FinancialProfile, 'age' | 'ageDeclined' | 'incomeStable' | 'dependents' | 'soleEarner' | 'debtsComplete' | 'nearGoal' | 'noNearGoal' | 'hasWindfalls' | 'windfallsYearly' | 'cryptoDropOk' | 'insured'>>
+export type ProfileFields = Partial<Pick<FinancialProfile, 'planningScope' | 'age' | 'ageDeclined' | 'incomeStable' | 'dependents' | 'soleEarner' | 'debtsComplete' | 'nearGoal' | 'noNearGoal' | 'hasWindfalls' | 'windfallsYearly' | 'cryptoDropOk' | 'insured'>>
 
 /** The holding the user declared for the USDC in THIS (connected) wallet, if there is one. */
 export function appWalletHolding(p: FinancialProfile | null): Holding | undefined {
@@ -312,6 +313,7 @@ export function readOps(raw: unknown, now = Date.now()): ProfileOp[] {
       case 'update_profile': {
         const f = (o.fields && typeof o.fields === 'object' ? o.fields : {}) as Record<string, unknown>
         const fields: ProfileFields = {}
+        if (f.planningScope === 'individual' || f.planningScope === 'household') fields.planningScope = f.planningScope
         if (num(f.age) !== null) fields.age = num(f.age)!
         for (const k of ['ageDeclined', 'incomeStable', 'soleEarner', 'debtsComplete', 'noNearGoal', 'hasWindfalls', 'cryptoDropOk', 'insured'] as const) if (typeof f[k] === 'boolean') fields[k] = f[k] as boolean
         if (num(f.dependents) !== null) fields.dependents = num(f.dependents)!

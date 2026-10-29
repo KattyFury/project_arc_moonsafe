@@ -6,6 +6,8 @@ import { SignJWT, exportJWK, generateKeyPair } from 'jose'
 import { educationAnswer, LESSONS } from '../functions/_lib/education'
 import { coachingBrief, recordingEvidence } from '../functions/_lib/coaching'
 import { COACHING_CASES, EVIDENCE_CASES } from './coaching-cases'
+import { householdChecks } from './household-check'
+import { normalizeProfile, applyOps, readOps } from '../src/lib/profile'
 
 const live = process.argv.includes('--live')
 const baseline = process.argv.includes('--baseline')
@@ -15,7 +17,7 @@ const only = onlyAt >= 0 ? process.argv[onlyAt + 1] : undefined
 if (onlyAt >= 0 && !only) throw new Error('--only needs a question substring')
 const key = live ? process.env.OPENAI_API_KEY : 'fake'
 if (!key) throw new Error('Live eval needs OPENAI_API_KEY; never paste it into a command.')
-let checks = 0
+let checks = householdChecks()
 for (const c of EVIDENCE_CASES) {
   const result = recordingEvidence(c.text)
   const numbers = [...result.text.matchAll(/\d[\d,.]*/g)].map(m => Number(m[0].replace(/,/g, '')))
@@ -92,10 +94,10 @@ const env = { OPENAI_API_KEY: key, USERDATA: { get: async (k: string) => store.g
 const modulePath = baseline ? '../functions/api/.education-baseline' : '../functions/api/chat'
 const { onRequestPost } = await import(modulePath) as { onRequestPost: (ctx: { request: Request; env: typeof env }) => Promise<Response> }
 type Result = { content?: string; ops?: unknown[]; actions?: unknown[]; education?: string; error?: string }
-async function ask(text: string, signed = true, history: Array<{ role: string; content: string }> = []) {
+async function ask(text: string, signed = true, history: Array<{ role: string; content: string }> = [], context: Record<string, unknown> = {}) {
   const response = await onRequestPost({ env, request: new Request('http://localhost/api/chat', {
     method: 'POST', headers: { 'Content-Type': 'application/json', ...(signed ? { Authorization: `Bearer ${token}` } : {}) },
-    body: JSON.stringify({ messages: [...history, { role: 'user', content: text }], context: {}, debug: true }),
+    body: JSON.stringify({ messages: [...history, { role: 'user', content: text }], context, debug: true }),
   }) })
   return { status: response.status, data: await response.json() as Result }
 }
@@ -104,6 +106,13 @@ let failed = false
 try {
   if (!live) {
     assert.equal((await ask('what is dca', false)).status, 401)
+    checks++
+    const beforeScope = { calls, external }
+    const scoped = await ask('Plan for my household')
+    assert.equal(scoped.status, 200)
+    assert.deepEqual(scoped.data.actions, [])
+    assert.deepEqual(scoped.data.ops, [{ op: 'update_profile', fields: { planningScope: 'household' } }])
+    assert.deepEqual({ calls, external }, beforeScope, 'Scope selection must not call a model, FX or prices')
     checks++
     const { saveConfig } = await import('../functions/_lib/config')
     await saveConfig(env, { chatEnabled: false })
@@ -151,6 +160,27 @@ try {
     assert.ok(!JSON.stringify(mixed.data.ops).includes('12000'))
     checks++
     forcedTools = []
+    const incomeProfile = normalizeProfile({ v: 2, planningScope: 'household', incomes: [{ id: 'self', name: 'Income', monthly: 2000, kind: 'active', currency: 'USDC' }] })
+    forcedTools = [{ id: 'facts', type: 'function', function: { name: 'update_profile', arguments: JSON.stringify({ age: 28, dependents: 1 }) } }]
+    const spouseFacts = await ask('My wife is 28 and earns $1500 a month', true, [], { profile: { ...incomeProfile, age: 34 } })
+    assert.deepEqual(spouseFacts.data.ops, [], 'Do not use a spouse\'s age or assume a working spouse is a dependent')
+    checks++
+    const incomeTool = (name: string, monthly: number, id?: string) => ({ id: 'income', type: 'function', function: { name: 'set_income', arguments: JSON.stringify({ name, monthly: { amount: monthly, currency: 'USDC' }, kind: 'active', ...(id ? { id } : {}) }) } })
+    forcedTools = [incomeTool("Wife's salary", 1500)]
+    const added = await ask('My wife earns $1500 a month', true, [], { profile: incomeProfile })
+    assert.equal(added.status, 200)
+    const two = applyOps(incomeProfile, readOps(added.data.ops))
+    assert.equal(two.incomes.length, 2)
+    assert.equal(two.incomes.find(i => i.id === 'self')?.monthly, 2000)
+    forcedTools = [incomeTool('Combined household salary', 3500)]
+    const total = await ask('Our combined household salary is $3500 a month', true, [], { profile: two })
+    assert.deepEqual(total.data.ops, [], 'Do not count a combined salary alongside two component salaries')
+    forcedTools = []
+    checks += 2
+    const householdQuestion = await ask('Gộp lương vợ chồng được không') // lang-ok
+    assert.deepEqual(householdQuestion.data.ops, [])
+    assert.deepEqual(householdQuestion.data.actions, [], 'Answer a household question without forcing an intake form')
+    checks++
     for (const text of ['If I put $500 into my bank', 'Explain this example: "I put $500 into my bank"']) {
       const res = await ask(text)
       assert.equal(res.status, 200)
