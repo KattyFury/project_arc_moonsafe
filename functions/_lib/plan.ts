@@ -14,7 +14,10 @@ import type { FinancialProfile } from '../../src/types'
 /** Monthly buys a part is spread over when the user does not trade by the charts (Hieu, 2026-10-29). */
 export const DCA_MONTHS = 6
 
-const fmt = (n: number) => `${new Intl.NumberFormat('en-US', { maximumFractionDigits: n >= 100 ? 0 : 2 }).format(n)} USDC`
+/** A value in dollars (Hieu, 2026-10-29). */
+const fmt = (n: number) => `$${new Intl.NumberFormat('en-US', { maximumFractionDigits: n >= 100 ? 0 : 2 }).format(n)}`
+/** The token the user signs for (deposit, cirBTC buy): what the wallet shows. */
+const tok = (n: number) => `${new Intl.NumberFormat('en-US', { maximumFractionDigits: n >= 100 ? 0 : 2 }).format(n)} USDC`
 
 /** The scale behind the number, so 3 or 6 months is never a bare figure (Hieu, 2026-10-28). */
 const SCALE = {
@@ -83,7 +86,7 @@ export function buildPlan({ p, b, shares, cover, vi }: PlanInput): string | null
   const ask = fundNow
     ? pick
     : cover !== null
-      ? (vi ? `Sẵn sàng bắt đầu chưa? Bước đầu là quỹ dự phòng: mình chuẩn bị một lệnh nạp **${fmt(cover)}** từ ví để bạn ký nhé?` : `Ready to start? The first step is your emergency fund: shall I prepare a deposit of **${fmt(cover)}** from your wallet for you to sign?`) // lang-ok
+      ? (vi ? `Sẵn sàng bắt đầu chưa? Bước đầu là quỹ dự phòng: mình chuẩn bị một lệnh nạp **${tok(cover)}** từ ví để bạn ký nhé?` : `Ready to start? The first step is your emergency fund: shall I prepare a deposit of **${tok(cover)}** from your wallet for you to sign?`) // lang-ok
       : (vi ? 'Bước đầu là quỹ dự phòng. Ví chưa đủ USDC để nạp, nên hãy thêm USDC vào ví rồi nói với mình nhé.' : 'The first step is your emergency fund. The wallet does not have enough USDC to add yet, so add some USDC to it and tell me.') // lang-ok
   // Airdrops and other bursts are not a job: said once, here, because the plan is built only on steady income.
   const windfall = p.hasWindfalls
@@ -204,12 +207,12 @@ export function buildPartAnswer({ b, vi, part, walletUsd }: { b: Balance; vi: bo
     const slice = Math.floor(amount / DCA_MONTHS)
     if (slice < 1) {
       return vi
-        ? `cirBTC là Bitcoin bạn có thể mua và giữ ngay trong app. Crypto: ${mine}, ${toGo}. Mình chuẩn bị một lệnh mua cirBTC **${fmt(amount)}** từ ví để bạn ký nhé?` // lang-ok
-        : `cirBTC is Bitcoin you can buy and hold in this app. Crypto: ${mine}, ${toGo}. Shall I prepare a cirBTC buy of **${fmt(amount)}** from your wallet for you to sign?`
+        ? `cirBTC là Bitcoin bạn có thể mua và giữ ngay trong app. Crypto: ${mine}, ${toGo}. Mình chuẩn bị một lệnh mua cirBTC **${tok(amount)}** từ ví để bạn ký nhé?` // lang-ok
+        : `cirBTC is Bitcoin you can buy and hold in this app. Crypto: ${mine}, ${toGo}. Shall I prepare a cirBTC buy of **${tok(amount)}** from your wallet for you to sign?`
     }
     return vi
-      ? `cirBTC là Bitcoin bạn có thể mua và giữ ngay trong app. Crypto: ${mine}, ${toGo}. Không ai biết đâu là đỉnh hay đáy, nên nếu bạn không theo dõi chart thì chia nhỏ ra mua đều mỗi tháng (DCA) an toàn hơn mua một lần: khoảng **${fmt(slice)}** mỗi tháng trong ${DCA_MONTHS} tháng, dựa vào đà tăng dài hạn chứ không đoán thời điểm. Mình chuẩn bị lần mua đầu **${fmt(slice)}** để bạn ký nhé? Nếu muốn mua một lần cả **${fmt(amount)}** thì cứ nói.` // lang-ok
-      : `cirBTC is Bitcoin you can buy and hold in this app. Crypto: ${mine}, ${toGo}. Nobody knows where the top or the bottom is, so unless you trade by the charts, spreading it into equal monthly buys (DCA) is safer than one big buy: about **${fmt(slice)}** a month for ${DCA_MONTHS} months, riding the long-term growth instead of guessing the moment. Shall I prepare the first buy of **${fmt(slice)}** for you to sign? If you prefer all **${fmt(amount)}** at once, just say so.`
+      ? `cirBTC là Bitcoin bạn có thể mua và giữ ngay trong app. Crypto: ${mine}, ${toGo}. Không ai biết đâu là đỉnh hay đáy, nên nếu bạn không theo dõi chart thì chia nhỏ ra mua đều mỗi tháng (DCA) an toàn hơn mua một lần: khoảng **${tok(slice)}** mỗi tháng trong ${DCA_MONTHS} tháng, dựa vào đà tăng dài hạn chứ không đoán thời điểm. Mình chuẩn bị lần mua đầu **${tok(slice)}** để bạn ký nhé? Nếu muốn mua một lần cả **${tok(amount)}** thì cứ nói.` // lang-ok
+      : `cirBTC is Bitcoin you can buy and hold in this app. Crypto: ${mine}, ${toGo}. Nobody knows where the top or the bottom is, so unless you trade by the charts, spreading it into equal monthly buys (DCA) is safer than one big buy: about **${tok(slice)}** a month for ${DCA_MONTHS} months, riding the long-term growth instead of guessing the moment. Shall I prepare the first buy of **${tok(slice)}** for you to sign? If you prefer all **${tok(amount)}** at once, just say so.`
   }
   if (part === 'safe') {
     return vi

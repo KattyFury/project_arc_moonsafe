@@ -110,9 +110,9 @@ expect(second.status === 200, 'step 2 succeeds')
 expect(second.calls === 0, `after the card the plan is built by the server: no model call (got ${second.calls})`)
 expect(/To invest the right way you need three things/.test(text) && /safe part of 31%/.test(text) && /takes risk, 69%/.test(text), 'the plan opens with the overview: what is needed and the safe / at-risk split')
 expect(/About airdrops: they arrive in bursts/.test(text), 'the plan explains that airdrops are not a stable job')
-for (const [what, re] of [['the fund', /Emergency fund: 450 USDC[^\n]*Why 3 months:/], ['Safety', /Safety 31%[^\n]*any time/], ['Traditional', /Traditional 3[45]%[^\n]*index funds/], ['Crypto', /Crypto 3[45]%[^\n]*BTC/]] as const) expect(re.test(text), `the plan says why for ${what}`)
+for (const [what, re] of [['the fund', /Emergency fund: \$450[^\n]*Why 3 months:/], ['Safety', /Safety 31%[^\n]*any time/], ['Traditional', /Traditional 3[45]%[^\n]*index funds/], ['Crypto', /Crypto 3[45]%[^\n]*BTC/]] as const) expect(re.test(text), `the plan says why for ${what}`)
 expect(/prepare a deposit of \*\*450 USDC\*\*/.test(text), 'the plan offers the deposit')
-expect(/3,950 USDC, after the emergency fund/.test(text), 'the plan is quoted on the money left after the fund (the wallet seen onchain is not added)')
+expect(/\$3,950, after the emergency fund/.test(text), 'the plan is quoted on the money left after the fund (the wallet seen onchain is not added)')
 
 // 2b. The same answer from someone whose emergency fund is ALREADY full: the overview still comes first, never a straight offer to buy.
 const full = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: crafted }, { role: 'user', content: event }], saved, 900)
@@ -187,19 +187,19 @@ expect(!/Safety or Traditional|Which (part|bucket)/i.test(yepText), 'full parts 
 const signed = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: firstText }, { role: 'user', content: '[app event] The user signed the card: Added 900 USDC to your emergency fund.' }], base, 900)
 const signedText = signed.body.content ?? ''
 console.log('\nstep 6b: model calls', signed.calls, '\n' + signedText)
-expect(signed.calls === 0 && /emergency fund is now 900 USDC of 900 USDC/.test(signedText) && /Only Crypto/.test(signedText) && !/Safety|Traditional/.test(signedText.split('Only Crypto')[1] ?? ''), 'after the deposit: the fund status, then only Crypto (the only part with room)')
+expect(signed.calls === 0 && /emergency fund is now \$900 of \$900/.test(signedText) && /Only Crypto/.test(signedText) && !/Safety|Traditional/.test(signedText.split('Only Crypto')[1] ?? ''), 'after the deposit: the fund status, then only Crypto (the only part with room)')
 
 // 6c. A saved amount (record box) is acknowledged, with the part it touched, then only the parts that have room.
 const rec = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: firstText }, { role: 'user', content: '[app event] The user confirmed recording: Recorded 500 USDC in Bank savings (Safety), from Binance.' }], base, 900)
 const recText = rec.body.content ?? ''
 console.log('\nstep 6c: model calls', rec.calls, '\n' + recText)
-expect(rec.calls === 0 && /^Saved\. Safety is now [\d,]+ USDC of [\d,]+ USDC/.test(recText) && /Only Crypto/.test(recText), 'after a saved amount: which part it touched, then only the part with room')
+expect(rec.calls === 0 && /^Saved\. Safety is now \$[\d,]+ of \$[\d,]+/.test(recText) && /Only Crypto/.test(recText), 'after a saved amount: which part it touched, then only the part with room')
 
 // 6d. Naming a part answers where it lives and what is left; Safety is outside the app.
 const safe = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: firstText }, { role: 'user', content: '[app event] The user signed the card: Added 900 USDC to your emergency fund.' }, { role: 'assistant', content: 'Which part would you like to fill first: Safety (300 USDC of 840 USDC) or Crypto (0 USDC of 1,354 USDC)?' }, { role: 'user', content: 'How about the "safe" part' }], { ...base, holdings: base.holdings.map(h => h.id === 'h2' ? { ...h, value: 300 } : h) }, 900)
 const safeText = safe.body.content ?? ''
 console.log('\nstep 6d: model calls', safe.calls, '\n' + safeText)
-expect(safe.calls === 0 && /Safety lives outside the app/.test(safeText) && /You have 300 USDC of/.test(safeText), 'naming Safety explains it lives outside the app, with the totals')
+expect(safe.calls === 0 && /Safety lives outside the app/.test(safeText) && /You have \$300 of/.test(safeText), 'naming Safety explains it lives outside the app, with the totals')
 
 
 // 7. The admin page's API: who may call it, what it changes, and that it never shows a secret.

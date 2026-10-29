@@ -444,11 +444,11 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   if (Math.abs((s500.left - s1000.left) - 500) > 0.01) fail(`Safety left must fall by exactly the 500 added (${s500.left} -> ${s1000.left})`)
   if (Math.abs(s500.target - (4000 + (s500.rest ?? 0))) > 0.01 || s500.goal !== 4000) fail('Safety target = goal + its share of the rest')
   const plan = buildPlan({ p: goalP(500), b: bal(goalP(500), 600), shares: [21, 45, 34], cover: null, vi: false })!
-  if (!/Near-term goal: Marriage 4,000 USDC/.test(plan) || !/your 4,000 USDC goal \+ 21% of the rest/.test(plan)) fail('plan: the near-term goal is explained and added to the Safety target')
-  if (!/You have 500 USDC of [\d,]+ USDC; [\d,]+ USDC to go/.test(plan)) fail('plan: Safety shows what they have of the total and what is left')
+  if (!/Near-term goal: Marriage \$4,000/.test(plan) || !/your \$4,000 goal \+ 21% of the rest/.test(plan)) fail('plan: the near-term goal is explained and added to the Safety target')
+  if (!/You have \$500 of \$[\d,]+; \$[\d,]+ to go/.test(plan)) fail('plan: Safety shows what they have of the total and what is left')
   if (!/As a rule: 3 months when income is steady/.test(plan) || !/Why 6 months/.test(plan)) fail('plan: the months are explained (the scale and why this number)')
   const st = buildStanding({ p: goalP(1000, 1500), b: bal(goalP(1000, 1500), 600), vi: false })!
-  if (!/Emergency fund:\*\* 600 USDC of 600 USDC \(6 months of spending\), full/.test(st) || !/\*\*Safety:\*\* 1,000 USDC of [\d,]+ USDC, [\d,]+ USDC to go \(Bank savings 1,000 USDC; target = goal 4,000 USDC/.test(st)) fail(`standing: the emergency fund and Safety are separate lines with totals\n${st}`)
+  if (!/Emergency fund:\*\* \$600 of \$600 \(6 months of spending\), full/.test(st) || !/\*\*Safety:\*\* \$1,000 of \$[\d,]+, \$[\d,]+ to go \(Bank savings \$1,000; target = goal \$4,000/.test(st)) fail(`standing: the emergency fund and Safety are separate lines with totals\n${st}`)
   if (/Safety[^\n]*months of spending/.test(st)) fail('standing: Safety never carries months')
 }
 
@@ -468,10 +468,10 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
     { key: 'traditional' as const, name: 'Traditional' as const, share: 45, have: 2000, target: 1800, left: 0, full: true },
     { key: 'crypto' as const, name: 'Crypto' as const, share: 34, have: 0, target: 1354, left: 1354, full: false },
   ]
-  if (!/^Only Crypto \(0 USDC of 1,354 USDC\) still has room/.test(pickQuestion(rows, false))) fail('pick: only the part with room is named')
+  if (!/^Only Crypto \(\$0 of \$1,354\) still has room/.test(pickQuestion(rows, false))) fail('pick: only the part with room is named')
   if (/Safety|Traditional/.test(pickQuestion(rows, false))) fail('pick: full parts are never named')
   if (!/All three parts are at their targets/.test(pickQuestion(rows.map(r => ({ ...r, left: 0, full: true })), false))) fail('pick: all full')
-  if (!/Which part would you like to fill first: Safety \(300 USDC of 840 USDC\) or Crypto/.test(pickQuestion([{ ...rows[0], have: 300, left: 540, full: false }, rows[1], rows[2]], false))) fail('pick: two parts with room, each as "X of Y"')
+  if (!/Which part would you like to fill first: Safety \(\$300 of \$840\) or Crypto/.test(pickQuestion([{ ...rows[0], have: 300, left: 540, full: false }, rows[1], rows[2]], false))) fail('pick: two parts with room, each as "X of Y"')
 }
 
 // 12. Small plans (real chat 2026-10-29): Crypto 0 of 0.43 USDC was called "full" because "full" meant "less than 0.5 USDC left".

@@ -68,7 +68,7 @@ export function parseAmount(text: string): number | null {
 /** A confirm item: a line of text and the operations that save it. */
 export interface FormItem { text: string; ops: ProfileOp[] }
 
-const usd = (n: number) => `${new Intl.NumberFormat('en-US', { maximumFractionDigits: n >= 100 ? 0 : 2 }).format(n)} USDC`
+const usd = (n: number) => `$${new Intl.NumberFormat('en-US', { maximumFractionDigits: n >= 100 ? 0 : 2 }).format(n)}`
 
 /**
  * The items a filled form stands for, in the order they are shown. Market-priced things (BTC, gold) are stored as a quantity at
@@ -121,8 +121,8 @@ export function formToItems(v: FormValues, prices: Prices | null, now = Date.now
       { op: 'update_profile', fields: { nearGoal: { name, amount: goalAmount, currency: 'USDC', years: years !== null && years <= 5 ? years : null } } })
   }
 
-  holding('stable_wallet', 'USDC in this wallet', parseAmount(v.usdcThis), { where: 'app wallet' })
-  holding('stable_wallet', 'USDC or USDT elsewhere', parseAmount(v.usdcElsewhere), { where: 'other wallets and exchanges' })
+  holding('stable_wallet', 'Stablecoins in this wallet', parseAmount(v.usdcThis), { where: 'app wallet' })
+  holding('stable_wallet', 'Stablecoins elsewhere', parseAmount(v.usdcElsewhere), { where: 'other wallets and exchanges' })
   holding('savings', 'Bank savings', parseAmount(v.bank))
   holding('cash', 'Cash', parseAmount(v.cash))
   priced('btc', 'Bitcoin', 'BTC', parseAmount(v.btc), prices?.usd['crypto:BTC'])

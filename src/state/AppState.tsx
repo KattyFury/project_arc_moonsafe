@@ -14,7 +14,7 @@ import { useExchangeRateState, vndToUsdc6, usdc6ToVnd, type FxState } from '@/ho
 import { useCirBtcState, type CirBtcState } from '@/hooks/useCirBtc'
 import { usePricesState, type PricesState } from '@/hooks/usePrices'
 import { computeBalance, type Balance } from '@/lib/allocation'
-import { DASH, formatUsdc, formatVnd } from '@/lib/format'
+import { DASH, formatUsd, formatVnd } from '@/lib/format'
 import type { ChatMessage } from '@/types'
 
 export type Unit = 'VND' | 'USD'
@@ -152,14 +152,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   const money = useCallback((u: bigint | null | undefined) => {
     if (u === null || u === undefined) return DASH
-    if (unit === 'USD') return formatUsdc(u)
+    if (unit === 'USD') return formatUsd(u)
     return rate ? formatVnd(usdc6ToVnd(u, rate)) : DASH
   }, [unit, rate])
 
   const moneyFromVnd = useCallback((vnd: number | null | undefined) => {
     if (vnd === null || vnd === undefined) return DASH
     if (unit === 'VND') return formatVnd(vnd)
-    return rate ? formatUsdc(vndToUsdc6(vnd, rate)) : DASH
+    return rate ? formatUsd(vndToUsdc6(vnd, rate)) : DASH
   }, [unit, rate])
 
   const prices = usePricesState(profile.profile?.holdings)

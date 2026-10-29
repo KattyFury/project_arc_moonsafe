@@ -232,7 +232,7 @@ export function walletMoveOps(p: FinancialProfile | null, deltaUsd: number, now 
   const cents = (n: number) => Math.round(n * 100) / 100
   if (h) return [{ op: 'set_holding', id: h.id, patch: { value: Math.max(0, cents((h.value ?? 0) + deltaUsd)) } }]
   if (deltaUsd < 0) return []
-  return [{ op: 'add_holding', holding: { id: newId('h'), type: 'stable_wallet', name: 'USDC in this wallet', where: 'app wallet', value: cents(deltaUsd), currency: 'USDC', priceSource: 'self', rebalanceable: defaultRebalanceable('stable_wallet'), updatedAt: now } }]
+  return [{ op: 'add_holding', holding: { id: newId('h'), type: 'stable_wallet', name: 'Stablecoins in this wallet', where: 'app wallet', value: cents(deltaUsd), currency: 'USDC', priceSource: 'self', rebalanceable: defaultRebalanceable('stable_wallet'), updatedAt: now } }]
 }
 
 export type ProfileOp =

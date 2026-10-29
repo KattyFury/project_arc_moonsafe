@@ -306,6 +306,7 @@ ${RULES}
 ## Actions and recording
 ${DCA_AVAILABLE ? '' : '- AUTOMATIC recurring buys in the app are NOT available yet: never say the app will buy for them on a schedule, never set it up. DCA as a WAY OF BUYING is still your advice (next rule): they buy the monthly amount themselves (cirBTC in this app with a card each time, stocks or gold at their broker).\n'}- How to buy (Hieu, 2026-10-29): nobody knows where the top or the bottom is; one big buy right before a fall hurts (think stocks at a peak while interest rates stay high). So when they do not know how or when to buy, or worry about timing, recommend DCA: the same amount every month, for example over 6 months, which trusts the long-term growth that stocks and Bitcoin have shown over decades instead of guessing the moment. If they say they read charts or trade, respect their way and help with the amount; never push DCA on them.
 - They said no to an offer (a deposit, a buy, a withdrawal) → respect it: do not offer it again or push it in later replies until THEY bring it up; answer what they ask.
+- Money (Hieu, 2026-10-29): write values in dollars with a $ sign ($500, $0.43): savings, cash, gold, stocks, crypto value, targets, totals, spending, income. Write "USDC" only for the token that moves onchain: a deposit into or a withdrawal from the emergency fund, the amount paid for cirBTC, the vault fee. USDC, USDT and other dollar coins together are "stablecoins".
 - Only describe what the "Actions just taken" note lists. Cards (add to the fund, withdraw, buy cirBTC, DCA) are confirmation CARDS the user signs: never say deposited / bought / done. To offer one: "Would you like me to prepare … for you to sign?".
 - Something recorded → start with the read-back from the notes, then (TEACH mode only) one sentence on what the new number means for them, then end with "Right?" (that is your one question). When a "Next question" is given, ask it instead of "Right?" (with why you ask). Never mention what they said before or that it changed.
 - The Balance and Invest tabs open step by step: Balance once the emergency fund is full, Invest once buying is open too (fund full, no priority debt). Before that, never send them to those tabs; give the numbers in chat.
@@ -507,7 +508,10 @@ async function vndPerUsd(): Promise<number | null> {
   }
 }
 
+/** The token the user signs for (deposits, cirBTC buys): what the wallet shows. */
 const usdc = (n: number) => `${new Intl.NumberFormat('en-US', { maximumFractionDigits: Math.abs(n) >= 100 ? 0 : 2 }).format(n)} USDC`
+/** A value in dollars (Hieu, 2026-10-29): savings, gold, stocks, targets, totals. */
+const dollars = (n: number) => `${n < 0 ? '-' : ''}$${new Intl.NumberFormat('en-US', { maximumFractionDigits: Math.abs(n) >= 100 ? 0 : 2 }).format(Math.abs(n))}`
 const vnd = (n: number) => n >= 1_000_000
   ? `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(n / 1_000_000)}M VND`
   : `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(n)} VND`
@@ -561,7 +565,7 @@ function listing(p: FinancialProfile, b: Balance, prices: Prices | null, rate: n
  */
 function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: number, rate: number | null, usesVnd: boolean, surplusDca: boolean): { text: string; floors: { months: number; texts: string[] }[]; cover: number | null } {
   let cover: number | null = null
-  const show = (n: number) => usesVnd && rate ? `${usdc(n)} (≈ ${vnd(n * rate)})` : usdc(n)
+  const show = (n: number) => usesVnd && rate ? `${dollars(n)} (≈ ${vnd(n * rate)})` : dollars(n)
   const lines: string[] = []
   const floors: { months: number; texts: string[] }[] = []
   // Rounded down to whole USDC: 2,300.58 shown as "2,301" was offered as a deposit above the wallet (real chat 2026-10-26).

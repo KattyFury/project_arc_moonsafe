@@ -9,7 +9,7 @@ import { explorerTx } from '@/lib/network'
 import { GAS_ESTIMATE_USDC6, GAS_RESERVE_USDC6, txErrorMessage } from '@/hooks/useVault'
 import { toAppKitAmount } from '@/hooks/useCirBtc'
 import { overTargetWarning, spendable } from '@/lib/invest'
-import { formatUsdc } from '@/lib/format'
+import { formatUsdc, formatUsd } from '@/lib/format'
 import { Btn, GlassCard, IconBox, Notice } from '@/components/ui/kit'
 
 export type ChatAction =
@@ -49,7 +49,7 @@ export function ActionCard({ action, title, onFinished }: { action: ChatAction; 
     if (vb !== null && amount > vb) block = `More than the emergency fund holds (${formatUsdc(vb)}).`
     else if (wb !== null && wb < GAS_ESTIMATE_USDC6) block = `The wallet needs about ${formatUsdc(GAS_ESTIMATE_USDC6)} to pay the withdrawal fee.`
     else if (math.floorUsdc !== null && vb !== null && vb - amount < math.floorUsdc) {
-      warnings.push(`After this, the emergency fund holds ${formatUsdc(vb - amount)}, below the ${math.floorMonths}-month floor (${formatUsdc(math.floorUsdc)}). cirBTC buying locks until you top it back up.`)
+      warnings.push(`After this, the emergency fund holds ${formatUsdc(vb - amount)}, below the ${math.floorMonths}-month floor (${formatUsd(math.floorUsdc)}). cirBTC buying locks until you top it back up.`)
     }
   } else {
     if (!math.investUnlocked) block = balance.lock.text

@@ -28,6 +28,13 @@ export function formatUsdc(units: bigint | null | undefined, maxFrac = 2): strin
   return `${formatUsdcNumber(units, maxFrac)} USDC`
 }
 
+/** A value in dollars: 6-decimal units → "$3,200.5". For the token that moves onchain use formatUsdc. */
+export function formatUsd(units: bigint | null | undefined, maxFrac = 2): string {
+  if (units === null || units === undefined) return DASH
+  const s = formatUsdcNumber(units, maxFrac)
+  return s.startsWith('-') ? `-$${s.slice(1)}` : `$${s}`
+}
+
 export function formatVnd(vnd: number | null | undefined): string {
   if (vnd === null || vnd === undefined || !Number.isFinite(vnd)) return DASH
   return `${nf(0).format(Math.round(vnd))} ₫`

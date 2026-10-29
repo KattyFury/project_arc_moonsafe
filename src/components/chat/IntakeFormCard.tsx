@@ -24,10 +24,11 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 
 const BOX = 'h-12 flex items-center gap-2 px-4 rounded-2xl border border-[var(--line)] focus-within:border-[var(--accent)] focus-within:shadow-[inset_0_0_0_1px_var(--accent)]'
 
-function Num({ label, hint, value, onChange, suffix = 'USDC' }: { label: string; hint?: string; value: string; onChange: (v: string) => void; suffix?: string }) {
+function Num({ label, hint, value, onChange, suffix = '', money = true }: { label: string; hint?: string; value: string; onChange: (v: string) => void; suffix?: string; money?: boolean }) {
   return (
     <Field label={label} hint={hint}>
       <div className={BOX} style={{ background: 'var(--surface-muted)' }}>
+        {money && <span className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--subtle)' }}>$</span>}
         <input inputMode="decimal" value={value} placeholder="0" aria-label={label}
           onChange={e => onChange(e.target.value.replace(/[^0-9.,kKmM$ ]/g, '').slice(0, 14))}
           className="flex-1 min-w-0 bg-transparent text-[16px] leading-6 tabular-nums outline-none placeholder:text-[var(--muted)]" style={{ color: 'var(--ink)' }} />
@@ -83,7 +84,7 @@ export function IntakeFormCard({ keys, seen, values, status, saved, prices, onCh
   // From 640px wide the fields sit two to a row (debt: three), so a card stays short on a laptop (Hieu, 2026-10-29).
   if (has('age') || has('income') || has('spending')) step('you', 'About you', ['age', 'salary', 'spending'], (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      {has('age') && <Num label="Your age" value={values.age} onChange={set('age')} suffix="" />}
+      {has('age') && <Num label="Your age" value={values.age} onChange={set('age')} money={false} />}
       {has('income') && <Num label="Salary a month" value={values.salary} onChange={set('salary')} />}
       {has('spending') && <div className="sm:col-span-2"><Num label="Spending a month (an estimate is fine)" value={values.spending} onChange={set('spending')} /></div>}
     </div>
@@ -97,8 +98,8 @@ export function IntakeFormCard({ keys, seen, values, status, saved, prices, onCh
   if (has('assets')) {
     step('cash', 'Cash and stablecoins', ['usdcThis', 'usdcElsewhere', 'bank'], (
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Num label="USDC in this wallet" hint={seenText} value={values.usdcThis} onChange={set('usdcThis')} />
-        <Num label="USDC or USDT elsewhere" value={values.usdcElsewhere} onChange={set('usdcElsewhere')} />
+        <Num label="Stablecoins in this wallet" hint={seenText} value={values.usdcThis} onChange={set('usdcThis')} />
+        <Num label="Stablecoins elsewhere" value={values.usdcElsewhere} onChange={set('usdcElsewhere')} />
         <Num label="Bank savings and cash" value={values.bank} onChange={set('bank')} />
       </div>
     ))
@@ -116,7 +117,7 @@ export function IntakeFormCard({ keys, seen, values, status, saved, prices, onCh
     {values.goal === 'yes' && (
       <div className="grid grid-cols-2 gap-4">
         <Num label="How much?" value={values.goalAmount} onChange={set('goalAmount')} />
-        <Num label="In how many years?" value={values.goalYears} onChange={set('goalYears')} suffix="" />
+        <Num label="In how many years?" value={values.goalYears} onChange={set('goalYears')} money={false} />
       </div>
     )}
   </>)
@@ -125,7 +126,7 @@ export function IntakeFormCard({ keys, seen, values, status, saved, prices, onCh
     {values.debt === 'yes' && (
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <div className="col-span-2 sm:col-span-1"><Num label="Total you still owe" value={values.debtOwed} onChange={set('debtOwed')} /></div>
-        <Num label="Interest a year" value={values.debtRate} onChange={set('debtRate')} suffix="%" />
+        <Num label="Interest a year" value={values.debtRate} onChange={set('debtRate')} suffix="%" money={false} />
         <Num label="You pay a month" value={values.debtMonthly} onChange={set('debtMonthly')} />
       </div>
     )}
