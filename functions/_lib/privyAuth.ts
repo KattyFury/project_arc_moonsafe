@@ -18,7 +18,7 @@ export async function privyUserId(request: Request, env: { PRIVY_APP_ID?: string
   const appId = env.PRIVY_APP_ID ?? DEFAULT_APP_ID
   jwks ??= createRemoteJWKSet(new URL(`https://auth.privy.io/api/v1/apps/${appId}/jwks.json`))
   try {
-    const { payload } = await jwtVerify(token, jwks, { issuer: 'privy.io', audience: appId })
+    const { payload } = await jwtVerify(token, jwks, { issuer: 'privy.io', audience: appId, algorithms: ['ES256'], requiredClaims: ['exp'] })
     return typeof payload.sub === 'string' && payload.sub ? payload.sub : null
   } catch {
     return null
