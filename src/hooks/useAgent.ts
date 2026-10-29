@@ -21,7 +21,7 @@ export const WELCOME_BACK = 'Welcome back! I still have the finances you shared,
 
 export const WELCOME: ChatMessage = {
   role: 'assistant',
-  content: 'Hi! I am MoonSafe\u2019s personal finance advisor.\n\nWe go step by step: get clear on your cash flow, build an **emergency fund** in USDC for the unexpected, then invest.\n\nNo forms to fill in. Share as much as you like and I will advise from there. Where would you like to start: spending, saving or investing?',
+  content: 'Hi! I am MoonSafe, your **personal finance advisor** for Web3.\n\nI help you **understand where your money goes**, keep a **safety net** for bad months, and **invest in balance** across stocks, gold and crypto, with the reason behind every step.\n\nShare as much as you like and I will advise from there. Where would you like to start: spending, saving or investing?',
   timestamp: 0,
 }
 

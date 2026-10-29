@@ -67,7 +67,7 @@ export const param = (name: string): number => {
 
 export type MixKey = 'safe' | 'traditional' | 'btc' | 'large_cap' | 'altcoin'
 
-/** Target shares in % of liquid assets (spec 4): safe = age; the rest 4/7 traditional, 3/7 crypto as one bucket, all of it BTC (framework v2: no big-cap / low-cap target). */
+/** Target shares in % of liquid assets (spec 4): safe = age; the rest split evenly, traditional and crypto as one bucket (Hieu, 2026-10-29), all of it BTC (framework v2: no big-cap / low-cap target). */
 export function targetMix(age: number): Record<MixKey, number> {
   const a = Math.min(param('age_max'), Math.max(param('age_min'), age))
   const r = 100 - a

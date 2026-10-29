@@ -15,12 +15,12 @@ import { EMPTY_PROFILE, type Debt, type FinancialProfile, type Holding } from '.
 let fails = 0
 const fail = (m: string) => { fails++; console.log('FAIL', m) }
 
-// 1. Age formula vs the spec 4 table (rounded to 0.1 there). Framework v2 (2026-10-27): crypto is one
+// 1. Age formula: Safety = age, the rest split evenly between Traditional and Crypto (Hieu, 2026-10-29). Crypto is one
 // bucket, all of its target in BTC; big caps and low caps have no target.
 const TABLE: Record<number, number[]> = {
-  18: [18, 46.9, 35.1, 0, 0], 20: [20, 45.7, 34.3, 0, 0], 25: [25, 42.9, 32.1, 0, 0], 30: [30, 40, 30, 0, 0],
-  35: [35, 37.1, 27.9, 0, 0], 40: [40, 34.3, 25.7, 0, 0], 45: [45, 31.4, 23.6, 0, 0], 50: [50, 28.6, 21.4, 0, 0],
-  55: [55, 25.7, 19.3, 0, 0], 60: [60, 22.9, 17.1, 0, 0], 65: [65, 20, 15, 0, 0], 70: [70, 17.1, 12.9, 0, 0],
+  18: [18, 41, 41, 0, 0], 20: [20, 40, 40, 0, 0], 25: [25, 37.5, 37.5, 0, 0], 30: [30, 35, 35, 0, 0],
+  35: [35, 32.5, 32.5, 0, 0], 40: [40, 30, 30, 0, 0], 45: [45, 27.5, 27.5, 0, 0], 50: [50, 25, 25, 0, 0],
+  55: [55, 22.5, 22.5, 0, 0], 60: [60, 20, 20, 0, 0], 65: [65, 17.5, 17.5, 0, 0], 70: [70, 15, 15, 0, 0],
 }
 for (const [age, want] of Object.entries(TABLE)) {
   const m = targetMix(Number(age))
@@ -195,7 +195,7 @@ for (const r of reals) {
 const shortB = computeBalance({ profile: healthy, walletUsd: 0, vaultUsd: 1000, cirBtcUsd: 0, prices, vndPerUsd: 25000 })
 if (!/add 3,500 USDC to the emergency fund/.test(shortB.lock.text)) fail(`lock text must say the exact gap: ${shortB.lock.text}`)
 const declined = computeBalance({ profile: { ...healthy, age: null, ageDeclined: true }, walletUsd: 0, vaultUsd: 0, cirBtcUsd: 0, prices, vndPerUsd: 25000 })
-if (Math.abs((declined.target?.btc ?? 0) - 30) > 1e-9 || !declined.ageIsDefault) fail('declined age must use the age-30 split (crypto 30%, as BTC)')
+if (Math.abs((declined.target?.btc ?? 0) - 35) > 1e-9 || !declined.ageIsDefault) fail('declined age must use the age-30 split (crypto 35%, as BTC)')
 const realBrief = patternBrief(matchPatterns(computeFacts({ balance: shortB, profile: healthy, prices, vndPerUsd: 25000, now: NOW })), displayFacts(computeFacts({ balance: shortB, profile: healthy, prices, vndPerUsd: 25000, now: NOW })))
 if (/\{\w+\}/.test(realBrief)) fail(`placeholder left in the brief: ${realBrief}`)
 console.log(`\nReal brief, fund short:\n${realBrief}`)
@@ -404,9 +404,9 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   const btcItems = formToItems({ ...EMPTY_FORM, btc: '1000' }, { goldUsdPerOz: null, usd: { 'crypto:BTC': 100000 } })
   if (Math.abs((btcItems[0]?.ops[0] as { holding?: { quantity?: number } }).holding?.quantity ?? 0) < 0.00999 || btcItems.length !== 1) fail('form: Bitcoin is stored as a quantity at today\'s price')
   // The plan says WHY for every step, and offers the exact deposit with the wording the "yes" is matched on.
-  const shares: [number, number, number] = [31, 39, 30]
+  const shares: [number, number, number] = [31, 35, 34]
   const plan = buildPlan({ p: base, b: bal(base, 1900, 0), shares, cover: 450, vi: false })!
-  for (const [what, re] of [['fund', /Why 3 months: your income is steady/], ['safety', /Safety 31%[^\n]*any time/], ['traditional', /Traditional 39%[^\n]*stocks and index funds/], ['crypto', /Crypto 30%[^\n]*BTC[^\n]*half/]] as const) if (!re.test(plan)) fail(`plan: the reason for the ${what} is missing`)
+  for (const [what, re] of [['fund', /Why 3 months: your income is steady/], ['safety', /Safety 31%[^\n]*any time/], ['traditional', /Traditional 3[45]%[^\n]*stocks and index funds/], ['crypto', /Crypto 3[45]%[^\n]*BTC[^\n]*half/]] as const) if (!re.test(plan)) fail(`plan: the reason for the ${what} is missing`)
   if (!/prepare a deposit of \*\*450 USDC\*\* from your wallet for you to sign/.test(plan)) fail('plan: the deposit offer wording')
   // The numbers quoted before the deposit are the numbers after it (the goalposts do not move).
   const safeInPlan = Number(/Safety 31% = ([\d,]+) USDC/.exec(plan)?.[1].replace(/,/g, ''))

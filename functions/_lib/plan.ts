@@ -37,12 +37,12 @@ const WHY = {
     vi: 'tiền bạn lấy ra được bất cứ lúc nào (tiết kiệm ngân hàng hoặc earn linh hoạt). Nó giúp một tháng xấu hay một khoản sửa chữa không bao giờ buộc bạn phải bán đầu tư.', // lang-ok
   },
   traditional: {
-    en: 'stocks and index funds (for example VOO) and gold. They have grown steadily over the long run and soften the swings of crypto.',
-    vi: 'cổ phiếu, quỹ chỉ số (ví dụ VOO) và vàng. Chúng tăng đều theo thời gian dài và làm dịu những cú biến động của crypto.', // lang-ok
+    en: 'stocks and index funds (for example VOO) and gold. They have grown steadily over the long run.',
+    vi: 'cổ phiếu, quỹ chỉ số (ví dụ VOO) và vàng. Chúng tăng đều theo thời gian dài.', // lang-ok
   },
   crypto: {
-    en: 'mostly BTC, the long-term reserve asset for people who live in Web3. It can fall by about half along the way, which is exactly why it is capped at its share and sits after the safer steps.',
-    vi: 'chủ yếu là BTC, tài sản dự trữ dài hạn của người sống trong Web3. Nó có thể giảm khoảng một nửa trên đường đi, vì vậy chỉ giữ ở tỷ lệ này và đứng sau các bước an toàn hơn.', // lang-ok
+    en: 'mostly BTC, the long-term reserve asset for people who live in Web3. It can fall by about half along the way, which is why it stays at its share.',
+    vi: 'chủ yếu là BTC, tài sản dự trữ dài hạn của người sống trong Web3. Nó có thể giảm khoảng một nửa trên đường đi, vì vậy chỉ giữ ở tỷ lệ này.', // lang-ok
   },
 }
 
@@ -93,7 +93,7 @@ export function buildPlan({ p, b, shares, cover, vi }: PlanInput): string | null
   const safeTarget = goal ? (vi ? `mục tiêu ${fmt(b.goalUsd)} + ${sSafe}% của phần còn lại (${fmt(safe.rest ?? 0)})` : `your ${fmt(b.goalUsd)} goal + ${sSafe}% of the rest (${fmt(safe.rest ?? 0)})`) : null // lang-ok
   const lines = vi
     ? [ // lang-ok
-      `Để đầu tư đúng cách, bạn cần ba việc theo thứ tự: trước hết là **quỹ dự phòng**; sau đó chia số tiền linh hoạt còn lại thành phần **an toàn ${sSafe}%** và phần **chấp nhận rủi ro ${risk}%** (phần an toàn bằng tuổi của bạn, ${age}${est ? ', ước tính' : ''}, vì bạn càng trẻ càng có thời gian gánh rủi ro); và trong phần rủi ro đó, lý tưởng là **Traditional ${sTrad}%** và **Crypto ${sCrypto}%**.`, // lang-ok
+      `Để đầu tư đúng cách, bạn cần ba việc theo thứ tự: trước hết là **quỹ dự phòng**; sau đó chia số tiền linh hoạt còn lại thành phần **an toàn ${sSafe}%** và phần **chấp nhận rủi ro ${risk}%** (phần an toàn bằng tuổi của bạn, ${age}${est ? ', ước tính' : ''}, vì bạn càng trẻ càng có thời gian gánh rủi ro); và trong phần rủi ro đó, chia cân bằng **Traditional ${sTrad}%** và **Crypto ${sCrypto}%**: crypto sập thì Traditional đỡ, cổ phiếu và vàng giảm thì crypto đỡ, cả hai cùng giảm thì vẫn còn quỹ dự phòng và phần an toàn. Đây là gợi ý khách quan, không nghiêng về bên nào.`, // lang-ok
       `1. **Quỹ dự phòng: ${fmt(b.fund.floorUsd)}** (${b.fund.floorMonths} tháng chi tiêu). Vì sao ${b.fund.floorMonths} tháng: ${fundWhy(p, b.fund.floorMonths, true)}. ${SCALE.vi} Hiện có ${fmt(vault)}.`, // lang-ok
       ...(goalLine ? [goalLine] : []),
       `Sau khi quỹ đủ, bạn có thể cân nhắc chia số tiền linh hoạt (${fmt(toDivide)}${toFund > 0 ? ', sau khi nạp quỹ' : ''}${goal ? ', chưa tính mục tiêu gần' : ''}) như sau:`, // lang-ok
@@ -104,7 +104,7 @@ export function buildPlan({ p, b, shares, cover, vi }: PlanInput): string | null
       ask,
     ]
     : [
-      `To invest the right way you need three things, in this order: first an **emergency fund**; then your other liquid money split into a **safe part of ${sSafe}%** and a part that **takes risk, ${risk}%** (the safe share equals your age, ${age}${est ? ', an estimate' : ''}, because the younger you are the more time you have to ride out risk); and inside the risky part, the ideal is **Traditional ${sTrad}%** and **Crypto ${sCrypto}%**.`,
+      `To invest the right way you need three things, in this order: first an **emergency fund**; then your other liquid money split into a **safe part of ${sSafe}%** and a part that **takes risk, ${risk}%** (the safe share equals your age, ${age}${est ? ', an estimate' : ''}, because the younger you are the more time you have to ride out risk); and inside the risky part, a balanced **Traditional ${sTrad}%** and **Crypto ${sCrypto}%**: if crypto crashes, Traditional carries you; if stocks and gold fall, crypto can; if both fall, your emergency fund and Safety still stand. This is an objective suggestion, not a bet on either side.`,
       `1. **Emergency fund: ${fmt(b.fund.floorUsd)}** (${b.fund.floorMonths} months of spending). Why ${b.fund.floorMonths} months: ${fundWhy(p, b.fund.floorMonths, false)}. ${SCALE.en} You have ${fmt(vault)} in it.`,
       ...(goalLine ? [goalLine] : []),
       `Once it is full, you could consider dividing your liquid money (${fmt(toDivide)}${toFund > 0 ? ', after the emergency fund' : ''}${goal ? ', not counting the goal' : ''}) like this:`,

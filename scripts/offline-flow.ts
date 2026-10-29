@@ -110,7 +110,7 @@ expect(second.status === 200, 'step 2 succeeds')
 expect(second.calls === 0, `after the card the plan is built by the server: no model call (got ${second.calls})`)
 expect(/To invest the right way you need three things/.test(text) && /safe part of 31%/.test(text) && /takes risk, 69%/.test(text), 'the plan opens with the overview: what is needed and the safe / at-risk split')
 expect(/About airdrops: they arrive in bursts/.test(text), 'the plan explains that airdrops are not a stable job')
-for (const [what, re] of [['the fund', /Emergency fund: 450 USDC[^\n]*Why 3 months:/], ['Safety', /Safety 31%[^\n]*any time/], ['Traditional', /Traditional 39%[^\n]*index funds/], ['Crypto', /Crypto 30%[^\n]*BTC/]] as const) expect(re.test(text), `the plan says why for ${what}`)
+for (const [what, re] of [['the fund', /Emergency fund: 450 USDC[^\n]*Why 3 months:/], ['Safety', /Safety 31%[^\n]*any time/], ['Traditional', /Traditional 3[45]%[^\n]*index funds/], ['Crypto', /Crypto 3[45]%[^\n]*BTC/]] as const) expect(re.test(text), `the plan says why for ${what}`)
 expect(/prepare a deposit of \*\*450 USDC\*\*/.test(text), 'the plan offers the deposit')
 expect(/3,950 USDC, after the emergency fund/.test(text), 'the plan is quoted on the money left after the fund (the wallet seen onchain is not added)')
 

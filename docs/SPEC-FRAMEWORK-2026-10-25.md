@@ -1,5 +1,8 @@
 # MoonSafe: Spec chốt (framework phân bổ, dòng tiền, tool của agent)
 
+> **Cập nhật 2026-10-29 (Hiếu):** phần còn lại r = 100 − tuổi chia ĐỀU: Truyền thống = r/2, Crypto = r/2 (crypto sập thì truyền thống đỡ, truyền thống giảm thì crypto đỡ, cả hai cùng giảm vẫn còn quỹ dự phòng + Safety). Mọi chỗ 4/7 – 3/7 bên dưới đã cũ.
+
+
 > Ngày chốt: 2026-10-25. File này thay thế file câu hỏi `MoonSafe-spec-framework-2026-10-25.md`.
 > Claude Code build đúng theo file này, không tự đoán. Chỗ nào thiếu hoặc mâu thuẫn thì hỏi lại Hiếu, không tự ngoại suy.
 >

@@ -67,7 +67,7 @@ const json = (body: unknown, status = 200) =>
 const RULES = `## MoonSafe principles
 ${KB.principles.map(p => `- ${p}`).join('\n')}
 ## Framework (by age, only age changes it)
-- Three buckets of the money to divide (liquid assets, minus money for a near-term goal): Safety = age %; the rest 4/7 Traditional (stocks, index funds, gold) and 3/7 Crypto as ONE bucket, mostly BTC (say it in words; no share for other coins, never suggest buying small coins or memecoins). Age 30: Safety 30, Traditional 40, Crypto 30. BTC never goes to 0. Coins they already hold just count in Crypto.
+- Three buckets of the money to divide (liquid assets, minus money for a near-term goal): Safety = age %; the rest split EVENLY between Traditional (stocks, index funds, gold) and Crypto as ONE bucket, mostly BTC (say it in words; no share for other coins, never suggest buying small coins or memecoins). Age 30: Safety 30, Traditional 35, Crypto 35. Why even: if crypto crashes, Traditional can carry them; if stocks and gold fall, crypto can; if both fall, the emergency fund and Safety still stand. It is an objective, balanced suggestion, not a bet on either side: never argue that one deserves more. BTC never goes to 0. Coins they already hold just count in Crypto.
 - Money for a big expense within 5 years (car, wedding, school) stays in Safety, never invested.
 - They said they could not hold through a 50% crypto drop → you may suggest a smaller Crypto part for now (their call); never change the numbers yourself.
 - The emergency fund (USDC in the MoonSafe vault) stands apart. Floor in months of spending (fixed + essential variable + debt payments): 3 stable income; 6 stable with dependents or irregular without; 9 irregular with dependents; 12 if also the sole earner.
