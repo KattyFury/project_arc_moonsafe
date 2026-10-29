@@ -1,5 +1,10 @@
 # MoonSafe — HANDOFF
 
+## Agent coaching extension — 2026-10-29 (review branch)
+
+Branch `codex/finance-coach-depth` extends the existing framework rather than replacing it. Allocation math, cost basis, emergency-fund floors, priority-debt rules, buy locks and signature requirements are unchanged. Adds loss/FOMO/fraud guidance, conservative numeric evidence filtering, and five reviewed bilingual lessons (10 total). See `docs/evals/coaching-2026-10-29.md` for evidence and limits. `bun run eval:education` is offline; `--live --coaching` is opt-in with the existing 12-call/100k-token cap. No database, contract, wallet or deployment changes. Merge/deploy only when requested.
+
+
 Agent tư vấn tài chính cá nhân cho người dùng Web3 + quỹ dự phòng USDC onchain, chạy trên **Arc MAINNET** (chain 5042, tiền thật). Live: https://moonsafe.app (Cloudflare Pages project `moonsafe`; push GitHub KHÔNG tự deploy).
 Cập nhật lần cuối: **2026-10-29** (khuya), xem ▶ Làm tiếp từ đây.
 Khung tài chính: [`docs/SPEC-FRAMEWORK-2026-10-25.md`](docs/SPEC-FRAMEWORK-2026-10-25.md) (dữ liệu ở `src/kb/`). Rà soát bảo mật: [`docs/archive/audit-2026-10-27.md`](docs/archive/audit-2026-10-27.md). Chi phí token: [`docs/archive/token-cost-2026-10-28.md`](docs/archive/token-cost-2026-10-28.md). Kiểm giao diện bằng trình duyệt thật: [`docs/browser-checks.md`](docs/browser-checks.md).

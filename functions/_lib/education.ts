@@ -15,6 +15,46 @@ export const EDUCATION_POLICY = `## Answer the actual request
 
 export const LESSONS = [
   {
+    id: 'budget',
+    queries: ['what is a budget', 'how do i start budgeting', 'ngân sách cá nhân là gì', 'bắt đầu quản lý chi tiêu thế nào'], // lang-ok
+    en: 'A budget is a plan for income, spending and saving. Start with money you can reliably expect, essential bills and debt payments; then choose what to set aside and what can wait. Review actual spending regularly so the plan fits your life.',
+    vi: 'Ngân sách là kế hoạch cho thu nhập, chi tiêu và tiết kiệm. Bắt đầu từ nguồn tiền có thể trông đợi, chi phí thiết yếu và tiền trả nợ; rồi chọn khoản để dành và khoản có thể chờ. Đối chiếu chi tiêu thực tế để điều chỉnh cho phù hợp.', // lang-ok
+    source: 'https://www.canada.ca/en/financial-consumer-agency/services/make-budget.html',
+    label: 'FCAC',
+  },
+  {
+    id: 'debt-methods',
+    queries: ['what is debt avalanche', 'what is debt snowball', 'how do debt avalanche and snowball differ', 'trả nợ lãi cao trước là gì', 'phương pháp trả nợ quả cầu tuyết là gì'], // lang-ok
+    en: 'The avalanche method directs extra repayments to the highest-interest debt to reduce interest cost. The snowball method starts with the smallest balance for quicker visible progress, but may cost more interest. Keep required payments on other debts; in MoonSafe, expensive debt still keeps the in-app buy lock in place.',
+    vi: 'Cách trả nợ lãi cao trước dồn tiền trả thêm vào khoản có lãi suất cao nhất để giảm tiền lãi. Cách quả cầu tuyết ưu tiên khoản nợ nhỏ nhất để dễ thấy tiến bộ, nhưng có thể tốn lãi hơn. Vẫn giữ các khoản trả bắt buộc khác; luật khóa mua khi còn nợ đắt của MoonSafe không đổi.', // lang-ok
+    source: 'https://www.consumerfinance.gov/documents/5782/cfpb_ymyg-toolkit_reducing-debt-worksheet.pdf',
+    label: 'CFPB',
+  },
+  {
+    id: 'near-term-goals',
+    queries: ['should i invest money for short term goals', 'why keep short term goals in savings', 'tiền cho mục tiêu gần có nên đầu tư không'], // lang-ok
+    en: 'Money needed soon may have too little time to recover from a market fall. MoonSafe keeps goals within five years in Safety, separate from the emergency fund, instead of using that money for investments. That protects the timing of the goal; it does not make every product labelled Safety risk-free.',
+    vi: 'Tiền cần dùng sớm có thể không kịp phục hồi khi thị trường giảm. MoonSafe giữ tiền cho mục tiêu trong năm năm ở Safety, tách khỏi quỹ dự phòng, thay vì đem đầu tư. Cách này bảo vệ thời điểm thực hiện mục tiêu; không có nghĩa mọi sản phẩm trong Safety đều hết rủi ro.', // lang-ok
+    source: 'https://www.investor.gov/introduction-investing',
+    label: 'Investor.gov',
+  },
+  {
+    id: 'fomo',
+    queries: ['what is fomo', 'fomo là gì'], // lang-ok
+    en: 'FOMO is the fear of missing out, which can make urgency replace a careful decision. A rising price or someone else’s profit does not tell you what happens next. Pause to check what you are buying, its risks and whether the money is needed for bills or goals; a deadline is not evidence of a good investment.',
+    vi: 'FOMO là sợ bỏ lỡ cơ hội, khiến cảm giác gấp gáp lấn át việc cân nhắc. Giá tăng hay người khác có lãi không nói được điều gì sẽ xảy ra tiếp. Bạn có thể dừng lại để hiểu khoản đầu tư, rủi ro và tiền đó có cần cho sinh hoạt hay mục tiêu không.', // lang-ok
+    source: 'https://www.investor.gov/protect-your-investments/fraud/how-avoid-fraud/what-you-can-do-avoid-investment-fraud',
+    label: 'Investor.gov',
+  },
+  {
+    id: 'recovery-scam',
+    queries: ['what is a recovery scam', 'what is advance fee fraud', 'lừa đảo lấy lại tiền là gì'], // lang-ok
+    en: 'A recovery scam asks for money upfront to supposedly recover a previous loss. An extra tax or unlock fee before a withdrawal is another red flag. Pause further payments, keep messages and transaction records, and verify independently through official channels; no recovery is guaranteed.',
+    vi: 'Lừa đảo lấy lại tiền yêu cầu trả phí trước để hứa thu hồi khoản đã mất. Đòi thêm thuế hay phí mở khóa trước khi cho rút cũng là dấu hiệu đáng ngờ. Bạn có thể dừng trả thêm, giữ tin nhắn và giao dịch, rồi xác minh độc lập qua kênh chính thức; không ai bảo đảm lấy lại được tiền.', // lang-ok
+    source: 'https://www.investor.gov/protect-your-investments/fraud/types-fraud/advance-fee-fraud',
+    label: 'Investor.gov',
+  },
+  {
     id: 'personal-finance',
     queries: ['what is personal finance', 'explain personal finance', 'tài chính cá nhân là gì'], // lang-ok
     en: 'Personal finance is how you manage income, spending, savings and debt to support your goals. A useful first step is to track what comes in and goes out each month, then decide what you can set aside.',

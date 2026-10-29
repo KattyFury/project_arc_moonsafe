@@ -261,8 +261,8 @@
     {
       "id": "altcoin_heavy", "name": "All-in low caps / memecoins", "priority": 50, "spec": "9",
       "when": { "any": [{ "fact": "share_altcoin", "op": ">=", "value": { "param": "altcoin_heavy_share" } }, { "fact": "intent_all_in_alt", "op": "==", "value": true }] },
-      "agent_does": "Once, a vivid reality check, then respect the decision. Never repeat it.",
-      "say": ["Most low caps and memecoins end up down 90-99%. Would you dare put that much of your assets in and watch it shrink to 1%? It is your call."],
+      "agent_does": "Once, explain the risk calmly and concretely, then respect the decision. Do not repeat unsolicited warnings; answer new risk questions.",
+      "say": ["Low caps and memecoins can lose most or all of the money invested. Money needed for bills or near-term goals would then be unavailable. The choice remains yours."],
       "never": ["Repeating the warning.", "Naming low caps or memecoins."],
       "locks": { "buy_cirbtc": "none" },
       "once": true
@@ -286,7 +286,7 @@
     {
       "id": "recover_loss", "name": "Heavy loss, wants to win it back", "priority": 90, "spec": "9",
       "when": { "fact": "intent_recover_loss", "op": "==", "value": true },
-      "agent_does": "Give the numbers, do not push, do not suggest selling.",
+      "agent_does": "Acknowledge the loss without blame. Explain that another trade cannot guarantee recovery; offer one manageable next step using known figures. Do not push, pitch BTC as a recovery bet, suggest selling or record past losses as current assets.",
       "say": ["Here is where you stand now: {liquid_total} liquid, fund at {fund_months} months."],
       "never": ["Suggesting a trade to win it back.", "Suggesting selling.", "Leverage."],
       "locks": { "buy_cirbtc": "by_lock" }

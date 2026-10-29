@@ -154,8 +154,10 @@ planMode = 'full'
 
 // 4. Length (Hieu, 2026-10-28): short when collecting or asking, long only to educate.
 expect(/MODE THIS TURN: BRIEF/.test(replySystem), 'after a card with nothing saved the reply is BRIEF')
-await call([...history, { role: 'user', content: message }, { role: 'assistant', content: crafted }, { role: 'user', content: 'why do I need an emergency fund?' }], saved, 0)
-expect(/MODE THIS TURN: TEACH/.test(replySystem), 'a "why" question is answered in TEACH mode')
+const whyLesson = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: crafted }, { role: 'user', content: 'why do I need an emergency fund?' }], saved, 0)
+expect(whyLesson.calls === 0 && /unexpected|loss of income/i.test(whyLesson.body.content ?? ''), 'a reviewed why question teaches without a model call')
+await call([...history, { role: 'user', content: 'Why does the emergency fund depend on income stability?' }], saved, 0)
+expect(/MODE THIS TURN: TEACH/.test(replySystem), 'an unfamiliar why question still uses TEACH mode')
 
 // 5. "How much is in my bank / Safety?": answered with the totals by the server, the emergency fund on its own line (never mixed with Safety).
 const how = await call([...history, { role: 'user', content: 'how much is in my bank savings?' }], saved, 900)
