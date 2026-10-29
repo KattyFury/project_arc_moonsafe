@@ -80,23 +80,30 @@ export function IntakeFormCard({ keys, seen, values, status, saved, prices, onCh
   const steps: Step[] = []
   const step = (key: string, title: string, fields: (keyof FormValues)[], view: ReactNode) => steps.push({ key, title, fields, view })
 
-  if (has('age') || has('income') || has('spending')) step('you', 'About you', ['age', 'salary', 'spending'], <>
-    {has('age') && <Num label="Your age" value={values.age} onChange={set('age')} suffix="" />}
-    {has('income') && <Num label="Salary a month" value={values.salary} onChange={set('salary')} />}
-    {has('spending') && <Num label="Spending a month (an estimate is fine)" value={values.spending} onChange={set('spending')} />}
-  </>)
-  if (has('stability')) step('income', 'Your income', ['steady', 'reliers'], <>
-    <Ask label="Is your income steady?" value={values.steady} onChange={set('steady')} />
-    <Ask label="Does anyone rely on it?" value={values.reliers} onChange={set('reliers')} />
-  </>)
+  // From 640px wide the fields sit two to a row (debt: three), so a card stays short on a laptop (Hieu, 2026-10-29).
+  if (has('age') || has('income') || has('spending')) step('you', 'About you', ['age', 'salary', 'spending'], (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {has('age') && <Num label="Your age" value={values.age} onChange={set('age')} suffix="" />}
+      {has('income') && <Num label="Salary a month" value={values.salary} onChange={set('salary')} />}
+      {has('spending') && <div className="sm:col-span-2"><Num label="Spending a month (an estimate is fine)" value={values.spending} onChange={set('spending')} /></div>}
+    </div>
+  ))
+  if (has('stability')) step('income', 'Your income', ['steady', 'reliers'], (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <Ask label="Is your income steady?" value={values.steady} onChange={set('steady')} />
+      <Ask label="Does anyone rely on it?" value={values.reliers} onChange={set('reliers')} />
+    </div>
+  ))
   if (has('assets')) {
-    step('cash', 'Cash and stablecoins', ['usdcThis', 'usdcElsewhere', 'bank'], <>
-      <Num label="USDC in this wallet" hint={seenText} value={values.usdcThis} onChange={set('usdcThis')} />
-      <Num label="USDC or USDT elsewhere" value={values.usdcElsewhere} onChange={set('usdcElsewhere')} />
-      <Num label="Bank savings and cash" value={values.bank} onChange={set('bank')} />
-    </>)
+    step('cash', 'Cash and stablecoins', ['usdcThis', 'usdcElsewhere', 'bank'], (
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Num label="USDC in this wallet" hint={seenText} value={values.usdcThis} onChange={set('usdcThis')} />
+        <Num label="USDC or USDT elsewhere" value={values.usdcElsewhere} onChange={set('usdcElsewhere')} />
+        <Num label="Bank savings and cash" value={values.bank} onChange={set('bank')} />
+      </div>
+    ))
     step('invest', 'Investments today', ['btc', 'coins', 'gold', 'stocks'], (
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Num label="Bitcoin" value={values.btc} onChange={set('btc')} />
         <Num label="Altcoins" value={values.coins} onChange={set('coins')} />
         <Num label="Gold" value={values.gold} onChange={set('gold')} />
@@ -116,8 +123,8 @@ export function IntakeFormCard({ keys, seen, values, status, saved, prices, onCh
   if (has('debt')) step('debt', 'Debt', ['debt', 'debtOwed', 'debtRate', 'debtMonthly'], <>
     <Ask label="Any debt?" value={values.debt} onChange={set('debt')} />
     {values.debt === 'yes' && (
-      <div className="grid grid-cols-2 gap-4">
-        <div className="col-span-2"><Num label="Total you still owe" value={values.debtOwed} onChange={set('debtOwed')} /></div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="col-span-2 sm:col-span-1"><Num label="Total you still owe" value={values.debtOwed} onChange={set('debtOwed')} /></div>
         <Num label="Interest a year" value={values.debtRate} onChange={set('debtRate')} suffix="%" />
         <Num label="You pay a month" value={values.debtMonthly} onChange={set('debtMonthly')} />
       </div>
@@ -140,7 +147,7 @@ export function IntakeFormCard({ keys, seen, values, status, saved, prices, onCh
   }
 
   return (
-    <GlassCard className="ml-10 p-4 flex flex-col gap-4 w-[calc(100%-40px)] max-w-[480px]">
+    <GlassCard className="ml-10 p-4 flex flex-col gap-4 w-[calc(100%-40px)] max-w-[480px] sm:max-w-[640px]">
       <div className="flex items-center gap-2">
         {i > 0
           ? <button onClick={() => setAt(i - 1)} aria-label="Previous question" className="w-8 h-8 -ml-2 flex items-center justify-center rounded-full" style={{ color: 'var(--subtle)' }}><ChevronLeft size={20} /></button>
@@ -153,7 +160,7 @@ export function IntakeFormCard({ keys, seen, values, status, saved, prices, onCh
       </div>
 
       {/* Fixed height: room for the biggest card (three amounts with a hint, or debt with its details), so every card is the same size. */}
-      <div key={cur.key} className="h-[288px] flex flex-col gap-4">{cur.view}</div>
+      <div key={cur.key} className="h-[288px] sm:h-[200px] flex flex-col gap-4">{cur.view}</div>
 
       <div className="grid grid-cols-2 gap-2">
         <Btn variant="outline" onClick={skip}>Skip</Btn>

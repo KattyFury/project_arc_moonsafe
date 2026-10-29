@@ -3,7 +3,8 @@
 // so fees/deposits are msg.value and no approve is needed. The app works in
 // 6-decimal USDC units and converts at the edge.
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { usePrivy, useWallets } from '@privy-io/react-auth'
 import { useAccount, usePublicClient, useSendTransaction, useSwitchChain } from 'wagmi'
 import { encodeFunctionData, zeroAddress } from 'viem'
 import { CHAIN_ID as NET_CHAIN_ID, FACTORY } from '@/lib/network'
@@ -39,6 +40,7 @@ export const VAULT_FACTORY_ABI = [
 
 export const VAULT_PROXY_ABI = [
   { name: 'deposit', type: 'function', stateMutability: 'payable', inputs: [], outputs: [] },
+  { name: 'depositFor', type: 'function', stateMutability: 'payable', inputs: [], outputs: [] },
   { name: 'withdraw', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'amount', type: 'uint256' }, { name: 'to', type: 'address' }], outputs: [] },
   { name: 'getBalance', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ name: '', type: 'uint256' }] },
 ] as const
@@ -47,6 +49,13 @@ export interface VaultState {
   /** true once the first read for the current wallet finished (ok or failed). */
   ready: boolean
   vaultAddress: `0x${string}` | null
+  /**
+   * One vault per person (Hieu, 2026-10-29): the vault of whichever of the account's wallets owns one. Any of their wallets can add
+   * money to it (depositFor); only the owner wallet can withdraw, and withdrawals always go back to the owner wallet.
+   */
+  vaultOwner: `0x${string}` | null
+  /** The wallet in use owns the vault (withdrawals possible from here). */
+  isOwner: boolean
   /** null = unknown (RPC failed) → UI shows "–". 6-decimal units. */
   vaultBalance: bigint | null
   walletBalance: bigint | null
@@ -62,12 +71,22 @@ export interface VaultState {
 
 export function useVaultState(): VaultState {
   const { address, connector } = useAccount()
+  const { user } = usePrivy()
+  const { wallets } = useWallets()
+  // Every EVM wallet of this account: the one in use first, then the others connected now or linked to the account.
+  const accountWallets = useMemo(() => {
+    const all = [address, ...wallets.filter(w => w.type === 'ethereum').map(w => w.address),
+      ...(user?.linkedAccounts ?? []).flatMap(a => a.type === 'wallet' && a.chainType === 'ethereum' ? [a.address] : [])]
+    return [...new Set(all.filter((a): a is string => !!a).map(a => a.toLowerCase()))] as `0x${string}`[]
+  }, [address, wallets, user?.linkedAccounts])
+  const walletsKey = accountWallets.join(',')
   const publicClient = usePublicClient({ chainId: CHAIN_ID })
   const { sendTransactionAsync } = useSendTransaction()
   const { switchChainAsync } = useSwitchChain()
 
   const [ready, setReady] = useState(false)
   const [vaultAddress, setVaultAddress] = useState<`0x${string}` | null>(null)
+  const [vaultOwner, setVaultOwner] = useState<`0x${string}` | null>(null)
   const [vaultBalance, setVaultBalance] = useState<bigint | null>(null)
   const [walletBalance, setWalletBalance] = useState<bigint | null>(null)
   const [fee, setFee] = useState<bigint | null>(null)
@@ -77,16 +96,20 @@ export function useVaultState(): VaultState {
   const refresh = useCallback(async () => {
     if (!address || !publicClient || !FACTORY_CONFIGURED) return
     try {
-      const [vault, walletNative, feeNative] = await Promise.all([
-        publicClient.readContract({ address: FACTORY_ADDRESS, abi: VAULT_FACTORY_ABI, functionName: 'getVault', args: [address] }),
+      const [walletNative, feeNative] = await Promise.all([
         publicClient.getBalance({ address }),
         publicClient.readContract({ address: FACTORY_ADDRESS, abi: VAULT_FACTORY_ABI, functionName: 'fee' }),
       ])
-      // No vault on the current factory → look on the earlier ones.
-      let found = vault
-      for (const f of LEGACY_FACTORIES) {
+      // The account's vault: the wallet in use first, then its other wallets; current factory first, then the earlier ones.
+      let found: `0x${string}` = zeroAddress
+      let owner: `0x${string}` | null = null
+      const candidates = walletsKey ? (walletsKey.split(',') as `0x${string}`[]) : [address]
+      for (const f of [FACTORY_ADDRESS, ...LEGACY_FACTORIES]) {
+        for (const w of candidates) {
+          const v = await publicClient.readContract({ address: f, abi: VAULT_FACTORY_ABI, functionName: 'getVault', args: [w] })
+          if (v !== zeroAddress) { found = v; owner = w; break }
+        }
         if (found !== zeroAddress) break
-        found = await publicClient.readContract({ address: f, abi: VAULT_FACTORY_ABI, functionName: 'getVault', args: [address] })
       }
       const has = found !== zeroAddress
       let vb: bigint | null = 0n
@@ -95,6 +118,7 @@ export function useVaultState(): VaultState {
         vb = nativeToUsdc6(native)
       }
       setVaultAddress(has ? found : null)
+      setVaultOwner(has ? owner : null)
       setVaultBalance(has ? vb : null)
       setWalletBalance(nativeToUsdc6(walletNative))
       setFee(nativeToUsdc6(feeNative))
@@ -105,12 +129,13 @@ export function useVaultState(): VaultState {
     } finally {
       setReady(true)
     }
-  }, [address, publicClient])
+  }, [address, publicClient, walletsKey])
 
   // Reset when the wallet changes, then load + poll.
   useEffect(() => {
     setReady(false)
     setVaultAddress(null)
+    setVaultOwner(null)
     setVaultBalance(null)
     setWalletBalance(null)
     if (!address) return
@@ -145,25 +170,29 @@ export function useVaultState(): VaultState {
     })
   }, [address, publicClient, send])
 
+  const isOwner = !!address && !!vaultOwner && vaultOwner.toLowerCase() === address.toLowerCase()
+
+  // From the owner wallet: deposit(); from another wallet of the same person: depositFor() (anyone may add to a vault).
   const deposit = useCallback(async (amount: bigint) => {
     if (!vaultAddress) throw new Error('No vault yet')
     await send({
       to: vaultAddress,
       value: usdc6ToNative(amount),
-      data: encodeFunctionData({ abi: VAULT_PROXY_ABI, functionName: 'deposit', args: [] }),
+      data: encodeFunctionData({ abi: VAULT_PROXY_ABI, functionName: isOwner ? 'deposit' : 'depositFor', args: [] }),
     })
-  }, [vaultAddress, send])
+  }, [vaultAddress, send, isOwner])
 
-  // Withdrawals always go back to the owner's own wallet.
+  // Withdrawals always go back to the owner's own wallet, and only the owner wallet can sign them.
   const withdraw = useCallback(async (amount: bigint) => {
     if (!vaultAddress || !address) throw new Error('No vault yet')
+    if (!isOwner) throw new Error(`Only the wallet that opened the emergency fund (${vaultOwner?.slice(0, 6)}…${vaultOwner?.slice(-4)}) can withdraw. Switch to it in Menu.`)
     await send({
       to: vaultAddress,
       data: encodeFunctionData({ abi: VAULT_PROXY_ABI, functionName: 'withdraw', args: [usdc6ToNative(amount), address] }),
     })
-  }, [vaultAddress, address, send])
+  }, [vaultAddress, address, send, isOwner, vaultOwner])
 
-  return { ready, vaultAddress, vaultBalance, walletBalance, fee, readError, busy, createVault, deposit, withdraw, refresh }
+  return { ready, vaultAddress, vaultOwner, isOwner, vaultBalance, walletBalance, fee, readError, busy, createVault, deposit, withdraw, refresh }
 }
 
 /** Short Vietnamese message for wallet / tx errors (user rejection, gas, …). */

@@ -104,6 +104,9 @@ export function FundScreen({ onOpenChat }: { onOpenChat: () => void }) {
                 : `In emergency fund: ${formatUsdc(vb)} · goes back to your own wallet`}
             </p>
 
+            {tab === 'withdraw' && !vault.isOwner && vault.vaultOwner && (
+              <Notice tone="info">Only the wallet that opened your emergency fund ({vault.vaultOwner.slice(0, 6)}…{vault.vaultOwner.slice(-4)}) can withdraw. Switch to it in Menu; the money goes back to that wallet.</Notice>
+            )}
             {tab === 'withdraw' && wb !== null && wb < GAS_ESTIMATE_USDC6 && (
               <Notice tone="warning">The wallet needs about {formatUsdc(GAS_ESTIMATE_USDC6)} to pay the withdrawal fee.</Notice>
             )}
@@ -111,7 +114,7 @@ export function FundScreen({ onOpenChat }: { onOpenChat: () => void }) {
             {done && <Notice tone="success">{done}</Notice>}
             {error && <Notice tone="danger">{error}</Notice>}
 
-            <Btn loading={vault.busy} disabled={parsed <= 0n || tooMuch || max === null}
+            <Btn loading={vault.busy} disabled={parsed <= 0n || tooMuch || max === null || (tab === 'withdraw' && !vault.isOwner)}
               onClick={() => { if (belowFloor) setSheet(true); else void run() }}>
               {vault.busy ? 'Waiting for wallet…' : tab === 'deposit' ? 'Add to emergency fund' : 'Withdraw to wallet'}
             </Btn>
