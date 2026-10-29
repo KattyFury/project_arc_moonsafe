@@ -19,9 +19,11 @@ const PROOF_MAX_AGE_MS = 30 * 60 * 1000
 const LOG_TTL = 90 * 24 * 3600
 
 export const adminWallets = (env: AdminEnv): string[] =>
-  (env.ADMIN_WALLETS ? env.ADMIN_WALLETS.split(',') : DEFAULT_ADMINS).map(a => a.trim().toLowerCase()).filter(a => /^0x[0-9a-f]{40}$/.test(a))
+  // Set but empty = nobody is an admin (the switch to turn /admin off); unset = the two default wallets.
+  (env.ADMIN_WALLETS !== undefined ? env.ADMIN_WALLETS.split(',') : DEFAULT_ADMINS).map(a => a.trim().toLowerCase()).filter(a => /^0x[0-9a-f]{40}$/.test(a))
 
-export const adminChallenge = (id: string) => `MoonSafe admin sign-in\nAccount: ${id}\nIssued: ${Date.now()}`
+/** The text an admin wallet signs. It names the site, so a signature collected on another site is worthless here. */
+export const adminChallenge = (id: string, host: string) => `MoonSafe admin sign-in\nDomain: ${host}\nAccount: ${id}\nIssued: ${Date.now()}`
 
 export type AdminResult = { ok: true; id: string; address: string } | { ok: false; status: number; error: string }
 
@@ -32,9 +34,10 @@ export async function requireAdmin(request: Request, env: AdminEnv): Promise<Adm
   let proof: { message?: unknown; signature?: unknown }
   try { proof = JSON.parse(request.headers.get('x-admin-proof') ?? '') as typeof proof } catch { return { ok: false, status: 403, error: 'Admin proof missing' } }
   const message = typeof proof.message === 'string' ? proof.message : ''
-  const m = /^MoonSafe admin sign-in\nAccount: (.+)\nIssued: (\d+)$/.exec(message)
-  if (!m || m[1] !== id) return { ok: false, status: 403, error: 'This proof was not made for your account' }
-  if (Date.now() - Number(m[2]) > PROOF_MAX_AGE_MS || Number(m[2]) - Date.now() > 60_000) return { ok: false, status: 403, error: 'The proof expired, sign again' }
+  const m = /^MoonSafe admin sign-in\nDomain: (.+)\nAccount: (.+)\nIssued: (\d+)$/.exec(message)
+  if (!m || m[2] !== id) return { ok: false, status: 403, error: 'This proof was not made for your account' }
+  if (m[1] !== new URL(request.url).host) return { ok: false, status: 403, error: 'This proof was made for another site' }
+  if (Date.now() - Number(m[3]) > PROOF_MAX_AGE_MS || Number(m[3]) - Date.now() > 60_000) return { ok: false, status: 403, error: 'The proof expired, sign again' }
   let signer: string
   try { signer = (await recoverMessageAddress({ message, signature: String(proof.signature) as `0x${string}` })).toLowerCase() } catch { return { ok: false, status: 403, error: 'Invalid signature' } }
   if (!adminWallets(env).includes(signer)) return { ok: false, status: 403, error: 'This wallet is not an admin wallet' }

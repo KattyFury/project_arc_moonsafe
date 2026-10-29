@@ -31,7 +31,7 @@ FACTORY=<FACTORY_ADDRESS> SAFE=<SAFE_ADDRESS> bun scripts/preflight-mainnet.ts
 2. Privy dashboard: the `moonsafe.app` origin must already be allowed (it is, for testnet). Nothing else to add.
 3. Build and deploy with ONLY the Cloudflare variables plus the two network variables (do not source the whole `.env`):
 ```
-env VITE_NETWORK=mainnet VITE_FACTORY_ADDRESS=<FACTORY_ADDRESS> CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... bun run cf:deploy
+CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... bun run cf:deploy:mainnet   # the factory address is inside that script; edit it if you redeploy the contracts
 ```
 After this moonsafe.app is mainnet. Everyone's testnet data stays in the old KV; mainnet starts clean.
 

@@ -82,7 +82,7 @@ for (const [name, text] of Object.entries(scenarios)) {
     method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
     body: JSON.stringify({ messages: [...history, { role: 'user', content: text }], context: { profile, vaultUsdc: 900, walletUsdc: 1419, cirBtcUsdc: 0 } }),
   })
-  await onRequestPost({ request, env: { OPENAI_API_KEY: 'fake' } })
+  await onRequestPost({ request, env: { OPENAI_API_KEY: 'fake', LOCAL_DEV: '1' } })
   const plan = calls.find(c => c.kind === 'plan'); const reply = calls.find(c => c.kind === 'reply')
   first ??= plan
   console.log(`${name.padEnd(24)} PLAN ${String(plan?.total ?? '-').padStart(5)} (system ${plan?.system}, tools ${plan?.tools})   REPLY ${String(reply?.total ?? '-').padStart(5)} (system ${reply?.system})`)
@@ -94,7 +94,7 @@ for (const [name, text] of Object.entries(firstMessages)) {
     method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
     body: JSON.stringify({ messages: [{ role: 'user', content: text }], context: { profile: normalizeProfile({ v: 2 }), vaultUsdc: 0, walletUsdc: 0, cirBtcUsdc: 0 } }),
   })
-  const res = await onRequestPost({ request, env: { OPENAI_API_KEY: 'fake' } })
+  const res = await onRequestPost({ request, env: { OPENAI_API_KEY: 'fake', LOCAL_DEV: '1' } })
   const body = await res.json() as { content?: string }
   console.log(`${name.padEnd(24)} model calls: ${calls.length}   list sent: ${/Share whatever you're comfortable with/.test(body.content ?? '') ? 'yes' : 'NO'}`)
 }
