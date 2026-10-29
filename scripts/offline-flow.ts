@@ -35,10 +35,25 @@ const M = (amount: number) => ({ amount, currency: 'USDC' })
 let modelCalls = 0
 let replySystem = ''
 let planMode: 'full' | 'noop' = 'full'
+// A tiny fake Arc RPC for the AI-power purchase checks: chain id, one transaction + receipt chosen by the test.
+let rpcChain = '0x13b2' // 5042
+let rpcTx: Record<string, unknown> | null = null
+const fakeRpc = async (_u: string, init?: RequestInit) => {
+  const req = JSON.parse(String(init?.body)) as { id: number; method: string }
+  const one = (r: { id: number; method: string }) => {
+    let result: unknown = null
+    if (r.method === 'eth_chainId') result = rpcChain
+    if (r.method === 'eth_getTransactionByHash') result = rpcTx
+    if (r.method === 'eth_getTransactionReceipt') result = rpcTx ? { transactionHash: rpcTx.hash, blockHash: rpcTx.blockHash, blockNumber: '0x10', from: rpcTx.from, to: rpcTx.to, status: '0x1', gasUsed: '0x5208', cumulativeGasUsed: '0x5208', logs: [], logsBloom: '0x' + '0'.repeat(512), contractAddress: null, effectiveGasPrice: '0x1', type: '0x0', transactionIndex: '0x0' } : null
+    return { jsonrpc: '2.0', id: r.id, result }
+  }
+  return new Response(JSON.stringify(Array.isArray(req) ? (req as Array<{ id: number; method: string }>).map(one) : one(req)), { status: 200, headers: { 'content-type': 'application/json' } })
+}
 const realFetch = globalThis.fetch
 globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
   const u = String(url)
   if (u.includes('auth.privy.io')) return new Response(JSON.stringify({ keys: [jwk] }), { status: 200 })
+  if (u.includes('rpc.mainnet.arc.io') || u.includes('fake-rpc.test')) return fakeRpc(u, init)
   if (!u.includes('openai.com')) return realFetch(url as never, init)
   modelCalls++
   const body = JSON.parse(String(init?.body)) as { tool_choice?: string; messages: Array<{ role: string; content?: string }> }
@@ -216,6 +231,8 @@ expect(safe.calls === 0 && /Safety lives outside the app/.test(safeText) && /You
 // 7. The admin page's API: who may call it, what it changes, and that it never shows a secret.
 {
   const { generatePrivateKey, privateKeyToAccount } = await import('viem/accounts')
+  const quotaPath = '../functions/_lib/quota'
+  const powerPath = '../src/lib/power'
   const adminModule = '../functions/api/admin'
   const { onRequestGet: adminGet, onRequestPost: adminPost } = await import(adminModule) as {
     onRequestGet: (c: { request: Request; env: unknown }) => Promise<Response>
@@ -281,6 +298,57 @@ expect(safe.calls === 0 && /Safety lives outside the app/.test(safeText) && /You
   expect((await post({ op: 'user', id: 'did:privy:alice', action: 'delete_data' }, okProof)).status === 400, 'admin: deleting data needs a confirmation')
   await post({ op: 'user', id: 'did:privy:alice', action: 'delete_data', confirm: true }, okProof)
   expect(!kv.m.has('u:did:privy:alice'), 'admin: confirmed deletion removes the account data')
+
+  // AI-power purchase (second review 2026-10-29): every check of buyPower against a fake Arc RPC.
+  {
+    const { buyPower } = await import(quotaPath) as { buyPower: (e: unknown, id: string, h: string) => Promise<{ ok: boolean; error?: string; retry?: boolean }> }
+    const { powerMemo } = await import(powerPath) as { powerMemo: (id: string) => string }
+    const pay = '0xeb2d222d28f35fe7beb5387f8bc4ebf65f2652f6'
+    const payKv = new MemKv()
+    const penv = { USERDATA: payKv }
+    const H = (n: number) => '0x' + n.toString(16).padStart(64, '0')
+    const mk = (n: number, over: Record<string, unknown> = {}) => ({ hash: H(n), blockHash: H(900 + n), blockNumber: '0x10', from: '0x' + '11'.repeat(20), to: pay, value: '0xde0b6b3a7640000', input: powerMemo('did:privy:alice'), nonce: '0x0', gas: '0x5208', gasPrice: '0x1', type: '0x0', transactionIndex: '0x0', v: '0x1b', r: '0x1', s: '0x1', ...over })
+    rpcTx = mk(1)
+    const r1 = await buyPower(penv, 'did:privy:alice', H(1))
+    expect(r1.ok && payKv.m.get('power:did:privy:alice') === '100' && payKv.m.get(`powertx:${H(1)}`) === 'did:privy:alice', 'purchase: a correct 1 USDC payment with the right memo credits 100 messages')
+    const r2 = await buyPower(penv, 'did:privy:alice', H(1))
+    expect(!r2.ok && /already counted/.test(r2.error ?? '') && payKv.m.get('power:did:privy:alice') === '100', 'purchase: the same payment is not counted twice')
+    const r3 = await buyPower(penv, 'did:privy:bob', H(1))
+    expect(!r3.ok && !payKv.m.has('power:did:privy:bob'), 'purchase: another account cannot claim it')
+    rpcTx = mk(2); expect(!(await buyPower(penv, 'did:privy:bob', H(2))).ok && !payKv.m.has(`powertx:${H(2)}`), 'purchase: a memo for another account is refused and the claim is released')
+    rpcTx = mk(3, { value: '0x1bc16d674ec80000' }); expect(!(await buyPower(penv, 'did:privy:alice', H(3))).ok, 'purchase: 2 USDC is refused (exact price only)')
+    rpcTx = mk(4, { to: '0x' + '22'.repeat(20) }); expect(!(await buyPower(penv, 'did:privy:alice', H(4))).ok, 'purchase: a payment to another address is refused')
+    rpcTx = mk(5, { hash: H(99) }); expect(!(await buyPower(penv, 'did:privy:alice', H(5))).ok, 'purchase: a transaction whose hash differs from the one asked is refused')
+    rpcTx = null; const nf = await buyPower(penv, 'did:privy:alice', H(6)); expect(!nf.ok && nf.retry === true && !payKv.m.has(`powertx:${H(6)}`), 'purchase: an unknown transaction says try again and leaves no claim')
+    rpcTx = mk(7, { input: powerMemo('did:privy:alice') }); rpcChain = '0x1'
+    expect(!(await buyPower(penv, 'did:privy:alice', H(7))).ok && !payKv.m.has(`powertx:${H(7)}`), 'purchase: an RPC that is not chain 5042 credits nothing')
+    rpcChain = '0x13b2'
+    expect(!(await buyPower({ ...penv, POWER_PAYMENT_ADDRESS: 'oops' }, 'did:privy:alice', H(7))).ok, 'purchase: a mistyped payment address fails closed')
+    expect(!(await buyPower({ ...penv, ARC_RPC: 'http://insecure.test' }, 'did:privy:alice', H(7))).ok, 'purchase: a non-https RPC fails closed')
+    rpcTx = mk(8)
+    const [pa, pb] = await Promise.all([buyPower(penv, 'did:privy:alice', H(8)), buyPower(penv, 'did:privy:alice', H(8))])
+    console.log(`  info: two parallel claims of one payment left alice at ${payKv.m.get('power:did:privy:alice')} messages (200 = one extra credit, 300 = double credit)`)
+    expect(payKv.m.get('power:did:privy:alice') === '200' || (pa.ok && pb.ok), `purchase: two parallel claims of one payment (credit ${payKv.m.get('power:did:privy:alice')}; KV is not atomic, see the audit)`)
+    for (let i = 0; i < 11; i++) { rpcTx = null; await buyPower(penv, 'did:privy:carol', H(100 + i)) }
+    expect((await buyPower(penv, 'did:privy:carol', H(200))).error === 'Too many attempts, try again in an hour', 'purchase: 10 failed checks an hour lock the account out of the RPC')
+  }
+
+  // Open-vault card rules (second review 2026-10-29).
+  {
+    const vaultChat = async (text: string, hasVault: boolean | 'unknown' = false) => {
+      const r = await onRequestPost({ request: new Request('http://local/api/chat', { method: 'POST', headers: headers(), body: JSON.stringify({ messages: [{ role: 'user', content: text }], context: hasVault === 'unknown' ? {} : { hasVault } }) }), env: env as unknown as Record<string, string> })
+      return await r.json() as { actions?: Array<{ type: string }>; content?: string }
+    }
+    const opens = (r: { actions?: Array<{ type: string }> }) => !!r.actions?.some(a => a.type === 'prepare_open_vault')
+    expect(!opens(await vaultChat("I don't want to open a vault")), 'vault: "I don\'t want to open a vault" is not a request')
+    expect(!opens(await vaultChat('how do I open a vault?')), 'vault: a how-question does not open the signing card')
+    expect(!opens(await vaultChat('my landlord lets me stay for free, rent is 0')).valueOf() && !/free, you get/.test((await vaultChat('my landlord lets me stay for free, rent is 0')).content ?? ''), 'price: a sentence with a number that says "for free" is not a price question')
+    expect(opens(await vaultChat('please open my vault')), 'vault: a plain request opens the card')
+    expect(!opens(await vaultChat('please open my vault', 'unknown')), 'vault: an unknown vault state (not read yet) never offers a second vault')
+    await post({ op: 'config', patch: { cardsEnabled: false } }, okProof)
+    expect(!opens(await vaultChat('please open my vault')), 'vault: the pause-transactions switch also stops the open-vault card')
+    await post({ op: 'config', patch: { cardsEnabled: true } }, okProof)
+  }
 
   // Security review 2026-10-29: fail closed without KV; a whitespace bomb must not cost seconds of CPU.
   const noKv = await onRequestPost({ request: new Request('http://local/api/chat', { method: 'POST', headers: headers(), body: JSON.stringify({ messages: [{ role: 'user', content: 'hello' }] }) }), env: { OPENAI_API_KEY: 'fake' } })

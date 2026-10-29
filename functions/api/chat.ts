@@ -822,7 +822,9 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   // No vault yet (the app sends hasVault): "yes" to the opening offer, or asking to open one, gets the opening card (no model call).
   const hasVault = ctx.hasVault !== false
   const vaultFee = typeof ctx.vaultFeeUsdc === 'number' && ctx.vaultFeeUsdc > 0 ? ctx.vaultFeeUsdc : 1
-  if (!hasVault && !lastUserText.startsWith('[app event]') && ((OPEN_OFFERED.test(prevAssistantText) && AGREES.test(lastUserText)) || ASKS_OPEN.test(lastUserText))) {
+  // The admin's "pause transactions" switch also stops this card; "how do I open a vault?", "I don't want to open one" are not requests.
+  const mentionsOpenOnlyAsQuestion = /(?:^|[.!?]\s*)(?:how|what|why|when|where|can|could|should|do|does|is|are|if|i (?:do not|don'?t|never|won'?t|didn'?t)|never|don'?t|not)\b[^.!?\n]*$/i.test(lastUserText.slice(0, (ASKS_OPEN.exec(lastUserText)?.index ?? 0) + 1))
+  if (!cardsPaused && !hasVault && !lastUserText.startsWith('[app event]') && ((OPEN_OFFERED.test(prevAssistantText) && AGREES.test(lastUserText) && !/\bbut\b|\?/i.test(lastUserText)) || (ASKS_OPEN.test(lastUserText) && !mentionsOpenOnlyAsQuestion && !/\?\s*$/.test(lastUserText)))) {
     return json({
       content: vi ? 'Đây rồi: ký thẻ bên dưới để mở vault của bạn.' : 'Here it is: sign the card below to open your vault.', // lang-ok
       ops: [], dcaStop: false, actions: [{ type: 'prepare_open_vault' }],
@@ -872,7 +874,8 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       ops: [], dcaStop: false, actions: [],
     })
   }
-  if (ASKS_PRICE.test(lastUserText) && !lastUserText.startsWith('[app event]')) {
+  // Only a short, number-free question is a price question: "my landlord lets me stay for free, rent is 0" is information to record.
+  if (ASKS_PRICE.test(lastUserText) && lastUserText.length <= 140 && !/\d/.test(lastUserText) && !lastUserText.startsWith('[app event]')) {
     const free = Number(context.env.FREE_TURNS_PER_DAY) > 0 ? Math.floor(Number(context.env.FREE_TURNS_PER_DAY)) : DEFAULT_FREE
     return json({
       content: vi

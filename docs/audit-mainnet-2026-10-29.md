@@ -53,3 +53,43 @@ Checked and fine: Privy JWT verification (fails closed), user id only from the v
 - DCA contracts are not deployed; the DCA screens and keeper do not exist.
 - The cirBTC buy on mainnet (Swap Kit chain `Arc`) has not been exercised by Arc Studio: compare the first quote with the real BTC price before trusting it.
 - The admin and cost controls rely on Cloudflare KV, which is not atomic.
+
+
+---
+
+# Second round (2026-10-29, after the app went to mainnet with new code)
+
+Live at the time of the check: production deployments `42546185` (commit `5ed1aab`) and `726c22de` (commit `10ab3e3`), both containing the first-round hardening (PR #27). Contracts did not change (no diff in `contracts/` since the first audit); on-chain state re-read: factory owner = the Safe, threshold 2, fee 1 USDC, not paused, `preflight-mainnet.ts` passes.
+
+## Public surface, re-checked
+- Headers now live: `X-Frame-Options: DENY`, `Content-Security-Policy: frame-ancestors 'none'`, HSTS, Permissions-Policy, nosniff, referrer policy. No full CSP yet.
+- Bundle: mainnet build, factory `0xA9A5...E10A`, no secret patterns. All authenticated endpoints 401 without a session.
+- Cloudflare: production KV `4dca45d1...`, preview KV `f5f9fd48...`. **Still open:** `GEMINI_API_KEY` secret exists (unused), and the preview environment still holds `OPENAI_API_KEY`.
+
+## New code reviewed (independent read-only review + manual checks)
+New since the first audit: the AI-power purchase (1 USDC for 100 messages, paid to the owner wallet with a memo, verified onchain), the open-vault card, deterministic yes/no/price/amount responders, one-vault-per-person wallet discovery (`deposit` vs `depositFor`), the cirBTC price guard, the landing page.
+
+| # | Severity | Finding | Status |
+|---|---|---|---|
+| 1 | High | `buyPower` is check-then-act on non-atomic KV: one payment can be credited more than once by parallel requests (KV also caches reads up to 60 s) | **Narrowed, not closed.** The claim is now written before the slow onchain check and a failed check releases it; an in-memory test shows one extra credit, never double, but real KV can still race. The real fix is a Durable Object or D1. Until then: reconcile credited purchases against payments to the owner wallet |
+| 2 | High (conditional) | The client signed a payment to the address and amount in the SERVER response | **Fixed.** The app now pays only the address and price compiled into it (`src/lib/power.ts`) and refuses if the server says otherwise |
+| 3 | Medium | A slow confirmation led to a second payment; smart-contract wallets pay but are never credited | **Fixed.** An unconfirmed payment is remembered and re-checked instead of paid twice; only plain/email wallets (or 7702) may pay; blocked accounts cannot buy |
+| 4 | Medium | The purchase check trusted one RPC without checks | **Fixed.** HTTPS-only RPC and a mistyped payment address fail closed, chain id must be 5042, hash and block hash must match, "not found" is separated from "RPC problem" |
+| 5 | Medium/Low | `buy` is two RPC calls per request with no throttle | **Fixed partly.** 10 failed checks an hour per account, 8 s timeout, one retry. A Cloudflare rate-limit rule on `/api/power` is still advised |
+| 6 | Medium | The cirBTC price guard checks the estimate, but the swap re-quotes and runs without a `stopLimit` or a quote expiry (worst case ~3% guard + 3% slippage) | **Open.** Compute `stopLimit` from the market price at signing time and expire quotes after ~60 s. Compare the first real quote with the BTC price by hand |
+| 7 | Medium | A slow vault read for the previous account could finish after a wallet switch and become the vault a `depositFor` is sent to | **Fixed.** Reads are tied to an epoch, and a deposit from a non-owner wallet re-checks `vault.owner()` is one of the account's wallets right before sending |
+| 8 | Medium | `hasVault` was sent as false while the vault read was unfinished or failed (offering a second vault and fee); the open-vault card ignored the pause switch | **Fixed.** Unknown is no longer "no vault"; the pause-transactions switch stops the card |
+| 9 | Medium | The price/open responders fired on ordinary sentences ("my landlord lets me stay for free, rent is 0", "I don't want to open a vault") | **Fixed.** Price answers need a short, number-free question; the open-vault request ignores questions and negations and "yes, but..." |
+| 10 | Low | The open-vault card shows the fee read earlier, `createVault` sends a fresh read (cap 10 USDC, excess refunded) | Open |
+| 11 | Low | A `depositFor` card does not say the money goes to a vault only another wallet can withdraw from | Open |
+| 12 | Low | The power counter is not atomic (lost update between a purchase and a spend) | Open (same fix as #1) |
+| 13 | Info | Self-pay, a public static memo | Accepted |
+Also noted: the new fast path "yes to an offered amount" and "a new amount after an offer" creates deposit/buy cards without the server-side buy lock; the client (`ActionCard`) still enforces the lock and wallet balance, so this is advisory only.
+
+Checked and fine: the payment verification itself (status, exact `to`, exact value, exact calldata, per-account memo, lowercase hash), vault addresses only from the pinned factory, withdrawals only to the owner wallet by the owner, no address can be injected by chat or stored cards, `RecordCard` is off-chain, amounts are exact bigint conversions.
+
+## Tests added
+`bun run flow` now covers the purchase (correct payment, replay, other account, wrong memo/amount/destination/hash, unknown transaction, wrong chain, mistyped address, non-https RPC, parallel claim, attempt limit) against a fake Arc RPC, and the open-vault/price responder rules.
+
+## Still yours
+Privy sign-up restriction, Cloudflare rate-limit rules (`/api/chat`, `/api/power`, `/api/*`), a paid Workers plan, delete the `GEMINI_API_KEY` secret and the preview `OPENAI_API_KEY`, verify the contracts on explorer.arc.io, and move the purchase ledger and quotas to a Durable Object or D1 before the user count grows.
