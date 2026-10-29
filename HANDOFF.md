@@ -11,7 +11,9 @@ moonsafe.app = **Arc mainnet (chain 5042), tiền thật**. Hiếu tự ký mọ
 - **KV mainnet** `USERDATA_MAINNET` id `4dca45d1b7c14f3cb1250d78a266d936` (trong `wrangler.toml`; KV testnet cũ `f5f9fd48…` = rollback). Cloudflare deploy `db986e84`.
 - **Deploy từ giờ PHẢI kèm 2 biến mạng**, thiếu là build ra testnet: `env -u VITE_PRIVY_APP_ID -u VITE_CIRBTC_ADDRESS VITE_NETWORK=mainnet VITE_FACTORY_ADDRESS=0xA9A5447a1Dd9874c25238d69E285249Fa1c9E10A CLOUDFLARE_API_TOKEN=… CLOUDFLARE_ACCOUNT_ID=… bun run cf:deploy`. Kiểm: bundle chứa `A9A5447a`.
 - Bẫy đã dính khi ký bằng `--browser`: (1) OKX nhớ mạng RIÊNG cho trang localhost:9545 → đổi mạng của trang sang Arc 5042; (2) đừng `curl` trang 9545 (mất phiên, nút Confirm chết); (3) `forge script` nhiều giao dịch: trang KHÔNG hiện giao dịch thứ 2 → dùng `forge create` từng hợp đồng.
-- **Chưa làm**: smoke test 1–2 USDC (Hiếu), verify nguồn trên explorer.arc.io, DCA vẫn tắt.
+- **Verify nguồn**: cả 2 hợp đồng `exact_match` trên Sourcify (`forge verify-contract … --verifier sourcify`). explorer.arc.io chặn lệnh tự động bằng Cloudflare challenge (403) nên không verify bằng blockscout được từ máy.
+- **Kiểm toán 2026-10-29**: không có lỗi mất tiền. Đã sửa: giới hạn 20 tin/ngày, ví owner 60; `public/_headers` chặn nhúng iframe; `cf:deploy` từ chối build khi thiếu `VITE_NETWORK=mainnet` + factory (`scripts/check-deploy-env.mjs`). Còn treo: agent có thể bị làm cạn trần token toàn hệ thống bằng vài tài khoản email (chặn ở /admin), 16 cảnh báo thư viện (DoS parser, dọn sau), Safe 2-of-2 không ví dự phòng.
+- **Chưa làm**: smoke test 1–2 USDC (Hiếu), DCA vẫn tắt.
 
 ## 0. Chuẩn bị mainnet (2026-10-28, chưa deploy lên mainnet)
 - **Công tắc mạng** `VITE_NETWORK=mainnet` (`src/lib/network.ts`); mặc định VẪN là testnet. Mainnet không có factory mặc định (cần `VITE_FACTORY_ADDRESS`).
