@@ -31,7 +31,7 @@ export interface FormValues {
   bank: string
   cash: string
   btc: string
-  eth: string
+  /** Every coin other than Bitcoin (Hieu, 2026-10-29: ask Bitcoin and altcoins only). */
   coins: string
   gold: string
   stocks: string
@@ -51,7 +51,7 @@ export interface FormValues {
 
 export const EMPTY_FORM: FormValues = {
   age: '', salary: '', otherIncome: null, passive: '', windfalls: null, windfallsYearly: '', spending: '', steady: null, reliers: null, reliersCount: '1',
-  goal: null, goalName: '', goalAmount: '', goalYears: '', usdcThis: '', usdcElsewhere: '', bank: '', cash: '', btc: '', eth: '', coins: '', gold: '', stocks: '',
+  goal: null, goalName: '', goalAmount: '', goalYears: '', usdcThis: '', usdcElsewhere: '', bank: '', cash: '', btc: '', coins: '', gold: '', stocks: '',
   otherAssets: null, home: '', car: '', lent: '', business: '', debt: null, debtKind: null, debtOwed: '', debtRate: '', debtMonthly: '',
 }
 
@@ -71,7 +71,7 @@ export interface FormItem { text: string; ops: ProfileOp[] }
 const usd = (n: number) => `${new Intl.NumberFormat('en-US', { maximumFractionDigits: n >= 100 ? 0 : 2 }).format(n)} USDC`
 
 /**
- * The items a filled form stands for, in the order they are shown. Market-priced things (BTC, ETH, gold) are stored as a quantity at
+ * The items a filled form stands for, in the order they are shown. Market-priced things (BTC, gold) are stored as a quantity at
  * today's price when a price is known, otherwise as the value the user typed; everything else keeps the typed value.
  */
 export function formToItems(v: FormValues, prices: Prices | null, now = Date.now()): FormItem[] {
@@ -126,8 +126,7 @@ export function formToItems(v: FormValues, prices: Prices | null, now = Date.now
   holding('savings', 'Bank savings', parseAmount(v.bank))
   holding('cash', 'Cash', parseAmount(v.cash))
   priced('btc', 'Bitcoin', 'BTC', parseAmount(v.btc), prices?.usd['crypto:BTC'])
-  priced('eth', 'Ethereum', 'ETH', parseAmount(v.eth), prices?.usd['crypto:ETH'])
-  holding('altcoin', 'Other coins', parseAmount(v.coins))
+  holding('altcoin', 'Altcoins', parseAmount(v.coins))
   priced('gold_physical', 'Gold', undefined, parseAmount(v.gold), prices?.goldUsdPerOz ?? undefined, 'oz')
   holding('fund_bond', 'Stocks and funds', parseAmount(v.stocks))
   if (v.otherAssets === 'yes') {

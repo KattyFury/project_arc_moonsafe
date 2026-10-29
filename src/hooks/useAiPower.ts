@@ -15,6 +15,10 @@ export interface AiPower {
   /** When the free allowance resets (ms since epoch, 00:00 UTC). */
   resetsAt: number
   canRecharge: boolean
+  paymentAddress: string
+  /** Native units (18 decimals). */
+  pricePerPurchase: string
+  messagesPerPurchase: number
   ownerWallet: string
   ownerVerified: boolean
 }
@@ -58,5 +62,19 @@ export function useAiPower() {
     if (d?.power) setPower(d.power as AiPower)
   }, [])
 
-  return { power, setPower, refresh, verifyOwner }
+  /** After the 1 USDC payment is mined: the server checks it onchain and adds the messages. Retries while the RPC catches up. */
+  const buy = useCallback(async (txHash: string) => {
+    for (let i = 0; ; i++) {
+      try {
+        const d = await call('POST', { action: 'buy', txHash })
+        if (d?.power) setPower(d.power as AiPower)
+        return
+      } catch (e) {
+        if (i >= 4 || !/not confirmed yet/i.test((e as Error).message)) throw e
+        await new Promise(r => setTimeout(r, 2000))
+      }
+    }
+  }, [])
+
+  return { power, setPower, refresh, verifyOwner, buy }
 }

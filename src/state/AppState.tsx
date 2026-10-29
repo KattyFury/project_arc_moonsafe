@@ -6,7 +6,7 @@ import { CURRENCY_CHOICES } from '@/lib/features'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { usePrivy } from '@privy-io/react-auth'
 import { cloudLoad, cloudSave, readOwner, setCloudAuth, writeOwner } from '@/lib/cloud'
-import { hydrateChat, readLocalChat } from '@/hooks/useAgent'
+import { hydrateChat, readLocalChat, writeChatExtras } from '@/hooks/useAgent'
 import { useVaultState, type VaultState } from '@/hooks/useVault'
 import { readLocalProfile, useProfileState, type ProfileState } from '@/hooks/useFinancialProfile'
 import { normalizeProfile, walletMoveOps } from '@/lib/profile'
@@ -116,14 +116,19 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       try {
         const data = await cloudLoad()
         if (!alive) return
+        // A server record that exists (updatedAt > 0) is the truth: an empty field there means it was deleted on another device,
+        // so the local copy is dropped instead of being uploaded again. Only an account with no server record yet uploads its local copy.
+        const synced = typeof data?.updatedAt === 'number' && data.updatedAt > 0
         if (data?.profile && typeof data.profile === 'object') {
           const raw = data.profile as Record<string, unknown>
           const p = normalizeProfile(raw)
           hydrate(p)
           // A v1 record is migrated once and saved back, so its new ids stay the same.
           if (raw.v !== 2) cloudSave({ profile: p })
-        } else { const local = readLocalProfile(); if (local) cloudSave({ profile: local }) }
+        } else if (synced) hydrate(null)
+        else { const local = readLocalProfile(); if (local) cloudSave({ profile: local }) }
         if (Array.isArray(data?.chat) && data.chat.length) hydrateChat(data.chat as ChatMessage[])
+        else if (synced) { hydrateChat(null); writeChatExtras(null) }
         else { const local = readLocalChat(); if (local.length) cloudSave({ chat: local }) }
         setCloud({ ready: true, error: false })
       } catch (e) {

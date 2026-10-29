@@ -116,7 +116,7 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
-  const { power, setPower, verifyOwner } = useAiPower()
+  const { power, setPower, verifyOwner, buy } = useAiPower()
   const [powerOpen, setPowerOpen] = useState(false)
   const outOfPower = isOutOfPower(power)
   const { messages, loading, sendMessage } = useAgent({
@@ -201,10 +201,10 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
         </div>
 
         {power && <PowerMeter power={power} onOpen={() => setPowerOpen(true)} />}
-        {powerOpen && power && <PowerSheet power={power} verifyOwner={verifyOwner} onClose={() => setPowerOpen(false)} />}
+        {powerOpen && power && <PowerSheet power={power} verifyOwner={verifyOwner} buy={buy} onClose={() => setPowerOpen(false)} />}
 
         {/* Composer */}
-        <div className="flex-shrink-0 flex px-4 py-4 lg:px-6 lg:pb-6 lg:pt-0" style={{ background: 'var(--bg)' }}>
+        <div className="flex-shrink-0 flex px-4 pt-2 pb-4 lg:px-6 lg:pb-6" style={{ background: 'var(--bg)' }}>
           {/* One rounded box: the Send button sits INSIDE it, at the bottom right, so it stays put as the box grows (Hieu, 2026-10-28).
               The box grows with the text up to COMPOSER_MAX_PX, then scrolls (scrollbar hidden). No JS measuring: an invisible copy of
               the text sits in the same grid cell and gives the cell its height, so the box is always exactly as tall as its text.

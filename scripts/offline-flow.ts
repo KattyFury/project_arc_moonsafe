@@ -225,7 +225,7 @@ expect(safe.calls === 0 && /Safety lives outside the app/.test(safeText) && /You
   const ovText = await ov.text()
   expect(ov.status === 200 && /"openai":true/.test(ovText) && /"claude":false/.test(ovText), 'admin: the overview says which AI keys exist')
   expect(!ovText.includes('fake-secret-key-123'), 'admin: a secret is never returned')
-  expect(/"freeTurnsPerDay":30/.test(ovText) && /"userTokenBudget":600000/.test(ovText), 'admin: the effective limits are shown')
+  expect(/"freeTurnsPerDay":20/.test(ovText) && /"userTokenBudget":600000/.test(ovText), 'admin: the effective limits are shown')
 
   await kv.put('u:did:privy:alice', JSON.stringify({ profile: { holdings: [{}, {}], debts: [], age: 30 }, chat: [1, 2, 3], updatedAt: 1000 }))
   const users = await (await get('op=users', okProof)).json() as { users: Array<{ id: string; holdings: number; messages: number }> }

@@ -3,9 +3,14 @@
 
 import { useState } from 'react'
 import { Zap } from 'lucide-react'
-import { useAccount, useSignMessage } from 'wagmi'
+import { usePrivy } from '@privy-io/react-auth'
+import { useAccount, usePublicClient, useSendTransaction, useSignMessage, useSwitchChain } from 'wagmi'
 import { useNow } from '@/hooks/useNow'
 import { messagesLeft, type AiPower } from '@/hooks/useAiPower'
+import { txErrorMessage } from '@/hooks/useVault'
+import { ensureArcChain } from '@/lib/chain'
+import { CHAIN_ID, IS_MAINNET } from '@/lib/network'
+import { powerMemo } from '@/lib/power'
 import { Btn, Notice, Sheet } from '@/components/ui/kit'
 
 function untilReset(resetsAt: number, now: number): string {
@@ -29,21 +34,48 @@ export function PowerMeter({ power, onOpen }: { power: AiPower; onOpen: () => vo
       <span className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: 'var(--line)' }} aria-hidden>
         <span className="block h-full rounded-full" style={{ width: `${pct}%`, background: out ? 'var(--danger)' : 'var(--accent)' }} />
       </span>
-      <span className="text-[14px] leading-5 underline" style={{ color: 'var(--accent)' }}>{out ? 'Recharge' : 'Details'}</span>
+      <span className="flex-shrink-0 h-8 px-4 rounded-full flex items-center text-[14px] leading-5 font-semibold"
+        style={out ? { background: 'var(--accent)', color: 'white' } : { background: 'var(--surface-muted)', color: 'var(--accent)' }}>
+        {out ? 'Recharge' : 'Top up'}
+      </span>
     </button>
   )
 }
 
-export function PowerSheet({ power, verifyOwner, onClose }: {
+export function PowerSheet({ power, verifyOwner, buy, onClose }: {
   power: AiPower
   verifyOwner: (sign: (message: string) => Promise<string>) => Promise<void>
+  buy: (txHash: string) => Promise<void>
   onClose: () => void
 }) {
   const now = useNow()
-  const { address } = useAccount()
+  const { address, connector } = useAccount()
+  const { user } = usePrivy()
   const { signMessageAsync } = useSignMessage()
+  const { sendTransactionAsync } = useSendTransaction()
+  const { switchChainAsync } = useSwitchChain()
+  const publicClient = usePublicClient({ chainId: CHAIN_ID })
   const [busy, setBusy] = useState(false)
+  const [buying, setBuying] = useState(false)
+  const [bought, setBought] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // 1 USDC to the payment address, with this account's memo as calldata (src/lib/power.ts); the server checks it onchain.
+  const purchase = async () => {
+    if (!user?.id || !publicClient) return
+    setBuying(true); setError(null); setBought(false)
+    try {
+      await ensureArcChain(connector, switchChainAsync)
+      const hash = await sendTransactionAsync({
+        to: power.paymentAddress as `0x${string}`, value: BigInt(power.pricePerPurchase), data: powerMemo(user.id), chainId: CHAIN_ID,
+      })
+      const receipt = await publicClient.waitForTransactionReceipt({ hash })
+      if (receipt.status !== 'success') throw new Error('The payment was rejected onchain')
+      await buy(hash)
+      setBought(true)
+    } catch (e) { setError(txErrorMessage(e)) }
+    finally { setBuying(false) }
+  }
   const canUnlock = !power.ownerVerified && !!address && address.toLowerCase() === power.ownerWallet
 
   const unlock = async () => {
@@ -73,17 +105,27 @@ export function PowerSheet({ power, verifyOwner, onClose }: {
           <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>Charged, saved for later</p>
         </div>
       </div>
-      <Notice tone="info" title="Need more?">
-        Charging extra AI power opens soon. Charged power never expires and is used after the free messages.
-      </Notice>
+      {IS_MAINNET && power.canRecharge ? (
+        <>
+          <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>
+            Need more? 1 USDC adds {power.messagesPerPurchase} messages that never expire. They are used after the free messages.
+          </p>
+          {bought && <Notice tone="success">{power.messagesPerPurchase} messages added.</Notice>}
+          <Btn loading={buying} onClick={() => { void purchase() }}>Buy {power.messagesPerPurchase} messages · 1 USDC</Btn>
+        </>
+      ) : (
+        <Notice tone="info" title="Need more?">
+          Buying extra AI power is available on Arc mainnet. Bought power never expires and is used after the free messages.
+        </Notice>
+      )}
       {canUnlock && (
         <>
           <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>This is the owner wallet. Sign once to raise your allowance (no fee, nothing is sent onchain).</p>
-          {error && <Notice tone="danger">{error}</Notice>}
           <Btn variant="outline" loading={busy} onClick={() => { void unlock() }}>Unlock the owner allowance</Btn>
         </>
       )}
-      <Btn onClick={onClose}>Close</Btn>
+      {error && <Notice tone="danger">{error}</Notice>}
+      <Btn variant="outline" onClick={onClose}>Close</Btn>
     </Sheet>
   )
 }

@@ -167,7 +167,7 @@ const YES_SHORT = /^\s*(ok|okay|oke|sure|yes|yeah|yep|yup|go ahead|do it|sounds 
  */
 export function detectPartChoice(userText: string, prevAssistant: string): Part | null {
   const t = userText.trim()
-  if (!t || t.length > 70 || /\d/.test(t) || /(why|what is|what'?s|explain|how much|vì sao|tại sao)/i.test(t)) return null // lang-ok
+  if (!t || t.length > 70 || /\d/.test(t) || /(why|what if|what is|what'?s|explain|how much|don'?t|do not|vì sao|tại sao|nếu không)/i.test(t)) return null // lang-ok
   if (!/(fill first|start with|which part|which bucket|how about|what about|still has room|muốn lấp|bắt đầu với)/i.test(prevAssistant)) return null // lang-ok
   const hit = PART_WORDS.filter(([, re]) => re.test(t)).map(([k]) => k)
   if (hit.length === 1) return hit[0]

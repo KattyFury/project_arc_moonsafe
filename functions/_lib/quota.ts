@@ -10,16 +10,19 @@
  * KV has no increment: a parallel request can slip through now and then, which is fine for a daily allowance.
  */
 
-import { recoverMessageAddress } from 'viem'
+import { createPublicClient, http, recoverMessageAddress } from 'viem'
 import type { BudgetEnv, Kv } from './budget'
+import { DEFAULT_POWER_PAYMENT_ADDRESS, POWER_PER_PURCHASE, POWER_PRICE_NATIVE, powerMemo } from '../../src/lib/power'
 
 export interface PowerEnv extends BudgetEnv {
   FREE_TURNS_PER_DAY?: string
   OWNER_TURNS_PER_DAY?: string
   /** Wallet whose holder gets the bigger allowance. Public value (it is the factory owner). */
   OWNER_WALLET?: string
-  /** Where power purchases are paid; recharging is off until this is set. */
+  /** Where power purchases are paid (default: the owner wallet, Hieu 2026-10-29). */
   POWER_PAYMENT_ADDRESS?: string
+  /** RPC used to check purchases (default: Arc mainnet). */
+  ARC_RPC?: string
 }
 
 export const DEFAULT_FREE = 20
@@ -40,6 +43,10 @@ export interface PowerState {
   /** When the free allowance resets (ms since epoch, 00:00 UTC). */
   resetsAt: number
   canRecharge: boolean
+  /** Where a purchase is paid, and what it costs and gives. */
+  paymentAddress: string
+  pricePerPurchase: string
+  messagesPerPurchase: number
   ownerWallet: string
   ownerVerified: boolean
 }
@@ -57,6 +64,7 @@ const kOwner = (id: string) => `owner:${id}`
 const num = async (kv: Kv, key: string) => { const n = Number(await kv.get(key)); return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0 }
 const limitOf = (v: string | undefined, fallback: number) => { const n = Number(v); return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback }
 export const ownerWallet = (env: PowerEnv) => (env.OWNER_WALLET || DEFAULT_OWNER_WALLET).toLowerCase()
+const paymentAddress = (env: PowerEnv) => (env.POWER_PAYMENT_ADDRESS || DEFAULT_POWER_PAYMENT_ADDRESS).toLowerCase()
 
 export async function powerState(env: PowerEnv, id: string): Promise<PowerState | null> {
   const kv = env.USERDATA
@@ -66,7 +74,8 @@ export async function powerState(env: PowerEnv, id: string): Promise<PowerState 
   const limit = verified ? limitOf(env.OWNER_TURNS_PER_DAY, DEFAULT_OWNER) : limitOf(env.FREE_TURNS_PER_DAY, DEFAULT_FREE)
   return {
     used: Math.min(turns, limit), limit, extra, boosted: verified, resetsAt: resetsAt(),
-    canRecharge: !!env.POWER_PAYMENT_ADDRESS, ownerWallet: ownerWallet(env), ownerVerified: verified,
+    canRecharge: true, paymentAddress: paymentAddress(env), pricePerPurchase: POWER_PRICE_NATIVE.toString(), messagesPerPurchase: POWER_PER_PURCHASE,
+    ownerWallet: ownerWallet(env), ownerVerified: verified,
   }
 }
 
@@ -115,5 +124,31 @@ export async function verifyOwner(env: PowerEnv, id: string, challenge: string, 
   try { signer = (await recoverMessageAddress({ message: challenge, signature: signature as `0x${string}` })).toLowerCase() } catch { return { ok: false, error: 'Invalid signature' } }
   if (signer !== ownerWallet(env)) return { ok: false, error: 'This wallet is not the owner wallet' }
   await kv.put(kOwner(id), signer)
+  return { ok: true }
+}
+
+/**
+ * Credits one purchase: the transaction must have succeeded on Arc, pay exactly 1 USDC to the payment address and carry this
+ * account's memo (src/lib/power.ts). Each transaction counts once (KV key powertx:<hash>, kept forever).
+ */
+export async function buyPower(env: PowerEnv, id: string, txHash: string): Promise<{ ok: boolean; error?: string; retry?: boolean }> {
+  const kv = env.USERDATA
+  if (!kv) return { ok: false, error: 'Data storage is not configured' }
+  if (!/^0x[0-9a-fA-F]{64}$/.test(txHash)) return { ok: false, error: 'That is not a transaction hash' }
+  const hash = txHash.toLowerCase() as `0x${string}`
+  if (await kv.get(`powertx:${hash}`)) return { ok: false, error: 'This payment was already counted' }
+  const client = createPublicClient({ transport: http(env.ARC_RPC || 'https://rpc.mainnet.arc.io') })
+  let tx, receipt
+  try {
+    [tx, receipt] = await Promise.all([client.getTransaction({ hash }), client.getTransactionReceipt({ hash })])
+  } catch {
+    return { ok: false, retry: true, error: 'The payment is not confirmed yet, try again in a moment' }
+  }
+  if (receipt.status !== 'success') return { ok: false, error: 'The payment failed onchain' }
+  if (tx.to?.toLowerCase() !== paymentAddress(env)) return { ok: false, error: 'The payment went to a different address' }
+  if (tx.value !== POWER_PRICE_NATIVE) return { ok: false, error: 'The payment must be exactly 1 USDC' }
+  if (tx.input.toLowerCase() !== powerMemo(id).toLowerCase()) return { ok: false, error: 'This payment was not made for your account' }
+  await kv.put(`powertx:${hash}`, id)
+  await kv.put(kPower(id), String((await num(kv, kPower(id))) + POWER_PER_PURCHASE))
   return { ok: true }
 }
