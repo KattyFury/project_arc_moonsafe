@@ -4,6 +4,15 @@ App quỹ dự phòng + tài chính cá nhân cho người dùng Web3, chạy tr
 Cập nhật lần cuối: **2026-10-28** (cuối ngày), `main` = `5490b96`, deploy production Cloudflare `4be3b2c7`. Ghi chú theo phiên cũ: [`docs/handoff-archive.md`](docs/handoff-archive.md).
 Khung tài chính: [`docs/SPEC-FRAMEWORK-2026-10-25.md`](docs/SPEC-FRAMEWORK-2026-10-25.md) (dữ liệu ở `src/kb/`). Rà soát bảo mật: [`docs/audit-2026-10-27.md`](docs/audit-2026-10-27.md). Chi phí token: [`docs/token-cost-2026-10-28.md`](docs/token-cost-2026-10-28.md). Kiểm giao diện bằng trình duyệt thật: [`docs/browser-checks.md`](docs/browser-checks.md).
 
+## ▶ MAINNET ĐÃ LIVE (2026-10-29)
+moonsafe.app = **Arc mainnet (chain 5042), tiền thật**. Hiếu tự ký mọi giao dịch bằng OKX Wallet qua `--browser` của Foundry (không keystore, key không rời ví).
+- **Safe 2-of-2** `0xC4c428c635913e5937BA0DA6E060E495f5a664b9` (chủ `0xEb2D…52F6` + `0xb0A8…c071`), tx `0xd025b2b8…b093`.
+- **VaultProxy (mẫu)** `0xd139b06b1bb5303a4fbA25E2B2297Cf1515cAACE` · **VaultFactory** `0xA9A5447a1Dd9874c25238d69E285249Fa1c9E10A` (tx `0x32f5fffe…595c`), chủ = Safe, nhận phí = `0xEb2D`, phí 1 USDC. `preflight-mainnet.ts`: All checks passed (15/15).
+- **KV mainnet** `USERDATA_MAINNET` id `4dca45d1b7c14f3cb1250d78a266d936` (trong `wrangler.toml`; KV testnet cũ `f5f9fd48…` = rollback). Cloudflare deploy `db986e84`.
+- **Deploy từ giờ PHẢI kèm 2 biến mạng**, thiếu là build ra testnet: `env -u VITE_PRIVY_APP_ID -u VITE_CIRBTC_ADDRESS VITE_NETWORK=mainnet VITE_FACTORY_ADDRESS=0xA9A5447a1Dd9874c25238d69E285249Fa1c9E10A CLOUDFLARE_API_TOKEN=… CLOUDFLARE_ACCOUNT_ID=… bun run cf:deploy`. Kiểm: bundle chứa `A9A5447a`.
+- Bẫy đã dính khi ký bằng `--browser`: (1) OKX nhớ mạng RIÊNG cho trang localhost:9545 → đổi mạng của trang sang Arc 5042; (2) đừng `curl` trang 9545 (mất phiên, nút Confirm chết); (3) `forge script` nhiều giao dịch: trang KHÔNG hiện giao dịch thứ 2 → dùng `forge create` từng hợp đồng.
+- **Chưa làm**: smoke test 1–2 USDC (Hiếu), verify nguồn trên explorer.arc.io, DCA vẫn tắt.
+
 ## 0. Chuẩn bị mainnet (2026-10-28, chưa deploy lên mainnet)
 - **Công tắc mạng** `VITE_NETWORK=mainnet` (`src/lib/network.ts`); mặc định VẪN là testnet. Mainnet không có factory mặc định (cần `VITE_FACTORY_ADDRESS`).
 - **Mã hợp đồng trong repo giờ là v2 (ứng viên mainnet); factory testnet `0xAd06…` đang chạy v1** (mã v1 ở lịch sử git, commit `5f5fc7d`). ABI mà app dùng (`getVault`, `fee`, `createVault`, vault `deposit/withdraw/getBalance`) không đổi nên app chạy được với cả hai.

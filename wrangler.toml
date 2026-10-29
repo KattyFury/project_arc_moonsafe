@@ -6,6 +6,7 @@ pages_build_output_dir = "dist"
 compatibility_date = "2025-01-01"
 
 # Per-user data (profile, chat), functions/api/userdata.ts.
+# Mainnet KV "USERDATA_MAINNET" since 2026-10-29. Rollback to testnet: id f5f9fd482e3b4810898171fa71dca952.
 [[kv_namespaces]]
 binding = "USERDATA"
-id = "f5f9fd482e3b4810898171fa71dca952"
+id = "4dca45d1b7c14f3cb1250d78a266d936"
