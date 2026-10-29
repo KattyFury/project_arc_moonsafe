@@ -1,0 +1,191 @@
+{
+  "baseCommit": "25e5f4eff07818527bb78192da177c6340a90b95",
+  "model": "gpt-5.4-mini",
+  "pricingUrl": "https://developers.openai.com/api/docs/models/gpt-5.4-mini",
+  "baseline": {
+    "summary": {
+      "mode": "live",
+      "baseline": true,
+      "checks": 63,
+      "calls": 12,
+      "input": 56616,
+      "output": 644,
+      "cached": 34176,
+      "external": 6
+    },
+    "transcript": [
+      {
+        "user": "what is personal finance?",
+        "status": 200,
+        "content": "Personal finance is just **how you manage your money**: what comes in, what goes out, what you keep for emergencies, and what you set aside for later.\nIn MoonSafe, that means a few simple questions about your money, then a plan for your **emergency fund** and how to divide the rest for your age.\nIt is not about being perfect; it is about knowing where your money goes so you can make calm choices.",
+        "actions": [],
+        "ops": [],
+        "modelCalls": 2
+      },
+      {
+        "user": "what is dca?",
+        "status": 200,
+        "content": "DCA means **buying a fixed amount on a regular schedule**, like every month, instead of trying to guess the best time. It helps because nobody knows the top or bottom, so you spread the risk over time. I don’t have a number from your figures to show a real example yet.",
+        "actions": [],
+        "ops": [],
+        "modelCalls": 4
+      },
+      {
+        "user": "can btc go to zero?",
+        "status": 200,
+        "content": "Yes — BTC can fall very hard, and in a worst-case scenario it can go near zero.\n\ncirBTC is Bitcoin you can buy and hold in this app, and that buying is **locked** for you right now. To open it: tell me your monthly spending, say whether your income is stable, and say whether you have any debt; that cushion matters because if BTC drops when you need cash, you would not be forced to sell at a loss.",
+        "actions": [],
+        "ops": [],
+        "modelCalls": 4
+      },
+      {
+        "user": "Explain the difference between needs and wants",
+        "status": 200,
+        "content": "I need some information to build a plan for your money. Share whatever you're comfortable with in the form below; anything you leave empty I'll take as \"prefer not to say\" and skip it.",
+        "actions": [
+          {
+            "type": "intake_form",
+            "keys": [
+              "age",
+              "income",
+              "spending",
+              "stability",
+              "goal",
+              "assets",
+              "other",
+              "debt"
+            ],
+            "seen": null
+          }
+        ],
+        "ops": [],
+        "modelCalls": 0
+      },
+      {
+        "user": "Giải thích cách phân biệt nhu cầu thiết yếu và mong muốn",
+        "status": 200,
+        "content": "Mình cần một số thông tin để lập kế hoạch cho tiền của bạn. Bạn cứ điền những gì bạn thoải mái chia sẻ ở biểu mẫu bên dưới; ô nào để trống mình hiểu là bạn không muốn chia sẻ và sẽ bỏ qua.",
+        "actions": [
+          {
+            "type": "intake_form",
+            "keys": [
+              "age",
+              "income",
+              "spending",
+              "stability",
+              "goal",
+              "assets",
+              "other",
+              "debt"
+            ],
+            "seen": null
+          }
+        ],
+        "ops": [],
+        "modelCalls": 0
+      },
+      {
+        "user": "Is the testnet vault suitable for my real emergency savings?",
+        "status": 200,
+        "content": "No — the testnet vault is for practice, not real emergency savings.\n\nTo check whether your real savings fit MoonSafe, I need your age first because the plan depends on it.",
+        "actions": [],
+        "ops": [],
+        "modelCalls": 2
+      }
+    ]
+  },
+  "candidate": {
+    "summary": {
+      "mode": "live",
+      "baseline": false,
+      "checks": 63,
+      "calls": 5,
+      "input": 25621,
+      "output": 460,
+      "cached": 10368,
+      "external": 3
+    },
+    "transcript": [
+      {
+        "user": "what is personal finance?",
+        "status": 200,
+        "content": "Personal finance is how you manage income, spending, savings and debt to support your goals. A useful first step is to track what comes in and goes out each month, then decide what you can set aside.\n\n[FCAC](https://www.canada.ca/en/financial-consumer-agency/services/make-budget.html)",
+        "actions": [],
+        "ops": [],
+        "modelCalls": 0
+      },
+      {
+        "user": "what is dca?",
+        "status": 200,
+        "content": "DCA means investing equal amounts at regular intervals instead of trying to pick the perfect entry price. It spreads purchases across different prices, but does not guarantee profit or prevent losses. MoonSafe does not currently execute recurring buys automatically; each purchase needs your signature.\n\n[Investor.gov](https://www.investor.gov/introduction-investing/investing-basics/glossary/dollar-cost-averaging)",
+        "actions": [],
+        "ops": [],
+        "modelCalls": 0
+      },
+      {
+        "user": "can btc go to zero?",
+        "status": 200,
+        "content": "Bitcoin can suffer severe losses; nobody can guarantee a minimum price or a recovery. MoonSafe keeping a positive BTC share in its formula is a product choice, not a guarantee about Bitcoin’s value. Money needed for essential bills or near-term goals should not depend on a price recovery.\n\n[FCA](https://www.fca.org.uk/investsmart/investing-crypto)",
+        "actions": [],
+        "ops": [],
+        "modelCalls": 0
+      },
+      {
+        "user": "Explain the difference between needs and wants",
+        "status": 200,
+        "content": "**Needs** are things that keep life running, like food, rent, transport, and bills. **Wants** are things that make life nicer, but you could skip for a while, like a new phone, eating out, or a trip.\nA simple test: if you had to cut spending this month, a need is hard to remove; a want is easier to pause.\nThis matters because needs come first when you figure out your monthly spending and your emergency fund target.",
+        "actions": [],
+        "ops": [],
+        "modelCalls": 1
+      },
+      {
+        "user": "Giải thích cách phân biệt nhu cầu thiết yếu và mong muốn",
+        "status": 200,
+        "content": "Nhu cầu thiết yếu là những khoản **phải có để sống và làm việc bình thường**; bỏ đi là ảnh hưởng ngay.\nMong muốn là những khoản **làm cuộc sống dễ chịu hơn nhưng không bắt buộc**; bỏ đi thì vẫn ổn.\nVí dụ nhanh: ăn uống, nhà ở, thuốc men là nhu cầu; ăn nhà hàng, đổi điện thoại, du lịch là mong muốn.\nBạn có muốn mình giúp bạn tách một danh sách chi tiêu thành hai nhóm này không?",
+        "actions": [],
+        "ops": [],
+        "modelCalls": 2
+      },
+      {
+        "user": "Is the testnet vault suitable for my real emergency savings?",
+        "status": 200,
+        "content": "No — **testnet vault tokens are for testing, not real emergency savings**. They are fine for trying the app, but they would not help you pay a bill or handle an actual bad month. For real emergency savings, you’d want the real vault and real funds, not testnet.",
+        "actions": [],
+        "ops": [],
+        "modelCalls": 2
+      }
+    ]
+  },
+  "testnetPolicyRetest": {
+    "summary": {
+      "mode": "live",
+      "baseline": false,
+      "checks": 63,
+      "calls": 2,
+      "input": 9675,
+      "output": 61,
+      "cached": 4608,
+      "external": 1
+    },
+    "transcript": [
+      {
+        "user": "Is the testnet vault suitable for my real emergency savings?",
+        "status": 200,
+        "content": "No—**a testnet vault is only for testing**, not for real emergency savings. Real emergency money should stay in something you can actually use in your own local currency, because testnet tokens have no real-world value.",
+        "actions": [],
+        "ops": [],
+        "modelCalls": 2
+      }
+    ]
+  },
+  "estimatedUsd": [
+    0.0222912,
+    0.01428735,
+    0.00442035
+  ],
+  "limitations": [
+    "Six independent empty-profile questions, one run per variant; not a population benchmark.",
+    "Candidate testnet response was tightened and retested separately; original candidate answer is retained.",
+    "Synthetic profiles and fixed FX, OpenAI only; no paid LLM judge."
+  ]
+}
