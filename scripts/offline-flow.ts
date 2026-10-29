@@ -165,6 +165,14 @@ const yep = await call([...history, { role: 'user', content: message }, { role: 
 const yepText = yep.body.content ?? ''
 
 // "Are you free to use?": the real prices, from code (Hieu, 2026-10-29).
+// "no" to the deposit offer: respected, no card, no second offer (real chat 2026-10-29).
+const offer = 'Ready to start? The first step is your emergency fund: shall I prepare a deposit of 24 USDC from your wallet for you to sign?'
+const no = await call([{ role: 'user', content: 'I want to start investing' }, { role: 'assistant', content: offer }, { role: 'user', content: 'no' }], base, 0)
+const noText = no.body.content ?? ''
+expect(no.calls === 0 && /your call/.test(noText) && !/prepare|deposit/i.test(noText) && !(no.body.actions ?? []).length, `"no" to an offer is respected with no new offer (got: ${noText.slice(0, 80)})`)
+const noMore = await call([{ role: 'assistant', content: offer }, { role: 'user', content: 'no, make it 10' }], base, 0)
+expect(!/your call/.test(noMore.body.content ?? ''), '"no, make it 10" is not a plain no')
+
 const price = await call([{ role: 'user', content: 'are you free to use?' }], base, 900)
 const priceText = price.body.content ?? ''
 expect(price.calls === 0 && /20 messages a day/.test(priceText) && /1 USDC, once/.test(priceText) && /charges nothing else/.test(priceText), `"are you free?" gets the prices with no model call (got ${price.calls} calls: ${priceText.slice(0, 80)})`)
