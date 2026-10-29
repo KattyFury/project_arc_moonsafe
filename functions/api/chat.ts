@@ -39,6 +39,7 @@ import { bucketLabel, detectPlacement } from '../../src/lib/record'
 import type { AssetType, Currency, Debt, DebtType, Expense, FinancialProfile, Holding, Income, NearGoal } from '../../src/types'
 
 interface Env extends PowerEnv {
+  LOCAL_DEV?: string // '1' only in the offline scripts: lets the chat run without the KV binding
   OPENAI_API_KEY?: string
   /** Standby model, used when OpenAI cannot answer (functions/_lib/llm.ts). */
   ANTHROPIC_API_KEY?: string
@@ -101,7 +102,7 @@ const INVEST_INTENT = /(?<!\p{L})(buy|cirbtc|dca|btc|bitcoin|mua)(?!\p{L})/iu //
 // "I'm not yet investing" (answer to the coins question) once got the buy-lock sentence (real chat 2026-10-26).
 const NOT_INVESTING = /(not|never|don'?t|do not|no)\s+(yet\s+)?(invest|investing|buy|buying)|(chưa|không|ko)\s+(đầu tư|mua)/iu // lang-ok
 // A number paid per month or towards a debt: never the total owed ("200$ to repay my debt" became a 200 debt, real chat 2026-10-26).
-const PAYMENT_NUM = /(\d[\d.,]*\d|\d)\s*k?\s*(?:\$|usdc?|usdt|dollars?|đô)?\s*(?:a month|per month|\/\s*month|monthly|each month|every month|to repay|to pay (?:it )?(?:back|off)|for (?:my |the )?(?:debt|loan)|mỗi tháng|một tháng|\/\s*tháng|trả nợ|trả góp)/giu // lang-ok
+const PAYMENT_NUM = /(\d[\d.,]*\d|\d)\s{0,3}k?\s{0,3}(?:\$|usdc?|usdt|dollars?|đô)?\s{0,3}(?:a month|per month|\/\s*month|monthly|each month|every month|to repay|to pay (?:it )?(?:back|off)|for (?:my |the )?(?:debt|loan)|mỗi tháng|một tháng|\/\s*tháng|trả nợ|trả góp)/giu // lang-ok
 const APP_WALLET = /(this|the app|my app|moonsafe)\s+wallet|in (the|this) app|ví (này|app|moonsafe)/i // lang-ok
 const QUESTIONS_US = /\?|(?<!\p{L})(why|you mean|wrong|how come|sao|tại sao|sai)(?!\p{L})/iu // lang-ok
 // "my mom not using interest on me" was not read as 0% (real chat 2026-10-26).
@@ -712,13 +713,19 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   const userId = await privyUserId(context.request, context.env)
   if (!userId) return json({ error: 'Please sign in again' }, 401)
 
+  // Without the KV binding there is no quota, budget, pause switch or block list: refuse instead of running unlimited (a preview
+  // deployment that has an LLM key would otherwise be a free money tap). LOCAL_DEV=1 is for the offline scripts only.
+  if (!context.env.USERDATA && context.env.LOCAL_DEV !== '1') return json({ error: 'The agent is unavailable right now', code: 'unavailable' }, 503)
   const meter0: Meter = { tokens: 0 }
   const meter = meter0
   const text = await context.request.text()
   if (text.length > MAX_BODY_CHARS) return json({ error: 'That message is too long' }, 413)
   let body: RequestBody
   try { body = JSON.parse(text) as RequestBody } catch { return json({ error: 'Invalid JSON' }, 400) }
-  if (Array.isArray(body.messages)) body.messages = body.messages.map(m => typeof m?.content === 'string' ? { ...m, content: m.content.slice(0, MAX_MESSAGE_CHARS) } : m)
+  // Only role + text go on: no tool fields, no odd types. Long whitespace runs are collapsed (security review 2026-10-29: they made a regex take seconds).
+  body.messages = (Array.isArray(body.messages) ? body.messages : [])
+    .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
+    .map(m => ({ role: m.role, content: m.content.slice(0, MAX_MESSAGE_CHARS).replace(/\s{3,}/g, ' ') }))
 
   // What the admin switched (functions/_lib/config.ts): the agent can be paused, an account can be blocked, the limits can be changed.
   const cfg = await getConfig(context.env)
@@ -745,9 +752,10 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
     const data = await res.json() as Record<string, unknown>
     return json({ ...data, power: await powerState(context.env, userId) })
   } finally {
-    if (!ok) await turn.refund() // a message that got no answer is not charged
-    await addUsage(context.env, userId, meter.tokens)
-    await recordStats(context.env, meter, lastUser.startsWith('[app event]') ? 'event' : 'message', ok)
+    // A message that got no answer is not charged, unless the model was already paid for it (then it counts: no free retries).
+    if (!ok && meter.tokens === 0) { try { await turn.refund() } catch { /* the counter is only advisory */ } }
+    try { await addUsage(context.env, userId, meter.tokens) } catch { /* ditto */ }
+    try { await recordStats(context.env, meter, lastUser.startsWith('[app event]') ? 'event' : 'message', ok) } catch { /* ditto */ }
   }
 }
 
@@ -1190,7 +1198,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       if (name === 'prepare_buy_cirbtc' && amtUsd !== null && amtUsd > canSpend + 0.5) {
         return `Not done: the app wallet holds ${usdc(canSpend)}; a card can buy at most that now. Offer ${usdc(canSpend)} and say the rest needs money moved to the wallet first.`
       }
-      actions.push({ type: name, ...a })
+      actions.push({ ...a, type: name })
       const amt = amt0 ? moneyText(amt0) : 'an unclear amount'
       done.push(
         name === 'open_screen' ? `Opened the ${SCREEN_NAMES[String(a.screen)] ?? String(a.screen)} screen; the user is looking at it, do NOT list figures, one short sentence.`

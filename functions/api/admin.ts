@@ -53,7 +53,7 @@ export async function onRequestGet({ request, env }: { request: Request; env: En
   const op = url.searchParams.get('op') ?? 'overview'
   if (op === 'challenge') {
     const id = await privyUserId(request, env)
-    return id ? json({ message: adminChallenge(id), wallets: adminWallets(env) }) : json({ error: 'Please sign in again' }, 401)
+    return id ? json({ message: adminChallenge(id, url.host) }) : json({ error: 'Please sign in again' }, 401)
   }
   const who = await requireAdmin(request, env)
   if (!who.ok) return json({ error: who.error }, who.status)

@@ -69,7 +69,7 @@ async function call(messages: Array<{ role: string; content: string }>, profile:
   modelCalls = 0
   const request = new Request('http://local/api/chat', { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
     body: JSON.stringify({ messages, context: { profile, vaultUsdc, walletUsdc: 1916, cirBtcUsdc: 0 } }) })
-  const res = await onRequestPost({ request, env: { OPENAI_API_KEY: 'fake' } })
+  const res = await onRequestPost({ request, env: { OPENAI_API_KEY: 'fake', LOCAL_DEV: '1' } })
   const body = await res.json() as { content?: string; ops?: unknown[]; actions?: Array<{ type: string; items?: Array<{ text: string; ops: unknown }>; ask?: string[] }>; error?: string }
   return { status: res.status, body, calls: modelCalls }
 }
@@ -206,8 +206,8 @@ expect(safe.calls === 0 && /Safety lives outside the app/.test(safeText) && /You
   const admin = privateKeyToAccount(generatePrivateKey())
   const stranger = privateKeyToAccount(generatePrivateKey())
   const env = { OPENAI_API_KEY: 'fake-secret-key-123', ADMIN_WALLETS: admin.address, USERDATA: kv }
-  const proof = async (who = admin, account = 'did:privy:token-report', age = 0) => {
-    const message = `MoonSafe admin sign-in\nAccount: ${account}\nIssued: ${Date.now() - age}`
+  const proof = async (who = admin, account = 'did:privy:token-report', age = 0, host = 'local') => {
+    const message = `MoonSafe admin sign-in\nDomain: ${host}\nAccount: ${account}\nIssued: ${Date.now() - age}`
     return JSON.stringify({ message, signature: await who.signMessage({ message }) })
   }
   const headers = (p?: string) => ({ authorization: `Bearer ${token}`, 'content-type': 'application/json', ...(p ? { 'x-admin-proof': p } : {}) })
@@ -220,6 +220,10 @@ expect(safe.calls === 0 && /Safety lives outside the app/.test(safeText) && /You
   expect((await get('op=overview', await proof(stranger))).status === 403, 'admin: a wallet that is not on the list is refused')
   expect((await get('op=overview', await proof(admin, 'did:privy:somebody-else'))).status === 403, 'admin: a proof made for another account is refused')
   expect((await get('op=overview', await proof(admin, 'did:privy:token-report', 31 * 60_000))).status === 403, 'admin: a proof older than 30 minutes is refused')
+  expect((await get('op=overview', await proof(admin, 'did:privy:token-report', 0, 'evil.example'))).status === 403, 'admin: a proof signed for another site is refused')
+  const ch = await (await get('op=challenge')).json() as { message?: string; wallets?: unknown }
+  expect(/^MoonSafe admin sign-in\nDomain: local\nAccount: did:privy:token-report\nIssued: \d+$/.test(ch.message ?? '') && ch.wallets === undefined, 'admin: the challenge names the site and does not list the admin wallets')
+  expect((await adminGet({ request: new Request('http://local/api/admin?op=overview', { headers: headers(await proof()) }), env: { ...env, ADMIN_WALLETS: '' } })).status === 403, 'admin: ADMIN_WALLETS set but empty switches the admin off')
   const okProof = await proof()
   const ov = await get('op=overview', okProof)
   const ovText = await ov.text()
@@ -251,6 +255,14 @@ expect(safe.calls === 0 && /Safety lives outside the app/.test(safeText) && /You
   expect((await post({ op: 'user', id: 'did:privy:alice', action: 'delete_data' }, okProof)).status === 400, 'admin: deleting data needs a confirmation')
   await post({ op: 'user', id: 'did:privy:alice', action: 'delete_data', confirm: true }, okProof)
   expect(!kv.m.has('u:did:privy:alice'), 'admin: confirmed deletion removes the account data')
+
+  // Security review 2026-10-29: fail closed without KV; a whitespace bomb must not cost seconds of CPU.
+  const noKv = await onRequestPost({ request: new Request('http://local/api/chat', { method: 'POST', headers: headers(), body: JSON.stringify({ messages: [{ role: 'user', content: 'hello' }] }) }), env: { OPENAI_API_KEY: 'fake' } })
+  expect(noKv.status === 503 && /unavailable/.test(await noKv.text()), 'security: the chat refuses to run without the KV binding')
+  const bomb = '1' + ' '.repeat(1900) + 'x'
+  const t0 = Date.now()
+  const bombRes = await onRequestPost({ request: new Request('http://local/api/chat', { method: 'POST', headers: headers(), body: JSON.stringify({ messages: [{ role: 'user', content: bomb }, { role: 'assistant', content: 'x', tool_calls: [{ bad: true }] }, { role: 'user', content: 5 }], context: {} }) }), env: env as unknown as Record<string, string> })
+  expect(Date.now() - t0 < 1500 && bombRes.status < 500, `security: a whitespace-bomb message is cheap (${Date.now() - t0} ms, status ${bombRes.status})`)
 
   const log = await (await get('op=log', okProof)).json() as { log: Array<{ action: string }> }
   expect(log.log.length >= 6 && log.log.some(l => l.action === 'config') && log.log.some(l => l.action === 'delete_data'), 'admin: every change is in the audit log')

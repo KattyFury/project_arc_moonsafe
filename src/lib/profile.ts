@@ -108,7 +108,9 @@ function readFlow<T extends Income | Expense>(raw: unknown, kinds: string[], pre
   return { id: str(o.id) ?? newId(prefix), name: str(o.name) ?? (prefix === 'i' ? 'Income' : 'Spending'), monthly, currency: cur(o.currency), kind: o.kind, updatedAt: num(o.updatedAt) ?? now } as T
 }
 
-const list = <T>(v: unknown, read: (x: unknown) => T | null): T[] => Array.isArray(v) ? v.map(read).filter((x): x is T => x !== null) : []
+// Capped: a client could otherwise send a huge profile and make every model call carry it (security review 2026-10-29).
+const MAX_LIST = 60
+const list = <T>(v: unknown, read: (x: unknown) => T | null): T[] => Array.isArray(v) ? v.slice(0, MAX_LIST).map(read).filter((x): x is T => x !== null) : []
 
 /** v1 holdings (kind savings / cash / gold / stock / crypto) → v2 asset types. */
 const OZ_PER_LUONG = 37.5 / 31.1034768
