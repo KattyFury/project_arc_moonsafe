@@ -29,5 +29,19 @@ try {
   assert.equal(messages[2].content[0].type, 'tool_result')
   assert.equal(messages[2].content[0].tool_use_id, 'call1')
   assert.equal(messages.length, 3, 'Server instructions must not be disguised as user messages')
-  console.log('Claude adapter: 9 checks passed; 0 paid calls.')
+  const revised = await callModel({ claude: 'offline-fake', claudeModel: 'claude-haiku-5-5' }, {
+    messages: [
+      { role: 'system', content: 'Base policy.' },
+      { role: 'user', content: 'Explain a budget.' },
+      { role: 'assistant', content: 'An overlong draft.' },
+      { role: 'system', content: 'Correct the draft. Output only the answer.' },
+    ], max_completion_tokens: 100,
+  }, { tokens: 0 } as Meter)
+  assert.ok(!(revised instanceof Response))
+  const revisionMessages = captured!.messages as Array<{ role: string; content: Array<{ text?: string }> }>
+  assert.equal(revisionMessages.at(-1)?.role, 'user', 'Haiku 5.5 must never receive an assistant prefill')
+  assert.equal(revisionMessages.at(-1)?.content[0].text, 'Please answer the latest user request.')
+  assert.equal(revisionMessages[1].content[0].text, 'An overlong draft.')
+  assert.equal(captured?.system, 'Base policy.\n\nCorrect the draft. Output only the answer.')
+  console.log('Claude adapter: 14 checks passed; 0 paid calls.')
 } finally { globalThis.fetch = realFetch }

@@ -73,6 +73,9 @@ function forClaude(body: Record<string, unknown>, model: string): Anthropic.Mess
       push('user', text(m.content))
     }
   }
+  // Haiku 5.5 rejects assistant prefill. A rewrite ends in a draft followed by system guidance;
+  // keep that guidance privileged, and request a fresh answer in a final user turn.
+  if (messages[messages.length - 1]?.role === 'assistant') push('user', text('Please answer the latest user request.'))
   const params: Anthropic.MessageCreateParamsNonStreaming = {
     model,
     max_tokens: Number(body.max_completion_tokens) || 1500,
