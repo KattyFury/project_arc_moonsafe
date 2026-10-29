@@ -1,6 +1,6 @@
 # MoonSafe
 
-**Onchain personal finance for Web3.** An AI advisor that helps crypto users build an emergency fund in their own USDC vault on Arc, then split the rest of their money sensibly, before they invest.
+**Your personal finance agent for Web3.** An AI advisor that helps crypto users build an emergency fund in their own USDC vault on Arc, then split the rest of their money sensibly, before they invest.
 
 Live on Arc mainnet: **https://moonsafe.app**
 

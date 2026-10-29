@@ -37,7 +37,7 @@ export function LoginScreen() {
         <div className="flex flex-col items-center gap-8">
           <div className="flex flex-col items-center gap-4 text-center">
             <h1><Wordmark size={32} /></h1>
-            <p className="max-w-[296px] text-[24px] leading-8 font-semibold" style={{ color: 'var(--ink)' }}>Onchain personal finance for Web3</p>
+            <p className="max-w-[296px] text-[24px] leading-8 font-semibold" style={{ color: 'var(--ink)' }}>Your personal finance agent for Web3</p>
           </div>
           <Steps />
         </div>
@@ -49,7 +49,7 @@ export function LoginScreen() {
         <div className="w-full max-w-[1248px] mx-auto px-6 grid grid-cols-12 gap-6 items-center">
           <div className="col-span-6 flex flex-col items-start gap-8">
             <h1><Wordmark size={40} /></h1>
-            <p className="display text-[56px] leading-[64px] font-bold" style={{ color: 'var(--ink)' }}>Onchain personal finance for Web3</p>
+            <p className="display text-[56px] leading-[64px] font-bold" style={{ color: 'var(--ink)' }}>Your personal finance agent for Web3</p>
             <Steps />
             {signIn}
           </div>
