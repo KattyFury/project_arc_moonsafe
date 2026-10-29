@@ -21,6 +21,7 @@
 
 import { getPrices } from './prices'
 import { educationAnswer, EDUCATION_POLICY } from '../_lib/education'
+import { explicitAgeRefusal, factProposals, investmentCost, quantityEvidence, turnPolicy, TURN_POLICY } from '../_lib/agentGuards'
 import { coachingBrief, recordingEvidence, COACH_POLICY, ALTCOIN_CHECK } from '../_lib/coaching'
 import { dependentEvidence, householdDefault, incomeUpdate, profileAgeAllowed, scopeBrief, scopeChoice, scopeQuestion } from '../../src/lib/planningScope'
 import { privyUserId } from '../_lib/privyAuth'
@@ -186,7 +187,6 @@ const PUSHY = /(you need to|you must|please) (declare|provide|fill in)|(bạn c�
 // Advice read as orders with no reason (Hieu, 2026-10-27): suggestions say what they do for the user.
 const BOSSY = /\byou (need|have) to\b|\byou must\b|(?<!\p{L})(bạn cần|bạn phải|hãy)(?!\p{L})/iu // lang-ok
 // Internal labels a beginner does not know (Hieu, 2026-10-27: users may never have heard of personal finance).
-const BARE_OK = /^\W*(ok|okay|oke|sure|yes|yeah|yep|alright|fine|cool|ừ|ok luôn)\W*$/iu // lang-ok
 // A term a beginner meets for the first time, and words that explain it (in this reply or an earlier one).
 const TEACH_ONCE: { term: RegExp; taught: RegExp; plain: string }[] = [
   { term: /(?<!\p{L})DCA(?!\p{L})/u, taught: /fixed amount|on a schedule|every (week|month)|same amount|regular(ly)?/i, plain: 'DCA = buying the same amount on a schedule (e.g. every month), so you do not have to guess the right moment' },
@@ -808,6 +808,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     .slice(-30)
   const ctx = (body.context ?? {}) as Record<string, unknown>
   const latest = [...messages].reverse().find(m => m.role === 'user')?.content ?? ''
+  const policy = turnPolicy(messages.filter(m => m.role === 'user').map(m => m.content))
   const lesson = educationAnswer(latest, VI_LETTERS.test(latest))
   if (lesson) return json({ content: lesson.content, ops: [], dcaStop: false, actions: [], ...(body.debug ? { education: lesson.id } : {}) })
   const scope = scopeChoice(latest)
@@ -852,7 +853,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   const vaultFee = typeof ctx.vaultFeeUsdc === 'number' && ctx.vaultFeeUsdc > 0 ? ctx.vaultFeeUsdc : 1
   // The admin's "pause transactions" switch also stops this card; "how do I open a vault?", "I don't want to open one" are not requests.
   const mentionsOpenOnlyAsQuestion = /(?:^|[.!?]\s*)(?:how|what|why|when|where|can|could|should|do|does|is|are|if|i (?:do not|don'?t|never|won'?t|didn'?t)|never|don'?t|not)\b[^.!?\n]*$/i.test(lastUserText.slice(0, (ASKS_OPEN.exec(lastUserText)?.index ?? 0) + 1))
-  if (!cardsPaused && !hasVault && !lastUserText.startsWith('[app event]') && ((OPEN_OFFERED.test(prevAssistantText) && AGREES.test(lastUserText) && !/\bbut\b|\?/i.test(lastUserText)) || (ASKS_OPEN.test(lastUserText) && !mentionsOpenOnlyAsQuestion && !/\?\s*$/.test(lastUserText)))) {
+  if (!policy.answerFirst && !cardsPaused && !hasVault && !lastUserText.startsWith('[app event]') && ((OPEN_OFFERED.test(prevAssistantText) && AGREES.test(lastUserText) && !/\bbut\b|\?/i.test(lastUserText)) || (ASKS_OPEN.test(lastUserText) && !mentionsOpenOnlyAsQuestion && !/\?\s*$/.test(lastUserText)))) {
     return json({
       content: vi ? 'Đây rồi: ký thẻ bên dưới để mở vault của bạn.' : 'Here it is: sign the card below to open your vault.', // lang-ok
       ops: [], dcaStop: false, actions: [{ type: 'prepare_open_vault' }],
@@ -866,7 +867,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     if (OFFERED_AMOUNT.test(last)) return last
     return !OFFERS_ACTION.test(last) && /\?/.test(prevUserText) && OFFERED_AMOUNT.test(before) ? before : ''
   })()
-  if (AGREES.test(lastUserText) && lastUserText.trim().split(/\s+/).length <= 5 && !/\d|\?/.test(lastUserText) && lastOffer && (OFFERED_BUY.test(lastOffer) || OFFERED_DEPOSIT.test(lastOffer))) {
+  if (!policy.conversationOnly && AGREES.test(lastUserText) && lastUserText.trim().split(/\s+/).length <= 5 && !/\d|\?/.test(lastUserText) && lastOffer && (OFFERED_BUY.test(lastOffer) || OFFERED_DEPOSIT.test(lastOffer))) {
     const o = OFFERED_AMOUNT.exec(lastOffer)
     const amt = o ? Number(o[1].replace(/,/g, '')) : NaN
     const buy = OFFERED_BUY.test(lastOffer)
@@ -880,7 +881,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     }
   }
   {
-    const m = !lastUserText.startsWith('[app event]') && (OFFERED_BUY.test(prevAssistantText) || OFFERED_DEPOSIT.test(prevAssistantText)) ? NEW_AMOUNT.exec(lastUserText.trim()) : null
+    const m = !policy.conversationOnly && !lastUserText.startsWith('[app event]') && (OFFERED_BUY.test(prevAssistantText) || OFFERED_DEPOSIT.test(prevAssistantText)) ? NEW_AMOUNT.exec(lastUserText.trim()) : null
     const amt = m ? Number(m[1].replace(',', '.')) : NaN
     if (m && amt > 0 && amt <= 1_000_000) {
       const buy = OFFERED_BUY.test(prevAssistantText)
@@ -932,12 +933,12 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   const balanceOf = async (p: FinancialProfile) => computeBalance({ profile: p, walletUsd: wallet, vaultUsd: vault, cirBtcUsd: cir, prices: await loadPrices(p), vndPerUsd: rate })
   const startBalance = await balanceOf(profile)
   const investUnlocked = startBalance.lock.open
-  const wantsInvestLocked = !investUnlocked && INVEST_INTENT.test(lastUserText) && !NOT_INVESTING.test(lastUserText) && !ASKS_WHY.test(lastUserText) && !DEPOSIT_WORD.test(lastUserText) && (!coach.active || ACTION_VERB.prepare_buy_cirbtc.test(lastUserText))
+  const wantsInvestLocked = !policy.answerFirst && !investUnlocked && INVEST_INTENT.test(lastUserText) && !NOT_INVESTING.test(lastUserText) && !ASKS_WHY.test(lastUserText) && !DEPOSIT_WORD.test(lastUserText) && (!coach.active || ACTION_VERB.prepare_buy_cirbtc.test(lastUserText))
   const paymentNums = [...lastUserText.matchAll(PAYMENT_NUM)].flatMap(m => readings(m[1]))
   const startFacts = computeFacts({ balance: startBalance, profile, prices, vndPerUsd: rate, message: lastUserText })
   // "I put 1,000 in my bank as Safety": the app shows a confirmation box (source + Confirm) and saves it itself;
   // the agent neither asks where it came from nor records it (real chat 2026-10-27: the destination was lost, then the loop).
-  const placement = detectPlacement(evidence.text, rate)
+  const placement = policy.answerFirst ? null : detectPlacement(evidence.text, rate)
   // Said again while its box waits, or right after it was confirmed: no second box (it would add the money twice).
   const sameAsPlaced = (t: string) => !!placement && numbersIn(t).some(n => Math.abs(n - placement.amountUsd) <= Math.max(1, placement.amountUsd * 0.01))
   const boxWaiting = !!placement && /box[^.]*confirm|confirm[^.]*box|(tap|press|hit|click)\s+\W*confirm/i.test(prevAssistantText) && sameAsPlaced(prevAssistantText)
@@ -955,7 +956,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   // The same item recorded twice in one turn is read back once, with its last value ("600…, 400…", real chat 2026-10-26).
   const readbackOf = new Map<string, number>()
   // The ops behind each read-back line, in the same order: one line = one item of the confirm card.
-  const readbackOps: ProfileOp[][] = []
+  const readbackOps: ProfileOp[][] = readback.length ? [[ops[0]]] : []
   const record = (op: ProfileOp, text: string, key?: string) => {
     ops.push(op)
     profile = applyOps(profile, [op])
@@ -993,12 +994,15 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     let quantity = typeof a.quantity === 'number' && a.quantity >= 0 ? a.quantity : undefined
     // "$2000 of gold" read as 2,000 oz (real chat 2026-10-24): a quantity equal to a money amount in the message is a worth.
     const moneySaid = amountsUsd(lastUserText, rate)
-    const asWorth = !worth && quantity !== undefined && moneySaid.some(m => Math.abs(m - quantity!) <= m * 0.01) && /\$|usd|dollar|vnd|triệu|đô|worth|trị giá/i.test(lastUserText) // lang-ok
+    const asWorth = !worth && quantity !== undefined && !quantityEvidence(evidence.text, quantity, sym, priceKindOf(type)) && moneySaid.some(m => Math.abs(m - quantity!) <= m * 0.01) && /\$|usd|dollar|vnd|triệu|đô|worth|trị giá/i.test(lastUserText) // lang-ok
     const w = worth ?? (asWorth ? { amount: quantity!, currency: 'USDC' as Currency } : null)
     if (asWorth) quantity = undefined
     // Vietnamese stocks are not price-tracked.
     if (type === 'us_stock' && (vnClauses.some(c => sym && c.toUpperCase().includes(sym)) || (!sym && vnClauses.length))) type = 'vn_stock'
     const kind = priceKindOf(type)
+    const cost = investmentCost(evidence.text, sym)
+    if (cost !== null && w && (w.currency !== 'USDC' || Math.abs(w.amount - cost) > .01)) return 'Not recorded: that is market value, not the declared investment cost. Keep cost basis separate.'
+    if (cost !== null && w) quantity = undefined
     const category = type === 'other' && ['safe', 'invest', 'idle', 'lifestyle'].includes(String(a.category)) ? a.category as Holding['category'] : undefined
     const base = { id: newId('h'), type, name, ...(sym && kind !== 'self' ? { symbol: sym } : {}), ...(typeof a.where === 'string' && a.where.trim() ? { where: a.where.trim() } : kind === 'stable' && APP_WALLET.test(lastUserText) ? { where: 'app wallet' } : {}), updatedAt: Date.now(), rebalanceable: defaultRebalanceable(type, category), ...(category ? { category } : {}), ...(a.loan_status === 'on_time' || a.loan_status === 'overdue' ? { loanStatus: a.loan_status as Holding['loanStatus'] } : {}) }
     if (kind === 'stable') {
@@ -1016,6 +1020,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     }
     // Market-priced, given as a quantity (no cost known): gold units → troy ounces, valued at the live price.
     if (quantity !== undefined) {
+      if (!quantityEvidence(evidence.text, quantity, sym, kind)) return 'Not recorded: quantity needs an explicit coin/share/weight unit; a money amount is not quantity. Use worth for dollars invested, or ask for the unit.'
       if (!stated(quantity)) return 'Not recorded: the quantity is not in the user\'s words.'
       if (kind === 'gold') return { ...base, quantity: quantity * (GOLD_UNITS_TO_OZ[String(a.unit ?? 'oz')] ?? 1), unit: 'oz', priceSource: 'market' }
       return { ...base, quantity, unit: kind === 'stock' ? 'shares' : 'coins', priceSource: 'market' }
@@ -1033,6 +1038,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     try { a = JSON.parse(call.function.arguments || '{}') as Record<string, unknown> } catch { return 'Could not read the arguments.' }
     const name = call.function.name
     if (RECORDING.has(name) && evidence.excluded && !evidence.text.trim()) return 'Not recorded: this is a loss, quotation, third-party or hypothetical example, not a personal fact. Ask for the current personal fact only if needed.'
+    if (policy.answerFirst && (String(name).startsWith('prepare_') || name === 'propose_dca')) return 'Not done: this turn is a question or conversation-only, not transaction consent.'
     const before = done.length
     const findH = (id: unknown) => profile.holdings.find(h => h.id === id)
     const findD = (id: unknown) => profile.debts.find(d => d.id === id)
@@ -1051,7 +1057,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       const f: Record<string, unknown> = {}
       if (typeof a.age === 'number' && a.age >= 10 && a.age <= 120 && stated(a.age) && profileAgeAllowed(lastUserText, a.age) && a.age !== profile.age) f.age = Math.round(a.age)
       // A bare "ok" after "How old are you?" was recorded as declining (beginner test 2026-10-27).
-      if (a.age_declined === true && !profile.ageDeclined && profile.age === null && (DECLINES.test(lastUserText) || (AGE_WORD.test(prevAssistantText) && !BARE_OK.test(lastUserText)))) f.ageDeclined = true
+      if (a.age_declined === true && !profile.ageDeclined && profile.age === null && (explicitAgeRefusal(lastUserText) || (AGE_WORD.test(prevAssistantText) && DECLINES.test(lastUserText)))) f.ageDeclined = true
       // An answer about something else ("I bring it all onchain") once became "income stable" (real chat 2026-10-26): it needs a yes / no or a stability word.
       if (typeof a.income_stable === 'boolean' && a.income_stable !== profile.incomeStable && (STABILITY_WORDS.test(lastUserText) || (ASKS_STABLE.test(prevAssistantText) && YES_NO.test(lastUserText)))) f.incomeStable = a.income_stable
       if (typeof a.dependents === 'number' && a.dependents >= 0 && a.dependents !== profile.dependents && (profile.planningScope !== 'household' || dependentEvidence(lastUserText, prevAssistantText)) && (a.dependents === 0 ? SAYS_NONE.test(lastUserText) : stated(a.dependents) || DEPENDENT_WORDS.test(lastUserText))) f.dependents = Math.round(a.dependents)
@@ -1097,12 +1103,15 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       if (!h) return `No item with id ${String(a.id)}.`
       const w = moneyArg(a.worth)
       const patch: Partial<Holding> = {}
-      if (typeof a.quantity === 'number' && stated(a.quantity)) {
+      const cost = investmentCost(evidence.text, h.symbol)
+      if (w && cost !== null && (w.currency !== 'USDC' || Math.abs(w.amount - cost) > .01)) return 'Not recorded: preserve the declared cost basis separately from current market value.'
+      if (w && h.priceSource === 'self' && priceKindOf(h.type) === 'crypto' && /current (?:market )?value|worth (?:now|today)|giá trị hiện tại/iu.test(lastUserText) && cost === null) return 'Not recorded: current market value must not overwrite invested cost basis.' // lang-ok
+      if (typeof a.quantity === 'number' && stated(a.quantity) && quantityEvidence(evidence.text, a.quantity, h.symbol, priceKindOf(h.type))) {
         if (h.quantity !== undefined && h.priceSource === 'market') patch.quantity = a.quantity
         else patch.value = a.quantity
       }
       if (w && stated(w.amount)) {
-        if (h.priceSource === 'self' || priceKindOf(h.type) === 'self' || priceKindOf(h.type) === 'stable') { patch.value = w.amount; patch.currency = w.currency }
+        if (cost !== null || h.priceSource === 'self' || priceKindOf(h.type) === 'self' || priceKindOf(h.type) === 'stable') { patch.value = w.amount; patch.currency = w.currency; if (cost !== null) { patch.quantity = undefined; patch.unit = undefined; patch.priceSource = 'self' } }
         else {
           // A value for a coin without a price (spec 12): accepted as self-declared.
           const usd = toUsd(w.amount, w.currency, rate)
@@ -1345,7 +1354,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   // Every step must call a tool (tool_choice "required"); it sees each result, plus the fresh
   // listing after something was recorded, and ends with no_action. Repeats are refused.
   const stateText = () => `Profile and app state (real, latest; ids in brackets):\n${listing(profile, startBalance, prices, rate)}${evidence.excluded ? '\nSome amounts describe losses, quotes, other people or hypotheticals. They are not recordable personal balances. Ask if unclear.' : ''}`
-  const planMessages: Message[] = [{ role: 'system', content: PLAN_PROMPT }, ...messages.slice(-4), { role: 'system', content: `${scopeBrief(profile.planningScope)}\n${stateText()}${wishLine}` }]
+  const planMessages: Message[] = [{ role: 'system', content: PLAN_PROMPT + '\n' + TURN_POLICY }, ...messages.slice(-4), { role: 'system', content: `${scopeBrief(profile.planningScope)}\n${stateText()}${wishLine}` }]
   const seen = new Set<string>()
   // What the user told but could not be recorded yet (a home without its value, a debt payment without the total owed).
   const toAsk: string[] = []
@@ -1414,6 +1423,12 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       await handle({ id: `fallback-${spec.type}`, function: { name: 'add_holding', arguments: JSON.stringify({ ...spec, worth: { amount, currency: 'USDC' } }) } })
     }
   }
+  // Reconcile explicit declarations after planning, through the same guarded tool boundary.
+  if (!appEvent && !placement) {
+    for (const proposal of factProposals(evidence.text, profile)) {
+      await handle({ id: `reconcile-${proposal.name}`, function: { name: proposal.name, arguments: JSON.stringify(proposal.args) } })
+    }
+  }
   // Several things ADDED to what the app already knows are not saved on the spot: the app shows them one by one to confirm or cancel
   // (Hieu, 2026-10-28; first declarations and the form are saved at once). The server only prepares them (ops stay empty); the card
   // applies the confirmed ones and then tells the agent.
@@ -1425,12 +1440,23 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     return json({ content, ops: [], dcaStop, actions: [...actions, { type: 'confirm_items', items, ask: toAsk }] })
   }
   // After the list, a missing age is "not shared": the default (30) is used and said to be an estimate, instead of asking again.
-  if (batchAsked && profile.age === null && !profile.ageDeclined) {
+  if (itemsEvent && profile.age === null && !profile.ageDeclined) {
     const op: ProfileOp = { op: 'update_profile', fields: { ageDeclined: true } }
     ops.push(op)
     profile = applyOps(profile, [op])
   }
   const balance = ops.length ? await balanceOf(profile) : startBalance
+  // Critical financial targets come from code, never a model's guessed X-of-Y.
+  if (policy.question && !actions.length && !placement && /fund|quỹ/iu.test(lastUserText) && /target|how much|mục tiêu|tính|bao nhiêu/iu.test(lastUserText)) { // lang-ok
+    const show = (n: number) => vi && rate ? moneyText({ amount: n * rate, currency: 'VND' }) : usdc(n)
+    const content = balance.fund.floorUsd === null || profile.incomeStable === null || profile.dependents === null
+      ? (vi ? 'Chưa đủ dữ liệu về chi tiêu tháng, độ ổn định thu nhập hoặc người phụ thuộc để chốt mục tiêu quỹ. Số dư vault và tiền tiết kiệm bên ngoài là hai khoản riêng; khoản chưa khai không được coi là bằng 0.' : 'The fund target is not final until monthly spending, income stability and dependents are known. The vault balance and savings outside the app are separate; undeclared amounts are not zero.') // lang-ok
+      : (vi ? `Theo framework hiện có: ${show(balance.cashflow.spending!)} chi tiêu tháng × ${balance.fund.floorMonths} tháng = **${show(balance.fund.floorUsd)}** mục tiêu quỹ dự phòng. Đây là mục tiêu theo dữ liệu đã khai; tiền trong vault và tiết kiệm bên ngoài cần phân biệt, không phải toàn bộ gia đình chỉ có số dư vault.` : `Using the existing framework: ${show(balance.cashflow.spending!)} monthly spending × ${balance.fund.floorMonths} months = **${show(balance.fund.floorUsd)}** emergency fund target. This uses the declared expenses. The app vault and savings outside it are separate; a zero vault does not mean the household has no available savings.`) // lang-ok
+    return json({ content, ops, dcaStop, actions })
+  }
+  if (policy.question && balance.fund.floorUsd === null && /deposit|nạp/iu.test(lastUserText) && !actions.length) { // lang-ok
+    return json({ content: vi ? 'Nạp tiền sẽ tăng số dư vault. Mục tiêu quỹ và khoản còn thiếu chưa xác định vì chưa biết đầy đủ chi tiêu tháng; mình chưa chuẩn bị giao dịch nào.' : 'A deposit increases the app vault balance. The fund target and amount still needed are unknown until monthly spending is known. No transaction has been prepared.', ops, dcaStop, actions }) // lang-ok
+  }
   const usesVnd = [...profile.incomes, ...profile.expenses, ...profile.debts, ...profile.holdings].some(x => x.currency === 'VND') || vi
   const facts = computeFacts({ balance, profile, prices, vndPerUsd: rate, message: lastUserText, changed: ops.length > 0 })
   const usedOnce = new Set(Object.entries(ONCE_SEEN).filter(([, re]) => assistantTexts.some(t => re.test(t))).map(([id]) => id))
@@ -1443,7 +1469,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   const collecting = matched.some(p => p.id === 'collecting' || p.id === 'age_unknown')
   // A question or a doubt from the user is answered first; the collection flow waits a turn.
   const directQuestion = QUESTIONS_US.test(lastUserText) || ASKS_WHY.test(lastUserText) || scopeQuestion(lastUserText) || /^(explain|teach|help me understand|tell me about|giải thích)(?!\p{L})/iu.test(lastUserText.trim()) // lang-ok
-  const userAsks = coach.active || directQuestion
+  const userAsks = policy.answerFirst || coach.active || directQuestion
   // The framework v2 questions (goal, insurance, 50% drop) are not in the KB collecting pattern: they keep collection open too.
   const relies = (profile.dependents ?? 0) > 0 || profile.soleEarner === true
   const v2Missing = (!profile.nearGoal && !profile.noNearGoal) || (relies && (profile.insured === null || profile.insured === undefined)) || profile.cryptoDropOk === null || profile.cryptoDropOk === undefined
@@ -1505,7 +1531,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     { role: 'system', content: `${figs}${wishLine}${balance.lock.open && cryptoOffer >= 1 ? `
 - cirBTC buy to offer when they want crypto: ${usdc(cryptoOffer)} (fills the Crypto bucket as far as the wallet allows)` : ''}` },
     // While collecting, the situations (fund gap, buy lock…) waited for the plan: they turned every question into a BTC lecture (real chat 2026-10-27).
-    { role: 'system', content: `MATCHING SITUATIONS (most important first):\n${(phase === 'collect' && !userAsks ? '' : brief) || '- none'}${next ? `\nNext question (collection flow, one per message): ${next}\nThis is your one question: ask exactly it (same meaning), as a real question ending in "?", not "I need to know…". Say nothing else around it: no preamble, no reason, no recap. No "Right?" this turn.` : ''}` },
+    { role: 'system', content: `MATCHING SITUATIONS (most important first):\n${(policy.answerFirst ? '' : phase === 'collect' && !userAsks ? '' : brief) || '- none'}${next ? `\nNext question (collection flow, one per message): ${next}\nThis is your one question: ask exactly it (same meaning), as a real question ending in "?", not "I need to know…". Say nothing else around it: no preamble, no reason, no recap. No "Right?" this turn.` : ''}` },
   ]
   replyMessages.push({ role: 'system', content: teach ? 'MODE THIS TURN: TEACH. Educate in plain words, up to 4 short sentences (about 70 words), with their numbers. No recap of the plan.' : 'MODE THIS TURN: BRIEF. At most TWO short sentences, about 30 words in all, no teaching, no "why", no recap: the question or the confirmation is the whole reply.' })
   if (userAsks && !next && !appEvent) replyMessages.push({ role: 'system', content: 'They asked a question: answer it, then stop. Do not end with a question of your own (no "How old are you?").' })
@@ -1518,12 +1544,12 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   // A beginner's first message got balances and "the MoonSafe split" before any welcome (beginner test 2026-10-27).
   // The app already showed its own welcome (useAgent WELCOME, UI only): no second welcome.
   // Only a new user gets the how-this-works line; someone with a saved profile came back to do something (v2 test 2026-10-27).
-  if (!coach.active && !assistantTexts.length && !hasAnyData(profile)) replyMessages.push({ role: 'system', content: `This is their first message; they already saw MoonSafe's welcome, so do not welcome them again. Answer what they said first, in plain words, then in one or two plain sentences how this works: a few questions about their money (they can skip any), then a plan (how big an emergency fund they need and how to divide the rest of their money for their age), then they decide when to start. No balances, no percentages, no labels in this reply. Then your one question with why you ask.` })
+  if (!userAsks && !coach.active && !assistantTexts.length && !hasAnyData(profile)) replyMessages.push({ role: 'system', content: `This is their first message; they already saw MoonSafe's welcome, so do not welcome them again. Answer what they said first, in plain words, then in one or two plain sentences how this works: a few questions about their money (they can skip any), then a plan (how big an emergency fund they need and how to divide the rest of their money for their age), then they decide when to start. No balances, no percentages, no labels in this reply. Then your one question with why you ask.` })
   else if (KNOWS_NOTHING.test(lastUserText)) replyMessages.push({ role: 'system', content: 'They feel lost: give the big picture in plain words (know your monthly spending → emergency fund → expensive debt → then invest), say which step they are on, and the one next step.' })
   if (ASKS_OVERVIEW.test(lastUserText)) replyMessages.push({ role: 'system', content: `Overall check-up, as an advisor: one short point each, in this order: ${balance.debts.priorityCount ? 'their priority debt (start with it), ' : ''}the emergency fund vs its floor, then the split. For each, why it matters for them and one option they could take (an option, not an order). Keep the split to one sentence.` })
-  if (phase === 'collect' && assistantTexts.length && !placement) replyMessages.push({ role: 'system', content: `PHASE 1, COLLECTING. Acknowledge what they told you in two or three words, then the Next question, nothing else (no "why I ask"). No advice yet: do not talk about the emergency fund gap, BTC, the cirBTC buy lock or how to divide money; the plan comes once you know enough.${userAsks ? ' They asked something: answer it plainly first.' : ''}` })
+  if (!userAsks && phase === 'collect' && assistantTexts.length && !placement) replyMessages.push({ role: 'system', content: `PHASE 1, COLLECTING. Acknowledge what they told you in two or three words, then the Next question, nothing else (no "why I ask"). No advice yet: do not talk about the emergency fund gap, BTC, the cirBTC buy lock or how to divide money; the plan comes once you know enough.${userAsks ? ' They asked something: answer it plainly first.' : ''}` })
   // The plan, framework v2 (2026-10-27): three buckets; until the fund is full only the fund and saving get amounts.
-  if (phase === 'plan' && !placement) {
+  if (!userAsks && phase === 'plan' && !placement) {
     const fundMet = balance.fund.met
     const deps = (profile.dependents ?? 0) > 0 || profile.soleEarner === true
     const points = [
@@ -1572,6 +1598,7 @@ ${ending}` })
   if (coach.active) replyMessages.push({ role: 'system', content: `${COACH_POLICY}\n${coach.text}\nAnswer the concern first. No onboarding or unsolicited transaction offer. At most one optional question only if it helps their immediate concern; respect a refusal to share.` })
 
   replyMessages.push({ role: 'system', content: scopeBrief(profile.planningScope) })
+  replyMessages.push({ role: 'system', content: TURN_POLICY + `\nConversation-only: ${policy.conversationOnly}; answer-first: ${policy.answerFirst}. Saved facts this turn: ${JSON.stringify(ops)}. A full plan is not requested merely because enough data exists.` })
 
   const grounding = [figs, wishLine, brief, usdc(cryptoOffer), ...done, readback.join(', '), ...messages.filter(m => m.role === 'user').map(m => m.content)]
   const prevAssistant = assistantTexts[assistantTexts.length - 1] ?? ''
@@ -1593,6 +1620,7 @@ ${ending}` })
       const content = msg?.content ?? ''
       const plain = content.replace(/ /g, ' ')
       const problems: string[] = []
+      if (policy.answerFirst && !/cirbtc|vault|this app|in the app|trong app/iu.test(lastUserText) && /cirBTC|buying is locked|buy lock/iu.test(content)) problems.push('answer only the question or concern; remove unsolicited cirBTC and buy-lock onboarding') // lang-ok
       // Safety, Traditional and the bank are outside the app: no card exists for them (real chat 2026-10-28: "prepare a Safety transfer of 524 USDC for you to sign").
       if (!actions.length && /(prepare|set up|create)[^.?!\n]{0,40}(Safety|Traditional|bank|savings)[^.?!\n]{0,50}(sign|transfer)|(Safety|bank|savings)\s+(transfer|deposit)[^.?!\n]{0,40}sign/i.test(plain)) problems.push('there is NO card for Safety, Traditional or the bank: they are done outside the app. Never offer to prepare something for them to sign; the only cards are the emergency fund (deposit / withdraw) and the cirBTC buy')
       if (!actions.length && CLAIMS_ACTION.test(content)) problems.push('no action was taken, the app opened and filled NOTHING: only OFFER (e.g. "Would you like me to prepare a deposit of … for you to sign?"), never say you opened / filled / created / showed anything')
@@ -1643,7 +1671,7 @@ ${ending}` })
       const toSafe = balance.suggest?.to.safe ?? 0
       if (toSafe > 1 && /deposit/i.test(content) && [...plain.matchAll(AMOUNT)].some(m => readings(m[1] ?? m[2]).some(v => Math.abs(v - toSafe) <= toSafe * 0.01 + 1))) problems.push(`${usdc(toSafe)} is the safe part: the user's OWN savings, not a deposit in the app; tell them to put it in bank savings or flexible earn (e.g. Binance Simple Earn Flexible)`)
       if (balance.declared && toSafe > 1 && ASKS_USE.test(lastUserText) && !/bank|savings|ngân hàng|tiết kiệm/i.test(content)) problems.push(`say where the safe part goes: ${usdc(toSafe)} into their own bank savings or flexible earn (e.g. Binance Simple Earn Flexible)`) // lang-ok
-      if (DEBT_WORD.test(lastUserText) && !DEBT_WORD.test(content)) problems.push('the user asked about their debt: say plainly what to do about the debt')
+      if (!userAsks && DEBT_WORD.test(lastUserText) && !DEBT_WORD.test(content)) problems.push('the user asked about their debt: say plainly what to do about the debt')
       if (BUILD_FUND.test(lastUserText) && /a month into the fund takes about/.test(figs) && !/sav|để dành|tiết kiệm/i.test(content)) problems.push('they asked how to build the fund: suggest saving the monthly amount from the figures and say about how many months it takes') // lang-ok
       if (vi && /months? of spending|Noted[.:]|Right\?/i.test(content)) problems.push('this reply is in Vietnamese: write "N tháng chi tiêu", "Mình ghi: …", "Đúng chưa?", no English phrases') // lang-ok
       if (PUSHY.test(content)) problems.push('do not order the user to provide details ("please provide…"); ask one friendly question instead')
@@ -1652,13 +1680,13 @@ ${ending}` })
       // The first reply read out balances before anything was known (beginner test 2026-10-27).
       if (!assistantTexts.length && /\d[\d,.]*\s*USDC/.test(plain) && !userAsks) problems.push('first reply: no balances or amounts yet; say how this works and ask your question')
       // The plan must say how big the emergency fund should be (Hieu, 2026-10-27); v2 test #1 left the amount out.
-      if (phase === 'plan' && floors.length && !floors.some(f => f.texts.some(x => plain.includes(x)))) problems.push(`say how big their emergency fund should be: "${floors[0].months} months of spending = ${floors[0].texts[0]}"`)
-      if (phase === 'plan' && profile.cryptoDropOk === false && !/smaller|less|lower|reduce|nhỏ hơn|ít hơn|giảm/i.test(plain)) problems.push('they said they could not hold through a 50% crypto drop: offer a smaller Crypto part for now as an option (their call)') // lang-ok
-      if (phase === 'plan' && profile.nearGoal && !plain.toLowerCase().includes(profile.nearGoal.name.toLowerCase()) && !/goal|mục tiêu/i.test(plain)) problems.push(`say that the money for ${profile.nearGoal.name} stays in savings, not invested, because it is needed soon`) // lang-ok
+      if (!userAsks && phase === 'plan' && floors.length && !floors.some(f => f.texts.some(x => plain.includes(x)))) problems.push(`say how big their emergency fund should be: "${floors[0].months} months of spending = ${floors[0].texts[0]}"`)
+      if (!userAsks && phase === 'plan' && profile.cryptoDropOk === false && !/smaller|less|lower|reduce|nhỏ hơn|ít hơn|giảm/i.test(plain)) problems.push('they said they could not hold through a 50% crypto drop: offer a smaller Crypto part for now as an option (their call)') // lang-ok
+      if (!userAsks && phase === 'plan' && profile.nearGoal && !plain.toLowerCase().includes(profile.nearGoal.name.toLowerCase()) && !/goal|mục tiêu/i.test(plain)) problems.push(`say that the money for ${profile.nearGoal.name} stays in savings, not invested, because it is needed soon`) // lang-ok
       // They picked Crypto after the plan but got the question back (v2 test 2026-10-27): offer the cirBTC card with a server-computed amount.
-      if (phase === 'start' && planGiven && balance.lock.open && /crypto|btc|bitcoin/i.test(lastUserText) && !actions.some(x => x.type === 'prepare_buy_cirbtc' || x.type === 'propose_dca') && !/prepare[^.?!\n]{0,60}(cirBTC|buy|DCA)/i.test(plain) && cryptoOffer >= 1) problems.push(`they picked Crypto: offer a cirBTC buy for them to sign: the first of 6 monthly buys (**${usdc(Math.floor(cryptoOffer / 6))}**), or all **${usdc(cryptoOffer)}** at once if they asked for that ("Would you like me to prepare a cirBTC buy of … for you to sign?")`)
+      if (!userAsks && phase === 'start' && planGiven && balance.lock.open && /crypto|btc|bitcoin/i.test(lastUserText) && !actions.some(x => x.type === 'prepare_buy_cirbtc' || x.type === 'propose_dca') && !/prepare[^.?!\n]{0,60}(cirBTC|buy|DCA)/i.test(plain) && cryptoOffer >= 1) problems.push(`they picked Crypto: offer a cirBTC buy for them to sign: the first of 6 monthly buys (**${usdc(Math.floor(cryptoOffer / 6))}**), or all **${usdc(cryptoOffer)}** at once if they asked for that ("Would you like me to prepare a cirBTC buy of … for you to sign?")`)
       // A beginner may think stocks or savings are bought in the app (v2 test 2026-10-27).
-      if (phase === 'start' && planGiven && !placement && !recordEvent && /stock|traditional|index|gold|savings|bank|cổ phiếu|vàng|tiết kiệm/i.test(lastUserText) && !/outside|broker|your (own )?bank|bên ngoài/i.test(plain)) problems.push('say plainly this part is done outside the app (a broker for stocks or index funds, their own bank for savings), with the amount from "Still to fill"') // lang-ok
+      if (!userAsks && phase === 'start' && planGiven && !placement && !recordEvent && /stock|traditional|index|gold|savings|bank|cổ phiếu|vàng|tiết kiệm/i.test(lastUserText) && !/outside|broker|your (own )?bank|bên ngoài/i.test(plain)) problems.push('say plainly this part is done outside the app (a broker for stocks or index funds, their own bank for savings), with the amount from "Still to fill"') // lang-ok
       // Phase 1 is for listening: advice about the fund gap or the lock waits for the plan (Hieu, 2026-10-27).
       if (phase === 'collect' && !userAsks && (LOCK_TALK.test(plain) || /\bshort\b|still needed|còn thiếu/i.test(plain))) problems.push('still collecting: no advice yet about the emergency fund gap or the cirBTC lock; acknowledge and ask the next question with why') // lang-ok
       // Advisor replies (2026-10-27 tests): a stray "Right?" after the real question, "I need to know…" instead of asking,
@@ -1688,7 +1716,7 @@ ${ending}` })
       if (usedOnce.has('altcoin_heavy') && !directQuestion && CAUTION_ALT.test(content)) problems.push('the altcoin risk was already said once in this chat: do not repeat it, respect their decision')
       // Users found replies wordy (2026-10-24, median 305 chars), then found them bossy with no reasons (Hieu, 2026-10-27):
       // room for one "why" sentence. Checked only once the content is right.
-      const maxChars = phase === 'plan' ? 1800 : teach ? 520 : 300
+      const maxChars = phase === 'plan' && !userAsks ? 1800 : teach ? 520 : 300
       if (!problems.length && content.replace(/\*\*/g, '').length > maxChars && !actions.some(x => x.type === 'show_allocation' || x.type === 'show_cashflow')) problems.push(`too long (${content.length} chars): cut to at most ${maxChars === 520 ? '4' : maxChars === 300 ? '2' : '5'} short sentences including one question; first sentence = the direct answer; ${maxChars === 300 ? 'this is BRIEF mode: only the question or the confirmation, no reason, no teaching, no recap' : 'keep every point it makes now (key numbers, the reason why, advice on debt or saving), drop only preambles, repeats and filler'}`)
       if (problems.length && rewrites < 2 && round < 4) {
         rewrites++

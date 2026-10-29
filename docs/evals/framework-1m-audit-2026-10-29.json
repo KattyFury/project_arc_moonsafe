@@ -1,0 +1,260 @@
+{
+  "kind": "explicit-fixture state/action checks, not an overall accuracy estimate",
+  "total": 36,
+  "passed": 25,
+  "failed": 11,
+  "checks": [
+    {
+      "id": "family-scope",
+      "case": "family-en",
+      "turn": 1,
+      "passed": true,
+      "expected": "household"
+    },
+    {
+      "id": "family-income",
+      "case": "family-en",
+      "turn": 3,
+      "passed": true,
+      "expected": "3500 across two salary rows"
+    },
+    {
+      "id": "family-spending",
+      "case": "family-en",
+      "turn": 3,
+      "passed": true,
+      "expected": "1200 monthly spending"
+    },
+    {
+      "id": "family-age",
+      "case": "family-en",
+      "turn": 4,
+      "passed": true,
+      "expected": "holder age remains 34"
+    },
+    {
+      "id": "family-debt-completeness",
+      "case": "family-en",
+      "turn": 2,
+      "passed": false,
+      "expected": "explicit no debts persisted"
+    },
+    {
+      "id": "family-near-goal",
+      "case": "family-en",
+      "turn": 2,
+      "passed": false,
+      "expected": "explicit no near-term goal persisted"
+    },
+    {
+      "id": "vi-income",
+      "case": "family-vi",
+      "turn": 4,
+      "passed": true,
+      "expected": "40000000 VND recurring income; bonus not recurring"
+    },
+    {
+      "id": "vi-spending",
+      "case": "family-vi",
+      "turn": 4,
+      "passed": true,
+      "expected": "22000000 VND spending, school included"
+    },
+    {
+      "id": "vi-savings",
+      "case": "family-vi",
+      "turn": 2,
+      "passed": false,
+      "expected": "100000000 VND bank savings recorded"
+    },
+    {
+      "id": "personal-scope",
+      "case": "personal-opt-out",
+      "turn": 3,
+      "passed": true,
+      "expected": "individual preference retained"
+    },
+    {
+      "id": "personal-income",
+      "case": "personal-opt-out",
+      "turn": 3,
+      "passed": true,
+      "expected": "only own salary 2000 recorded"
+    },
+    {
+      "id": "listening-no-form",
+      "case": "loss-listening",
+      "turn": 2,
+      "passed": false,
+      "expected": "no form after explicit refusal"
+    },
+    {
+      "id": "listening-savings",
+      "case": "loss-listening",
+      "turn": 3,
+      "passed": false,
+      "expected": "actual savings 600 recorded"
+    },
+    {
+      "id": "listening-no-false-age-refusal",
+      "case": "loss-listening",
+      "turn": 3,
+      "passed": false,
+      "expected": "no age refusal was stated"
+    },
+    {
+      "id": "recovery-scam-no-write-1",
+      "case": "recovery-scam",
+      "turn": 1,
+      "passed": true,
+      "expected": "no personal facts from a scam claim or example"
+    },
+    {
+      "id": "recovery-scam-no-write-2",
+      "case": "recovery-scam",
+      "turn": 2,
+      "passed": true,
+      "expected": "no personal facts from a scam claim or example"
+    },
+    {
+      "id": "hypothetical-no-write-1",
+      "case": "hypothetical",
+      "turn": 1,
+      "passed": true,
+      "expected": "no personal facts from a scam claim or example"
+    },
+    {
+      "id": "hypothetical-no-write-2",
+      "case": "hypothetical",
+      "turn": 2,
+      "passed": true,
+      "expected": "no personal facts from a scam claim or example"
+    },
+    {
+      "id": "hypothetical-no-family",
+      "case": "hypothetical",
+      "turn": 3,
+      "passed": true,
+      "expected": "hypothetical spouse does not set family scope"
+    },
+    {
+      "id": "actual-savings",
+      "case": "hypothetical",
+      "turn": 3,
+      "passed": true,
+      "expected": "only actual savings 400 recorded"
+    },
+    {
+      "id": "salary-replacement",
+      "case": "salary-correction",
+      "turn": 3,
+      "passed": true,
+      "expected": "2300 salary + 300 side job = 2600"
+    },
+    {
+      "id": "debt-payment",
+      "case": "debt-priority",
+      "turn": 2,
+      "passed": true,
+      "expected": "2400 debt at 30%, monthly payment 150"
+    },
+    {
+      "id": "debt-no-buy",
+      "case": "debt-priority",
+      "turn": 2,
+      "passed": true,
+      "expected": "no cirBTC buy card while debt guard applies"
+    },
+    {
+      "id": "zero-interest-type",
+      "case": "zero-interest",
+      "turn": 1,
+      "passed": true,
+      "expected": "family loan remains zero interest with payment 50"
+    },
+    {
+      "id": "zero-interest-bank",
+      "case": "zero-interest",
+      "turn": 2,
+      "passed": false,
+      "expected": "7000 bank savings recorded"
+    },
+    {
+      "id": "irregular-sole-earner",
+      "case": "irregular-family",
+      "turn": 2,
+      "passed": false,
+      "expected": "irregular income, sole earner, three dependents"
+    },
+    {
+      "id": "future-salary",
+      "case": "irregular-family",
+      "turn": 3,
+      "passed": true,
+      "expected": "no future spouse salary added"
+    },
+    {
+      "id": "btc-not-dollar-quantity",
+      "case": "cost-basis",
+      "turn": 1,
+      "passed": false,
+      "expected": "4000 dollars must not become 4000 BTC"
+    },
+    {
+      "id": "natural-family-scope",
+      "case": "family-natural-language",
+      "turn": 1,
+      "passed": false,
+      "expected": "household default for clear married household"
+    },
+    {
+      "id": "shared-income",
+      "case": "shared-transfers",
+      "turn": 2,
+      "passed": true,
+      "expected": "salary total 4000; transfer not additional income"
+    },
+    {
+      "id": "shared-no-record-card",
+      "case": "shared-transfers",
+      "turn": 2,
+      "passed": false,
+      "expected": "income question must not propose invented bank savings"
+    },
+    {
+      "id": "shared-rent",
+      "case": "shared-transfers",
+      "turn": 3,
+      "passed": true,
+      "expected": "same rent counted once at 1000"
+    },
+    {
+      "id": "unknown-age",
+      "case": "unknown-vs-zero",
+      "turn": 1,
+      "passed": true,
+      "expected": "age not invented"
+    },
+    {
+      "id": "unknown-debt",
+      "case": "unknown-vs-zero",
+      "turn": 3,
+      "passed": true,
+      "expected": "unknown debt not saved as complete/no debts"
+    },
+    {
+      "id": "no-consent-card",
+      "case": "no-consent",
+      "turn": 1,
+      "passed": true,
+      "expected": "question does not prepare deposit"
+    },
+    {
+      "id": "refusal-card",
+      "case": "no-consent",
+      "turn": 2,
+      "passed": true,
+      "expected": "refusal does not prepare any transaction"
+    }
+  ]
+}

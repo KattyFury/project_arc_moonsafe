@@ -1,0 +1,13 @@
+{
+  "cap": 27035,
+  "input": 0,
+  "output": 0,
+  "cached": 0,
+  "calls": 0,
+  "unknown": 0,
+  "stopped": "budget-reservation",
+  "status": 502,
+  "result": {
+    "error": "OpenAI error 400"
+  }
+}

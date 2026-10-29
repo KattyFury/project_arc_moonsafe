@@ -1,3 +1,5 @@
+Agent repair update (2026-10-29): review branch adds tool unit checks, user-intent routing, narrow fact reconciliation, computed fund answers and 284 offline checks. Frozen live score remains 67/100; targeted smoke blocked before dispatch by remaining original budget (zero additional spend). See docs/evals/guardrail-repairs-2026-10-29.md. Not deployed.
+
 Household default update: a clear current marriage disclosure defaults an unset scope to household; saved individual choices win. Partner amounts remain unknown until declared. 252 offline checks pass; no paid model calls for this update.
 
 # MoonSafe — HANDOFF
