@@ -320,7 +320,7 @@ Hiện theo thứ tự:
 
 ## 14. Việc Claude Code làm sau khi nhận file này
 
-1. Cập nhật `docs/FRAMEWORK-TAI-CHINH.md` theo đúng file này.
+1. Cập nhật `docs/archive/FRAMEWORK-TAI-CHINH.md` theo đúng file này.
 2. Sửa `src/lib/allocation.ts` theo công thức mục 4, cơ sở % theo mục 2, trường `rebalanceable`. Sửa màn Balance theo mục 11.
 3. Thiết kế lại tool theo mục 10, thêm dữ liệu dòng tiền (mục 6) và nợ từng khoản (mục 5.2).
 4. Xây kho tình huống tư vấn (mục 9) dạng dữ liệu.
