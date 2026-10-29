@@ -19,7 +19,12 @@ export FACTORY_OWNER=<SAFE_ADDRESS> FEE_RECIPIENT=0xeb2d222d28f35fe7beb5387f8bc4
 DRY_RUN=1 forge script contracts/script/DeployMainnet.s.sol                       # local simulation, sends nothing
 forge script contracts/script/DeployMainnet.s.sol --rpc-url https://rpc.mainnet.arc.io --account deployer --broadcast
 ```
-The script refuses any chain other than 5042 and re-checks owner, fee and implementation after deploying. Note both printed addresses (implementation, factory). The deployer wallet needs a little mainnet USDC for gas. Verify both contracts on explorer.arc.io (see the Arc docs for contract verification).
+The script refuses any chain other than 5042, refuses a `FACTORY_OWNER` that has no code (create the Safe first; a plain wallet owner needs `ALLOW_EOA_OWNER=1`) and re-checks owner, fee and implementation after deploying. Rehearse it for free against the real chain first: same command with `--fork-url https://rpc.mainnet.arc.io` instead of `--rpc-url ... --broadcast` (it sends nothing). Note both printed addresses (implementation, factory). The deployer wallet needs a little mainnet USDC for gas. Verify both contracts on explorer.arc.io (see the Arc docs for contract verification).
+
+Then run the read-only preflight (it must end with `All checks passed.`, no FAIL and no SKIP):
+```
+FACTORY=<FACTORY_ADDRESS> SAFE=<SAFE_ADDRESS> bun scripts/preflight-mainnet.ts
+```
 
 ## 3. Cloudflare and Privy
 1. New KV namespace for mainnet users: `bunx wrangler kv namespace create USERDATA_MAINNET`, then put its id in `wrangler.toml` (`[[kv_namespaces]]` `id`). Keep the old id written down: it is the rollback.

@@ -28,6 +28,11 @@ contract DeployMainnet is Script {
         uint256 fee = vm.envUint("VAULT_FEE");
         require(owner != address(0) && feeRecipient != address(0), "zero address");
         require(fee <= 10 ether, "fee above the 10 USDC cap");
+        // The factory owner is meant to be the Safe: refuse an address with no code (ownership would be lost if it is mistyped or the Safe
+        // does not exist yet). A plain wallet owner needs ALLOW_EOA_OWNER=1.
+        if (vm.envOr("DRY_RUN", uint256(0)) != 1 && vm.envOr("ALLOW_EOA_OWNER", uint256(0)) != 1) {
+            require(owner.code.length > 0, "FACTORY_OWNER has no code: create the Safe first");
+        }
 
         vm.startBroadcast();
         implementation = new VaultProxy();
