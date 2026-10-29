@@ -23,7 +23,8 @@ import { getPrices } from './prices'
 import { privyUserId } from '../_lib/privyAuth'
 import { addUsage, overBudget, type Meter } from '../_lib/budget'
 import { callModel as openai, DEFAULT_CLAUDE_MODEL, type Keys, type ToolCall } from '../_lib/llm'
-import { powerState, takeTurn, type PowerEnv } from '../_lib/quota'
+import { DEFAULT_FREE, powerState, takeTurn, type PowerEnv } from '../_lib/quota'
+import { POWER_PER_PURCHASE } from '../../src/lib/power'
 import { recordStats } from '../_lib/stats'
 import { BATCH_MARK, INTAKE_MIN_UNKNOWN, buildIntake, intakeKeys, unknownBullets } from '../_lib/intake'
 import { getConfig, isBlocked, effectiveEnv } from '../_lib/config'
@@ -124,6 +125,8 @@ const ACTION_VERB: Record<string, RegExp> = {
 // Questions where the reply must state the target split by age.
 const ASKS_TARGET = /(what (percent|percentage|share)|how much (should|can) i invest|allocat|split|how is my money|bao nhiêu (phần trăm|%)|tỷ lệ|tỉ lệ|phân bổ|chia (tiền|thế nào|sao))/iu // lang-ok
 // "why not invest right away instead of keeping a fund?" asks why; it is not a request to invest.
+// "Is it free?", "what does it cost?": answered from the real numbers, never by the model (Hieu, 2026-10-29).
+const ASKS_PRICE = /(?<!\p{L})(is (?:it|this|moonsafe|the (?:app|agent|advisor)) free|free to use|for free|any (?:fees?|costs?|charges?)|what (?:does (?:it|this|moonsafe|the app) cost|are the fees)|how much (?:does|do) (?:it|this|you|moonsafe|the app) cost|do i (?:have to |need to )?pay|pricing|subscription|có mất phí|có tốn phí|miễn phí|phí (?:bao nhiêu|gì)|mất tiền không)(?!\p{L})/iu // lang-ok
 const ASKS_WHY = /(?<!\p{L})(why|what for|what if|how (?:do|should|can) i (?:buy|invest|start)|when (?:should i|to|do i) (?:buy|invest)|(?:don'?t|do not) know (?:how|when|what) to (?:buy|invest)|right time|top|bottom|lump sum|all at once|do i (?:really )?need|should i|have to|must i|can i skip|is it (?:really )?necessary|without (?:an? |the )?(?:emergency )?fund|nếu không|có cần|what is|what are|what does|mean|means|don'?t get|don'?t understand|confused|explain|sao|tại sao|vì sao|làm gì|là gì|nghĩa là|không hiểu)(?!\p{L})/iu // lang-ok
 const DEPOSIT_WORD = /(?<!\p{L})(deposit|nạp)(?!\p{L})/iu // lang-ok
 // An overall check-up ("how are my finances doing?"): the reply follows debt → fund → allocation.
@@ -300,6 +303,7 @@ ${RULES}
 ${DCA_AVAILABLE ? '' : '- AUTOMATIC recurring buys in the app are NOT available yet: never say the app will buy for them on a schedule, never set it up. DCA as a WAY OF BUYING is still your advice (next rule): they buy the monthly amount themselves (cirBTC in this app with a card each time, stocks or gold at their broker).\n'}- How to buy (Hieu, 2026-10-29): nobody knows where the top or the bottom is; one big buy right before a fall hurts (think stocks at a peak while interest rates stay high). So when they do not know how or when to buy, or worry about timing, recommend DCA: the same amount every month, for example over 6 months, which trusts the long-term growth that stocks and Bitcoin have shown over decades instead of guessing the moment. If they say they read charts or trade, respect their way and help with the amount; never push DCA on them.
 - Only describe what the "Actions just taken" note lists. Cards (add to the fund, withdraw, buy cirBTC, DCA) are confirmation CARDS the user signs: never say deposited / bought / done. To offer one: "Would you like me to prepare … for you to sign?".
 - Something recorded → start with the read-back from the notes, then (TEACH mode only) one sentence on what the new number means for them, then end with "Right?" (that is your one question). When a "Next question" is given, ask it instead of "Right?" (with why you ask). Never mention what they said before or that it changed.
+- The Balance and Invest tabs open step by step: Balance once the emergency fund is full, Invest once buying is open too (fund full, no priority debt). Before that, never send them to those tabs; give the numbers in chat.
 - The app cannot move money to a bank or an exchange; the Safe part is their own savings or flexible earn (e.g. Binance Simple Earn Flexible), never the emergency fund.
 - They want a big BTC share (even 50%) → understand and respect it, Web3 thinking is heavy on BTC; only the fund comes first. They want a big low-cap / memecoin share → the reality check from the matching situation, once.
 - They question the emergency fund or want to invest without it ("what if I don't save it?", "do I really need it?", "can I skip it?") → TEACH: before investing you need a cushion for bad times. Without one, a lost job, a hospital bill or a slow month forces you to sell your investments, often right when prices are down, and turns a paper loss into a real one. So do not start investing until the fund is in place; say how much is still missing from their figures, then offer to prepare the deposit.
@@ -777,6 +781,15 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   const prevUserText = [...messages.slice(0, lastUserAt)].reverse().find(m => m.role === 'user')?.content ?? ''
   const assistantTexts = messages.filter(m => m.role === 'assistant').map(m => m.content)
   const vi = VI_LETTERS.test(lastUserText)
+  if (ASKS_PRICE.test(lastUserText) && !lastUserText.startsWith('[app event]')) {
+    const free = Number(context.env.FREE_TURNS_PER_DAY) > 0 ? Math.floor(Number(context.env.FREE_TURNS_PER_DAY)) : DEFAULT_FREE
+    return json({
+      content: vi
+        ? `Có, phần tư vấn là miễn phí: bạn có **${free} tin nhắn mỗi ngày** với mình. Mở quỹ dự phòng (vault riêng của bạn trên Arc) tốn **1 USDC một lần**. Ngoài ra MoonSafe không thu phí gì thêm: nạp, rút hay mua cirBTC chỉ tốn phí mạng rất nhỏ (vài cent), và nếu muốn chat nhiều hơn ${free} tin/ngày thì có thể mua thêm ${POWER_PER_PURCHASE} tin với 1 USDC, không bắt buộc.` // lang-ok
+        : `Yes, the advice is free: you get **${free} messages a day** with me. Opening your emergency fund (your own vault on Arc) costs **1 USDC, once**. MoonSafe charges nothing else: deposits, withdrawals and cirBTC buys only cost a tiny network fee (a few cents), and if you ever want more than ${free} messages a day you can add ${POWER_PER_PURCHASE} messages for 1 USDC, entirely optional.`,
+      ops: [], dcaStop: false, actions: [],
+    })
+  }
   const said = numbersIn(lastUserText)
   const saidBefore = numbersIn(prevUserText)
   const vnClauses = lastUserText.split(/[.;\n]|,(?!\d)|\band\b/i).filter(c => VN_MARKET.test(c))

@@ -17,7 +17,7 @@ const MAX_KEEP = 80
 const MAX_SEND = 30
 
 /** Greeting shown to someone who already saved a declaration (UI only, never sent to the model). */
-export const WELCOME_BACK = 'Welcome back! I still have the finances you shared, you can review them in the **Balance** tab. If anything has changed, just tell me and I will update it.\n\nWhat shall we look at today: spending, your emergency fund or investing?'
+export const welcomeBack = (balanceOpen: boolean) => `Welcome back! I still have the finances you shared${balanceOpen ? ', you can review them in the **Balance** tab' : ''}. If anything has changed, just tell me and I will update it.\n\nWhat shall we look at today: spending, your emergency fund or investing?`
 
 export const WELCOME: ChatMessage = {
   role: 'assistant',

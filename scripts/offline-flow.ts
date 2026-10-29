@@ -163,6 +163,13 @@ const base = normalizeProfile({ v: 2, age: 21, incomeStable: false, dependents: 
 const onlyCrypto = 'Your emergency fund is now 900 USDC of 900 USDC. Only Crypto (0 USDC of 1,360 USDC) still has room. Would you like to start with it?'
 const yep = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: firstText }, { role: 'user', content: '[app event] The user signed the card: Added 900 USDC to your emergency fund.' }, { role: 'assistant', content: onlyCrypto }, { role: 'user', content: 'Yep. I will start with that' }], base, 900)
 const yepText = yep.body.content ?? ''
+
+// "Are you free to use?": the real prices, from code (Hieu, 2026-10-29).
+const price = await call([{ role: 'user', content: 'are you free to use?' }], base, 900)
+const priceText = price.body.content ?? ''
+expect(price.calls === 0 && /20 messages a day/.test(priceText) && /1 USDC, once/.test(priceText) && /charges nothing else/.test(priceText), `"are you free?" gets the prices with no model call (got ${price.calls} calls: ${priceText.slice(0, 80)})`)
+const notPrice = await call([{ role: 'user', content: 'how much is in my bank?' }], base, 900)
+expect(!/messages a day/.test(notPrice.body.content ?? ''), 'a question about money held is not taken as a price question')
 console.log('\nstep 6: model calls', yep.calls, '\n' + yepText)
 expect(yep.calls === 0, `choosing a part costs no model call (got ${yep.calls})`)
 expect(/prepare the first buy of \*\*\d[\d,]* USDC\*\*[^\n]*all \*\*\d[\d,]* USDC\*\* at once/.test(yepText), 'a yes to "start with Crypto?" gets the offer: the first of 6 monthly buys, or all at once')

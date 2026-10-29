@@ -12,7 +12,8 @@ export type NavTab = 'chat' | 'fund' | 'invest' | 'balance' | 'menu'
 interface NavBarProps {
   active: NavTab
   onChange: (tab: NavTab) => void
-  investLocked: boolean
+  /** Tabs that open step by step (Hieu, 2026-10-29): Balance once the emergency fund is full, Invest once buying is open too. */
+  locked: Partial<Record<NavTab, boolean>>
 }
 
 const tabs: Array<{ id: NavTab; label: string; icon: LucideIcon }> = [
@@ -23,17 +24,17 @@ const tabs: Array<{ id: NavTab; label: string; icon: LucideIcon }> = [
   { id: 'menu',    label: 'Menu',    icon: MoreHorizontal },
 ]
 
-export function NavBar({ active, onChange, investLocked }: NavBarProps) {
+export function NavBar({ active, onChange, locked: lockedTabs }: NavBarProps) {
   return (
     <>
       <nav className="lg:hidden flex-shrink-0 flex items-stretch h-16 bg-white z-20" style={{ borderBottom: '1px solid var(--line)' }}>
         {tabs.map(({ id, label, icon: Icon }) => {
-          const locked = id === 'invest' && investLocked
+          const locked = !!lockedTabs[id]
           const isActive = active === id
           const color = isActive ? 'var(--accent)' : 'var(--muted)'
           return (
-            <button key={id} onClick={() => onChange(id)} aria-pressed={isActive}
-              className="relative flex-1 flex flex-col items-center justify-center">
+            <button key={id} onClick={() => onChange(id)} aria-pressed={isActive} disabled={locked} title={locked ? 'Opens when your emergency fund is full' : undefined}
+              className="relative flex-1 flex flex-col items-center justify-center disabled:cursor-not-allowed">
               {locked && !isActive ? <Lock size={24} style={{ color }} /> : <Icon size={24} style={{ color }} />}
               <span className="text-[14px] leading-5 font-semibold" style={{ color }}>{label}</span>
               {isActive && <span className="absolute bottom-0 inset-x-0 h-[2px]" style={{ background: 'var(--accent)' }} />}
@@ -47,12 +48,12 @@ export function NavBar({ active, onChange, investLocked }: NavBarProps) {
           <Wordmark size={20} />
           <div className="flex gap-2">
             {tabs.map(({ id, label, icon: Icon }) => {
-              const locked = id === 'invest' && investLocked
+              const locked = !!lockedTabs[id]
               const isActive = active === id
               const color = isActive ? 'var(--accent-dark)' : locked ? 'var(--muted)' : 'var(--subtle)'
               return (
-                <button key={id} onClick={() => onChange(id)} aria-pressed={isActive}
-                  className="h-10 px-4 flex items-center gap-2 rounded-full"
+                <button key={id} onClick={() => onChange(id)} aria-pressed={isActive} disabled={locked} title={locked ? 'Opens when your emergency fund is full' : undefined}
+                  className="h-10 px-4 flex items-center gap-2 rounded-full disabled:cursor-not-allowed"
                   style={{ background: isActive ? 'var(--accent-soft)' : 'transparent' }}>
                   {locked && !isActive ? <Lock size={20} style={{ color }} /> : <Icon size={20} style={{ color }} />}
                   <span className="text-[16px] leading-6 font-semibold" style={{ color }}>{label}</span>

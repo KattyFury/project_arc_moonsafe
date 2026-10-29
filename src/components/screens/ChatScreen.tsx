@@ -6,7 +6,7 @@ import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Loader2, Send } from 'lucide-react'
 import { toast } from 'sonner'
 import { useApp } from '@/state/AppState'
-import { WELCOME, WELCOME_BACK, readChatExtras, useAgent, writeChatExtras, type AgentAction, type StoredCard } from '@/hooks/useAgent'
+import { WELCOME, welcomeBack, readChatExtras, useAgent, writeChatExtras, type AgentAction, type StoredCard } from '@/hooks/useAgent'
 import { dcaNextRun } from '@/hooks/useCirBtc'
 import { useNow } from '@/hooks/useNow'
 import { isOutOfPower, useAiPower } from '@/hooks/useAiPower'
@@ -173,7 +173,7 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
                     : msg.error
                       ? { background: '#FDE8EB', color: 'var(--danger)' }
                       : { background: 'var(--surface-muted)', color: 'var(--ink)' }}>
-                  {renderContent(msg.timestamp === 0 ? (profile.known ? WELCOME_BACK : WELCOME.content) : msg.content)}
+                  {renderContent(msg.timestamp === 0 ? (profile.known ? welcomeBack(math.fundOk) : WELCOME.content) : msg.content)}
                 </div>
               </div>
               {msg.role === 'assistant' && cards.filter(c => c.at === msg.timestamp).map(c => <ActionCard key={c.id} action={c} onFinished={(s, summary) => finishCard(c.id, s, summary)} />)}
