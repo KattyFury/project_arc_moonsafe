@@ -24,3 +24,5 @@ Thumbs.db
 
 scripts/agent-eval-last.txt
 scripts/persona-eval-last.txt
+scripts/education-eval-*.json
+functions/api/.education-baseline.ts

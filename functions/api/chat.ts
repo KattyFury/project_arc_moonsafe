@@ -20,6 +20,7 @@
 // below therefore read both; lines holding Vietnamese are marked lang-ok for scripts/check-lang.mjs.
 
 import { getPrices } from './prices'
+import { educationAnswer, EDUCATION_POLICY } from '../_lib/education'
 import { privyUserId } from '../_lib/privyAuth'
 import { addUsage, overBudget, type Meter } from '../_lib/budget'
 import { callModel as openai, DEFAULT_CLAUDE_MODEL, type Keys, type ToolCall } from '../_lib/llm'
@@ -69,7 +70,7 @@ const json = (body: unknown, status = 200) =>
 const RULES = `## MoonSafe principles
 ${KB.principles.map(p => `- ${p}`).join('\n')}
 ## Framework (by age, only age changes it)
-- Three buckets of the money to divide (liquid assets, minus money for a near-term goal): Safety = age %; the rest split EVENLY between Traditional (stocks, index funds, gold) and Crypto as ONE bucket, mostly BTC (say it in words; no share for other coins, never suggest buying small coins or memecoins). Age 30: Safety 30, Traditional 35, Crypto 35. Why even: if crypto crashes, Traditional can carry them; if stocks and gold fall, crypto can; if both fall, the emergency fund and Safety still stand. It is an objective, balanced suggestion, not a bet on either side: never argue that one deserves more. BTC never goes to 0. Coins they already hold just count in Crypto.
+- Three buckets of the money to divide (liquid assets, minus money for a near-term goal): Safety = age %; the rest split EVENLY between Traditional (stocks, index funds, gold) and Crypto as ONE bucket, mostly BTC (say it in words; no share for other coins, never suggest buying small coins or memecoins). Age 30: Safety 30, Traditional 35, Crypto 35. Why even: if crypto crashes, Traditional can carry them; if stocks and gold fall, crypto can; if both fall, the emergency fund and Safety still stand. It is an objective, balanced suggestion, not a bet on either side: never argue that one deserves more. The formula keeps a positive BTC allocation; this is not a guarantee about its price. Assets can fall together. Coins they already hold just count in Crypto.
 - Money for a big expense within 5 years (car, wedding, school) stays in Safety, never invested.
 - They said they could not hold through a 50% crypto drop → you may suggest a smaller Crypto part for now (their call); never change the numbers yourself.
 - The emergency fund (USDC in the MoonSafe vault) stands apart. Floor in months of spending (fixed + essential variable + debt payments): 3 stable income; 6 stable with dependents or irregular without; 9 irregular with dependents; 12 if also the sole earner.
@@ -341,7 +342,9 @@ ${DCA_AVAILABLE ? '' : '- AUTOMATIC recurring buys in the app are NOT available 
 
 const ASSET_TYPES_TEXT = KB.asset_types.filter(t => t.key !== 'moonsafe_fund' && t.key !== 'cirbtc').map(t => `${t.key} (${t.label})`).join('; ')
 
-const PLAN_PROMPT = `You are MoonSafe's action planner. Read the user's LATEST message (earlier ones are context), the profile list (each item has an [id]) and the app state, then CALL tools. Every step calls at least one tool and sees each result; when nothing more was asked or told, call no_action. Never do what was not asked or told. Users write English or Vietnamese.
+const PLAN_PROMPT = `${EDUCATION_POLICY}
+
+You are MoonSafe's action planner. Read the user's LATEST message (earlier ones are context), the profile list (each item has an [id]) and the app state, then CALL tools. Every step calls at least one tool and sees each result; when nothing more was asked or told, call no_action. Never do what was not asked or told. Users write English or Vietnamese.
 
 ## Which tool
 - A bare "ok" / "sure" / "yes" to a question asking for a fact (age, income, spending…) gives no fact: record nothing, and it is NOT declining.
@@ -799,6 +802,9 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     .filter(m => (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
     .slice(-30)
   const ctx = (body.context ?? {}) as Record<string, unknown>
+  const latest = [...messages].reverse().find(m => m.role === 'user')?.content ?? ''
+  const lesson = educationAnswer(latest, VI_LETTERS.test(latest))
+  if (lesson) return json({ content: lesson.content, ops: [], dcaStop: false, actions: [], ...(body.debug ? { education: lesson.id } : {}) })
   const rate = await vndPerUsd()
   const num = (v: unknown) => typeof v === 'number' && Number.isFinite(v) ? v : null
   const wallet = num(ctx.walletUsdc), vault = num(ctx.vaultUsdc), cir = num(ctx.cirBtcUsdc) ?? 0
@@ -1407,7 +1413,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   const { text: figs, floors, cover, partial } = figures(balance, profile, wallet, cir, rate, usesVnd, !usedOnce.has('lock_open_surplus'))
   const collecting = matched.some(p => p.id === 'collecting' || p.id === 'age_unknown')
   // A question or a doubt from the user is answered first; the collection flow waits a turn.
-  const userAsks = QUESTIONS_US.test(lastUserText)
+  const userAsks = QUESTIONS_US.test(lastUserText) || ASKS_WHY.test(lastUserText) || /^(explain|teach|help me understand|tell me about|giải thích)(?!\p{L})/iu.test(lastUserText.trim()) // lang-ok
   // The framework v2 questions (goal, insurance, 50% drop) are not in the KB collecting pattern: they keep collection open too.
   const relies = (profile.dependents ?? 0) > 0 || profile.soleEarner === true
   const v2Missing = (!profile.nearGoal && !profile.noNearGoal) || (relies && (profile.insured === null || profile.insured === undefined)) || profile.cryptoDropOk === null || profile.cryptoDropOk === undefined
@@ -1460,7 +1466,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   }
 
   // BRIEF unless the turn is meant to educate: a plan the model writes, the user asking why / what something means, or an overview.
-  const teach = phase === 'plan' || ASKS_WHY.test(lastUserText) || ASKS_OVERVIEW.test(lastUserText)
+  const teach = userAsks || phase === 'plan' || ASKS_WHY.test(lastUserText) || ASKS_OVERVIEW.test(lastUserText)
   const replyMessages: Message[] = [
     { role: 'system', content: REPLY_PROMPT },
     // The reply model sees the last 10 messages; the server logic above still reads all 30.
@@ -1510,7 +1516,7 @@ ${ending}` })
   }
   const BUCKETS_RULE = 'Name only parts that still have room ("to go" above 0); a part marked full is never offered. Give every amount as "X of Y" (what they have of the target) plus what is left, never only what is missing. If only ONE bucket is left, say what it is and ask whether they want to start with it; NEVER open with a purchase or a card: the cirBTC buy is offered only after they say they want crypto. Safety and Traditional are done outside the app. If none is left, say the plan is complete.'
   // After the plan they fill one bucket at a time, the one they pick (Hieu, 2026-10-27).
-  if (phase === 'start' && planGiven && balance.fund.met && !appEvent && !placement && !actions.some(x => x.type === 'prepare_buy_cirbtc' || x.type === 'propose_dca')) replyMessages.push({ role: 'system', content: `The plan was given and the emergency fund is full. They fill one bucket at a time, the one THEY pick, no need to split every dollar. If they pick one: Crypto → ${balance.lock.open && cryptoOffer >= 1 ? `the amount that fills the Crypto bucket as far as the wallet allows is ${usdc(cryptoOffer)} (ignore the split in "Suggested use of idle money"); unless they trade by the charts, suggest spreading it over 6 equal monthly buys and offer the first one ("Would you like me to prepare the first cirBTC buy of **${usdc(Math.floor(cryptoOffer / 6))}** for you to sign?"); if they want it all at once, offer **${usdc(cryptoOffer)}**` : 'say what is missing to buy in the app'}; Safety → their own bank savings or flexible earn, outside the app, with the amount; Traditional → bought outside the app with a broker (an index fund such as VOO, or gold), with the amount. If they have not picked yet, ask which one they want to fill first. ${BUCKETS_RULE}` })
+  if (!userAsks && phase === 'start' && planGiven && balance.fund.met && !appEvent && !placement && !actions.some(x => x.type === 'prepare_buy_cirbtc' || x.type === 'propose_dca')) replyMessages.push({ role: 'system', content: `The plan was given and the emergency fund is full. They fill one bucket at a time, the one THEY pick, no need to split every dollar. If they pick one: Crypto → ${balance.lock.open && cryptoOffer >= 1 ? `the amount that fills the Crypto bucket as far as the wallet allows is ${usdc(cryptoOffer)} (ignore the split in "Suggested use of idle money"); unless they trade by the charts, suggest spreading it over 6 equal monthly buys and offer the first one ("Would you like me to prepare the first cirBTC buy of **${usdc(Math.floor(cryptoOffer / 6))}** for you to sign?"); if they want it all at once, offer **${usdc(cryptoOffer)}**` : 'say what is missing to buy in the app'}; Safety → their own bank savings or flexible earn, outside the app, with the amount; Traditional → bought outside the app with a broker (an index fund such as VOO, or gold), with the amount. If they have not picked yet, ask which one they want to fill first. ${BUCKETS_RULE}` })
   const recordEvent = lastUserText.startsWith('[app event] The user confirmed recording')
   const dcaApproved = lastUserText.startsWith('[app event] The user approved the DCA plan')
   if (placement && dupBox) replyMessages.push({ role: 'system', content: boxSaved ? `The user repeats ${usdc(placement.amountUsd)} for ${placement.name}, but that amount was saved a moment ago through the box. Nothing more is recorded. Say in ONE short sentence that it is already saved and the Safety figure is unchanged. No question.` : `The user repeats ${usdc(placement.amountUsd)} for ${placement.name}: the box from your previous reply is still waiting, and nothing is saved until they pick the source in it and tap Confirm. Say that in ONE short sentence. Record nothing, no new box, no question.` })
@@ -1526,10 +1532,12 @@ ${ending}` })
   else if (buyCard) replyMessages.push({ role: 'system', content: `The buy card is under this reply. In ONE or TWO short sentences: the amount of cirBTC it buys, that they tap "Get a quote", check it, then "Sign purchase". Do NOT recap the plan or the buckets, no other question.` })
   const card = actions.find(x => x.type === 'prepare_deposit')
   if (card) replyMessages.push({ role: 'system', content: `The deposit card is under this reply. In two short sentences: what it does for them (their emergency fund reaches its target, so N months of spending are covered if income stops) and what comes after they sign (the next step of the plan). No buy-lock talk, no new question.` })
-  else if (phase === 'start' && planGiven && cover !== null && !actions.length) replyMessages.push({ role: 'system', content: `The plan was given. When it fits, the next step is still the emergency fund: offer the deposit of ${usdc(cover)} ("shall I prepare a deposit of … for you to sign?").` })
+  else if (!userAsks && phase === 'start' && planGiven && cover !== null && !actions.length) replyMessages.push({ role: 'system', content: `The plan was given. When it fits, the next step is still the emergency fund: offer the deposit of ${usdc(cover)} ("shall I prepare a deposit of … for you to sign?").` })
   const replyLang = vi ? 'Vietnamese' : 'English'
   replyMessages.push({ role: 'system', content: `Reply language: ${replyLang} (the language of the user's latest message).${vi ? ` ${VI_FLOORS}` : ''}` })
   if (DECLINES.test(lastUserText)) replyMessages.push({ role: 'system', content: 'The user just declined to share. Respect it: this reply asks NOTHING about their personal situation. Use the defaults (age 30 if the age is missing) and say the picture is an estimate; they can share any time.' })
+
+  replyMessages.push({ role: 'system', content: EDUCATION_POLICY + (userAsks && !ops.length && !actions.length && !appEvent ? '\nThis turn: answer their question directly. Onboarding, bucket selection and deposit offers wait. No unsolicited action offer or personal question.' : '') })
 
   const grounding = [figs, wishLine, brief, usdc(cryptoOffer), ...done, readback.join(', '), ...messages.filter(m => m.role === 'user').map(m => m.content)]
   const prevAssistant = assistantTexts[assistantTexts.length - 1] ?? ''
