@@ -3,7 +3,7 @@
 // so fees/deposits are msg.value and no approve is needed. The app works in
 // 6-decimal USDC units and converts at the edge.
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePrivy, useWallets } from '@privy-io/react-auth'
 import { useAccount, usePublicClient, useSendTransaction, useSwitchChain } from 'wagmi'
 import { encodeFunctionData, zeroAddress } from 'viem'
@@ -43,6 +43,7 @@ export const VAULT_PROXY_ABI = [
   { name: 'depositFor', type: 'function', stateMutability: 'payable', inputs: [], outputs: [] },
   { name: 'withdraw', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'amount', type: 'uint256' }, { name: 'to', type: 'address' }], outputs: [] },
   { name: 'getBalance', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ name: '', type: 'uint256' }] },
+  { name: 'owner', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ name: '', type: 'address' }] },
 ] as const
 
 export interface VaultState {
@@ -93,8 +94,12 @@ export function useVaultState(): VaultState {
   const [readError, setReadError] = useState(false)
   const [busy, setBusy] = useState(false)
 
+  // Each wallet/account change starts a new epoch; a read that finishes in an older one is dropped, so a slow answer for the previous
+  // account can never become the vault a deposit is sent to (security review 2026-10-29).
+  const epochRef = useRef(0)
   const refresh = useCallback(async () => {
     if (!address || !publicClient || !FACTORY_CONFIGURED) return
+    const epoch = epochRef.current
     try {
       const [walletNative, feeNative] = await Promise.all([
         publicClient.getBalance({ address }),
@@ -117,6 +122,7 @@ export function useVaultState(): VaultState {
         const native = await publicClient.readContract({ address: found, abi: VAULT_PROXY_ABI, functionName: 'getBalance' })
         vb = nativeToUsdc6(native)
       }
+      if (epoch !== epochRef.current) return
       setVaultAddress(has ? found : null)
       setVaultOwner(has ? owner : null)
       setVaultBalance(has ? vb : null)
@@ -124,15 +130,17 @@ export function useVaultState(): VaultState {
       setFee(nativeToUsdc6(feeNative))
       setReadError(false)
     } catch (e) {
+      if (epoch !== epochRef.current) return
       console.error('vault refresh failed', e)
       setReadError(true)
     } finally {
-      setReady(true)
+      if (epoch === epochRef.current) setReady(true)
     }
   }, [address, publicClient, walletsKey])
 
   // Reset when the wallet changes, then load + poll.
   useEffect(() => {
+    epochRef.current += 1
     setReady(false)
     setVaultAddress(null)
     setVaultOwner(null)
@@ -175,12 +183,19 @@ export function useVaultState(): VaultState {
   // From the owner wallet: deposit(); from another wallet of the same person: depositFor() (anyone may add to a vault).
   const deposit = useCallback(async (amount: bigint) => {
     if (!vaultAddress) throw new Error('No vault yet')
+    if (!isOwner) {
+      // Money from another wallet of the same person goes in with depositFor. Right before sending, check that the vault really belongs
+      // to one of this account's wallets, so a stale or wrong read can never aim a deposit at a stranger's vault (review 2026-10-29).
+      const mine = vaultOwner && accountWallets.includes(vaultOwner.toLowerCase() as `0x${string}`)
+      const onchainOwner = mine && publicClient ? await publicClient.readContract({ address: vaultAddress, abi: VAULT_PROXY_ABI, functionName: 'owner' }) : null
+      if (!onchainOwner || onchainOwner.toLowerCase() !== vaultOwner!.toLowerCase()) throw new Error('This vault does not belong to one of your wallets, so nothing was sent.')
+    }
     await send({
       to: vaultAddress,
       value: usdc6ToNative(amount),
       data: encodeFunctionData({ abi: VAULT_PROXY_ABI, functionName: isOwner ? 'deposit' : 'depositFor', args: [] }),
     })
-  }, [vaultAddress, send, isOwner])
+  }, [vaultAddress, vaultOwner, accountWallets, publicClient, send, isOwner])
 
   // Withdrawals always go back to the owner's own wallet, and only the owner wallet can sign them.
   const withdraw = useCallback(async (amount: bigint) => {
