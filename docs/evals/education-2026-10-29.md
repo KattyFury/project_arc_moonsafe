@@ -36,6 +36,8 @@ This sample used **54.5% fewer tokens** and about **35.9% less estimated API spe
 
 The final testnet-policy retest used 2 calls / 9,736 tokens / ~$0.00442. It correctly said the vault is for testing and discussed accessible real-world savings without inventing a mainnet MoonSafe vault. Total evaluation estimate: **$0.0410**, before tax/account-specific adjustments. Pricing used: $0.75 input, $0.075 cached input, $4.50 output per million tokens, from [OpenAI's model page](https://developers.openai.com/api/docs/models/gpt-5.4-mini), checked 2026-10-29. This is a usage-based estimate, not an invoice.
 
+After these live runs, main advanced to `4fb902b` (audit round 2). It was merged into this branch and the offline education, knowledge-base and standalone type checks were rerun successfully. The final network wording is deployment-agnostic: the app supports testnet and mainnet builds, and the agent must not invent which is configured. No further paid comparison was run for this small wording adjustment; the saved live evidence describes the earlier tested revisions exactly.
+
 See [the saved responses and usage](education-2026-10-29.json), including the initial answer that required correction.
 
 ## Validation
