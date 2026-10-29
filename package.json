@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "cf:deploy": "node scripts/check-lang.mjs && vite build && bunx wrangler pages deploy dist --project-name moonsafe --branch main",
+    "cf:deploy": "node scripts/check-deploy-env.mjs && node scripts/check-lang.mjs && vite build && bunx wrangler pages deploy dist --project-name moonsafe --branch main",
     "deploy:self": "bun run ./scripts/self-deploy.ts",
     "compass:deploy": "bun run ./scripts/compass-deploy.ts",
     "fetch:abi": "bun run ./scripts/fetch-abi.ts",

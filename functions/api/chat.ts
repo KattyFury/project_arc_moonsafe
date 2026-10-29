@@ -728,7 +728,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   context = { ...context, env: effectiveEnv(context.env, cfg) }
 
   // A safety valve on tokens (functions/_lib/budget.ts) and the user's daily "AI power" (functions/_lib/quota.ts).
-  // The verified owner has no per-user token cap (only the global one): 90 messages a day must be possible (real chat 2026-10-28).
+  // The verified owner has no per-user token cap (only the global one): 60 messages a day must be possible (real chat 2026-10-28).
   const before = await powerState(context.env, userId)
   const limit = await overBudget(context.env, userId, before?.boosted === true)
   if (limit) return json({ error: limit, code: 'token_budget' }, 429)

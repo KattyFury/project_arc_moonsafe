@@ -1,7 +1,7 @@
 /**
  * "AI power": how many chat messages an account may send to the agent per day (Hieu, 2026-10-27).
  *
- *  - 30 messages a day for everyone, 90 for the owner wallet (after a one-time signature proves the account holds it).
+ *  - 20 messages a day for everyone, 60 for the owner wallet (after a one-time signature proves the account holds it).
  *  - Past that, messages come out of the "power" the user bought (a counter per account that does not expire).
  *  - A message that fails on our side is given back. Hidden app events (a card was signed, a box was confirmed) are not
  *    messages the user typed, so they have their own, higher cap that stops anyone using them to skip the limit.
@@ -22,8 +22,8 @@ export interface PowerEnv extends BudgetEnv {
   POWER_PAYMENT_ADDRESS?: string
 }
 
-export const DEFAULT_FREE = 30
-export const DEFAULT_OWNER = 90
+export const DEFAULT_FREE = 20
+export const DEFAULT_OWNER = 60
 const EVENT_CAP = 20
 const DEFAULT_OWNER_WALLET = '0xeb2d222d28f35fe7beb5387f8bc4ebf65f2652f6'
 const CHALLENGE_MAX_AGE_MS = 10 * 60 * 1000

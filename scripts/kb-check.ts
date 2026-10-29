@@ -222,7 +222,7 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   if (await overBudget({}, 'a')) fail('budget: without KV the cap is off')
 }
 
-// 9. "AI power": 30 messages a day (90 for the owner wallet), bought power after that, refunds, hidden events capped.
+// 9. "AI power": 20 messages a day (60 for the owner wallet), bought power after that, refunds, hidden events capped.
 {
   const { ownerChallenge, powerState, takeTurn, verifyOwner } = await import('../functions/_lib/quota')
   const { privateKeyToAccount, generatePrivateKey } = await import('viem/accounts')
@@ -232,7 +232,7 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   const other = privateKeyToAccount(generatePrivateKey())
   const env = { USERDATA: kv, OWNER_WALLET: owner.address }
 
-  for (let i = 0; i < 30; i++) if (!(await takeTurn(env, 'u1', 'message')).ok) fail(`power: message ${i + 1} of 30 must be allowed`)
+  for (let i = 0; i < 20; i++) if (!(await takeTurn(env, 'u1', 'message')).ok) fail(`power: message ${i + 1} of 20 must be allowed`)
   const blocked = await takeTurn(env, 'u1', 'message')
   if (blocked.ok || blocked.message.indexOf('Recharge') < 0) fail('power: the 31st message must be blocked and mention recharging')
   if (!(await takeTurn(env, 'u2', 'message')).ok) fail('power: another account has its own allowance')
@@ -248,8 +248,8 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   if ((await takeTurn(env, 'u4', 'event')).ok) fail('power: hidden events are capped')
   if ((await powerState(env, 'u4'))?.used !== 0) fail('power: hidden events do not use the message allowance')
 
-  // owner: 90 a day, only after a signature from the owner wallet, made for this account and fresh
-  if ((await powerState(env, 'boss'))?.limit !== 30) fail('power: before verification the owner is a normal account')
+  // owner: 60 a day, only after a signature from the owner wallet, made for this account and fresh
+  if ((await powerState(env, 'boss'))?.limit !== 20) fail('power: before verification the owner is a normal account')
   const sign = (acc: typeof owner, challenge: string) => acc.signMessage({ message: challenge })
   const c1 = ownerChallenge('boss')
   if ((await verifyOwner(env, 'boss', c1, await sign(other, c1))).ok) fail('power: a signature from another wallet must be refused')
@@ -258,8 +258,8 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   if ((await verifyOwner(env, 'boss', old, await sign(owner, old))).ok) fail('power: an expired challenge must be refused')
   if (!(await verifyOwner(env, 'boss', c1, await sign(owner, c1))).ok) fail('power: the owner wallet signature must be accepted')
   const bossState = await powerState(env, 'boss')
-  if (bossState?.limit !== 90 || !bossState.boosted) fail('power: the verified owner gets 90 messages')
-  for (let i = 0; i < 90; i++) if (!(await takeTurn(env, 'boss', 'message')).ok) fail(`power: owner message ${i + 1} of 90 must be allowed`)
+  if (bossState?.limit !== 60 || !bossState.boosted) fail('power: the verified owner gets 60 messages')
+  for (let i = 0; i < 60; i++) if (!(await takeTurn(env, 'boss', 'message')).ok) fail(`power: owner message ${i + 1} of 60 must be allowed`)
   if ((await takeTurn(env, 'boss', 'message')).ok) fail('power: the 91st owner message must be blocked')
   if (!(await takeTurn({}, 'x', 'message')).ok) fail('power: without KV nothing is limited')
 }
