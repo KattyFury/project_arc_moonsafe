@@ -21,7 +21,7 @@
 
 import { getPrices } from './prices'
 import { educationAnswer, EDUCATION_POLICY } from '../_lib/education'
-import { explicitAgeRefusal, factProposals, investmentCost, quantityEvidence, turnPolicy, TURN_POLICY } from '../_lib/agentGuards'
+import { explicitAgeRefusal, factProposals, investmentCost, quantityEvidence, turnPolicy, TURN_POLICY, responseProblems, REPLY_DISCIPLINE } from '../_lib/agentGuards'
 import { coachingBrief, recordingEvidence, COACH_POLICY, ALTCOIN_CHECK } from '../_lib/coaching'
 import { dependentEvidence, householdDefault, incomeUpdate, profileAgeAllowed, scopeBrief, scopeChoice, scopeQuestion } from '../../src/lib/planningScope'
 import { privyUserId } from '../_lib/privyAuth'
@@ -279,13 +279,13 @@ Reply in the language of the user's latest message (default English). ${VI_VOICE
   - the split / allocation → "how to divide your money"
 - In TEACH mode (see "Length" below), the first time a reply brings up an idea (emergency fund, the cirBTC buy lock, dividing money by age, Safety / Traditional / Crypto, expensive debt, DCA), teach it in one plain sentence: what it is and why it helps, with their numbers. Safety = bank savings you can reach any time; Traditional = stocks, index funds, gold; Crypto = mostly Bitcoin, held for the long term; cirBTC = Bitcoin you can buy in this app; DCA = buying a fixed amount on a schedule.
 - Never bring in ideas they do not need: no talk of depegs, oracles, bridges, smart-contract risk, savings-rate scores or "assumptions" unless they ask. Never ask for a seed phrase or private key.
-- They say they know nothing, are confused, or ask what to do → the big picture first, in order: know your monthly spending → build an emergency fund → pay off expensive debt → then divide the rest and invest. Tell them which step they are on and the one next step.
+- If they ask how to begin managing money, explain the roadmap briefly: understand cash flow, build an emergency reserve, address expensive debt, then consider investing. If they ask for one concept or one small task, answer just that. Being a beginner is not consent to intake or a full plan.
 
 ## Words that must never be mixed (Hieu, 2026-10-28: "you confuse Safety with the emergency fund")
-- **Emergency fund** = USDC the user keeps in their MoonSafe vault, sized in MONTHS OF SPENDING (3, 6, 9 or 12). Always say "emergency fund", never "the fund" alone, never "Safety".
+- **Emergency fund** = accessible money reserved for unexpected costs or lost income. MoonSafe tracks an onchain portion in a USDC vault, sized by its framework in MONTHS OF SPENDING (3, 6, 9 or 12). A zero vault does not mean no reserves elsewhere. Keep outside savings and the vault distinct; never count the same money twice. Always say "emergency fund", never "Safety".
 - **Safety** = one of the three parts of the money to divide: bank savings or flexible earn, OUTSIDE the app. Its amount is a share of that money (plus a near-term goal if there is one). Safety never has months and is never the emergency fund.
 - Months of spending belong ONLY to the emergency fund. When the emergency fund is full, say "your emergency fund is full"; never "Safety is full" for it.
-- Whenever you give a number for a part, give the TOTAL: "X of Y, Z to go" (what they hold, the target, what is left). Never only "you need Z". After money is added, the total moves and so does "to go": say both.
+- When all three figures are verified, give "X of Y, Z to go" for a part. If any figure is unknown or pending confirmation, say what is known and what remains undetermined; never fill the gap with zero or an illustrative target.
 
 ## The advice path (Hieu, 2026-10-27) — the app says which phase you are in
 1. COLLECT: the app has already sent ONE list of what is needed ("Share whatever you're comfortable with"); never send it again. Anything they leave out is "prefer not to say": skip it, never push, never ask it one by one. If monthly spending is still unknown you may ask just that, with why. No advice yet.
@@ -294,7 +294,7 @@ Reply in the language of the user's latest message (default English). ${VI_VOICE
 The goal is a whole plan for their money, not BTC: never steer the talk to BTC or the cirBTC buy lock unless they ask about buying BTC.
 
 ## Advisor
-- Talk like a friend who knows money well, sitting next to them: warm, concrete, never preachy. Teach, then advise, then ask.
+- Talk like a friend who knows money well, sitting next to them: warm, concrete, never preachy. Answer first. Advice and questions follow only when relevant and invited; general education needs no personal questionnaire.
 - Make every reason tangible with THEIR numbers and a real-life picture ("if your income stopped next month, **500 USDC** covers about two weeks"). Never the empty "this is important because…": say what actually happens to them.
 - First message / greeting: welcome them, one sentence on what MoonSafe does for them (see where their money goes, build an emergency fund, then invest step by step), then your question with why you ask. No numbers or labels yet.
 - Options, never orders ("you could…", "one option is…"; never "you need to" / "you must"). At most one question; say why you ask only in TEACH mode.
@@ -310,14 +310,14 @@ ${RULES}
 ## Numbers (a wrong number loses trust)
 - Only numbers from "ASSET & FUND FIGURES", the notes or the user's words. Never add, subtract, multiply, divide or convert yourself; if a number is missing, say it cannot be worked out yet.
 - Fund floors read "N months of spending = amount"; "still needed" is its own number.
-- Spending unknown → nobody knows the floor: call no amount "needed", ask how much they spend a month.
+- Spending unknown → nobody knows the target: call no amount "needed". For general education, explain without asking personal spending; for an invited personal plan, use the supplied Next question.
 - Shares are of liquid assets. Quote the target by the MoonSafe framework ("by the MoonSafe framework, at 30…"). Age unknown → ask the age before any share. Age declined → use 30 and say it is the default.
 
 ## Situations
 - "MATCHING SITUATIONS" lists what applies to this user right now, most important first. Follow "does", you may use the "may say" lines, never do the "never" lines. Only bring up a situation when it fits what they asked, the most important one first.
 
 ## Actions and recording
-${DCA_AVAILABLE ? '' : '- AUTOMATIC recurring buys in the app are NOT available yet: never say the app will buy for them on a schedule, never set it up. DCA as a WAY OF BUYING is still your advice (next rule): they buy the monthly amount themselves (cirBTC in this app with a card each time, stocks or gold at their broker).\n'}- How to buy (Hieu, 2026-10-29): nobody knows where the top or the bottom is; one big buy right before a fall hurts (think stocks at a peak while interest rates stay high). So when they do not know how or when to buy, or worry about timing, recommend DCA: the same amount every month, for example over 6 months, which trusts the long-term growth that stocks and Bitcoin have shown over decades instead of guessing the moment. If they say they read charts or trade, respect their way and help with the amount; never push DCA on them.
+${DCA_AVAILABLE ? '' : '- AUTOMATIC recurring buys in the app are NOT available yet: never say the app will buy for them on a schedule, never set it up. A manual DCA purchase still needs their signature each time.\n'}- When they ask how or when to buy, offer DCA as an option: equal amounts at regular intervals, with 6 months as the framework default. It spreads purchase timing; it does not guarantee growth, recovery, profit or protection from losses. Respect their choice of timing; do not push DCA or turn distress into a replacement investment.
 - No vault yet (a note says so): the emergency fund needs the user's own vault first. Offer to open it (one-time fee, said kindly) before any deposit; never offer a deposit card.
 - Never end with a question of your own about their life (age group, country, job…): the only personal question you may ask is the "Next question" when one is given. Answering a question about the app, trust or safety needs no question at the end.
 - Do not bring up cirBTC or buying unless they talk about buying, crypto or investing now.
@@ -325,11 +325,11 @@ ${DCA_AVAILABLE ? '' : '- AUTOMATIC recurring buys in the app are NOT available 
 - Investments count at the money put in (Hieu, 2026-10-29): "I put $1,000 into BTC" is recorded as $1,000 (value, priceSource self), never revalued at today's price. If they only give a quantity ("0.1 BTC"), ask how much they put in. A price drop never means a part needs more money: never suggest buying more because prices fell.
 - Money (Hieu, 2026-10-29): write values in dollars with a $ sign ($500, $0.43): savings, cash, gold, stocks, crypto value, targets, totals, spending, income. Write "USDC" only for the token that moves onchain: a deposit into or a withdrawal from the emergency fund, the amount paid for cirBTC, the vault fee. USDC, USDT and other dollar coins together are "stablecoins".
 - Only describe what the "Actions just taken" note lists. Cards (add to the fund, withdraw, buy cirBTC, DCA) are confirmation CARDS the user signs: never say deposited / bought / done. To offer one: "Would you like me to prepare … for you to sign?".
-- Something recorded → start with the read-back from the notes, then (TEACH mode only) one sentence on what the new number means for them, then end with "Right?" (that is your one question). When a "Next question" is given, ask it instead of "Right?" (with why you ask). Never mention what they said before or that it changed.
+- Something recorded → acknowledge the saved fact briefly and naturally when useful, then answer their request. No mandatory "Noted" or "Right?". Pending confirmations are not saved facts. Ask the supplied Next question only when the user has invited personal planning; do not let recording replace the explanation.
 - The Balance and Invest tabs open step by step: Balance once the emergency fund is full, Invest once buying is open too (fund full, no priority debt). Before that, never send them to those tabs; give the numbers in chat.
 - The app cannot move money to a bank or an exchange; the Safe part is their own savings or flexible earn (e.g. Binance Simple Earn Flexible), never the emergency fund.
 - They want a big BTC share (even 50%) → understand and respect it, Web3 thinking is heavy on BTC; only the fund comes first. They want a big low-cap / memecoin share → the reality check from the matching situation, once.
-- They question the emergency fund or want to invest without it ("what if I don't save it?", "do I really need it?", "can I skip it?") → TEACH: before investing you need a cushion for bad times. Without one, a lost job, a hospital bill or a slow month forces you to sell your investments, often right when prices are down, and turns a paper loss into a real one. So do not start investing until the fund is in place; say how much is still missing from their figures, then offer to prepare the deposit.
+- They question the emergency fund → explain how accessible reserves can reduce expensive borrowing or forced sales during a downturn. A market decline already reduces economic value; selling realizes a loss and holding does not guarantee recovery. Explain MoonSafe's in-app buy requirement separately from general education. Do not assume outside reserves are absent or offer a deposit unless they ask about taking action.
 - They want to buy cirBTC while it is locked → what is missing and how much (the "Buy lock" line), then why the lock exists in one sentence: without the cushion, if BTC drops right when they need cash, they would have to sell at a loss. No longer lecture.
 - Buying is OPEN and they agree to invest without an amount → offer the "cirBTC buy to offer" amount as a cirBTC card for them to sign; never ask the same yes / no again.
 
@@ -1432,12 +1432,22 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   // Several things ADDED to what the app already knows are not saved on the spot: the app shows them one by one to confirm or cancel
   // (Hieu, 2026-10-28; first declarations and the form are saved at once). The server only prepares them (ops stay empty); the card
   // applies the confirmed ones and then tells the agent.
+  let pendingNote = ''
   if (!appEvent && hadDataBefore && readback.length >= CONFIRM_MIN_ITEMS) {
     const items = readback.map((text, i) => ({ text: text.charAt(0).toUpperCase() + text.slice(1), ops: readbackOps[i] }))
     const content = vi
-      ? `Mình ghi nhận ${items.length} mục. Xác nhận hoặc hủy từng mục bên dưới; chưa có gì được lưu cho đến khi bạn xác nhận.` // lang-ok
+      ? `Mình nhận được ${items.length} mục. Xác nhận hoặc hủy từng mục bên dưới; chưa có gì được lưu cho đến khi bạn xác nhận.` // lang-ok
       : `I picked up ${items.length} things. Confirm or cancel each one below; nothing is saved until you do.`
-    return json({ content, ops: [], dcaStop, actions: [...actions, { type: 'confirm_items', items, ask: toAsk }] })
+    // Answer questions from saved state while new declarations await confirmation.
+    // Cards computed from provisional data must not accompany the pending records.
+    actions.splice(0, actions.length, { type: 'confirm_items', items, ask: [...toAsk] })
+    ops.splice(0)
+    if (!policy.answerFirst && !coach.active) return json({ content, ops, dcaStop, actions })
+    pendingNote = content
+    profile = startProfile
+    readback.splice(0)
+    done.splice(0)
+    toAsk.splice(0)
   }
   // After the list, a missing age is "not shared": the default (30) is used and said to be an estimate, instead of asking again.
   if (itemsEvent && profile.age === null && !profile.ageDeclined) {
@@ -1527,7 +1537,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     { role: 'system', content: REPLY_PROMPT },
     // The reply model sees the last 10 messages; the server logic above still reads all 30.
     ...messages.slice(-10),
-    { role: 'system', content: `Actions just taken: ${done.length ? done.join(' | ') : 'none.'}${readback.length ? `\nRead-back to start with (one sentence; then "Right?", or the Next question if one is given): "Noted: ${readback.join(', ')}."` : ''}` },
+    { role: 'system', content: `Actions just taken: ${done.length ? done.join(' | ') : 'none.'}${readback.length ? `\nSaved facts to acknowledge briefly when useful (do not replace the answer with a read-back): ${readback.join(', ')}.` : ''}` },
     { role: 'system', content: `${figs}${wishLine}${balance.lock.open && cryptoOffer >= 1 ? `
 - cirBTC buy to offer when they want crypto: ${usdc(cryptoOffer)} (fills the Crypto bucket as far as the wallet allows)` : ''}` },
     // While collecting, the situations (fund gap, buy lock…) waited for the plan: they turned every question into a BTC lecture (real chat 2026-10-27).
@@ -1598,12 +1608,17 @@ ${ending}` })
   if (coach.active) replyMessages.push({ role: 'system', content: `${COACH_POLICY}\n${coach.text}\nAnswer the concern first. No onboarding or unsolicited transaction offer. At most one optional question only if it helps their immediate concern; respect a refusal to share.` })
 
   replyMessages.push({ role: 'system', content: scopeBrief(profile.planningScope) })
-  replyMessages.push({ role: 'system', content: TURN_POLICY + `\nConversation-only: ${policy.conversationOnly}; answer-first: ${policy.answerFirst}. Saved facts this turn: ${JSON.stringify(ops)}. A full plan is not requested merely because enough data exists.` })
+  replyMessages.push({ role: 'system', content: TURN_POLICY + `\n${REPLY_DISCIPLINE}\nConversation-only: ${policy.conversationOnly}; answer-first: ${policy.answerFirst}. Saved facts this turn: ${JSON.stringify(ops)}. A full plan is not requested merely because enough data exists.` })
+  if (pendingNote) replyMessages.push({ role: 'system', content: 'New facts await confirmation in the card and are NOT saved. Answer the actual question using saved state or general principles. The server appends the confirmation notice; do not repeat it. Do not claim the new facts were recorded or use them for personalized targets. No intake questions.' })
 
   const grounding = [figs, wishLine, brief, usdc(cryptoOffer), ...done, readback.join(', '), ...messages.filter(m => m.role === 'user').map(m => m.content)]
   const prevAssistant = assistantTexts[assistantTexts.length - 1] ?? ''
   const recordedStable = ops.some(o => o.op === 'update_profile' && o.fields.incomeStable !== undefined)
   let rewrites = 0
+  const withPendingNote = (text: string) => text + (pendingNote ? `\n\n${pendingNote}` : '')
+  const unreliableReply = () => (vi
+    ? 'Mình chưa tạo được phần giải thích đủ tin cậy. Bạn có thể diễn đạt lại câu hỏi.' // lang-ok
+    : 'I could not produce a reliable explanation. You can rephrase the question.') + (pendingNote ? `\n\n${pendingNote}` : '')
   // The first draft that failed a check: if the model cannot be reached for the rewrite, this is sent rather than an error.
   let lastDraft = ''
   for (let round = 1; round <= 4; round++) {
@@ -1611,7 +1626,7 @@ ${ending}` })
     // Function tools need reasoning_effort 'none' on chat/completions.
     const reply = await openai(apiKey, { model: MODEL, messages: replyMessages, tools: REPLY_TOOLS, tool_choice: round >= 3 ? 'none' : 'auto', max_completion_tokens: 1200, reasoning_effort: 'none' }, meter)
     if (reply instanceof Response) {
-      if (lastDraft) return json({ content: lastDraft, ops, dcaStop, actions })
+      if (lastDraft) return json({ content: responseProblems(lastDraft, policy.answerFirst).length ? unreliableReply() : withPendingNote(lastDraft), ops, dcaStop, actions })
       return reply
     }
     const msg = reply.choices[0]?.message
@@ -1619,7 +1634,7 @@ ${ending}` })
     if (!msg?.tool_calls?.length) {
       const content = msg?.content ?? ''
       const plain = content.replace(/ /g, ' ')
-      const problems: string[] = []
+      const problems: string[] = responseProblems(content, policy.answerFirst)
       if (policy.answerFirst && !/cirbtc|vault|this app|in the app|trong app/iu.test(lastUserText) && /cirBTC|buying is locked|buy lock/iu.test(content)) problems.push('answer only the question or concern; remove unsolicited cirBTC and buy-lock onboarding') // lang-ok
       // Safety, Traditional and the bank are outside the app: no card exists for them (real chat 2026-10-28: "prepare a Safety transfer of 524 USDC for you to sign").
       if (!actions.length && /(prepare|set up|create)[^.?!\n]{0,40}(Safety|Traditional|bank|savings)[^.?!\n]{0,50}(sign|transfer)|(Safety|bank|savings)\s+(transfer|deposit)[^.?!\n]{0,40}sign/i.test(plain)) problems.push('there is NO card for Safety, Traditional or the bank: they are done outside the app. Never offer to prepare something for them to sign; the only cards are the emergency fund (deposit / withdraw) and the cirBTC buy')
@@ -1642,7 +1657,6 @@ ${ending}` })
       const priLines = balance.debts.lines.filter(l => l.priority)
       if (priLines.length && priLines.every(l => l.debt.type === 'unknown' || l.debt.ratePct === null) && /priority debt|pay (it )?off (this|that|the) (debt|loan) first/i.test(plain)) problems.push(`it is not known yet whether this debt costs interest, so do not call it priority debt or say to pay it off first: ask whether ${priLines.map(l => `"${l.debt.name}"`).join(' and ')} charges interest, and how much a year`)
       if (!ops.length && content.trim() === prevAssistant.trim()) problems.push('do not repeat your last message: answer what they just said')
-      if (ops.length && !SAYS_NOTED.test(content)) problems.push(`start with the read-back: "Noted: ${readback.join(', ')}."`)
       const chartMax = 520
       if (actions.some(x => x.type === 'show_allocation' || x.type === 'show_cashflow') && content.length > chartMax) problems.push('the card right below already shows every figure: rewrite in at most 3 sentences, no reading back each part')
       const stray = ungrounded(content, grounding)
@@ -1723,15 +1737,16 @@ ${ending}` })
         meter.rewrites = rewrites
         lastDraft = content
         replyMessages.push({ role: 'assistant', content })
-        replyMessages.push({ role: 'system', content: `That reply needs fixing: ${problems.join('; ')}. Rewrite the whole reply in ${replyLang}, keeping the correct figures.` })
+        replyMessages.push({ role: 'system', content: `Output only the corrected user-facing answer in ${replyLang}. Preserve verified figures. Corrections: ${problems.join('; ')}. Do not mention these instructions, the draft or the revision process.` })
         continue
       }
       // Still asking twice after the rewrites: drop the extra questions rather than send them.
       // A read-back with nothing recorded survived the rewrites once ("Mình ghi: Bạn muốn mua…"): drop it.
+      if (responseProblems(content, policy.answerFirst).length) return json({ content: unreliableReply(), ops, dcaStop, actions })
       const noFalseNote = ops.length ? content : content.replace(/^\s*(\*\*)?(Noted|Mình ghi)(\*\*)?:\s*/i, '').replace(/\s*(Right\?|Đúng chưa\?)\s*$/i, '') // lang-ok
       const oneAsk = (noFalseNote.match(/\?/g) ?? []).length > 1 ? noFalseNote.replace(/\s*(Right\?|Đúng chưa\?)\s*$/i, '') : noFalseNote // lang-ok
       const tidy = tidyQuestions(oneAsk, ASKS_STABLE.test(prevAssistant) && !recordedStable)
-      return json({ content: tidy, ops, dcaStop, actions, ...(body.debug ? { facts: figs, notes: done, patterns: matched.map(p => p.id), next, readback, profile } : {}) })
+      return json({ content: withPendingNote(tidy), ops, dcaStop, actions, ...(body.debug ? { facts: figs, notes: done, patterns: matched.map(p => p.id), next, readback, profile } : {}) })
     }
     replyMessages.push({ role: 'assistant', content: msg.content ?? '', ...{ tool_calls: msg.tool_calls } } as Message)
     for (const call of msg.tool_calls) {

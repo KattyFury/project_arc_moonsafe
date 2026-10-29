@@ -1,0 +1,45 @@
+{
+  "mode": "offline",
+  "paidCalls": 0,
+  "checks": 51,
+  "mockCalls": 25,
+  "mockedExternal": 9,
+  "results": [
+    {
+      "name": "pending facts preserve confirmation and answer",
+      "status": "pass"
+    },
+    {
+      "name": "Vietnamese explanation survives pending confirmation",
+      "status": "pass"
+    },
+    {
+      "name": "natural acknowledgment avoids mandatory-word rewrites",
+      "status": "pass"
+    },
+    {
+      "name": "one correction returns useful teaching",
+      "status": "pass"
+    },
+    {
+      "name": "provider failure does not release rejected editorial draft",
+      "status": "pass"
+    },
+    {
+      "name": "persistent bad output blocked: That last reply did not say Noted. Here it is again, without changes.",
+      "status": "pass"
+    },
+    {
+      "name": "persistent bad output blocked: Losses are only real when you sell.",
+      "status": "pass"
+    },
+    {
+      "name": "persistent bad output blocked: Real recoveries never require upfront fees.",
+      "status": "pass"
+    },
+    {
+      "name": "persistent bad output blocked: How much do you spend monthly?",
+      "status": "pass"
+    }
+  ]
+}

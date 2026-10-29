@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.chat.json",
+  "include": [
+    "../functions/api/chat.ts",
+    "chat-typecheck.d.ts",
+    "response-quality-check.ts",
+    "claude-adapter-check.ts"
+  ]
+}
