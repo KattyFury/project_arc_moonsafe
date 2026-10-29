@@ -6,6 +6,7 @@ import { SignJWT, exportJWK, generateKeyPair } from 'jose'
 import { educationAnswer, LESSONS } from '../functions/_lib/education'
 import { coachingBrief, recordingEvidence } from '../functions/_lib/coaching'
 import { COACHING_CASES, EVIDENCE_CASES } from './coaching-cases'
+import { explicitAgeRefusal, quantityEvidence, turnPolicy } from '../functions/_lib/agentGuards'
 import { householdChecks } from './household-check'
 import { normalizeProfile, applyOps, readOps } from '../src/lib/profile'
 
@@ -196,6 +197,81 @@ try {
       assert.ok(!JSON.stringify(res.data.actions).includes('record'), 'Examples must not create recording cards')
       checks++
     }
+    // Live-evaluation failures replayed with missing or adversarial planner output.
+    assert.equal(quantityEvidence('I invested $4000 into BTC', 4000, 'BTC', 'crypto'), false)
+    assert.equal(quantityEvidence('I have 0.5 BTC worth $4000', .5, 'BTC', 'crypto'), true)
+    assert.equal(quantityEvidence('I own $4000 BTC', 4000, 'BTC', 'crypto'), false)
+    assert.equal(quantityEvidence('I have 10 shares of VOO', 10, 'VOO', 'stock'), true)
+    assert.equal(quantityEvidence('I have 2 oz of gold', 2, undefined, 'gold'), true)
+    assert.equal(explicitAgeRefusal('I do not want to share my age'), true)
+    assert.equal(explicitAgeRefusal('I have $600 in savings'), false)
+    assert.equal(turnPolicy(['Education only', 'How does diversification work?']).conversationOnly, true)
+    assert.equal(turnPolicy(['Education only', 'Please buy $100 of cirBTC']).answerFirst, false)
+    checks += 9
+    forcedTools = [{ id: 'bad-btc', type: 'function', function: { name: 'add_holding', arguments: JSON.stringify({ type: 'btc', symbol: 'BTC', quantity: 4000 }) } }]
+    const btcCost = await ask('I invested $4000 into BTC. Its current market value is $2000 after a 50% fall.')
+    const btcProfile = applyOps(normalizeProfile({ v: 2 }), readOps(btcCost.data.ops))
+    assert.equal(btcProfile.holdings.length, 1)
+    assert.equal(btcProfile.holdings[0].value, 4000)
+    assert.equal(btcProfile.holdings[0].quantity, undefined)
+    checks += 3
+    forcedTools = [{ id: 'wrong-worth', type: 'function', function: { name: 'add_holding', arguments: JSON.stringify({ type: 'btc', symbol: 'BTC', worth: { amount: 2000, currency: 'USDC' } }) } }]
+    const marketAsCost = await ask('I invested $4000 into BTC. Its current market value is $2000 after a 50% fall.')
+    const marketProfile = applyOps(normalizeProfile({ v: 2 }), readOps(marketAsCost.data.ops))
+    assert.equal(marketProfile.holdings[0]?.value, 4000)
+    checks++
+    forcedTools = []
+    const actualRefusal = await ask('I do not want to share my age or bank balance. Can you help me budget?')
+    assert.ok(readOps(actualRefusal.data.ops ?? []).some(o => o.op === 'update_profile' && o.fields.ageDeclined === true))
+    checks++
+    for (const [text, amount, currency] of [
+      ['I have $600 in savings and bills due soon. What should I check first?', 600, 'USDC'],
+      ['Hai vợ chồng đi làm. Có 100 triệu tiết kiệm ngân hàng, không nợ. Tính giúp quỹ dự phòng?', 100000000, 'VND'], // lang-ok
+    ] as const) {
+      const result = await ask(text)
+      const p = applyOps(normalizeProfile({ v: 2 }), readOps(result.data.ops))
+      assert.ok(p.holdings.some(h => h.value === amount && h.currency === currency))
+      assert.notEqual(p.ageDeclined, true)
+      checks += 2
+    }
+    const listening = await ask('My partner does not know. I am scared. Please do not ask me to invest or fill a form.', true, [
+      { role: 'user', content: 'I only want someone to listen, not a plan.' },
+      { role: 'assistant', content: 'You do not have to fix everything right now.' },
+    ])
+    assert.ok(!listening.data.actions?.some(a => !!a && typeof a === 'object' && 'type' in a && a.type === 'intake_form'))
+    const beginner = await ask('Mình chưa biết quản lý tiền. Phân biệt nhu cầu và mong muốn, đừng mở form.') // lang-ok
+    assert.ok(!beginner.data.actions?.some(a => !!a && typeof a === 'object' && 'type' in a && a.type === 'intake_form'))
+    const transfer = await ask('He transfers $600 from his salary to my bank account. Does that make household income $4600?')
+    assert.ok(!transfer.data.actions?.some(a => !!a && typeof a === 'object' && 'type' in a && a.type === 'confirm_record'))
+    forcedTools = [{ id: 'unwanted-deposit', type: 'function', function: { name: 'prepare_deposit', arguments: JSON.stringify({ amount: { amount: 100, currency: 'USDC' } }) } }]
+    const noConsent = await ask('Explain what a $100 USDC deposit would do. This is a question, not a request to prepare one.')
+    assert.deepEqual(noConsent.data.actions, [])
+    const consent = await ask('Can you deposit $100 for me?', true, [], { walletUsdc: 500, vaultUsdc: 0, hasVault: true })
+    assert.ok(consent.data.actions?.some(a => !!a && typeof a === 'object' && 'type' in a && a.type === 'prepare_deposit'))
+    checks += 2
+    forcedTools = []
+    const unknownFund = await ask('Explain what a $100 USDC deposit would do. This is a question, not a request to prepare one.')
+    assert.match(unknownFund.data.content ?? '', /unknown/)
+    assert.deepEqual(unknownFund.data.actions, [])
+    checks += 5
+    const tools = (name: string, args: Record<string, unknown>) => ({ id: name, type: 'function', function: { name, arguments: JSON.stringify(args) } })
+    forcedTools = [tools('update_profile', { income_stable: false, sole_earner: true }), tools('set_income', { name: 'Freelance income', monthly: { amount: 3000, currency: 'USDC' }, kind: 'active' }), tools('set_expense', { name: 'Household spending', monthly: { amount: 1800, currency: 'USDC' }, kind: 'fixed' })]
+    const familyFloor = await ask('I am married and 38. I am the only earner supporting my spouse and two children. My income is irregular and averages $3000 per month. Household spending is $1800 monthly. Explain our emergency fund target?')
+    const fp = applyOps(normalizeProfile({ v: 2 }), readOps(familyFloor.data.ops))
+    assert.equal(fp.age, 38)
+    assert.equal(fp.dependents, 3)
+    assert.match(familyFloor.data.content ?? '', /12 months/)
+    assert.match(familyFloor.data.content ?? '', /21,600/)
+    checks += 4
+    forcedTools = []
+    const tuition = await ask('I need $4000 for tuition in three months. Should this be invested?')
+    const tp = applyOps(normalizeProfile({ v: 2 }), readOps(tuition.data.ops))
+    assert.equal(tp.nearGoal?.amount, 4000)
+    assert.equal(tp.nearGoal?.years, .25)
+    checks += 2
+    const naturalFamily = await ask('Nhà mình hai vợ chồng, chưa có con.') // lang-ok
+    assert.ok(readOps(naturalFamily.data.ops ?? []).some(o => o.op === 'update_profile' && o.fields.planningScope === 'household'))
+    checks++
     for (const c of COACHING_CASES.filter(c => c.topics.length)) {
       const res = await ask(c.text)
       assert.equal(res.status, 200)

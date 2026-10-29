@@ -10,12 +10,12 @@ export function scopeQuestion(text: string): boolean {
 /** A partner's age must never replace the profile holder's age in the allocation formula. */
 export function profileAgeAllowed(message: string, age: number): boolean {
   if (!/wife|husband|spouse|partner|vợ|chồng/iu.test(message)) return true // lang-ok
-  const explicit = [...message.matchAll(/(?:\bi(?:['’]m| am)|\bmy age(?: is)?|(?:mình|tôi)(?:\s+năm nay)?)(?:\s+|:\s*)(\d{1,3})(?!\d)/giu)] // lang-ok
+  const explicit = [...message.matchAll(/(?:\bi(?:['’]m| am)(?: married and)?|\bmy age(?: is)?|(?:mình|tôi)(?:\s+năm nay)?)(?:\s+|:\s*)(\d{1,3})(?!\d)/giu)] // lang-ok
   return explicit.some(m => Number(m[1]) === age)
 }
 
 export function dependentEvidence(message: string, previous: string): boolean {
-  const words = /depend|rel(?:y|ies)|financially support|phụ thuộc|nuôi/iu // lang-ok
+  const words = /depend|rel(?:y|ies)|financially support|supporting my|support my|phụ thuộc|nuôi/iu // lang-ok
   return words.test(message) || (words.test(previous) && /^\s*(?:\d+|yes|no|có|không|ko)\s*[.!]?\s*$/iu.test(message)) // lang-ok
 }
 
@@ -25,7 +25,7 @@ export function dependentEvidence(message: string, previous: string): boolean {
 export function householdDefault(scope: PlanningScope | undefined, text: string): boolean {
   if (scope !== undefined || /\?|\b(?:if|suppose|imagine|example|hypothetically|divorced|separated|unmarried|ex-wife|ex-husband)\b|nếu|ví dụ|ly hôn|ly thân/iu.test(text)) return false // lang-ok
   const plain = text.replace(/"[^"\n]*"|“[^”\n]*”/gu, '')
-  return plain.split(/[.!;\n]/u).some(part => /^(?:\s*)(?:i(?: am|['’]m) (?:married|a (?:wife|husband))\b|my (?:wife|husband)\b|(?:mình|tôi|em|anh) (?:đã |đang )?(?:có gia đình|kết hôn)|(?:vợ|chồng) (?:của )?(?:mình|tôi|em|anh)(?:\s|$))/iu.test(part)) // lang-ok
+  return plain.split(/[.!;\n]/u).some(part => /^(?:\s*)(?:nhà mình (?:hai )?vợ chồng|i(?: am|['’]m) (?:married|a (?:wife|husband))\b|my (?:wife|husband)\b|(?:mình|tôi|em|anh) (?:đã |đang )?(?:có gia đình|kết hôn)|(?:vợ|chồng) (?:của )?(?:mình|tôi|em|anh)(?:\s|$))/iu.test(part)) // lang-ok
 }
 
 /** Only explicit scope-setting statements change the saved plan; questions do not. */

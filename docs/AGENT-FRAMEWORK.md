@@ -43,3 +43,8 @@ Diversification does not guarantee that one bucket offsets another's losses. DCA
 Keep the existing KB and flow tests. Add fixtures for the actual new behavior: preserving old profile data, ambiguous amounts, corrections vs additional income, family totals, age attribution, refusal, knowledge questions and action consent. Offline mocks prove routing and checks, not LLM quality. Any real model evaluation must be explicitly bounded, use synthetic data, report actual usage and distinguish observed results from general accuracy claims.
 
 The current evidence and income-name guards are conservative heuristics. They cannot prove identity, ownership or every subtotal relationship. Ask for clarification rather than concealing ambiguity, and expand fixtures when a real failure is found. Do not add a database, retrieval service or larger model without a measured need it solves.
+
+
+## Guarded workflow after the live evaluation
+
+Tool proposals must preserve units and the distinction between invested cost and market value. Explicit user intent (education, listening, no form or a new action request) takes precedence over automatic collection/product flow within the supplied history. Narrow fact reconciliation goes through the same mutation guards; it does not grant new permissions. Direct fund targets are computed and incomplete inputs remain provisional. A normal text response after intake is not proof of refusing to share age. See [repair evidence and limits](evals/guardrail-repairs-2026-10-29.md).
