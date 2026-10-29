@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { ShieldAlert, Vault } from 'lucide-react'
 import { useApp } from '@/state/AppState'
 import { GAS_ESTIMATE_USDC6, GAS_RESERVE_USDC6, txErrorMessage } from '@/hooks/useVault'
-import { formatNumber, formatUsdc, parseUsdcInput, usdcToInput, formatUsd } from '@/lib/format'
+import { formatNumber, formatUsdc, parseUsdcInput, usdcToInput, formatUsd, formatUsdcNumber } from '@/lib/format'
 import { AmountField, Btn, Chips, Col, GlassCard, Grid, IconBox, Notice, Screen, Sheet, Toggle, glass } from '@/components/ui/kit'
 
 type Tab = 'deposit' | 'withdraw'
@@ -47,9 +47,9 @@ export function FundScreen({ onOpenChat }: { onOpenChat: () => void }) {
   }
 
   const [num, unitLabel] = (() => {
-    const s = money(vb)
-    if (unit === 'USD') return [s.replace(' USDC', ''), 'USDC']
-    return [s.replace(' ₫', ''), '₫']
+    // The vault holds the token itself: its balance reads in USDC (values elsewhere are in $). Never rounded: $1.5 once showed as $2.
+    if (unit === 'USD') return [vb === null ? '–' : formatUsdcNumber(vb), 'USDC']
+    return [money(vb).replace(' ₫', ''), '₫']
   })()
 
   return (
@@ -69,14 +69,14 @@ export function FundScreen({ onOpenChat }: { onOpenChat: () => void }) {
             {math.floorUsdc !== null ? (
               <>
                 <p className="text-[16px] leading-6 text-white">
-                  {math.floorMonths}-month floor: {formatUsd(math.floorUsdc, 0)} · you have {formatNumber(math.vaultMonths)} months
+                  {math.floorMonths}-month floor: {formatUsd(math.floorUsdc)} · you have {formatNumber(math.vaultMonths)} months
                 </p>
                 <div className="h-2 rounded-full" style={{ background: 'rgba(255,255,255,0.24)' }}>
                   <div className="h-full rounded-full transition-all duration-700 bg-white" style={{ width: `${Math.min(pct, 100)}%` }} />
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[14px] leading-5 text-white">{formatUsd(vb, 0)} / {formatUsd(math.floorUsdc, 0)}</span>
-                  <span className="text-[14px] leading-5 font-semibold text-white">{pct >= 100 ? 'Floor reached' : `${formatUsd(math.shortfall, 0)} to go`}</span>
+                  <span className="text-[14px] leading-5 text-white">{formatUsd(vb)} / {formatUsd(math.floorUsdc)}</span>
+                  <span className="text-[14px] leading-5 font-semibold text-white">{pct >= 100 ? 'Floor reached' : `${formatUsd(math.shortfall)} to go`}</span>
                 </div>
               </>
             ) : (

@@ -1,7 +1,7 @@
 # MoonSafe — HANDOFF
 
 Agent tư vấn tài chính cá nhân cho người dùng Web3 + quỹ dự phòng USDC onchain, chạy trên **Arc MAINNET** (chain 5042, tiền thật). Live: https://moonsafe.app (Cloudflare Pages project `moonsafe`; push GitHub KHÔNG tự deploy).
-Cập nhật lần cuối: **2026-10-29** (tối), `main` = `8bd8cda`, deploy production Cloudflare `ad4617e7`. Ghi chú theo phiên cũ: [`docs/archive/handoff-archive.md`](docs/archive/handoff-archive.md).
+Cập nhật lần cuối: **2026-10-29** (khuya), xem ▶ Làm tiếp từ đây.
 Khung tài chính: [`docs/SPEC-FRAMEWORK-2026-10-25.md`](docs/SPEC-FRAMEWORK-2026-10-25.md) (dữ liệu ở `src/kb/`). Rà soát bảo mật: [`docs/archive/audit-2026-10-27.md`](docs/archive/audit-2026-10-27.md). Chi phí token: [`docs/archive/token-cost-2026-10-28.md`](docs/archive/token-cost-2026-10-28.md). Kiểm giao diện bằng trình duyệt thật: [`docs/browser-checks.md`](docs/browser-checks.md).
 
 ## ▶ Làm tiếp từ đây (2026-10-29 tối)
@@ -18,6 +18,8 @@ Khung tài chính: [`docs/SPEC-FRAMEWORK-2026-10-25.md`](docs/SPEC-FRAMEWORK-202
 3. **Hackathon**: quay video (Arc Studio + giao dịch mainnet; kịch bản đã đưa trong chat 10-29), điền form DoraHacks (nội dung đã soạn: agent dạy tài chính cá nhân là trọng tâm, vault là bước hành động). Ví dụ giao dịch: mở vault `0xd46987c2…5bc3` → vault `0xf067…8886`.
 4. Còn treo từ kiểm toán: trần token toàn hệ thống có thể bị cạn bằng vài tài khoản email (chặn ở `/admin`); 16 cảnh báo thư viện (`bun audit`); Safe 2-of-2 chưa có ví dự phòng.
 5. Sau hackathon: khôi phục vault (`docs/vault-recovery-spec.md`), DCA tự động (keeper + màn hình, hợp đồng đã có), cổ phiếu onchain trên Arc cho phần Traditional.
+
+**Đã làm cuối phiên 2026-10-29 (sau `febf3f0`):** landing page mới theo design system (`LoginScreen.tsx`, đo vừa 1 màn 393×852 / 1440×900 / 1280×720); vault chỉ được mời SAU khi khai (vào thẳng chat, kế hoạch mời mở vault 1 USDC một lần, `prepare_open_vault`, tab Emergency vẫn mở được); thẻ mua gọn; prompt thử 6 kiểu người dùng (dưới); gộp đợt kiểm toán sau ra mắt của Arc Studio (PR #27: HSTS, Permissions-Policy, fail-closed khi thiếu KV, lọc tin nhắn, `docs/audit-mainnet-2026-10-29.md`) + sửa `package.json` thừa dấu phẩy của đợt đó; thẻ quỹ dự phòng: số dư vault ghi USDC đủ số lẻ, mục tiêu/tiến độ ghi $ 2 số lẻ (trước làm tròn $1.5 → $2).
 
 **Thử prompt bằng nhiều kiểu người dùng (2026-10-29 khuya):** `bun run eval:server -- --budget 400000` (OPENAI_API_KEY = `OPEN_AI_API` trong keys.env) rồi `bun scripts/persona-eval.mjs [--only tên]`; 6 kiểu: newbie, degen, impatient, viet, skeptic, trader; transcript ở `scripts/persona-eval-last.txt` (gitignore). KHỞI ĐỘNG LẠI eval server sau mỗi lần sửa `chat.ts` (nó nạp code 1 lần). 5 lượt chạy ≈ $0,4. Đã sửa nhờ bộ này: ngôn ngữ theo tin người dùng GÕ gần nhất (không theo sự kiện app); ví không đủ thì mời nạp một phần (`partialOffer`); "yes/ok" sau lời mời → thẻ với đúng số đã mời, kể cả khi có 1 câu hỏi xen giữa (`OFFERED_AMOUNT`, `lastOffer`); "make it 1$" → thẻ đúng số (`NEW_AMOUNT`); không hỏi ngược khi người dùng hỏi; không tự nhắc cirBTC khi họ không nói về mua; TEACH tối đa 4 câu; chặn chữ khác hệ (Hindi…); kế hoạch rút gọn (1 dòng/mục, chia 34.5% hiện đủ số lẻ); thẻ mua gọn (1 dòng cảnh báo).
 
