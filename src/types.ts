@@ -79,6 +79,8 @@ export interface Expense { id: string; name: string; monthly: number; currency: 
  */
 export interface FinancialProfile {
   v: 2
+  /** One active financial plan; household scope does not create shared wallet permissions. */
+  planningScope?: 'individual' | 'household'
   age: number | null
   /** The user declined to give an age: the split uses age 30 and says so. */
   ageDeclined: boolean

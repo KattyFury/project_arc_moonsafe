@@ -1,4 +1,16 @@
+Household default update: a clear current marriage disclosure defaults an unset scope to household; saved individual choices win. Partner amounts remain unknown until declared. 252 offline checks pass; no paid model calls for this update.
+
 # MoonSafe — HANDOFF
+
+## Household planning continuation — 2026-10-29 (PR #30, not deployed)
+
+The same review branch now adds explicit individual/household scope, combined-salary intake, partner-income/total guards and a household planning context. One active dataset; switching keeps entries for review. The profile holder's age still drives the unchanged formula. See `docs/AGENT-FRAMEWORK.md` and `docs/evals/household-2026-10-29.md` (252 offline checks, no new paid calls). Existing financial tests remain in use. Do not claim partner login or joint wallet permissions.
+
+
+## Agent coaching extension — 2026-10-29 (review branch)
+
+Branch `codex/finance-coach-depth` extends the existing framework rather than replacing it. Allocation math, cost basis, emergency-fund floors, priority-debt rules, buy locks and signature requirements are unchanged. Adds loss/FOMO/fraud guidance, conservative numeric evidence filtering, and five reviewed bilingual lessons (10 total). See `docs/evals/coaching-2026-10-29.md` for evidence and limits. `bun run eval:education` is offline; `--live --coaching` is opt-in with the existing 12-call/100k-token cap. No database, contract, wallet or deployment changes. Merge/deploy only when requested.
+
 
 Agent tư vấn tài chính cá nhân cho người dùng Web3 + quỹ dự phòng USDC onchain, chạy trên **Arc MAINNET** (chain 5042, tiền thật). Live: https://moonsafe.app (Cloudflare Pages project `moonsafe`; push GitHub KHÔNG tự deploy).
 Cập nhật lần cuối: **2026-10-29** (khuya), xem ▶ Làm tiếp từ đây.

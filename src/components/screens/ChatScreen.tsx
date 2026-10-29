@@ -193,7 +193,7 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
               </div>
               {msg.role === 'assistant' && cards.filter(c => c.at === msg.timestamp).map(c => <ActionCard key={c.id} action={c} onFinished={(s, summary) => finishCard(c.id, s, summary)} />)}
               {msg.role === 'assistant' && records.filter(c => c.at === msg.timestamp).map(c => <RecordCard key={c.id} record={c.record} status={c.status} onFinished={(s, summary) => finishCard(c.id, s, summary)} />)}
-              {msg.role === 'assistant' && formCards.filter(c => c.at === msg.timestamp).map(c => <IntakeFormCard key={c.id} keys={c.keys} seen={c.seen} values={c.values} status={c.status} saved={c.saved} prices={prices.prices} onChange={v => setForm(c.id, v)} onReview={v => reviewForm(c, v)} onSkip={() => skipForm(c)} />)}
+              {msg.role === 'assistant' && formCards.filter(c => c.at === msg.timestamp).map(c => <IntakeFormCard key={c.id} keys={c.keys} seen={c.seen} values={c.values} planningScope={profile.profile?.planningScope} status={c.status} saved={c.saved} prices={prices.prices} onChange={v => setForm(c.id, v)} onReview={v => reviewForm(c, v)} onSkip={() => skipForm(c)} />)}
               {msg.role === 'assistant' && itemCards.filter(c => c.at === msg.timestamp).map(c => <ItemsCard key={c.id} items={c.items} onChange={items => setItems(c.id, items)} onSave={profile.apply} onFinished={summary => finishItems(c, summary)} />)}
               {msg.role === 'assistant' && extras.charts.filter(c => c.at === msg.timestamp).map((c, k) => <GlassCard key={k} className="ml-10 p-4">{c.kind === 'cashflow' ? <CashflowCard compact /> : <AllocationPies compact />}</GlassCard>)}
             </Fragment>

@@ -4,15 +4,31 @@ import assert from 'node:assert/strict'
 import { writeFileSync } from 'node:fs'
 import { SignJWT, exportJWK, generateKeyPair } from 'jose'
 import { educationAnswer, LESSONS } from '../functions/_lib/education'
+import { coachingBrief, recordingEvidence } from '../functions/_lib/coaching'
+import { COACHING_CASES, EVIDENCE_CASES } from './coaching-cases'
+import { householdChecks } from './household-check'
+import { normalizeProfile, applyOps, readOps } from '../src/lib/profile'
 
 const live = process.argv.includes('--live')
 const baseline = process.argv.includes('--baseline')
+const coaching = process.argv.includes('--coaching')
 const onlyAt = process.argv.indexOf('--only')
 const only = onlyAt >= 0 ? process.argv[onlyAt + 1] : undefined
 if (onlyAt >= 0 && !only) throw new Error('--only needs a question substring')
 const key = live ? process.env.OPENAI_API_KEY : 'fake'
 if (!key) throw new Error('Live eval needs OPENAI_API_KEY; never paste it into a command.')
-let checks = 0
+let checks = householdChecks()
+for (const c of EVIDENCE_CASES) {
+  const result = recordingEvidence(c.text)
+  const numbers = [...result.text.matchAll(/\d[\d,.]*/g)].map(m => Number(m[0].replace(/,/g, '')))
+  for (const n of c.keep) assert.ok(numbers.includes(n), `Keep ${n}: ${c.text}`)
+  for (const n of c.drop) assert.ok(!numbers.includes(n), `Exclude ${n}: ${c.text}`)
+  checks++
+}
+for (const c of COACHING_CASES) {
+  assert.deepEqual([...coachingBrief(c.text).topics].sort(), [...c.topics].sort(), c.name)
+  checks++
+}
 for (const lesson of LESSONS) for (const query of lesson.queries) {
   for (const text of [query, `  ${query.toUpperCase()}?!  `]) {
     const vi = /[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]/iu.test(text)
@@ -44,18 +60,21 @@ const token = await new SignJWT({}).setProtectedHeader({ alg: 'ES256', kid: jwk.
 const realFetch = globalThis.fetch
 let calls = 0, input = 0, output = 0, cached = 0, external = 0
 const prompts: Array<Record<string, unknown>> = []
+let forcedTools: Array<{ id: string; type: string; function: { name: string; arguments: string } }> = []
+let fakeReply = 'A budget helps you plan spending and savings.'
 globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
   const u = String(url)
   if (u.includes('auth.privy.io')) return Response.json({ keys: [jwk] })
   if (u.startsWith('https://api.openai.com/')) {
     // Checked BEFORE dispatch. A single response can take tokens past the cap; no next call is allowed.
-    if (calls >= 12 || input + output >= 100_000) return Response.json({ error: 'Eval cap reached' }, { status: 400 })
+    if (live && (calls >= 12 || input + output >= 100_000)) return Response.json({ error: 'Eval cap reached' }, { status: 400 })
     calls++
     const body = JSON.parse(String(init?.body)) as Record<string, unknown>
     prompts.push(body)
+    const hasToolResult = (body.messages as Array<{ role: string }>).some(m => m.role === 'tool')
     if (!live) return Response.json({ choices: [{ message: body.tool_choice === 'required'
-      ? { role: 'assistant', content: null, tool_calls: [{ id: `c${calls}`, type: 'function', function: { name: 'no_action', arguments: '{}' } }] }
-      : { role: 'assistant', content: 'A budget helps you plan spending and savings.' } }] })
+      ? { role: 'assistant', content: null, tool_calls: forcedTools.length && !hasToolResult ? forcedTools : [{ id: `c${calls}`, type: 'function', function: { name: 'no_action', arguments: '{}' } }] }
+      : { role: 'assistant', content: fakeReply } }] })
     const response = await realFetch(url, init)
     if (response.ok) {
       const data = await response.clone().json() as { usage?: { prompt_tokens?: number; completion_tokens?: number; prompt_tokens_details?: { cached_tokens?: number } } }
@@ -75,10 +94,10 @@ const env = { OPENAI_API_KEY: key, USERDATA: { get: async (k: string) => store.g
 const modulePath = baseline ? '../functions/api/.education-baseline' : '../functions/api/chat'
 const { onRequestPost } = await import(modulePath) as { onRequestPost: (ctx: { request: Request; env: typeof env }) => Promise<Response> }
 type Result = { content?: string; ops?: unknown[]; actions?: unknown[]; education?: string; error?: string }
-async function ask(text: string, signed = true, history: Array<{ role: string; content: string }> = []) {
+async function ask(text: string, signed = true, history: Array<{ role: string; content: string }> = [], context: Record<string, unknown> = {}) {
   const response = await onRequestPost({ env, request: new Request('http://localhost/api/chat', {
     method: 'POST', headers: { 'Content-Type': 'application/json', ...(signed ? { Authorization: `Bearer ${token}` } : {}) },
-    body: JSON.stringify({ messages: [...history, { role: 'user', content: text }], context: {}, debug: true }),
+    body: JSON.stringify({ messages: [...history, { role: 'user', content: text }], context, debug: true }),
   }) })
   return { status: response.status, data: await response.json() as Result }
 }
@@ -87,6 +106,13 @@ let failed = false
 try {
   if (!live) {
     assert.equal((await ask('what is dca', false)).status, 401)
+    checks++
+    const beforeScope = { calls, external }
+    const scoped = await ask('Plan for my household')
+    assert.equal(scoped.status, 200)
+    assert.deepEqual(scoped.data.actions, [])
+    assert.deepEqual(scoped.data.ops, [{ op: 'update_profile', fields: { planningScope: 'household' } }])
+    assert.deepEqual({ calls, external }, beforeScope, 'Scope selection must not call a model, FX or prices')
     checks++
     const { saveConfig } = await import('../functions/_lib/config')
     await saveConfig(env, { chatEnabled: false })
@@ -119,13 +145,81 @@ try {
       assert.ok(calls > before, 'Mixed requests must reach normal planning and safeguards')
       checks++
     }
+    const hold = (amount: number) => ({ id: `h${amount}`, type: 'function', function: { name: 'add_holding', arguments: JSON.stringify({ type: 'savings', name: 'Bank savings', worth: { amount, currency: 'USDC' } }) } })
+    for (const text of ['I lost $12,000 in altcoins', 'If I had $12,000 in savings', 'My friend has $12,000 in savings']) {
+      forcedTools = [hold(12000)]
+      const res = await ask(text)
+      assert.equal(res.status, 200)
+      assert.deepEqual(res.data.ops, [], `Reject an incorrect model write: ${text}`)
+      checks++
+    }
+    forcedTools = [hold(12000), hold(2000)]
+    const mixed = await ask('I lost $12,000, but now I have $2,000 in savings')
+    assert.equal(mixed.status, 200)
+    assert.ok(JSON.stringify(mixed.data.ops).includes('2000'))
+    assert.ok(!JSON.stringify(mixed.data.ops).includes('12000'))
+    checks++
+    forcedTools = []
+    const incomeProfile = normalizeProfile({ v: 2, planningScope: 'household', incomes: [{ id: 'self', name: 'Income', monthly: 2000, kind: 'active', currency: 'USDC' }] })
+    forcedTools = [{ id: 'facts', type: 'function', function: { name: 'update_profile', arguments: JSON.stringify({ age: 28, dependents: 1 }) } }]
+    const spouseFacts = await ask('My wife is 28 and earns $1500 a month', true, [], { profile: { ...incomeProfile, age: 34 } })
+    assert.deepEqual(spouseFacts.data.ops, [], 'Do not use a spouse\'s age or assume a working spouse is a dependent')
+    checks++
+    const incomeTool = (name: string, monthly: number, id?: string) => ({ id: 'income', type: 'function', function: { name: 'set_income', arguments: JSON.stringify({ name, monthly: { amount: monthly, currency: 'USDC' }, kind: 'active', ...(id ? { id } : {}) }) } })
+    forcedTools = [incomeTool("Wife's salary", 1500)]
+    const added = await ask('My wife earns $1500 a month', true, [], { profile: incomeProfile })
+    assert.equal(added.status, 200)
+    const two = applyOps(incomeProfile, readOps(added.data.ops))
+    assert.equal(two.incomes.length, 2)
+    assert.equal(two.incomes.find(i => i.id === 'self')?.monthly, 2000)
+    const automatic = await ask('My wife earns $1500 a month', true, [], { profile: { ...incomeProfile, planningScope: undefined } })
+    const autoProfile = applyOps({ ...incomeProfile, planningScope: undefined }, readOps(automatic.data.ops))
+    assert.equal(autoProfile.planningScope, 'household')
+    assert.equal(autoProfile.incomes.length, 2)
+    assert.equal(autoProfile.incomes.find(i => i.id === 'self')?.monthly, 2000)
+    const optedOut = await ask('My wife earns $1500 a month', true, [], { profile: { ...incomeProfile, planningScope: 'individual' } })
+    assert.deepEqual(optedOut.data.ops, [])
+    checks += 4
+    forcedTools = [incomeTool('Combined household salary', 3500)]
+    const total = await ask('Our combined household salary is $3500 a month', true, [], { profile: two })
+    assert.deepEqual(total.data.ops, [], 'Do not count a combined salary alongside two component salaries')
+    forcedTools = []
+    checks += 2
+    const householdQuestion = await ask('Gộp lương vợ chồng được không') // lang-ok
+    assert.deepEqual(householdQuestion.data.ops, [])
+    assert.deepEqual(householdQuestion.data.actions, [], 'Answer a household question without forcing an intake form')
+    checks++
+    for (const text of ['If I put $500 into my bank', 'Explain this example: "I put $500 into my bank"']) {
+      const res = await ask(text)
+      assert.equal(res.status, 200)
+      assert.deepEqual(res.data.ops, [])
+      assert.ok(!JSON.stringify(res.data.actions).includes('record'), 'Examples must not create recording cards')
+      checks++
+    }
+    for (const c of COACHING_CASES.filter(c => c.topics.length)) {
+      const res = await ask(c.text)
+      assert.equal(res.status, 200)
+      assert.deepEqual(res.data.actions, [], 'A concern alone must not trigger onboarding or a transaction')
+      assert.ok(JSON.stringify(prompts[prompts.length - 1]).includes('RELEVANT COACHING'))
+      checks++
+    }
+    fakeReply = 'Altcoins can fall together because they share market risks.'
+    const beforeFollowUp = calls
+    const followUp = await ask('Why can several altcoins fall together?', true, [
+      { role: 'assistant', content: 'Low caps and memecoins can lose most or all of the money invested. The choice remains yours.' },
+    ])
+    assert.equal(followUp.status, 200)
+    assert.equal(followUp.data.content, fakeReply)
+    assert.equal(calls - beforeFollowUp, 2, 'A new risk question after a warning must not trigger repetitive-warning rewrites')
+    checks++
   } else {
-    for (const text of ['what is personal finance?', 'what is dca?', 'can btc go to zero?',
+    const questions = coaching ? COACHING_CASES.filter(c => c.topics.length || c.name === 'risk follow-up').map(c => c.text) : ['what is personal finance?', 'what is dca?', 'can btc go to zero?',
       'Explain the difference between needs and wants',
       'Giải thích cách phân biệt nhu cầu thiết yếu và mong muốn', // lang-ok
-      'Is the testnet vault suitable for my real emergency savings?']) {
+      'Is the testnet vault suitable for my real emergency savings?']
+    for (const text of questions) {
       if (only && !text.includes(only)) continue
-      if (calls >= 12 || input + output >= 100_000) break
+      if (calls >= 12 || input + output >= 100_000) { failed = true; break }
       const before = calls
       const result = await ask(text)
       transcript.push({ user: text, ...result, modelCalls: calls - before })
@@ -136,7 +230,7 @@ try {
 } finally {
   globalThis.fetch = realFetch
 }
-const summary = { mode: live ? 'live' : 'offline', baseline, checks, calls, input, output, cached, external }
+const summary = { mode: live ? 'live' : 'offline', baseline, coaching, checks, calls, input, output, cached, external }
 console.log(JSON.stringify(summary))
-if (live) writeFileSync(`scripts/education-eval-${baseline ? 'baseline' : 'candidate'}${only ? '-focused' : ''}.json`, JSON.stringify({ summary, transcript }, null, 2))
+if (live) writeFileSync(`scripts/education-eval-${coaching ? 'coaching' : baseline ? 'baseline' : 'candidate'}${only ? '-focused' : ''}.json`, JSON.stringify({ summary, transcript }, null, 2))
 if (failed) process.exitCode = 1
