@@ -62,7 +62,7 @@ export function clearChatStorage() {
 // component state and vanished when the chat remounted mid-signature (real chat 2026-10-27).
 const EXTRAS_KEY = 'moonsafe_chat_extras_v1'
 export type StoredCard =
-  | { id: number; at: number; kind: 'deposit' | 'withdraw' | 'buy' | 'dca'; amount: string; intervalDays?: number; status?: 'done' | 'cancelled' }
+  | { id: number; at: number; kind: 'open' | 'deposit' | 'withdraw' | 'buy' | 'dca'; amount: string; intervalDays?: number; status?: 'done' | 'cancelled' }
   /** A reported placement waiting for the user's confirmation (src/lib/record.ts). */
   | { id: number; at: number; kind: 'record'; record: RecordRequest; status?: 'done' | 'cancelled' }
   /** Several declared things waiting to be confirmed one by one (src/components/chat/ItemsCard.tsx); `ask` = what the agent still has to ask once they are done. */
@@ -94,7 +94,7 @@ export interface AgentHooks {
 }
 
 export interface AgentAction {
-  type: 'prepare_deposit' | 'prepare_withdraw' | 'prepare_buy_cirbtc' | 'propose_dca' | 'open_screen' | 'show_allocation' | 'show_cashflow' | 'confirm_record' | 'confirm_items' | 'intake_form'
+  type: 'prepare_open_vault' | 'prepare_deposit' | 'prepare_withdraw' | 'prepare_buy_cirbtc' | 'propose_dca' | 'open_screen' | 'show_allocation' | 'show_cashflow' | 'confirm_record' | 'confirm_items' | 'intake_form'
   /** intake_form: the sections to show, and the USDC the app sees in the wallet (a hint). */
   keys?: string[]
   seen?: number | null

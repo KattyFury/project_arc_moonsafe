@@ -3,7 +3,7 @@
 // the card's button; the wallet then asks them to confirm.
 
 import { useState } from 'react'
-import { ArrowDownToLine, ArrowRight, ArrowUpFromLine, ExternalLink, Repeat, TrendingUp } from 'lucide-react'
+import { ArrowDownToLine, ArrowRight, ArrowUpFromLine, ExternalLink, Repeat, TrendingUp, Vault } from 'lucide-react'
 import { useApp } from '@/state/AppState'
 import { explorerTx } from '@/lib/network'
 import { GAS_ESTIMATE_USDC6, GAS_RESERVE_USDC6, txErrorMessage } from '@/hooks/useVault'
@@ -13,13 +13,13 @@ import { formatUsdc, formatUsd } from '@/lib/format'
 import { Btn, GlassCard, IconBox, Notice } from '@/components/ui/kit'
 
 export type ChatAction =
-  | { id: number; at: number; kind: 'deposit' | 'withdraw' | 'buy'; amount: bigint; status?: 'done' | 'cancelled' }
+  | { id: number; at: number; kind: 'open' | 'deposit' | 'withdraw' | 'buy'; amount: bigint; status?: 'done' | 'cancelled' }
   | { id: number; at: number; kind: 'dca'; amount: bigint; intervalDays: number; status?: 'done' | 'cancelled' }
 
 type Status = 'idle' | 'busy' | 'done' | 'error' | 'cancelled'
 
-const TITLES = { deposit: 'Add to emergency fund', withdraw: 'Withdraw to wallet', buy: 'Buy cirBTC', dca: 'Recurring buy (DCA)' } as const
-const ICONS = { deposit: ArrowDownToLine, withdraw: ArrowUpFromLine, buy: TrendingUp, dca: Repeat } as const
+const TITLES = { open: 'Open your emergency fund vault', deposit: 'Add to emergency fund', withdraw: 'Withdraw to wallet', buy: 'Buy cirBTC', dca: 'Recurring buy (DCA)' } as const
+const ICONS = { open: Vault, deposit: ArrowDownToLine, withdraw: ArrowUpFromLine, buy: TrendingUp, dca: Repeat } as const
 
 /** onFinished: the card was signed or cancelled (stored, so a remounted chat shows it the same way). */
 /** "every day" / "every 7 days". */
@@ -43,7 +43,11 @@ export function ActionCard({ action, title, onFinished }: { action: ChatAction; 
   // What blocks the button, and what the user should know before signing.
   let block: string | null = null
   const warnings: string[] = []
-  if (kind === 'deposit') {
+  if (kind === 'open') {
+    // Opened on the factory with the fee it asks for right now (the amount on the card is that fee).
+    if (vault.vaultAddress) block = 'Your vault is already open.'
+    else if (wb !== null && wb < amount + GAS_ESTIMATE_USDC6) block = `The wallet needs about ${formatUsdc(amount + GAS_ESTIMATE_USDC6)} (the opening fee plus a network fee). Add USDC to this wallet, then tap again.`
+  } else if (kind === 'deposit') {
     if (maxDeposit !== null && amount > maxDeposit) block = `More than the wallet can add (up to ${formatUsdc(maxDeposit)}, keeping ${formatUsdc(GAS_RESERVE_USDC6)} for fees).`
   } else if (kind === 'withdraw') {
     if (vb !== null && amount > vb) block = `More than the emergency fund holds (${formatUsdc(vb)}).`
@@ -64,7 +68,8 @@ export function ActionCard({ action, title, onFinished }: { action: ChatAction; 
   const run = async () => {
     setStatus('busy'); setError(null)
     try {
-      if (kind === 'deposit') await vault.deposit(amount)
+      if (kind === 'open') await vault.createVault()
+      else if (kind === 'deposit') await vault.deposit(amount)
       else if (kind === 'withdraw') await vault.withdraw(amount)
       else if (kind === 'dca') cirBtc.startDca(amount, action.intervalDays)
       else if (!q) { await cirBtc.estimate(amount); setStatus('idle'); return }
@@ -77,7 +82,8 @@ export function ActionCard({ action, title, onFinished }: { action: ChatAction; 
   }
   const cancel = () => { if (kind === 'buy' && q) cirBtc.clearQuote(); setStatus('cancelled'); onFinished?.('cancelled', `Cancelled: ${TITLES[kind]} ${formatUsdc(amount)}.`) }
 
-  const doneText = kind === 'deposit' ? `Added ${formatUsdc(amount)} to your emergency fund.`
+  const doneText = kind === 'open' ? 'Opened your emergency fund vault.'
+    : kind === 'deposit' ? `Added ${formatUsdc(amount)} to your emergency fund.`
     : kind === 'withdraw' ? `Withdrew ${formatUsdc(amount)} to your wallet.`
     : kind === 'dca' ? `DCA approved: ${formatUsdc(amount)} ${everyDays(action.intervalDays)}. Each round you still review the quote and sign.`
     : 'cirBTC bought.'
@@ -93,6 +99,7 @@ export function ActionCard({ action, title, onFinished }: { action: ChatAction; 
           <p className="display font-bold text-[24px] leading-8 tabular-nums" style={{ color: 'var(--ink)' }}>
             {formatUsdc(amount)}{kind === 'dca' ? <span className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--subtle)' }}> / {action.intervalDays === 1 ? 'day' : `${action.intervalDays} days`}</span> : null}
           </p>
+          {kind === 'open' && <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>One time per account, then only network fees</p>}
           {unit === 'VND' && <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>≈ {money(amount)}</p>}
         </div>
       </div>

@@ -69,6 +69,8 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
         if (items.length) next.push({ id: Date.now() + next.length, at, kind: 'items', items, ask: a.ask ?? [] })
         continue
       }
+      // The vault opening: the card carries the fee the factory asks for (read by the app).
+      if (a.type === 'prepare_open_vault') { next.push({ id: Date.now() + next.length, at, kind: 'open', amount: (vault.fee ?? 1_000_000n).toString() }); continue }
       if (a.type === 'open_screen' || a.type === 'show_allocation' || a.type === 'show_cashflow' || !a.amount) continue
       const amount = a.amount.currency === 'USDC' ? BigInt(Math.round(a.amount.amount * 1_000_000)) : vndToUsdc(a.amount.amount)
       if (amount === null || amount <= 0n) { toast.error('Could not convert the amount (no exchange rate). Please say it in USDC.'); continue }
@@ -125,6 +127,9 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
     getContext: () => ({
       profile: profile.profile,
       vaultUsdc: vault.vaultBalance !== null ? Number(vault.vaultBalance) / 1_000_000 : null,
+      // No vault yet: the agent offers to open it once the user has shared their numbers (Hieu, 2026-10-29).
+      hasVault: !!vault.vaultAddress,
+      vaultFeeUsdc: vault.fee !== null ? Number(vault.fee) / 1_000_000 : null,
       walletUsdc: vault.walletBalance !== null ? Number(vault.walletBalance) / 1_000_000 : null,
       cirBtcUsdc: cirBtc.balance === 0n ? 0 : cirBtc.valueUsdc6 !== null ? Number(cirBtc.valueUsdc6) / 1_000_000 : null,
       dca: cirBtc.dca ? { amountUsdc: formatUsdc(BigInt(cirBtc.dca.amountUsdc)), everyDays: cirBtc.dca.intervalDays } : null,

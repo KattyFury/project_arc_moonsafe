@@ -65,10 +65,10 @@ const history = [
   { role: 'user', content: 'I want investing' },
   { role: 'assistant', content: buildIntake(normalizeProfile({ v: 2 }), 'I want investing', false, [], 1916) ?? '' },
 ]
-async function call(messages: Array<{ role: string; content: string }>, profile: ReturnType<typeof normalizeProfile>, vaultUsdc = 0) {
+async function call(messages: Array<{ role: string; content: string }>, profile: ReturnType<typeof normalizeProfile>, vaultUsdc = 0, extra: Record<string, unknown> = {}) {
   modelCalls = 0
   const request = new Request('http://local/api/chat', { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
-    body: JSON.stringify({ messages, context: { profile, vaultUsdc, walletUsdc: 1916, cirBtcUsdc: 0 } }) })
+    body: JSON.stringify({ messages, context: { profile, vaultUsdc, walletUsdc: 1916, cirBtcUsdc: 0, ...extra } }) })
   const res = await onRequestPost({ request, env: { OPENAI_API_KEY: 'fake' } })
   const body = await res.json() as { content?: string; ops?: unknown[]; actions?: Array<{ type: string; items?: Array<{ text: string; ops: unknown }>; ask?: string[] }>; error?: string }
   return { status: res.status, body, calls: modelCalls }
@@ -165,6 +165,17 @@ const yep = await call([...history, { role: 'user', content: message }, { role: 
 const yepText = yep.body.content ?? ''
 
 // "Are you free to use?": the real prices, from code (Hieu, 2026-10-29).
+// No vault yet (Hieu, 2026-10-29): the plan offers to OPEN the vault (fee said plainly), "yes" gets the opening card, the signed
+// opening gets the deposit offer. Never a deposit card before the vault exists.
+const noVault = { hasVault: false, vaultFeeUsdc: 1 }
+const planNV = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: crafted }, { role: 'user', content: event }], saved, 0, noVault)
+const planNVText = planNV.body.content ?? ''
+expect(/Opening it is \*\*1 USDC, once\*\* per account/.test(planNVText) && /Shall I open it for you to sign\?/.test(planNVText) && !/prepare a deposit/.test(planNVText), `no vault: the plan offers to open it with the one-time fee, not a deposit (got: ${planNVText.slice(-160)})`)
+const yesOpen = await call([{ role: 'assistant', content: planNVText }, { role: 'user', content: 'yes' }], saved, 0, noVault)
+expect(yesOpen.calls === 0 && (yesOpen.body.actions ?? []).some(a => a.type === 'prepare_open_vault'), '"yes" to the opening offer gets the opening card, no model call')
+const opened = await call([{ role: 'assistant', content: planNVText }, { role: 'user', content: 'yes' }, { role: 'assistant', content: 'Here it is: sign the card below to open your vault.' }, { role: 'user', content: '[app event] The user signed the card: Opened your emergency fund vault.' }], saved, 0)
+expect(/Your vault is open/.test(opened.body.content ?? '') && /prepare a deposit of \*\*[\d,.]+ USDC\*\*/.test(opened.body.content ?? ''), `after opening: the deposit is offered (got: ${(opened.body.content ?? '').slice(0, 160)})`)
+
 // "no" to the deposit offer: respected, no card, no second offer (real chat 2026-10-29).
 const offer = 'Ready to start? The first step is your emergency fund: shall I prepare a deposit of 24 USDC from your wallet for you to sign?'
 const no = await call([{ role: 'user', content: 'I want to start investing' }, { role: 'assistant', content: offer }, { role: 'user', content: 'no' }], base, 0)

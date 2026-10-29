@@ -28,7 +28,7 @@ import { POWER_PER_PURCHASE } from '../../src/lib/power'
 import { recordStats } from '../_lib/stats'
 import { BATCH_MARK, INTAKE_MIN_UNKNOWN, buildIntake, intakeKeys, unknownBullets } from '../_lib/intake'
 import { getConfig, isBlocked, effectiveEnv } from '../_lib/config'
-import { buildAfterSign, buildPartAnswer, buildPlan, buildStanding, detectPartChoice } from '../_lib/plan'
+import { buildAfterSign, buildPartAnswer, buildPlan, buildStanding, detectPartChoice, openVaultOffer } from '../_lib/plan'
 import { KB, fundFloorMonths, matchPatterns, patternBrief, param } from '../../src/kb/kb'
 import { computeFacts, displayFacts, amountsUsd } from '../../src/kb/facts'
 import { bucketStanding, computeBalance, holdingUsd, priceKey, symbolOf, toUsd, GOLD_UNITS_TO_OZ, GROUP_LABEL, type Balance, type Prices } from '../../src/lib/allocation'
@@ -111,7 +111,10 @@ const DEBT_PAY_NAME = /loan|debt|repay|mortgage|installment|credit card|(?<!\p{L
 // A plain "no" to an offer (real chat 2026-10-29: "no" to the deposit offer got the same offer again). Short answers only, so
 // "no, make it 10" or "no I already have savings" still go through the normal path.
 const SAYS_NO = /^\s*(no+|nope|nah|not (now|yet|today)|maybe later|later|no,? thanks?( you)?|i('?m| am) (good|fine)|i don'?t want( to)?( do (it|that))?|not interested|skip( it)?|không|chưa|thôi|để sau|ko|k)\s*[.!]*\s*$/iu // lang-ok
-const OFFERS_ACTION = /(prepare|set up)[^.?!\n]{0,60}(deposit|card|buy|purchase|withdraw)/i
+const OFFERS_ACTION = /(prepare|set up)[^.?!\n]{0,60}(deposit|card|buy|purchase|withdraw)|open it for you to sign/i
+// Our offer to open the vault (openVaultOffer in plan.ts), and a request to open one in the user's words.
+const OPEN_OFFERED = /open it for you to sign|mở nó để bạn ký/i // lang-ok
+const ASKS_OPEN = /(?<!\p{L})(open|create|set ?up|make|mở|tạo)(?!\p{L})[^.?!\n]{0,30}(vault|emergency fund|quỹ)/iu // lang-ok
 const OFFERS_DEPOSIT = /prepare[^.?!\n]{0,60}(card|deposit)|card to (add|deposit)/i
 const IDLE_AMOUNT = /(\d[\d,.]*\d|\d)\s*USDC\s*(?:of|in)\s*idle|idle money[^.?!\n]{0,30}?(\d[\d,.]*\d|\d)\s*USDC/gi
 const YES_NO = /^\W*(yes|yeah|yep|yup|no|nope|not really|sure|mostly|kind of|có|không|ko|ừ|uh|đúng)(?!\p{L})/iu // lang-ok
@@ -305,6 +308,7 @@ ${RULES}
 
 ## Actions and recording
 ${DCA_AVAILABLE ? '' : '- AUTOMATIC recurring buys in the app are NOT available yet: never say the app will buy for them on a schedule, never set it up. DCA as a WAY OF BUYING is still your advice (next rule): they buy the monthly amount themselves (cirBTC in this app with a card each time, stocks or gold at their broker).\n'}- How to buy (Hieu, 2026-10-29): nobody knows where the top or the bottom is; one big buy right before a fall hurts (think stocks at a peak while interest rates stay high). So when they do not know how or when to buy, or worry about timing, recommend DCA: the same amount every month, for example over 6 months, which trusts the long-term growth that stocks and Bitcoin have shown over decades instead of guessing the moment. If they say they read charts or trade, respect their way and help with the amount; never push DCA on them.
+- No vault yet (a note says so): the emergency fund needs the user's own vault first. Offer to open it (one-time fee, said kindly) before any deposit; never offer a deposit card.
 - They said no to an offer (a deposit, a buy, a withdrawal) → respect it: do not offer it again or push it in later replies until THEY bring it up; answer what they ask.
 - Investments count at the money put in (Hieu, 2026-10-29): "I put $1,000 into BTC" is recorded as $1,000 (value, priceSource self), never revalued at today's price. If they only give a quantity ("0.1 BTC"), ask how much they put in. A price drop never means a part needs more money: never suggest buying more because prices fell.
 - Money (Hieu, 2026-10-29): write values in dollars with a $ sign ($500, $0.43): savings, cash, gold, stocks, crypto value, targets, totals, spending, income. Write "USDC" only for the token that moves onchain: a deposit into or a withdrawal from the emergency fund, the amount paid for cirBTC, the vault fee. USDC, USDT and other dollar coins together are "stablecoins".
@@ -734,7 +738,10 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   if (text.length > MAX_BODY_CHARS) return json({ error: 'That message is too long' }, 413)
   let body: RequestBody
   try { body = JSON.parse(text) as RequestBody } catch { return json({ error: 'Invalid JSON' }, 400) }
-  if (Array.isArray(body.messages)) body.messages = body.messages.map(m => typeof m?.content === 'string' ? { ...m, content: m.content.slice(0, MAX_MESSAGE_CHARS) } : m)
+  // A user message keeps its start; an agent reply keeps its END, where the offer a "yes" answers sits (a 2,400-character plan
+  // once lost its closing offer, so "yes" matched nothing; 2026-10-29).
+  if (Array.isArray(body.messages)) body.messages = body.messages.map(m => typeof m?.content !== 'string' ? m
+    : { ...m, content: m.role === 'assistant' ? m.content.slice(-MAX_MESSAGE_CHARS) : m.content.slice(0, MAX_MESSAGE_CHARS) })
 
   // What the admin switched (functions/_lib/config.ts): the agent can be paused, an account can be blocked, the limits can be changed.
   const cfg = await getConfig(context.env)
@@ -791,6 +798,15 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   const prevUserText = [...messages.slice(0, lastUserAt)].reverse().find(m => m.role === 'user')?.content ?? ''
   const assistantTexts = messages.filter(m => m.role === 'assistant').map(m => m.content)
   const vi = VI_LETTERS.test(lastUserText)
+  // No vault yet (the app sends hasVault): "yes" to the opening offer, or asking to open one, gets the opening card (no model call).
+  const hasVault = ctx.hasVault !== false
+  const vaultFee = typeof ctx.vaultFeeUsdc === 'number' && ctx.vaultFeeUsdc > 0 ? ctx.vaultFeeUsdc : 1
+  if (!hasVault && !lastUserText.startsWith('[app event]') && ((OPEN_OFFERED.test(prevAssistantText) && AGREES.test(lastUserText)) || ASKS_OPEN.test(lastUserText))) {
+    return json({
+      content: vi ? 'Đây rồi: ký thẻ bên dưới để mở vault của bạn.' : 'Here it is: sign the card below to open your vault.', // lang-ok
+      ops: [], dcaStop: false, actions: [{ type: 'prepare_open_vault' }],
+    })
+  }
   if (SAYS_NO.test(lastUserText) && OFFERS_ACTION.test(prevAssistantText)) {
     return json({
       content: vi
@@ -1183,6 +1199,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       }
       if (actions.some(x => x.type === name)) return 'Already shown under the reply, not repeated.'
       // "ok" to a split once turned the safe part (bank savings) into a fund deposit card (real chat 2026-10-24).
+      if (name === 'prepare_deposit' && !hasVault) return `Not done: the user has no vault yet. Offer to open it first, in these words: "${openVaultOffer(vi, vaultFee)}"`
       if (name === 'prepare_deposit' && startBalance.fund.met && !FUND_WORD.test(lastUserText) && !DEPOSIT_WORD.test(lastUserText)) {
         console.log('dropped prepare_deposit: fund already full')
         return 'Not done: the emergency fund is already full; nothing to add unless the user asks to.'
@@ -1357,7 +1374,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   if (phase === 'plan' && (!appEvent || itemsEvent) && !placement && !userAsks && !toAsk.length && !actions.length && balance.target) {
     const t = balance.target
     const [ps, pt, pc] = wholeShares([t.safe, t.traditional, t.btc + t.large_cap + t.altcoin])
-    const built = buildPlan({ p: profile, b: balance, shares: [ps, pt, pc], cover, vi })
+    const built = buildPlan({ p: profile, b: balance, shares: [ps, pt, pc], cover, vi, hasVault, vaultFee })
     if (built) return json({ content: built, ops, dcaStop, actions })
   }
 
@@ -1372,6 +1389,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   if (planGiven && balance.target && balance.declared && !placement) {
     const next = partChoice && !readback.length ? buildPartAnswer({ b: balance, vi, part: partChoice, walletUsd: wallet ?? 0 })
       : /^\[app event\] The user signed the card: Added .*emergency fund/i.test(lastUserText) ? buildAfterSign({ b: balance, vi, kind: 'deposit' })
+      : /^\[app event\] The user signed the card: Opened/i.test(lastUserText) ? buildAfterSign({ b: balance, vi, kind: 'open', cover })
       : lastUserText.startsWith('[app event] The user confirmed recording') ? buildAfterSign({ b: balance, vi, kind: 'record', summary: lastUserText })
       : null
     if (next) return json({ content: next, ops, dcaStop, actions })

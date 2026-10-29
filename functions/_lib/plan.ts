@@ -60,9 +60,24 @@ export interface PlanInput {
   /** The deposit to offer for the fund (exactly what is missing when the wallet covers it), or null. */
   cover: number | null
   vi: boolean
+  /** false: the user has no vault yet, so the first step is opening it (one-time fee), not a deposit. */
+  hasVault?: boolean
+  /** The vault opening fee in USDC (read from the factory by the app). */
+  vaultFee?: number
 }
 
-export function buildPlan({ p, b, shares, cover, vi }: PlanInput): string | null {
+/**
+ * The offer to open the vault (Hieu, 2026-10-29: the vault is offered only once the user has shared their numbers, and the fee is
+ * said plainly but kindly). The wording "open it for you to sign" is what a "yes" is matched on (OPEN_OFFERED in chat.ts).
+ */
+export function openVaultOffer(vi: boolean, fee = 1): string {
+  const f = tok(fee)
+  return vi
+    ? `Sẵn sàng bắt đầu chưa? Quỹ dự phòng của bạn nằm trong một vault riêng trên Arc: một hợp đồng nhỏ mà chỉ ví của bạn rút được. Mở vault chỉ tốn **${f} một lần** cho mỗi tài khoản; sau đó nạp hay rút chỉ mất phí mạng vài cent. Mình mở nó để bạn ký nhé?` // lang-ok
+    : `Ready to start? Your emergency fund lives in your own vault on Arc: a small contract that only your wallet can withdraw from. Opening it is **${f}, once** per account; after that, adding or withdrawing only costs a network fee of a few cents. Shall I open it for you to sign?`
+}
+
+export function buildPlan({ p, b, shares, cover, vi, hasVault = true, vaultFee = 1 }: PlanInput): string | null {
   if (!b.target || b.fund.floorUsd === null || p.incomeStable === null) return null
   if (b.debts.priorityCount > 0) return null
   // The deposit for the emergency fund comes out of the USDC the user declared for this wallet (the app lowers it when the card is
@@ -85,6 +100,8 @@ export function buildPlan({ p, b, shares, cover, vi }: PlanInput): string | null
   const pick = pickQuestion(standing, vi)
   const ask = fundNow
     ? pick
+    : !hasVault
+      ? openVaultOffer(vi, vaultFee)
     : cover !== null
       ? (vi ? `Sẵn sàng bắt đầu chưa? Bước đầu là quỹ dự phòng: mình chuẩn bị một lệnh nạp **${tok(cover)}** từ ví để bạn ký nhé?` : `Ready to start? The first step is your emergency fund: shall I prepare a deposit of **${tok(cover)}** from your wallet for you to sign?`) // lang-ok
       : (vi ? 'Bước đầu là quỹ dự phòng. Ví chưa đủ USDC để nạp, nên hãy thêm USDC vào ví rồi nói với mình nhé.' : 'The first step is your emergency fund. The wallet does not have enough USDC to add yet, so add some USDC to it and tell me.') // lang-ok
@@ -230,11 +247,20 @@ export function buildPartAnswer({ b, vi, part, walletUsd }: { b: Balance; vi: bo
 }
 
 /** After the user signs the emergency-fund deposit, or confirms a saved amount: where things stand, then only the parts with room. */
-export function buildAfterSign({ b, vi, kind, summary }: { b: Balance; vi: boolean; kind: 'deposit' | 'record'; summary?: string }): string | null {
+export function buildAfterSign({ b, vi, kind, summary, cover = null }: { b: Balance; vi: boolean; kind: 'deposit' | 'record' | 'open'; summary?: string; cover?: number | null }): string | null {
   const standing = bucketStanding(b)
   if (!standing || b.fund.floorUsd === null) return null
   const vault = b.fundUsd ?? 0
   const fundFull = vault >= b.fund.floorUsd - 0.005
+  // The vault was just opened: now the first deposit.
+  if (kind === 'open') {
+    const need = Math.max(0, b.fund.floorUsd - vault)
+    const what = vi ? `Vault của bạn đã mở. Quỹ dự phòng cần ${fmt(b.fund.floorUsd)} (${b.fund.floorMonths} tháng chi tiêu).` : `Your vault is open. Your emergency fund needs ${fmt(b.fund.floorUsd)} (${b.fund.floorMonths} months of spending).` // lang-ok
+    if (need < 0.005) return `${what} ${pickQuestion(standing, vi)}`
+    return cover !== null
+      ? `${what} ${vi ? `Mình chuẩn bị một lệnh nạp **${tok(cover)}** từ ví để bạn ký nhé?` : `Shall I prepare a deposit of **${tok(cover)}** from your wallet for you to sign?`}` // lang-ok
+      : `${what} ${vi ? 'Ví chưa đủ USDC để nạp, hãy thêm USDC vào ví rồi nói với mình nhé.' : 'The wallet does not have enough USDC to add yet, so add some and tell me.'}` // lang-ok
+  }
   if (kind === 'deposit') {
     if (!fundFull) return null
     return vi
