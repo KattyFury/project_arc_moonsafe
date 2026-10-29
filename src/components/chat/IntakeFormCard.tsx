@@ -1,7 +1,8 @@
-// The first questions inside the chat (Hieu, 2026-10-28), ONE question per card, all cards the same size (Hieu, 2026-10-29: the
-// whole form at once was too big on a computer and confused people). Skip clears the answer and moves on, Next keeps it. Whatever is skipped is "prefer not to
-// say". The last step's button saves: the values become items (src/lib/intakeForm.ts) and are saved straight away, sending is the
-// user's confirmation. Pure props (no app context).
+// The first questions inside the chat (Hieu, 2026-10-28), as at most SIX cards of the same size, one topic each (Hieu, 2026-10-29:
+// one question per card made 32 cards). Only what the plan needs is asked: age, salary, spending, income steadiness, dependents, cash
+// and stablecoins, investments, a big expense within 5 years, debt. Home / car / business, passive income, airdrops, the number of
+// dependents, the goal's name and who a debt is owed to were dropped (the agent can still ask in chat). Skip clears the card,
+// Next keeps it; the last card saves straight away (sending is the user's confirmation). Pure props (no app context).
 
 import { useState, type ReactNode } from 'react'
 import { ChevronLeft, ClipboardList } from 'lucide-react'
@@ -45,7 +46,7 @@ function Ask({ label, value, onChange }: { label: string; value: YesNo; onChange
   )
 }
 
-interface Step { key: string; fields: (keyof FormValues)[]; view: ReactNode }
+interface Step { key: string; title: string; fields: (keyof FormValues)[]; view: ReactNode }
 
 export function IntakeFormCard({ keys, seen, values, status, saved, prices, onChange, onReview, onSkip }: {
   /** The sections still unknown (functions/_lib/intake.ts keys). */
@@ -74,77 +75,54 @@ export function IntakeFormCard({ keys, seen, values, status, saved, prices, onCh
 
   const has = (k: SectionKey) => keys.includes(k)
   const set = <K extends keyof FormValues>(k: K) => (v: FormValues[K]) => onChange({ ...values, [k]: v })
-  const seenText = seen !== null && seen >= 1 ? `I can see ${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Math.floor(seen))} USDC in this wallet` : undefined
+  const seenText = seen !== null && seen >= 1 ? `I can see ${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Math.floor(seen))} USDC here` : undefined
 
   const steps: Step[] = []
-  const step = (key: string, fields: (keyof FormValues)[], view: ReactNode) => steps.push({ key, fields, view })
+  const step = (key: string, title: string, fields: (keyof FormValues)[], view: ReactNode) => steps.push({ key, title, fields, view })
 
-  // One question per card, follow-ups included: a "Yes" adds the follow-up questions as the next cards, so every card holds one
-  // label and one control and all cards are the same size (Hieu, 2026-10-29).
-  if (has('age')) step('age', ['age'], <Num label="Your age" value={values.age} onChange={set('age')} suffix="" />)
-  if (has('income')) {
-    step('salary', ['salary'], <Num label="Your salary a month" value={values.salary} onChange={set('salary')} />)
-    step('other-income', ['otherIncome', 'passive', 'windfalls', 'windfallsYearly'], <Ask label="Any other income?" value={values.otherIncome} onChange={set('otherIncome')} />)
-    if (values.otherIncome === 'yes') {
-      step('passive', ['passive'], <Num label="Passive income a month (interest, staking, rent)" value={values.passive} onChange={set('passive')} />)
-      step('windfalls', ['windfalls', 'windfallsYearly'], <Ask label="Airdrops or other income that comes only now and then?" value={values.windfalls} onChange={set('windfalls')} />)
-      if (values.windfalls === 'yes') step('windfalls-yearly', ['windfallsYearly'], <Num label="About how much a year?" hint="Noted, but not counted as monthly income: it cannot be relied on." value={values.windfallsYearly} onChange={set('windfallsYearly')} />)
-    }
-  }
-  if (has('spending')) step('spending', ['spending'], <Num label="What you spend a month" hint="An estimate is fine." value={values.spending} onChange={set('spending')} />)
-  if (has('stability')) {
-    step('steady', ['steady'], <Ask label="Is your income steady?" value={values.steady} onChange={set('steady')} />)
-    step('reliers', ['reliers', 'reliersCount'], <Ask label="Does anyone rely on your income?" value={values.reliers} onChange={set('reliers')} />)
-    if (values.reliers === 'yes') step('reliers-count', ['reliersCount'], <Num label="How many people?" value={values.reliersCount} onChange={set('reliersCount')} suffix="" />)
-  }
-  if (has('goal')) {
-    step('goal', ['goal', 'goalName', 'goalAmount', 'goalYears'], <Ask label="A big expense in the next 5 years?" value={values.goal} onChange={set('goal')} />)
-    if (values.goal === 'yes') {
-      step('goal-name', ['goalName'], (
-        <Field label="What for?">
-          <div className={BOX} style={{ background: 'var(--surface-muted)' }}>
-            <input value={values.goalName} placeholder="A wedding, a car…" aria-label="What for?" maxLength={40} onChange={e => set('goalName')(e.target.value)}
-              className="flex-1 min-w-0 bg-transparent text-[16px] leading-6 outline-none placeholder:text-[var(--muted)]" style={{ color: 'var(--ink)' }} />
-          </div>
-        </Field>
-      ))
-      step('goal-amount', ['goalAmount'], <Num label="How much will it cost?" value={values.goalAmount} onChange={set('goalAmount')} />)
-      step('goal-years', ['goalYears'], <Num label="In how many years?" value={values.goalYears} onChange={set('goalYears')} suffix="" />)
-    }
-  }
+  if (has('age') || has('income') || has('spending')) step('you', 'About you', ['age', 'salary', 'spending'], <>
+    {has('age') && <Num label="Your age" value={values.age} onChange={set('age')} suffix="" />}
+    {has('income') && <Num label="Salary a month" value={values.salary} onChange={set('salary')} />}
+    {has('spending') && <Num label="Spending a month (an estimate is fine)" value={values.spending} onChange={set('spending')} />}
+  </>)
+  if (has('stability')) step('income', 'Your income', ['steady', 'reliers'], <>
+    <Ask label="Is your income steady?" value={values.steady} onChange={set('steady')} />
+    <Ask label="Does anyone rely on it?" value={values.reliers} onChange={set('reliers')} />
+  </>)
   if (has('assets')) {
-    step('usdc-this', ['usdcThis'], <Num label="USDC in this wallet" hint={seenText} value={values.usdcThis} onChange={set('usdcThis')} />)
-    step('usdc-else', ['usdcElsewhere'], <Num label="USDC or USDT in other wallets or exchanges" value={values.usdcElsewhere} onChange={set('usdcElsewhere')} />)
-    step('bank', ['bank'], <Num label="Bank savings" value={values.bank} onChange={set('bank')} />)
-    step('cash', ['cash'], <Num label="Cash" value={values.cash} onChange={set('cash')} />)
-    step('btc', ['btc'], <Num label="Bitcoin, value today" value={values.btc} onChange={set('btc')} />)
-    step('alts', ['coins'], <Num label="Altcoins, value today" hint="Every coin other than Bitcoin, together." value={values.coins} onChange={set('coins')} />)
-    step('gold', ['gold'], <Num label="Gold, value today" value={values.gold} onChange={set('gold')} />)
-    step('stocks', ['stocks'], <Num label="Stocks or funds, value today" value={values.stocks} onChange={set('stocks')} />)
+    step('cash', 'Cash and stablecoins', ['usdcThis', 'usdcElsewhere', 'bank'], <>
+      <Num label="USDC in this wallet" hint={seenText} value={values.usdcThis} onChange={set('usdcThis')} />
+      <Num label="USDC or USDT elsewhere" value={values.usdcElsewhere} onChange={set('usdcElsewhere')} />
+      <Num label="Bank savings and cash" value={values.bank} onChange={set('bank')} />
+    </>)
+    step('invest', 'Investments today', ['btc', 'coins', 'gold', 'stocks'], (
+      <div className="grid grid-cols-2 gap-4">
+        <Num label="Bitcoin" value={values.btc} onChange={set('btc')} />
+        <Num label="Altcoins" value={values.coins} onChange={set('coins')} />
+        <Num label="Gold" value={values.gold} onChange={set('gold')} />
+        <Num label="Stocks, funds" value={values.stocks} onChange={set('stocks')} />
+      </div>
+    ))
   }
-  if (has('other')) {
-    step('other', ['otherAssets', 'home', 'car', 'lent', 'business'], <Ask label="Do you own a home, land, a car or a business, or have you lent money?" value={values.otherAssets} onChange={set('otherAssets')} />)
-    if (values.otherAssets === 'yes') {
-      step('home', ['home'], <Num label="Home or land, value" value={values.home} onChange={set('home')} />)
-      step('car', ['car'], <Num label="Car, value" value={values.car} onChange={set('car')} />)
-      step('lent', ['lent'], <Num label="Money you lent" value={values.lent} onChange={set('lent')} />)
-      step('business', ['business'], <Num label="A business you own, value" value={values.business} onChange={set('business')} />)
-    }
-  }
-  if (has('debt')) {
-    step('debt', ['debt', 'debtKind', 'debtOwed', 'debtRate', 'debtMonthly'], <Ask label="Any debt?" value={values.debt} onChange={set('debt')} />)
-    if (values.debt === 'yes') {
-      step('debt-kind', ['debtKind'], (
-        <div className="flex flex-col gap-2">
-          <span className="text-[14px] leading-5 font-semibold" style={{ color: 'var(--subtle)' }}>Who is it owed to?</span>
-          <Toggle value={values.debtKind} options={[{ value: 'bank' as const, label: 'Bank or card' }, { value: 'family' as const, label: 'Family or friends' }]} onChange={set('debtKind')} />
-        </div>
-      ))
-      step('debt-owed', ['debtOwed'], <Num label="Total you still owe" value={values.debtOwed} onChange={set('debtOwed')} />)
-      step('debt-rate', ['debtRate'], <Num label="Interest a year (0 if none)" value={values.debtRate} onChange={set('debtRate')} suffix="%" />)
-      step('debt-monthly', ['debtMonthly'], <Num label="You pay a month" value={values.debtMonthly} onChange={set('debtMonthly')} />)
-    }
-  }
+  if (has('goal')) step('goal', 'Big expense ahead', ['goal', 'goalAmount', 'goalYears'], <>
+    <Ask label="A big expense in the next 5 years (car, wedding, school)?" value={values.goal} onChange={set('goal')} />
+    {values.goal === 'yes' && (
+      <div className="grid grid-cols-2 gap-4">
+        <Num label="How much?" value={values.goalAmount} onChange={set('goalAmount')} />
+        <Num label="In how many years?" value={values.goalYears} onChange={set('goalYears')} suffix="" />
+      </div>
+    )}
+  </>)
+  if (has('debt')) step('debt', 'Debt', ['debt', 'debtOwed', 'debtRate', 'debtMonthly'], <>
+    <Ask label="Any debt?" value={values.debt} onChange={set('debt')} />
+    {values.debt === 'yes' && (
+      <div className="grid grid-cols-2 gap-4">
+        <div className="col-span-2"><Num label="Total you still owe" value={values.debtOwed} onChange={set('debtOwed')} /></div>
+        <Num label="Interest a year" value={values.debtRate} onChange={set('debtRate')} suffix="%" />
+        <Num label="You pay a month" value={values.debtMonthly} onChange={set('debtMonthly')} />
+      </div>
+    )}
+  </>)
 
   if (!steps.length) return null
   const i = Math.min(at, steps.length - 1)
@@ -167,15 +145,15 @@ export function IntakeFormCard({ keys, seen, values, status, saved, prices, onCh
         {i > 0
           ? <button onClick={() => setAt(i - 1)} aria-label="Previous question" className="w-8 h-8 -ml-2 flex items-center justify-center rounded-full" style={{ color: 'var(--subtle)' }}><ChevronLeft size={20} /></button>
           : <ClipboardList size={20} style={{ color: 'var(--accent)' }} />}
-        <p className="flex-1 text-[14px] leading-5 font-semibold tabular-nums" style={{ color: 'var(--subtle)' }}>Question {i + 1} of {steps.length}</p>
+        <p className="flex-1 min-w-0 truncate text-[14px] leading-5 font-semibold tabular-nums" style={{ color: 'var(--subtle)' }}>{i + 1} of {steps.length} · <span style={{ color: 'var(--ink)' }}>{cur.title}</span></p>
         <button onClick={onSkip} className="h-8 px-2 text-[14px] leading-5 font-semibold" style={{ color: 'var(--subtle)' }}>Skip all</button>
       </div>
       <div className="h-1 rounded-full overflow-hidden" style={{ background: 'var(--line)' }} aria-hidden>
         <div className="h-full rounded-full" style={{ width: `${Math.round(((i + 1) / steps.length) * 100)}%`, background: 'var(--accent)' }} />
       </div>
 
-      {/* Fixed height: room for a two-line label, one control and a two-line hint, so every card is the same size. */}
-      <div key={cur.key} className="h-[144px] flex flex-col">{cur.view}</div>
+      {/* Fixed height: room for the biggest card (three amounts with a hint, or debt with its details), so every card is the same size. */}
+      <div key={cur.key} className="h-[288px] flex flex-col gap-4">{cur.view}</div>
 
       <div className="grid grid-cols-2 gap-2">
         <Btn variant="outline" onClick={skip}>Skip</Btn>
