@@ -1,8 +1,27 @@
 # MoonSafe — HANDOFF
 
-App quỹ dự phòng + tài chính cá nhân cho người dùng Web3, chạy trên **Arc Testnet** (chain 5042002). Live: https://moonsafe.app (Cloudflare Pages project `moonsafe`; push GitHub KHÔNG tự deploy).
-Cập nhật lần cuối: **2026-10-28** (cuối ngày), `main` = `5490b96`, deploy production Cloudflare `4be3b2c7`. Ghi chú theo phiên cũ: [`docs/archive/handoff-archive.md`](docs/archive/handoff-archive.md).
+Agent tư vấn tài chính cá nhân cho người dùng Web3 + quỹ dự phòng USDC onchain, chạy trên **Arc MAINNET** (chain 5042, tiền thật). Live: https://moonsafe.app (Cloudflare Pages project `moonsafe`; push GitHub KHÔNG tự deploy).
+Cập nhật lần cuối: **2026-10-29** (tối), `main` = `8bd8cda`, deploy production Cloudflare `ad4617e7`. Ghi chú theo phiên cũ: [`docs/archive/handoff-archive.md`](docs/archive/handoff-archive.md).
 Khung tài chính: [`docs/SPEC-FRAMEWORK-2026-10-25.md`](docs/SPEC-FRAMEWORK-2026-10-25.md) (dữ liệu ở `src/kb/`). Rà soát bảo mật: [`docs/archive/audit-2026-10-27.md`](docs/archive/audit-2026-10-27.md). Chi phí token: [`docs/archive/token-cost-2026-10-28.md`](docs/archive/token-cost-2026-10-28.md). Kiểm giao diện bằng trình duyệt thật: [`docs/browser-checks.md`](docs/browser-checks.md).
+
+## ▶ Làm tiếp từ đây (2026-10-29 tối)
+**Đang ở đâu:** mainnet đã live, đang thi hackathon Arc Micrograants (DoraHacks). Phiên 10-29 đã làm xong rất nhiều thứ ở mục ▶ MAINNET bên dưới, đều đã deploy + qua bộ kiểm offline (`kb-check`, `flow`, typecheck, check-lang), NHƯNG chưa ai thử trên app thật bằng tài khoản thật.
+
+**Việc tiếp theo, theo thứ tự:**
+1. **Hiếu thử thật trên moonsafe.app** (Claude không đăng nhập Privy được):
+   - Mua cirBTC 1 USDC: thẻ báo giá phải có dòng "Price … USD per BTC, ±x% vs market"; ví có thể hỏi ký 2 lần (approve + swap). Ví `0xEb2D` có **0 cirBTC** trước lần thử → đọc lại `balanceOf` trên cirBTC `0x171A…aA0` để đối chiếu với báo giá. Sau khi mua, Balance phải có "cirBTC (bought in MoonSafe)" = số USDC đã trả.
+   - Mua AI power 1 USDC (Menu chat → Top up): +100 tin, server kiểm onchain.
+   - Kết nối ví phụ `0xb0A8` qua Menu → nạp 0,1 USDC vào vault của ví chính (`depositFor`, đã giả lập OK); tab Withdraw phải báo chuyển về ví chính.
+   - Xoá lịch sử trên điện thoại → mở máy tính (F5) phải xoá theo.
+   - Thanh tab: Balance/Invest khoá (màu nhạt + ổ khoá) cho tới khi quỹ đầy; tin agent dài phải cuộn tới DÒNG ĐẦU; biểu mẫu 6 thẻ cùng cỡ (laptop 2 ô/hàng).
+2. **Chạy model thật có trần** cho các luật prompt mới hôm nay (TEACH khi hỏi "what if / do I need", DCA mặc định, quy tắc $/USDC, giá vốn, tôn trọng "no"): chưa chạy lần nào; cần Hiếu duyệt ngân sách (xem §5, `eval:server --budget`).
+3. **Hackathon**: quay video (Arc Studio + giao dịch mainnet; kịch bản đã đưa trong chat 10-29), điền form DoraHacks (nội dung đã soạn: agent dạy tài chính cá nhân là trọng tâm, vault là bước hành động). Ví dụ giao dịch: mở vault `0xd46987c2…5bc3` → vault `0xf067…8886`.
+4. Còn treo từ kiểm toán: trần token toàn hệ thống có thể bị cạn bằng vài tài khoản email (chặn ở `/admin`); 16 cảnh báo thư viện (`bun audit`); Safe 2-of-2 chưa có ví dự phòng.
+5. Sau hackathon: khôi phục vault (`docs/vault-recovery-spec.md`), DCA tự động (keeper + màn hình, hợp đồng đã có), cổ phiếu onchain trên Arc cho phần Traditional.
+
+**Đã biết, chưa sửa:** cirBTC mua TRƯỚC bản giá vốn (`8bd8cda`) không có giá vốn; sau lần mua đầu tiên kể từ bản này, chỉ phần đã ghi được tính (khai thêm qua chat nếu cần). Tin cũ trong lịch sử chat vẫn ghi "USDC"/"full" kiểu cũ. Khoản khai trước 10-29 vẫn tên "USDC in this wallet".
+
+**Quyết định Hiếu chốt 10-29 (đừng đổi ngược):** Safety = tuổi %, phần còn lại Traditional = Crypto chia đôi, nói là gợi ý khách quan · đầu tư tính theo tiền đã bỏ vào, giá giảm không giục mua · DCA là cách mua mặc định cho người không đọc chart · 1 người 1 vault, ví phụ nạp được, chỉ ví chính rút · Balance mở khi quỹ đầy, Invest khi quỹ đầy + không nợ ưu tiên · giá trị hiện $, USDC chỉ cho token chuyển trên chuỗi, USDC+USDT gọi là "stablecoins" · 20 tin/ngày (ví owner 60), 1 USDC = 100 tin mua thêm vĩnh viễn, gửi về `0xEb2D` · hỏi "free?" → 20 tin/ngày, mở vault 1 USDC, ngoài ra chỉ phí mạng · không bắt nhập email.
 
 ## ▶ MAINNET ĐÃ LIVE (2026-10-29)
 moonsafe.app = **Arc mainnet (chain 5042), tiền thật**. Hiếu tự ký mọi giao dịch bằng OKX Wallet qua `--browser` của Foundry (không keystore, key không rời ví).
@@ -17,9 +36,10 @@ moonsafe.app = **Arc mainnet (chain 5042), tiền thật**. Hiếu tự ký mọ
 - **2026-10-29 tối**: Traditional = Crypto (chia đôi phần rủi ro, giải thích cân bằng, "gợi ý khách quan"); câu chào in đậm cả 4 ý; **DCA là cách mua mặc định** khi người dùng không đọc chart (không ai biết đỉnh/đáy, dựa vào tăng trưởng dài hạn): cirBTC mời lần mua đầu = 1/6 (`DCA_MONTHS` trong `functions/_lib/plan.ts`), "all at once" vẫn được; Traditional gợi ý chia 6 tháng; người đọc chart thì tôn trọng cách của họ. DCA TỰ ĐỘNG trong app vẫn tắt.
 - **Ý tưởng sau này (Hiếu)**: khi Arc có cổ phiếu onchain thì phần Traditional mua ngay trong app như cirBTC, khỏi qua nhà môi giới.
 - **Giá vốn (Hiếu 2026-10-29)**: khoản đầu tư tính theo TIỀN ĐÃ BỎ VÀO, không định giá lại theo thị trường (giá giảm không làm phần đó "thiếu" rồi giục mua thêm). Biểu mẫu + agent lưu số $ người dùng nói (`priceSource: 'self'`); cirBTC mua trong app cộng số USDC đã trả vào holding `cirBTC (bought in MoonSafe)` (`cirBtcBuyOps`, `src/lib/profile.ts`) và KHÔNG cộng thêm giá trị onchain nữa. Chỉ khoản khai bằng số lượng ("0.1 BTC") mới còn định giá thị trường; agent được dặn hỏi "bỏ vào bao nhiêu". Hiển thị: giá trị bằng $, USDC chỉ cho token chuyển trên chuỗi.
-- **Chưa làm**: smoke test 1–2 USDC (Hiếu), DCA vẫn tắt.
+- **2026-10-29 khuya**: 1 vault/người (`useVault.ts` tìm vault qua mọi ví của tài khoản; ví phụ nạp bằng `depositFor`, chỉ ví chính rút); tab mở theo cấp (`AppShell.tsx`/`NavBar.tsx`); câu hỏi "free?" trả lời từ code (`ASKS_PRICE` trong `chat.ts`); "no" sau lời mời → câu tôn trọng soạn sẵn (`SAYS_NO`); tin agent mới cuộn tới dòng đầu (`ChatScreen.tsx`); biểu mẫu 6 thẻ gom chủ đề, cùng cỡ (`IntakeFormCard.tsx`, đo bằng trang tạm: 452px mobile / 364px laptop); "đầy" = còn thiếu < 1% mục tiêu (`Standing.full`, trước là < 0,5 USDC nên số nhỏ bị báo đầy); chốt chặn giá cirBTC: báo giá đắt hơn giá BTC thị trường > 3% thì từ chối (`useCirBtc.ts`).
+- **Chưa làm**: thử thật (xem ▶ Làm tiếp từ đây), DCA tự động vẫn tắt.
 
-## 0. Chuẩn bị mainnet (2026-10-28, chưa deploy lên mainnet)
+## 0. Chuẩn bị mainnet (2026-10-28, LỊCH SỬ: mainnet đã live 10-29, xem ▶ ở trên)
 - **Công tắc mạng** `VITE_NETWORK=mainnet` (`src/lib/network.ts`); mặc định VẪN là testnet. Mainnet không có factory mặc định (cần `VITE_FACTORY_ADDRESS`).
 - **Mã hợp đồng trong repo giờ là v2 (ứng viên mainnet); factory testnet `0xAd06…` đang chạy v1** (mã v1 ở lịch sử git, commit `5f5fc7d`). ABI mà app dùng (`getVault`, `fee`, `createVault`, vault `deposit/withdraw/getBalance`) không đổi nên app chạy được với cả hai.
 - **Hợp đồng v2** (Ownable2Step, phí rút về `withdrawFees`, tạm dừng tạo vault, lỗi có tham số): 154 test, review max sạch, Slither 0. `contracts/script/DeployMainnet.s.sol` và `scripts/safe-plan.ts` (tạo Safe 2-of-2 gồm `0xeb2d…` và `0xb0A8…`). Chi tiết, lựa chọn kiểm toán, DCA: `docs/archive/mainnet-plan-2026-10-29.md`.
@@ -28,8 +48,8 @@ moonsafe.app = **Arc mainnet (chain 5042), tiền thật**. Hiếu tự ký mọ
 - **Trang `/admin`** (`src/components/screens/AdminPage.tsx`, `functions/api/admin.ts`, `functions/_lib/{admin,config}.ts`, `functions/api/status.ts`): đăng nhập bằng tài khoản + chữ ký của ví admin (`ADMIN_WALLETS`, mặc định hai ví trên; bằng chứng 30 phút, gắn với tài khoản); tổng quan thống kê agent, danh sách tài khoản (tặng tin nhắn, đặt lại hôm nay, chặn, xóa dữ liệu có xác nhận), cài đặt không cần deploy (tạm dừng agent / thẻ giao dịch, thông báo cho mọi người, giới hạn hằng ngày, AI nào trả lời trước) lưu ở KV `config:app`, trạng thái khóa AI (chỉ có/không, thử kết nối bằng lệnh liệt kê model, không tốn token), nhật ký thao tác 90 ngày. Khóa API đổi trên Cloudflare, không đổi từ trang này. Banner thông báo cho người dùng đọc `/api/status`.
 - Trước khi bật mainnet cho moonsafe.app: dùng **KV mới** cho dự án (người dùng và bộ đếm testnet không mang sang), đặt `VITE_NETWORK=mainnet` + `VITE_FACTORY_ADDRESS`, thêm origin vào Privy, xem lại chữ trên màn "Before you start".
 
-## 1. Trạng thái hiện tại (đã deploy)
-- **Chỉ testnet.** Mainnet: chưa làm gì. Kế hoạch ngày 2026-10-29 là lên mainnet (xem mục 7).
+## 1. Trạng thái 2026-10-28 (LỊCH SỬ: trước mainnet; số liệu mới ở ▶)
+- Testnet, trước ngày lên mainnet. Giới hạn, AI power, hợp đồng nay đã khác: xem ▶ ở trên.
 - **Hợp đồng** (Arc Testnet): `VaultFactory` `0xAd06…941b` (chủ và người nhận phí là ví `0xEb2D…52F6` của Hiếu, phí 1 USDC), vault là clone `VaultProxy` bất biến. Mã trong repo khớp mã đã triển khai (chỉ khác địa chỉ implementation). 86 test Foundry đạt. Chưa verify nguồn trên explorer.
 - **Agent**: OpenAI `gpt-5.4-mini` là chính (PLAN dùng công cụ + REPLY), Claude Haiku (`ANTHROPIC_API_KEY`, `CLAUDE_MODEL`) là dự phòng (`functions/_lib/llm.ts`). DCA **tắt** (`DCA_AVAILABLE=false` trong `src/lib/features.ts`), làm lại trên mainnet bằng hợp đồng riêng.
 - **Giới hạn**: 30 lượt chat/ngày/tài khoản (UTC), ví `0xeb2d…2f6` đã xác minh (ký một lần) được 90 và KHÔNG bị trần token theo người; trần token mặc định 600k/người, 2,2M toàn hệ thống. "Nạp điện cho AI" (mua thêm lượt): **chưa mở** (chờ giá, địa chỉ nhận, cách xác minh).
@@ -56,7 +76,8 @@ moonsafe.app = **Arc mainnet (chain 5042), tiền thật**. Hiếu tự ký mọ
 ## 4. Môi trường và deploy
 - Secret trên Cloudflare Pages (production): `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` (và `GEMINI_API_KEY` cũ — không còn dùng, có thể xóa). Biến tùy chọn: `CLAUDE_MODEL`, `PRIVY_APP_ID`, `DAILY_TOKEN_BUDGET`, `USER_DAILY_TOKEN_BUDGET`, `FREE_TURNS_PER_DAY`, `OWNER_TURNS_PER_DAY`, `OWNER_WALLET`, `POWER_PAYMENT_ADDRESS`. KV `USERDATA` (id trong `wrangler.toml`). Client: `VITE_PRIVY_APP_ID`, `VITE_FACTORY_ADDRESS`, `VITE_CIRBTC_ADDRESS` (đều có mặc định công khai trong code).
 - Đổi secret xong phải **deploy lại** mới có hiệu lực.
-- Deploy: `bun run cf:deploy` (kiểm tiếng Anh + `vite build` + `wrangler pages deploy`). Cần `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`. **Cạm bẫy đã dính**: đừng nạp cả file `.env` của sandbox khi build, vì các biến `VITE_*` ở đó sẽ đè địa chỉ factory mặc định (từng deploy nhầm factory `0x985a…`). Chỉ truyền hai biến Cloudflare: `env -u VITE_PRIVY_APP_ID -u VITE_FACTORY_ADDRESS -u VITE_CIRBTC_ADDRESS CLOUDFLARE_API_TOKEN=… CLOUDFLARE_ACCOUNT_ID=… bun run cf:deploy`. Sau deploy kiểm: trang trả 200, `/api/chat` không token trả 401, bundle chứa `0xAd06` và không chứa `0x985a`.
+- **Deploy MAINNET (từ 2026-10-29):** `env -u VITE_PRIVY_APP_ID -u VITE_CIRBTC_ADDRESS VITE_NETWORK=mainnet VITE_FACTORY_ADDRESS=0xA9A5447a1Dd9874c25238d69E285249Fa1c9E10A CLOUDFLARE_API_TOKEN=… CLOUDFLARE_ACCOUNT_ID=… bun run cf:deploy` (khoá Cloudflare = `CF_API_TOKEN`/`CF_ACCOUNT_ID` trong `D:\Files\Claude\.secrets\keys.env`). `cf:deploy` tự từ chối nếu thiếu 2 biến mạng. Sau deploy kiểm: trang 200, `/api/chat` không token 401, bundle chứa `A9A5447a`. Phần dưới đây là ghi chú thời testnet.
+- Deploy (testnet, cũ): `bun run cf:deploy` (kiểm tiếng Anh + `vite build` + `wrangler pages deploy`). Cần `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`. **Cạm bẫy đã dính**: đừng nạp cả file `.env` của sandbox khi build, vì các biến `VITE_*` ở đó sẽ đè địa chỉ factory mặc định (từng deploy nhầm factory `0x985a…`). Chỉ truyền hai biến Cloudflare: `env -u VITE_PRIVY_APP_ID -u VITE_FACTORY_ADDRESS -u VITE_CIRBTC_ADDRESS CLOUDFLARE_API_TOKEN=… CLOUDFLARE_ACCOUNT_ID=… bun run cf:deploy`. Sau deploy kiểm: trang trả 200, `/api/chat` không token trả 401, bundle chứa `0xAd06` và không chứa `0x985a`.
 - Origin mới phải thêm vào Privy dashboard → Allowed origins (mỗi phiên preview Arc Studio có địa chỉ khác).
 
 ## 5. Công cụ kiểm tra (đều KHÔNG gọi model)
@@ -69,7 +90,7 @@ moonsafe.app = **Arc mainnet (chain 5042), tiền thật**. Hiếu tự ký mọ
 - Quy trình phiên này: mỗi việc một nhánh + PR rồi gộp và deploy theo lời anh; sửa lỗi anh đã nêu thì làm luôn; việc rủi ro (mainnet, đổi tiền, đổi hợp đồng) hỏi trước.
 - Mainnet: Arc Studio không triển khai thay anh. Trước khi viết/bàn cấu hình mainnet phải đưa cảnh báo mainnet đầy đủ và chờ anh xác nhận.
 
-## 7. Việc cần làm tiếp (theo thứ tự đề xuất)
+## 7. Việc cần làm tiếp (danh sách 10-28; việc MỚI NHẤT ở ▶ Làm tiếp từ đây — mục 3 mainnet và 5 nạp điện AI đã xong 10-29)
 0. **Khôi phục vault (Hiếu chốt 2026-10-29: làm SAU hackathon, mainnet đợt đầu không đổi hợp đồng)**: thiết kế đầy đủ ở `docs/vault-recovery-spec.md` (email xác nhận ví đích, 7 ngày đếm ngược hủy bất cứ lúc nào, một khóa thực thi trên server chỉ được bắt đầu/hủy, hủy được cả bằng email lẫn bằng ví chủ trong app). Cần: vault v3 + test + review, endpoint server, nhà cung cấp email (khóa API do Hiếu tạo), màn hình. Người dùng email vẫn khôi phục được qua Privy. Yêu cầu email ở "Before you start" ĐÃ BỎ 2026-10-29 (Privy báo "User already has one email account linked" với ví đã gắn email → user kẹt không vào được app).
 1. **Kiểm model thật có trần** (chưa từng chạy sau các thay đổi 28/10): các đoạn chat "21 + biểu mẫu → thẻ xác nhận → kế hoạch", "how much is in my bank?", hỏi "why" (chế độ dài), nói đã chuyển tiền (hộp xác nhận). Cần Hiếu duyệt ngân sách; ước ≈250k token đầu vào cho bộ nhỏ.
 2. **Giảm số lần viết lại** (14/19 lượt): đọc `/api/usage`, xem lý do của bộ kiểm trong log, chỉnh luật hoặc prompt đúng chỗ thay vì thêm regex.
