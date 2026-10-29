@@ -7,7 +7,7 @@ export function turnPolicy(users: string[]) {
     if (text.startsWith('[app event]')) continue
     if (/\b(?:start|build|make|create) (?:my |a )?(?:plan|budget)\b|\b(?:prepare|deposit|withdraw|buy)\s+(?:\$|\d)|open (?:my |a )?vault|lập kế hoạch|mở form|mở vault|nạp \d|mua \d/iu.test(text) // lang-ok
       && !/\?|\b(?:not|don't|do not|no)\b|đừng|không/iu.test(text)) conversationOnly = false // lang-ok
-    if (/education only|only want.*listen|just.*listen|do not.*(?:form|invest|buy|deposit)|don't.*(?:form|invest|buy|deposit)|without onboarding|no[- ]form|đừng mở form|không cần (?:mua|form)|chỉ.*(?:lắng nghe|kiến thức)/iu.test(text)) conversationOnly = true // lang-ok
+    if (/education only|only want.*listen|just.*listen|do not.*(?:form|invest|buy|deposit)|don't.*(?:form|invest|buy|deposit)|without onboarding|no[- ]form|(?:skip|pause|avoid|stop|no|without)\s+(?:(?:the|this|a|my)\s+)?(?:questionnaire|intake|form)|đừng mở form|không cần (?:mua|form)|chỉ.*(?:lắng nghe|kiến thức)/iu.test(text)) conversationOnly = true // lang-ok
   }
   const latest = users[users.length - 1] ?? ''
   const actionRequest = /^(?:please |can you |could you )?(?:deposit|withdraw|buy|prepare (?:a )?(?:deposit|withdrawal|buy)(?: of)?)\s*\$?\d[^.]*\??$/iu.test(latest.trim())
