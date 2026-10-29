@@ -96,7 +96,7 @@ expect(!first.body.actions?.some(a => a.type === 'confirm_items'), 'a first decl
 expect((first.body.ops?.length ?? 0) >= 6, 'everything declared is saved at once (ops come back for the app to apply)')
 expect(readOps(first.body.ops).some(o => o.op === 'update_profile' && 'hasWindfalls' in o.fields), 'an airdrop is saved as a windfall flag')
 expect(!readOps(first.body.ops).some(o => o.op === 'set_income' && /airdrop/i.test(o.income.name)), 'an airdrop is never saved as monthly income')
-expect(/To invest the right way you need three things/.test(firstText) && /About airdrops: they arrive in bursts/.test(firstText), 'the plan (overview + airdrop note) follows without a model call')
+expect(/Here is your plan, in order/.test(firstText) && /Airdrops come in bursts/.test(firstText), 'the plan (with the airdrop note) follows without a model call')
 let saved = applyOps(empty, readOps(first.body.ops))
 
 // 2. A returning user confirms a card: the app applies the ops, tells the agent, and the plan follows (built by the server, no model call).
@@ -108,9 +108,9 @@ console.log('\nstep 2: status', second.status, '| model calls', second.calls)
 if (process.env.FLOW_DEBUG) console.log(second.body.content)
 expect(second.status === 200, 'step 2 succeeds')
 expect(second.calls === 0, `after the card the plan is built by the server: no model call (got ${second.calls})`)
-expect(/To invest the right way you need three things/.test(text) && /safe part of 31%/.test(text) && /takes risk, 69%/.test(text), 'the plan opens with the overview: what is needed and the safe / at-risk split')
-expect(/About airdrops: they arrive in bursts/.test(text), 'the plan explains that airdrops are not a stable job')
-for (const [what, re] of [['the fund', /Emergency fund: \$450[^\n]*Why 3 months:/], ['Safety', /Safety 31%[^\n]*any time/], ['Traditional', /Traditional 3[45]%[^\n]*index funds/], ['Crypto', /Crypto 3[45]%[^\n]*BTC/]] as const) expect(re.test(text), `the plan says why for ${what}`)
+expect(/Here is your plan, in order/.test(text) && /by your age, 31/.test(text) && /Traditional and Crypto are kept even/.test(text), 'the plan: steps in order, the split by age, why Traditional and Crypto are even')
+expect(/Airdrops come in bursts/.test(text), 'the plan explains that airdrops are not steady income')
+for (const [what, re] of [['the fund', /Emergency fund: \$450\*\* = 3 months of spending, because/], ['Safety', /Safety 31%[^\n]*any time/], ['Traditional', /Traditional 34\.5%[^\n]*index funds/], ['Crypto', /Crypto 34\.5%[^\n]*Bitcoin/]] as const) expect(re.test(text), `the plan says why for ${what}`)
 expect(/prepare a deposit of \*\*450 USDC\*\*/.test(text), 'the plan offers the deposit')
 expect(/\$3,950, after the emergency fund/.test(text), 'the plan is quoted on the money left after the fund (the wallet seen onchain is not added)')
 
@@ -118,7 +118,7 @@ expect(/\$3,950, after the emergency fund/.test(text), 'the plan is quoted on th
 const full = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: crafted }, { role: 'user', content: event }], saved, 900)
 const fullText = full.body.content ?? ''
 console.log('\nstep 2b: model calls', full.calls)
-expect(/To invest the right way you need three things/.test(fullText), 'fund already full: the overview comes first')
+expect(/Here is your plan, in order/.test(fullText), 'fund already full: the plan comes first')
 expect(!/cirBTC|prepare a|for you to sign/i.test(fullText), 'fund already full: no purchase is offered before they pick a part')
 expect(/Which part would you like to fill first|Only [^.]* still has room/.test(fullText), 'fund already full: it asks which part to fill')
 

@@ -16,5 +16,5 @@ export function overTargetWarning(b: Balance, amount: bigint): string | null {
   const after = shareOfLiquid(b, b.byGroup.btc + b.byGroup.large_cap + b.byGroup.altcoin + Number(amount) / 1_000_000)
   const target = b.target.btc + b.target.large_cap + b.target.altcoin
   if (after <= target + 0.5) return null
-  return `After this buy, crypto would be about ${Math.round(after)}% of your liquid assets, above the ${Math.round(target)}% MoonSafe target for your age. Your call.`
+  return `Crypto would be ${Math.round(after)}% of your money, above your ${Math.round(target)}% target.`
 }

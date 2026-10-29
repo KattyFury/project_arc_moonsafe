@@ -193,7 +193,7 @@ for (const r of reals) {
   for (const k of known) if (!(k in facts)) fail(`computeFacts misses fact ${k}`)
 }
 const shortB = computeBalance({ profile: healthy, walletUsd: 0, vaultUsd: 1000, cirBtcUsd: 0, prices, vndPerUsd: 25000 })
-if (!/add 3,500 USDC to the emergency fund/.test(shortB.lock.text)) fail(`lock text must say the exact gap: ${shortB.lock.text}`)
+if (!/add \$3,500 to the emergency fund/.test(shortB.lock.text)) fail(`lock text must say the exact gap: ${shortB.lock.text}`)
 const declined = computeBalance({ profile: { ...healthy, age: null, ageDeclined: true }, walletUsd: 0, vaultUsd: 0, cirBtcUsd: 0, prices, vndPerUsd: 25000 })
 if (Math.abs((declined.target?.btc ?? 0) - 35) > 1e-9 || !declined.ageIsDefault) fail('declined age must use the age-30 split (crypto 35%, as BTC)')
 const realBrief = patternBrief(matchPatterns(computeFacts({ balance: shortB, profile: healthy, prices, vndPerUsd: 25000, now: NOW })), displayFacts(computeFacts({ balance: shortB, profile: healthy, prices, vndPerUsd: 25000, now: NOW })))
@@ -422,7 +422,7 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   // The plan says WHY for every step, and offers the exact deposit with the wording the "yes" is matched on.
   const shares: [number, number, number] = [31, 35, 34]
   const plan = buildPlan({ p: base, b: bal(base, 1900, 0), shares, cover: 450, vi: false })!
-  for (const [what, re] of [['fund', /Why 3 months: your income is steady/], ['safety', /Safety 31%[^\n]*any time/], ['traditional', /Traditional 3[45]%[^\n]*stocks and index funds/], ['crypto', /Crypto 3[45]%[^\n]*BTC[^\n]*half/]] as const) if (!re.test(plan)) fail(`plan: the reason for the ${what} is missing`)
+  for (const [what, re] of [['fund', /3 months of spending, because your income is steady/], ['safety', /Safety 31%[^\n]*any time/], ['traditional', /Traditional 3[45]%[^\n]*index funds/], ['crypto', /Crypto 3[45]%[^\n]*Bitcoin[^\n]*halve/]] as const) if (!re.test(plan)) fail(`plan: the reason for the ${what} is missing`)
   if (!/prepare a deposit of \*\*450 USDC\*\* from your wallet for you to sign/.test(plan)) fail('plan: the deposit offer wording')
   // The numbers quoted before the deposit are the numbers after it (the goalposts do not move).
   const safeInPlan = Number(/Safety 31% = ([\d,]+) USDC/.exec(plan)?.[1].replace(/,/g, ''))
@@ -435,13 +435,13 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   if (/cirBTC|prepare a|for you to sign/i.test(fullPlan)) fail('plan: never opens with a purchase')
   // The overview at 21 (Hieu, 2026-10-28): safe 21%, at risk 79% = Traditional 45% + Crypto 34%.
   const young = buildPlan({ p: normalizeProfile({ ...base, age: 21 }), b: bal(normalizeProfile({ ...base, age: 21 }), 1900, 0), shares: [21, 45, 34], cover: 450, vi: false })!
-  if (!/safe part of 21%/.test(young) || !/takes risk, 79%/.test(young) || !/Traditional 45%\*\* and \*\*Crypto 34%/.test(young)) fail('plan: the overview at 21 reads 21% safe / 79% at risk = 45% + 34%')
+  if (!/by your age, 21/.test(young) || !/Safety 21%/.test(young) || !/Traditional 45%/.test(young) || !/Crypto 34%/.test(young)) fail('plan: at 21 the split reads Safety 21% / Traditional / Crypto with the shares given')
   const withAirdrops = buildPlan({ p: normalizeProfile({ ...base, hasWindfalls: true }), b: bal(base, 1900, 0), shares, cover: 450, vi: false })!
-  if (!/About airdrops: they arrive in bursts and cannot be counted on, so they are not a stable job/.test(withAirdrops)) fail('plan: airdrops are explained as not a stable job')
+  if (!/Airdrops come in bursts[^\n]*only counts your steady income/.test(withAirdrops)) fail('plan: airdrops are explained as not steady income')
   if (/About airdrops/.test(plan)) fail('plan: no airdrop note without airdrops')
   const debtor = normalizeProfile({ ...base, debts: [{ id: 'd1', name: 'Card', type: 'credit_card', balance: 500, currency: 'USDC', ratePct: 20, monthlyPayment: null, updatedAt: 1 }] })
   if (buildPlan({ p: debtor, b: bal(debtor, 1900, 0), shares, cover: 450, vi: false }) !== null) fail('plan: a priority debt goes to the model')
-  if (!buildPlan({ p: base, b: bal(base, 1900, 0), shares, cover: 450, vi: true })?.includes('Vì sao')) fail('plan: Vietnamese version') // lang-ok
+  if (!buildPlan({ p: base, b: bal(base, 1900, 0), shares, cover: 450, vi: true })?.includes('Kế hoạch của bạn')) fail('plan: Vietnamese version') // lang-ok
 }
 
 // 14. Totals, never only "what is missing" (Hieu, 2026-10-28), and the emergency fund is not Safety.
@@ -461,8 +461,8 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   if (Math.abs(s500.target - (4000 + (s500.rest ?? 0))) > 0.01 || s500.goal !== 4000) fail('Safety target = goal + its share of the rest')
   const plan = buildPlan({ p: goalP(500), b: bal(goalP(500), 600), shares: [21, 45, 34], cover: null, vi: false })!
   if (!/Near-term goal: Marriage \$4,000/.test(plan) || !/your \$4,000 goal \+ 21% of the rest/.test(plan)) fail('plan: the near-term goal is explained and added to the Safety target')
-  if (!/You have \$500 of \$[\d,]+; \$[\d,]+ to go/.test(plan)) fail('plan: Safety shows what they have of the total and what is left')
-  if (!/As a rule: 3 months when income is steady/.test(plan) || !/Why 6 months/.test(plan)) fail('plan: the months are explained (the scale and why this number)')
+  if (!/Safety[^\n]*\(your \$4,000 goal \+ 21% of the rest[^\n]*You have \$500, \$[\d,]+ to go/.test(plan)) fail('plan: Safety shows its total (goal + share) and what they have and what is left')
+  if (!/6 months of spending, because/.test(plan)) fail('plan: the months are explained (why this number)')
   const st = buildStanding({ p: goalP(1000, 1500), b: bal(goalP(1000, 1500), 600), vi: false })!
   if (!/Emergency fund:\*\* \$600 of \$600 \(6 months of spending\), full/.test(st) || !/\*\*Safety:\*\* \$1,000 of \$[\d,]+, \$[\d,]+ to go \(Bank savings \$1,000; target = goal \$4,000/.test(st)) fail(`standing: the emergency fund and Safety are separate lines with totals\n${st}`)
   if (/Safety[^\n]*months of spending/.test(st)) fail('standing: Safety never carries months')

@@ -3,7 +3,7 @@
 // the card's button; the wallet then asks them to confirm.
 
 import { useState } from 'react'
-import { ArrowDownToLine, ArrowRight, ArrowUpFromLine, ExternalLink, Repeat, TrendingUp, Vault } from 'lucide-react'
+import { ArrowDownToLine, ArrowUpFromLine, ExternalLink, Repeat, TrendingUp, Vault } from 'lucide-react'
 import { useApp } from '@/state/AppState'
 import { explorerTx } from '@/lib/network'
 import { GAS_ESTIMATE_USDC6, GAS_RESERVE_USDC6, txErrorMessage } from '@/hooks/useVault'
@@ -61,7 +61,7 @@ export function ActionCard({ action, title, onFinished }: { action: ChatAction; 
     else {
       const over = kind === 'buy' ? overTargetWarning(balance, amount) : null
       if (over) warnings.push(over)
-      warnings.push('cirBTC can fall sharply. Only invest money you can afford to lose. For information only, not investment advice.')
+      warnings.push('Prices can drop sharply; not investment advice.')
     }
   }
 
@@ -105,20 +105,10 @@ export function ActionCard({ action, title, onFinished }: { action: ChatAction; 
       </div>
 
       {kind === 'buy' && q && status !== 'done' && (
-        <div className="flex items-center gap-2 p-4 rounded-2xl" style={{ background: 'var(--surface-muted)' }}>
-          <div className="flex-1 text-center">
-            <p className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--ink)' }}>{q.amountInUsdc} USDC</p>
-            <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>You pay</p>
-          </div>
-          <ArrowRight size={20} style={{ color: 'var(--muted)' }} />
-          <div className="flex-1 text-center">
-            <p className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--ink)' }}>{q.estimate.estimatedOutput.amount} cirBTC</p>
-            <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>You get, estimated (min {q.estimate.stopLimit.amount})</p>
-          </div>
+        <div className="flex flex-col gap-1 p-4 rounded-2xl" style={{ background: 'var(--surface-muted)' }}>
+          <p className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--ink)' }}>You get ≈ {q.estimate.estimatedOutput.amount} cirBTC</p>
+          <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>{`At least ${q.estimate.stopLimit.amount} · ${Math.round(q.pricePerBtc).toLocaleString('en-US')} USD per BTC${q.premium !== null ? ` (${q.premium >= 0 ? '+' : ''}${(q.premium * 100).toFixed(1)}% vs market)` : ''}`}</p>
         </div>
-      )}
-      {kind === 'buy' && q && status !== 'done' && (
-        <p className="text-[14px] leading-5 text-center -mt-2" style={{ color: 'var(--subtle)' }}>{`Price ${Math.round(q.pricePerBtc).toLocaleString('en-US')} USD per BTC${q.premium !== null ? `, ${q.premium >= 0 ? '+' : ''}${(q.premium * 100).toFixed(1)}% vs market` : ''}`}</p>
       )}
 
       {status === 'done' ? (
@@ -133,7 +123,8 @@ export function ActionCard({ action, title, onFinished }: { action: ChatAction; 
       ) : (
         <>
           {block && <Notice tone="danger">{block}</Notice>}
-          {!block && warnings.map(w => <Notice key={w} tone="warning">{w}</Notice>)}
+          {!block && kind === 'buy' && warnings.length > 0 && <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>{warnings.join(' ')}</p>}
+          {!block && kind !== 'buy' && warnings.map(w => <Notice key={w} tone="warning">{w}</Notice>)}
           {error && <Notice tone="danger">{error}</Notice>}
           {!block && kind === 'buy' && cirBtc.error && !error && <Notice tone="danger">{cirBtc.error}</Notice>}
           <div className="flex gap-4">

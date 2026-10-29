@@ -60,6 +60,8 @@ export interface PlanInput {
   /** The deposit to offer for the fund (exactly what is missing when the wallet covers it), or null. */
   cover: number | null
   vi: boolean
+  /** The wallet cannot fill the fund but can start it: the deposit to offer now. */
+  partial?: number | null
   /** false: the user has no vault yet, so the first step is opening it (one-time fee), not a deposit. */
   hasVault?: boolean
   /** The vault opening fee in USDC (read from the factory by the app). */
@@ -77,7 +79,12 @@ export function openVaultOffer(vi: boolean, fee = 1): string {
     : `Ready to start? Your emergency fund lives in your own vault on Arc: a small contract that only your wallet can withdraw from. Opening it is **${f}, once** per account; after that, adding or withdrawing only costs a network fee of a few cents. Shall I open it for you to sign?`
 }
 
-export function buildPlan({ p, b, shares, cover, vi, hasVault = true, vaultFee = 1 }: PlanInput): string | null {
+/** Start the fund with what the wallet has; the wording keeps "prepare a deposit of", which a "yes" is matched on. */
+export const partialOffer = (vi: boolean, amount: number) => vi
+  ? `Sẵn sàng bắt đầu chưa? Ví của bạn có thể bắt đầu quỹ với **${tok(amount)}** ngay, phần còn lại thêm dần sau: mình chuẩn bị một lệnh nạp **${tok(amount)}** để bạn ký nhé?` // lang-ok
+  : `Ready to start? Your wallet can start the fund with **${tok(amount)}** now and the rest can follow: shall I prepare a deposit of **${tok(amount)}** for you to sign?`
+
+export function buildPlan({ p, b, shares, cover, partial = null, vi, hasVault = true, vaultFee = 1 }: PlanInput): string | null {
   if (!b.target || b.fund.floorUsd === null || p.incomeStable === null) return null
   if (b.debts.priorityCount > 0) return null
   // The deposit for the emergency fund comes out of the USDC the user declared for this wallet (the app lowers it when the card is
@@ -104,36 +111,37 @@ export function buildPlan({ p, b, shares, cover, vi, hasVault = true, vaultFee =
       ? openVaultOffer(vi, vaultFee)
     : cover !== null
       ? (vi ? `Sẵn sàng bắt đầu chưa? Bước đầu là quỹ dự phòng: mình chuẩn bị một lệnh nạp **${tok(cover)}** từ ví để bạn ký nhé?` : `Ready to start? The first step is your emergency fund: shall I prepare a deposit of **${tok(cover)}** from your wallet for you to sign?`) // lang-ok
-      : (vi ? 'Bước đầu là quỹ dự phòng. Ví chưa đủ USDC để nạp, nên hãy thêm USDC vào ví rồi nói với mình nhé.' : 'The first step is your emergency fund. The wallet does not have enough USDC to add yet, so add some USDC to it and tell me.') // lang-ok
+      : partial !== null ? partialOffer(vi, partial)
+      : (vi ? 'Bước đầu là quỹ dự phòng. Ví chưa có USDC để nạp, nên hãy thêm USDC vào ví rồi nói với mình nhé.' : 'The first step is your emergency fund. The wallet has no USDC to add yet, so add some and tell me.') // lang-ok
   // Airdrops and other bursts are not a job: said once, here, because the plan is built only on steady income.
   const windfall = p.hasWindfalls
-    ? (vi ? `Về airdrop: chúng đến theo từng đợt và không thể trông cậy, nên không phải một nghề ổn định${p.windfallsYearly ? ` (bạn nói khoảng ${fmt(p.windfallsYearly)} mỗi năm)` : ''}. Kế hoạch này chỉ dựa trên thu nhập ổn định của bạn; khi nhận một khoản airdrop, hãy coi đó là tiền thêm để đặt vào đúng kế hoạch này.` : `About airdrops: they arrive in bursts and cannot be counted on, so they are not a stable job${p.windfallsYearly ? ` (you said about ${fmt(p.windfallsYearly)} a year)` : ''}. This plan is built on your steady income only; when an airdrop lands, treat it as extra money to place by this same plan.`) // lang-ok
+    ? (vi ? `Airdrop đến theo từng đợt${p.windfallsYearly ? ` (khoảng ${fmt(p.windfallsYearly)} mỗi năm)` : ''}, nên kế hoạch chỉ tính thu nhập ổn định; khi có airdrop, cứ chia theo đúng kế hoạch này.` : `Airdrops come in bursts${p.windfallsYearly ? ` (about ${fmt(p.windfallsYearly)} a year)` : ''}, so the plan only counts your steady income; when one lands, place it by this same plan.`) // lang-ok
     : null
   const goal = p.nearGoal && b.goalUsd > 0 ? p.nearGoal : null
   const goalLine = goal
-    ? (vi ? `**Mục tiêu gần: ${goal.name} ${fmt(b.goalUsd)}** nằm trong phần Safety (tiết kiệm), không đem đi đầu tư${goal.years ? `, vì bạn cần nó trong ${goal.years} năm tới` : ', vì bạn cần nó sớm'} và thị trường có thể giảm đúng lúc đó. Khoản này cộng vào mục tiêu Safety bên dưới.` : `**Near-term goal: ${goal.name} ${fmt(b.goalUsd)}** stays in Safety (savings), not invested${goal.years ? `, because you need it within ${goal.years} year${goal.years === 1 ? '' : 's'}` : ', because you need it soon'} and markets can drop right before. It is added to the Safety target below.`) // lang-ok
+    ? (vi ? `**Mục tiêu gần: ${goal.name} ${fmt(b.goalUsd)}** để trong Safety, không đầu tư, vì bạn cần nó ${goal.years ? `trong ${goal.years} năm tới` : 'sớm'}.` : `**Near-term goal: ${goal.name} ${fmt(b.goalUsd)}** stays in Safety, not invested, because you need it ${goal.years ? `within ${goal.years} year${goal.years === 1 ? '' : 's'}` : 'soon'}.`) // lang-ok
     : null
   const safeTarget = goal ? (vi ? `mục tiêu ${fmt(b.goalUsd)} + ${sSafe}% của phần còn lại (${fmt(safe.rest ?? 0)})` : `your ${fmt(b.goalUsd)} goal + ${sSafe}% of the rest (${fmt(safe.rest ?? 0)})`) : null // lang-ok
+  // Short (Hieu, 2026-10-29: the plan was seven paragraphs): one line per step with one clause of why; the rest comes when they ask "why".
+  const have = (x: typeof safe) => vi
+    ? `Bạn có ${fmt(x.have)}${x.full ? ': đã đủ' : `, còn ${fmt(x.left)}`}.` // lang-ok
+    : `You have ${fmt(x.have)}${x.full ? ': full' : `, ${fmt(x.left)} to go`}.`
   const lines = vi
     ? [ // lang-ok
-      `Để đầu tư đúng cách, bạn cần ba việc theo thứ tự: trước hết là **quỹ dự phòng**; sau đó chia số tiền linh hoạt còn lại thành phần **an toàn ${sSafe}%** và phần **chấp nhận rủi ro ${risk}%** (phần an toàn bằng tuổi của bạn, ${age}${est ? ', ước tính' : ''}, vì bạn càng trẻ càng có thời gian gánh rủi ro); và trong phần rủi ro đó, chia cân bằng **Traditional ${sTrad}%** và **Crypto ${sCrypto}%**: crypto sập thì Traditional đỡ, cổ phiếu và vàng giảm thì crypto đỡ, cả hai cùng giảm thì vẫn còn quỹ dự phòng và phần an toàn. Đây là gợi ý khách quan, không nghiêng về bên nào.`, // lang-ok
-      `1. **Quỹ dự phòng: ${fmt(b.fund.floorUsd)}** (${b.fund.floorMonths} tháng chi tiêu). Vì sao ${b.fund.floorMonths} tháng: ${fundWhy(p, b.fund.floorMonths, true)}. ${SCALE.vi} Hiện có ${fmt(vault)}.`, // lang-ok
+      'Kế hoạch của bạn, theo thứ tự:', // lang-ok
+      `1. **Quỹ dự phòng: ${fmt(b.fund.floorUsd)}** = ${b.fund.floorMonths} tháng chi tiêu, vì ${fundWhy(p, b.fund.floorMonths, true)}. Hiện có ${fmt(vault)}.`, // lang-ok
       ...(goalLine ? [goalLine] : []),
-      `Sau khi quỹ đủ, bạn có thể cân nhắc chia số tiền linh hoạt (${fmt(toDivide)}${toFund > 0 ? ', sau khi nạp quỹ' : ''}${goal ? ', chưa tính mục tiêu gần' : ''}) như sau:`, // lang-ok
-      `2. **Safety ${sSafe}%${safeTarget ? ` (${safeTarget})` : ` = ${fmt(safe.target)}`}** — ${WHY.safety.vi} ${line(safe)}`,
-      `3. **Traditional ${sTrad}% = ${fmt(trad.target)}** — ${WHY.traditional.vi} ${line(trad)}`,
-      `4. **Crypto ${sCrypto}% = ${fmt(crypto.target)}** — ${WHY.crypto.vi} ${line(crypto)}`,
+      `2. Sau đó chia phần còn lại (${fmt(toDivide)}${toFund > 0 ? ', sau khi nạp quỹ' : ''}) theo tuổi của bạn, ${age}${est}:\n- **Safety ${sSafe}%${safeTarget ? ` (${safeTarget})` : ` = ${fmt(safe.target)}`}**: tiết kiệm rút được bất cứ lúc nào. ${have(safe)}\n- **Traditional ${sTrad}% = ${fmt(trad.target)}**: quỹ chỉ số như VOO và vàng. ${have(trad)}\n- **Crypto ${sCrypto}% = ${fmt(crypto.target)}**: chủ yếu Bitcoin, có lúc giảm một nửa. ${have(crypto)}`, // lang-ok
+      'Traditional và Crypto chia cân bằng: bên này giảm thì bên kia đỡ, cả hai cùng giảm vẫn còn quỹ dự phòng và Safety. Đây là gợi ý, bạn quyết định.', // lang-ok
       ...(windfall ? [windfall] : []),
       ask,
     ]
     : [
-      `To invest the right way you need three things, in this order: first an **emergency fund**; then your other liquid money split into a **safe part of ${sSafe}%** and a part that **takes risk, ${risk}%** (the safe share equals your age, ${age}${est ? ', an estimate' : ''}, because the younger you are the more time you have to ride out risk); and inside the risky part, a balanced **Traditional ${sTrad}%** and **Crypto ${sCrypto}%**: if crypto crashes, Traditional carries you; if stocks and gold fall, crypto can; if both fall, your emergency fund and Safety still stand. This is an objective suggestion, not a bet on either side.`,
-      `1. **Emergency fund: ${fmt(b.fund.floorUsd)}** (${b.fund.floorMonths} months of spending). Why ${b.fund.floorMonths} months: ${fundWhy(p, b.fund.floorMonths, false)}. ${SCALE.en} You have ${fmt(vault)} in it.`,
+      'Here is your plan, in order:',
+      `1. **Emergency fund: ${fmt(b.fund.floorUsd)}** = ${b.fund.floorMonths} months of spending, because ${fundWhy(p, b.fund.floorMonths, false)}. You have ${fmt(vault)}.`,
       ...(goalLine ? [goalLine] : []),
-      `Once it is full, you could consider dividing your liquid money (${fmt(toDivide)}${toFund > 0 ? ', after the emergency fund' : ''}${goal ? ', not counting the goal' : ''}) like this:`,
-      `2. **Safety ${sSafe}%${safeTarget ? ` (${safeTarget})` : ` = ${fmt(safe.target)}`}**: ${WHY.safety.en} ${line(safe)}`,
-      `3. **Traditional ${sTrad}% = ${fmt(trad.target)}**: ${WHY.traditional.en} ${line(trad)}`,
-      `4. **Crypto ${sCrypto}% = ${fmt(crypto.target)}**: ${WHY.crypto.en} ${line(crypto)}`,
+      `2. Then split the rest (${fmt(toDivide)}${toFund > 0 ? ', after the emergency fund' : ''}) by your age, ${age}${est}:\n- **Safety ${sSafe}%${safeTarget ? ` (${safeTarget})` : ` = ${fmt(safe.target)}`}**: savings you can reach any time. ${have(safe)}\n- **Traditional ${sTrad}% = ${fmt(trad.target)}**: index funds such as VOO, and gold. ${have(trad)}\n- **Crypto ${sCrypto}% = ${fmt(crypto.target)}**: mostly Bitcoin, which can halve on the way. ${have(crypto)}`,
+      'Traditional and Crypto are kept even: if one falls the other can carry you, and if both fall your emergency fund and Safety still stand. A suggestion, your call.',
       ...(windfall ? [windfall] : []),
       ask,
     ]
@@ -247,7 +255,7 @@ export function buildPartAnswer({ b, vi, part, walletUsd }: { b: Balance; vi: bo
 }
 
 /** After the user signs the emergency-fund deposit, or confirms a saved amount: where things stand, then only the parts with room. */
-export function buildAfterSign({ b, vi, kind, summary, cover = null }: { b: Balance; vi: boolean; kind: 'deposit' | 'record' | 'open'; summary?: string; cover?: number | null }): string | null {
+export function buildAfterSign({ b, vi, kind, summary, cover = null, partial = null }: { b: Balance; vi: boolean; kind: 'deposit' | 'record' | 'open'; summary?: string; cover?: number | null; partial?: number | null }): string | null {
   const standing = bucketStanding(b)
   if (!standing || b.fund.floorUsd === null) return null
   const vault = b.fundUsd ?? 0
@@ -259,7 +267,8 @@ export function buildAfterSign({ b, vi, kind, summary, cover = null }: { b: Bala
     if (need < 0.005) return `${what} ${pickQuestion(standing, vi)}`
     return cover !== null
       ? `${what} ${vi ? `Mình chuẩn bị một lệnh nạp **${tok(cover)}** từ ví để bạn ký nhé?` : `Shall I prepare a deposit of **${tok(cover)}** from your wallet for you to sign?`}` // lang-ok
-      : `${what} ${vi ? 'Ví chưa đủ USDC để nạp, hãy thêm USDC vào ví rồi nói với mình nhé.' : 'The wallet does not have enough USDC to add yet, so add some and tell me.'}` // lang-ok
+      : partial !== null ? `${what} ${partialOffer(vi, partial)}`
+      : `${what} ${vi ? 'Ví chưa có USDC để nạp, hãy thêm USDC vào ví rồi nói với mình nhé.' : 'The wallet has no USDC to add yet, so add some and tell me.'}` // lang-ok
   }
   if (kind === 'deposit') {
     if (!fundFull) return null

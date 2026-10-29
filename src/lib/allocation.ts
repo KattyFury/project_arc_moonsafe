@@ -241,7 +241,7 @@ export function computeBalance(input: BalanceInput): Balance {
 
   // Buy lock (spec 5.3): no priority debt and the fund at its floor. The floor needs the spending and
   // the income stability; "no debt" needs the user's answer to the last debt question.
-  const usd = (n: number) => `${new Intl.NumberFormat('en-US', { maximumFractionDigits: n >= 100 ? 0 : 2 }).format(n)} USDC`
+  const usd = (n: number) => `$${new Intl.NumberFormat('en-US', { maximumFractionDigits: n >= 100 ? 0 : 2 }).format(n)}`
   const missing: string[] = []
   if (spending === null) missing.push('tell the agent your monthly spending')
   if (p?.incomeStable === null || p?.incomeStable === undefined) missing.push('say whether your income is stable')
