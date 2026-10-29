@@ -21,8 +21,9 @@
 
 import { getPrices } from './prices'
 import { educationAnswer, EDUCATION_POLICY } from '../_lib/education'
-import { explicitAgeRefusal, factProposals, investmentCost, quantityEvidence, turnPolicy, TURN_POLICY, responseProblems, REPLY_DISCIPLINE, fundMissingInputs } from '../_lib/agentGuards'
+import { explicitAgeRefusal, factProposals, quantityEvidence, turnPolicy, TURN_POLICY, responseProblems, REPLY_DISCIPLINE, fundMissingInputs } from '../_lib/agentGuards'
 import { coachingBrief, recordingEvidence, COACH_POLICY, ALTCOIN_CHECK } from '../_lib/coaching'
+import { assertions, currentMarketValue, investedBasis, interestRateEvidence, passiveEvidence, zeroInterestEvidence } from '../_lib/mutationEvidence'
 import { dependentEvidence, householdDefault, incomeUpdate, profileAgeAllowed, scopeBrief, scopeChoice, scopeQuestion } from '../../src/lib/planningScope'
 import { privyUserId } from '../_lib/privyAuth'
 import { addUsage, overBudget, type Meter } from '../_lib/budget'
@@ -111,7 +112,6 @@ const PAYMENT_NUM = /(\d[\d.,]*\d|\d)\s{0,3}k?\s{0,3}(?:\$|usdc?|usdt|dollars?|�
 const APP_WALLET = /(this|the app|my app|moonsafe)\s+wallet|in (the|this) app|ví (này|app|moonsafe)/i // lang-ok
 const QUESTIONS_US = /\?|(?<!\p{L})(why|you mean|wrong|how come|sao|tại sao|sai)(?!\p{L})/iu // lang-ok
 // "my mom not using interest on me" was not read as 0% (real chat 2026-10-26).
-const NO_INTEREST = /interest[- ]free|(no|not|never|without|zero|0%?)\s+(\p{L}+\s+){0,3}interest|(doesn'?t|does not|don'?t|do not|won'?t)\s+(\p{L}+\s+){0,2}(charge|take|ask|use)\s+(\p{L}+\s+){0,2}interest|(không|ko|chẳng)\s+(tính\s+|lấy\s+)?lãi/iu // lang-ok
 const DEBT_PAY_NAME = /loan|debt|repay|mortgage|installment|credit card|(?<!\p{L})(mom|dad|mother|father)(?!\p{L})|nợ|trả góp/iu // lang-ok
 // A plain "no" to an offer (real chat 2026-10-29: "no" to the deposit offer got the same offer again). Short answers only, so
 // "no, make it 10" or "no I already have savings" still go through the normal path.
@@ -195,7 +195,6 @@ const TEACH_ONCE: { term: RegExp; taught: RegExp; plain: string }[] = [
 // The plan was given in this chat: a Traditional share quoted as a percentage.
 const PLAN_GIVEN = /Traditional[^\n]{0,80}\d+(\.\d+)?\s*%|Truyền thống[^\n]{0,80}\d+(\.\d+)?\s*%/i // lang-ok
 // "Not at all" answering "does it charge interest?" (real chat 2026-10-27: the question came back three times).
-const NOT_AT_ALL = /^\W*(no|nope|not at all|none|zero|nothing|never)(?!\p{L})/iu
 const PAID_Q = /paid (it )?off|still owe|trả hết|còn nợ/i // lang-ok
 const SOLE_WORDS = /(only|sole|single|main)[^.?!\n]{0,20}(earner|income|breadwinner|one (who )?work)|breadwinner|trụ cột|một mình (kiếm|lo)|duy nhất (kiếm|có thu nhập)/i // lang-ok
 const NO_DEBT = /(no|not any|zero|without)\s+(other\s+)?(debts?|loans?)|(?:don'?t|do not|doesn'?t) (?:have|owe)\s+(?:any\s+|a\s+)?(?:other\s+)?(?:debts?|loans?)|(?<![\d.,])0\s+(?:debts?|loans?)|(?:have|got)\s+no\s+(?:debts?|loans?)|debt[- ]free|(không|chưa|ko)\s+(còn\s+)?(nợ|vay)|hết nợ/i // lang-ok
@@ -1005,11 +1004,12 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     // Vietnamese stocks are not price-tracked.
     if (type === 'us_stock' && (vnClauses.some(c => sym && c.toUpperCase().includes(sym)) || (!sym && vnClauses.length))) type = 'vn_stock'
     const kind = priceKindOf(type)
-    const cost = investmentCost(evidence.text, sym)
-    if (cost !== null && w && (w.currency !== 'USDC' || Math.abs(w.amount - cost) > .01)) return 'Not recorded: that is market value, not the declared investment cost. Keep cost basis separate.'
-    if (cost !== null && w) quantity = undefined
+    const basis = investedBasis(evidence.text, sym)
+    if (basis && w && (w.currency !== basis.currency || Math.abs(w.amount - basis.amount) > .01)) return 'Not recorded: that is market value, not the declared investment cost. Keep cost basis separate.'
+    if (kind === 'crypto' && !basis && currentMarketValue(lastUserText)) return 'Not recorded: current market value is not invested cost. Keep the existing holding and explain the distinction.'
     const category = type === 'other' && ['safe', 'invest', 'idle', 'lifestyle'].includes(String(a.category)) ? a.category as Holding['category'] : undefined
     const base = { id: newId('h'), type, name, ...(sym && kind !== 'self' ? { symbol: sym } : {}), ...(typeof a.where === 'string' && a.where.trim() ? { where: a.where.trim() } : kind === 'stable' && APP_WALLET.test(lastUserText) ? { where: 'app wallet' } : {}), updatedAt: Date.now(), rebalanceable: defaultRebalanceable(type, category), ...(category ? { category } : {}), ...(a.loan_status === 'on_time' || a.loan_status === 'overdue' ? { loanStatus: a.loan_status as Holding['loanStatus'] } : {}) }
+    if (basis) return { ...base, value: basis.amount, currency: basis.currency, priceSource: 'self', ...(quantity !== undefined && quantityEvidence(evidence.text, quantity, sym, kind) ? { quantity, unit: 'coins' } : {}) }
     if (kind === 'stable') {
       const amount = w ?? (quantity !== undefined ? { amount: quantity, currency: 'USDC' as Currency } : null)
       if (!amount || !stated(amount.amount)) return 'Not recorded: the amount is not in the user\'s words.'
@@ -1108,15 +1108,15 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       if (!h) return `No item with id ${String(a.id)}.`
       const w = moneyArg(a.worth)
       const patch: Partial<Holding> = {}
-      const cost = investmentCost(evidence.text, h.symbol)
-      if (w && cost !== null && (w.currency !== 'USDC' || Math.abs(w.amount - cost) > .01)) return 'Not recorded: preserve the declared cost basis separately from current market value.'
-      if (w && h.priceSource === 'self' && priceKindOf(h.type) === 'crypto' && /current (?:market )?value|worth (?:now|today)|giá trị hiện tại/iu.test(lastUserText) && cost === null) return 'Not recorded: current market value must not overwrite invested cost basis.' // lang-ok
+      const basis = investedBasis(evidence.text, h.symbol)
+      if (w && basis && (w.currency !== basis.currency || Math.abs(w.amount - basis.amount) > .01)) return 'Not recorded: preserve the declared cost basis separately from current market value.'
+      if (w && priceKindOf(h.type) === 'crypto' && currentMarketValue(lastUserText) && !basis) return 'Not recorded: current market value must not overwrite invested cost basis.'
       if (typeof a.quantity === 'number' && stated(a.quantity) && quantityEvidence(evidence.text, a.quantity, h.symbol, priceKindOf(h.type))) {
-        if (h.quantity !== undefined && h.priceSource === 'market') patch.quantity = a.quantity
+        if (priceKindOf(h.type) === 'crypto' || (h.quantity !== undefined && h.priceSource === 'market')) patch.quantity = a.quantity
         else patch.value = a.quantity
       }
       if (w && stated(w.amount)) {
-        if (cost !== null || h.priceSource === 'self' || priceKindOf(h.type) === 'self' || priceKindOf(h.type) === 'stable') { patch.value = w.amount; patch.currency = w.currency; if (cost !== null) { patch.quantity = undefined; patch.unit = undefined; patch.priceSource = 'self' } }
+        if (basis || h.priceSource === 'self' || priceKindOf(h.type) === 'self' || priceKindOf(h.type) === 'stable') { patch.value = w.amount; patch.currency = w.currency; if (basis) patch.priceSource = 'self' }
         else {
           // A value for a coin without a price (spec 12): accepted as self-declared.
           const usd = toUsd(w.amount, w.currency, rate)
@@ -1191,10 +1191,10 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
         return 'Not recorded: that number is what they pay, not the total owed. Record no debt; the agent asks how much is still owed and to whom.'
       }
       // "a debt with 0 interest (my mom…)" two messages before the amount: still no interest (real chat 2026-10-27).
-      const saidNoInterest = messages.filter(m => m.role === 'user').slice(-4).some(m => NO_INTEREST.test(m.content))
+      const saidNoInterest = messages.filter(m => m.role === 'user').slice(-4).some(m => zeroInterestEvidence(m.content))
       const asked = DEBT_TYPES.includes(a.type as DebtType) ? a.type as DebtType : 'unknown'
-      const type: DebtType = asked === 'family_interest' && saidNoInterest && !(typeof a.rate_pct === 'number' && a.rate_pct > 0) ? 'family_no_interest' : asked
-      const rateArg = typeof a.rate_pct === 'number' && a.rate_pct >= 0 && (a.rate_pct === 0 ? SAYS_NONE.test(lastUserText) || saidNoInterest || type === 'family_no_interest' : stated(a.rate_pct)) ? a.rate_pct : null // lang-ok
+      const type: DebtType = saidNoInterest && (asked === 'family_interest' || asked === 'family_no_interest') ? 'family_no_interest' : (asked === 'family_no_interest' || (asked === 'family_interest' && !assertions(lastUserText).some(s => /charges? interest|with interest|có lãi|tính lãi/iu.test(s)))) ? 'unknown' : asked // lang-ok
+      const rateArg = typeof a.rate_pct === 'number' && interestRateEvidence(lastUserText, a.rate_pct) ? a.rate_pct : null
       const pay = moneyArg(a.monthly_payment)
       const d: Debt = {
         id: newId('d'), name: typeof a.name === 'string' && a.name.trim() ? a.name.trim() : 'Debt', type, balance: bal.amount, currency: bal.currency,
@@ -1215,10 +1215,12 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       const d = findD(a.id)
       if (!d) return `No debt with id ${String(a.id)}.`
       const patch: Partial<Debt> = {}
-      if (DEBT_TYPES.includes(a.type as DebtType) && a.type !== d.type) patch.type = a.type as DebtType
+      const zeroConfirmed = zeroInterestEvidence(lastUserText) || (INTEREST_Q.test(prevAssistantText) && /^(?:no|none|not at all|không|không có)[.!\s]*$/iu.test(lastUserText.trim())) // lang-ok
+      if (DEBT_TYPES.includes(a.type as DebtType) && a.type !== d.type && assertions(lastUserText).length && (a.type !== 'family_no_interest' || zeroConfirmed) && (a.type !== 'family_interest' || assertions(lastUserText).some(s => /charges? interest|with interest|có lãi|tính lãi/iu.test(s)))) patch.type = a.type as DebtType // lang-ok
       const bal = moneyArg(a.balance)
       if (bal && stated(bal.amount)) { patch.balance = bal.amount; patch.currency = bal.currency }
-      if (typeof a.rate_pct === 'number' && (a.rate_pct === 0 ? SAYS_NONE.test(lastUserText) || NO_INTEREST.test(lastUserText) || (INTEREST_Q.test(prevAssistantText) && NOT_AT_ALL.test(lastUserText)) : stated(a.rate_pct))) patch.ratePct = a.rate_pct // lang-ok
+      if (typeof a.rate_pct === 'number' && (a.rate_pct === 0 ? zeroConfirmed : interestRateEvidence(lastUserText, a.rate_pct))) patch.ratePct = a.rate_pct
+      if ((patch.ratePct ?? 0) > 0 && (patch.type ?? d.type) === 'family_no_interest') patch.type = 'family_interest'
       const pay = moneyArg(a.monthly_payment)
       if (pay && stated(pay.amount)) patch.monthlyPayment = pay.amount
       if (typeof a.lender === 'string' && a.lender.trim()) patch.lender = a.lender.trim()
@@ -1266,6 +1268,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       if (match?.error) return match.error
       const old = isIncome ? match?.old : listItems.find(x => x.id === a.id) ?? listItems.find(x => x.name.toLowerCase() === nm.toLowerCase())
         ?? (listItems.length === 1 && ['spending', 'monthly spending'].includes(listItems[0].name.toLowerCase()) && listItems[0].kind === kind ? listItems[0] : undefined)
+      if (isIncome && kind === 'passive' && old?.kind !== 'passive' && !passiveEvidence(lastUserText)) return 'Not recorded: passive income needs an explicit passive source. A partner contribution is not evidence of interest, dividends, staking or rental income.'
       // Told again with the same number ("2 sources bring me 600 a month"): nothing to record or read back.
       if (old && old.monthly === m.amount && old.currency === m.currency && old.kind === kind && !ops.some(o => (o.op === 'set_income' && o.income.id === old.id) || (o.op === 'set_expense' && o.expense.id === old.id))) return 'Already recorded with this amount, nothing changed.'
       const item = { id: old?.id ?? newId(isIncome ? 'i' : 'e'), name: old && ['income', 'spending'].includes(old.name.toLowerCase()) ? nm : old?.name ?? nm, monthly: m.amount, currency: m.currency, kind, updatedAt: Date.now() }
@@ -1632,7 +1635,7 @@ ${ending}` })
     // Function tools need reasoning_effort 'none' on chat/completions.
     const reply = await openai(apiKey, { model: MODEL, messages: replyMessages, tools: REPLY_TOOLS, tool_choice: round >= 3 ? 'none' : 'auto', max_completion_tokens: 1200, reasoning_effort: 'none' }, meter)
     if (reply instanceof Response) {
-      if (lastDraft) return json({ content: responseProblems(lastDraft, policy.answerFirst, fundTargetUnknown).length ? unreliableReply() : withPendingNote(lastDraft), ops, dcaStop, actions })
+      if (lastDraft) return json({ content: responseProblems(lastDraft, policy.answerFirst, fundTargetUnknown, vi).length ? unreliableReply() : withPendingNote(lastDraft), ops, dcaStop, actions })
       return reply
     }
     const msg = reply.choices[0]?.message
@@ -1640,7 +1643,7 @@ ${ending}` })
     if (!msg?.tool_calls?.length) {
       const content = msg?.content ?? ''
       const plain = content.replace(/ /g, ' ')
-      const problems: string[] = responseProblems(content, policy.answerFirst, fundTargetUnknown)
+      const problems: string[] = responseProblems(content, policy.answerFirst, fundTargetUnknown, vi)
       if (policy.answerFirst && !/cirbtc|vault|this app|in the app|trong app/iu.test(lastUserText) && /cirBTC|buying is locked|buy lock/iu.test(content)) problems.push('answer only the question or concern; remove unsolicited cirBTC and buy-lock onboarding') // lang-ok
       // Safety, Traditional and the bank are outside the app: no card exists for them (real chat 2026-10-28: "prepare a Safety transfer of 524 USDC for you to sign").
       if (!actions.length && /(prepare|set up|create)[^.?!\n]{0,40}(Safety|Traditional|bank|savings)[^.?!\n]{0,50}(sign|transfer)|(Safety|bank|savings)\s+(transfer|deposit)[^.?!\n]{0,40}sign/i.test(plain)) problems.push('there is NO card for Safety, Traditional or the bank: they are done outside the app. Never offer to prepare something for them to sign; the only cards are the emergency fund (deposit / withdraw) and the cirBTC buy')
@@ -1736,19 +1739,19 @@ ${ending}` })
       if (usedOnce.has('altcoin_heavy') && !directQuestion && CAUTION_ALT.test(content)) problems.push('the altcoin risk was already said once in this chat: do not repeat it, respect their decision')
       // Users found replies wordy (2026-10-24, median 305 chars), then found them bossy with no reasons (Hieu, 2026-10-27):
       // room for one "why" sentence. Checked only once the content is right.
-      const maxChars = phase === 'plan' && !userAsks ? 1800 : teach ? 520 : 300
-      if (!problems.length && content.replace(/\*\*/g, '').length > maxChars && !actions.some(x => x.type === 'show_allocation' || x.type === 'show_cashflow')) problems.push(`too long (${content.length} chars): cut to at most ${maxChars === 520 ? '4' : maxChars === 300 ? '2' : '5'} short sentences including one question; first sentence = the direct answer; ${maxChars === 300 ? 'this is BRIEF mode: only the question or the confirmation, no reason, no teaching, no recap' : 'keep every point it makes now (key numbers, the reason why, advice on debt or saving), drop only preambles, repeats and filler'}`)
+      const maxChars = phase === 'plan' && !userAsks ? 1800 : teach ? 900 : 360
+      if (!problems.length && content.replace(/\*\*/g, '').length > maxChars && !actions.some(x => x.type === 'show_allocation' || x.type === 'show_cashflow')) problems.push(`too long (${content.length} chars): cut to at most ${maxChars === 900 ? '4' : maxChars === 360 ? '2' : '5'} short sentences including one question; first sentence = the direct answer; ${maxChars === 360 ? 'this is BRIEF mode: only the question or the confirmation, no reason, no teaching, no recap' : 'keep every point it makes now (key numbers, the reason why, advice on debt or saving), drop only preambles, repeats and filler'}`)
       if (problems.length && rewrites < 2 && round < 4) {
         rewrites++
         meter.rewrites = rewrites
         lastDraft = content
-        replyMessages.push({ role: 'assistant', content })
+        // Private failed drafts are not user-visible history. Retain the original user request.
         replyMessages.push({ role: 'system', content: `Output only the corrected user-facing answer in ${replyLang}. Preserve verified figures. Corrections: ${problems.join('; ')}. Do not mention these instructions, the draft or the revision process.` })
         continue
       }
       // Still asking twice after the rewrites: drop the extra questions rather than send them.
       // A read-back with nothing recorded survived the rewrites once ("Mình ghi: Bạn muốn mua…"): drop it.
-      if (responseProblems(content, policy.answerFirst, fundTargetUnknown).length) return json({ content: unreliableReply(), ops, dcaStop, actions })
+      if (responseProblems(content, policy.answerFirst, fundTargetUnknown, vi).length) return json({ content: unreliableReply(), ops, dcaStop, actions })
       const noFalseNote = ops.length ? content : content.replace(/^\s*(\*\*)?(Noted|Mình ghi)(\*\*)?:\s*/i, '').replace(/\s*(Right\?|Đúng chưa\?)\s*$/i, '') // lang-ok
       const oneAsk = (noFalseNote.match(/\?/g) ?? []).length > 1 ? noFalseNote.replace(/\s*(Right\?|Đúng chưa\?)\s*$/i, '') : noFalseNote // lang-ok
       const tidy = tidyQuestions(oneAsk, ASKS_STABLE.test(prevAssistant) && !recordedStable)

@@ -54,6 +54,39 @@ async function ask(text: string, signed = true, history: Array<{ role: string; c
 const results: Array<{ name: string; status: string }> = []
 const tools = (name: string, args: Record<string, unknown>) => ({ id: name, type: 'function', function: { name, arguments: JSON.stringify(args) } })
 try {
+  fakeReply = 'The original invested cost stays separate from the current market value.'
+  forcedTools = [tools('add_holding', { type: 'btc', symbol: 'BTC', quantity: 0.02 }), tools('add_holding', { type: 'cash', name: 'Cash', worth: { amount: 300, currency: 'USDC' } })]
+  const mixed = await ask('I own 0.02 BTC bought for $1600, plus $300 cash. Please keep the BTC quantity and dollars distinct.')
+  const mixedProfile = applyOps(normalizeProfile({ v: 2 }), readOps(mixed.data.ops))
+  const btc = mixedProfile.holdings.find(h => h.type === 'btc')!
+  assert.equal(btc.quantity, 0.02)
+  assert.equal(btc.value, 1600)
+  assert.equal(btc.priceSource, 'self')
+  forcedTools = [tools('set_holding', { id: btc.id, worth: { amount: 1200, currency: 'USDC' } })]
+  const market = await ask('The BTC is worth $1200 today. Does that change the money I originally invested?', true, [], { profile: mixedProfile })
+  const afterMarket = applyOps(mixedProfile, readOps(market.data.ops))
+  assert.equal(afterMarket.holdings.find(h => h.id === btc.id)?.value, 1600)
+  assert.equal(afterMarket.holdings.find(h => h.id === btc.id)?.quantity, 0.02)
+  checks += 5
+  forcedTools = []
+  const viCost = await ask('Mình bỏ 60 triệu VND mua Bitcoin, giờ giá trị còn 42 triệu. Đó là vốn đã mua, không phải mình có 60 BTC.') // lang-ok
+  const viProfile = applyOps(normalizeProfile({ v: 2 }), readOps(viCost.data.ops))
+  assert.equal(viProfile.holdings.find(h => h.type === 'btc')?.value, 60_000_000)
+  assert.equal(viProfile.holdings.find(h => h.type === 'btc')?.quantity, undefined)
+  checks += 2
+  const debtor = normalizeProfile({ v: 2, debts: [{ id: 'relative', name: 'Relative loan', type: 'unknown', balance: 900, currency: 'USDC', ratePct: null, monthlyPayment: 75, updatedAt: 0 }] })
+  forcedTools = [tools('update_debt', { id: 'relative', type: 'family_no_interest', rate_pct: 0 })]
+  const uncertain = await ask('Can you assume it is an interest-free gift because it is family? Explain what we need to confirm.', true, [], { profile: debtor })
+  const uncertainProfile = applyOps(debtor, readOps(uncertain.data.ops))
+  assert.equal(uncertainProfile.debts[0].ratePct, null)
+  assert.equal(uncertainProfile.debts[0].type, 'unknown')
+  const actual = await ask('I checked: zero interest, and I still must repay it. Keep the $75 repayment counted once.', true, [], { profile: debtor })
+  const actualProfile = applyOps(debtor, readOps(actual.data.ops))
+  assert.equal(actualProfile.debts[0].ratePct, 0)
+  assert.equal(actualProfile.debts[0].monthlyPayment, 75)
+  checks += 4
+  results.push({ name: 'live-discovered cost and unknown-interest mutations repaired at handler boundary', status: 'pass' })
+  forcedTools = []
   // No model needed for reviewed standalone concepts, even with an existing financial profile.
   const beforeLesson = calls
   for (const query of ['Explain the difference between needs and wants?', 'Phân biệt nhu cầu và mong muốn?']) { // lang-ok

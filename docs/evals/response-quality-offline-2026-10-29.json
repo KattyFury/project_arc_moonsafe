@@ -1,10 +1,14 @@
 {
   "mode": "offline",
   "paidCalls": 0,
-  "checks": 75,
-  "mockCalls": 35,
-  "mockedExternal": 13,
+  "checks": 86,
+  "mockCalls": 46,
+  "mockedExternal": 18,
   "results": [
+    {
+      "name": "live-discovered cost and unknown-interest mutations repaired at handler boundary",
+      "status": "pass"
+    },
     {
       "name": "reviewed needs/wants lesson uses zero model calls",
       "status": "pass"

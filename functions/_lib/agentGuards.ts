@@ -1,4 +1,5 @@
 import type { FinancialProfile } from '../../src/types'
+import { investedBasis } from './mutationEvidence'
 
 /** Inputs needed to quote one personalized fund target, without changing the framework formula. */
 export function fundMissingInputs(p: FinancialProfile, spending: number | null): string[] {
@@ -23,7 +24,7 @@ export function turnPolicy(users: string[]) {
   const actionRequest = /^(?:please |can you |could you )?(?:deposit|withdraw|buy|prepare (?:a )?(?:deposit|withdrawal|buy)(?: of)?)\s*\$?\d[^.]*\??$/iu.test(latest.trim())
     && !/\b(?:if|would|whether|explain|example|not|don't|maybe|or)\b/iu.test(latest)
   if (actionRequest) conversationOnly = false // a new explicit action overrides the old conversation preference
-  const question = !actionRequest && /\?|\b(?:explain|teach|tell me|one (?:small |practical )?step)\b|giải thích|phân biệt|một bước|một việc/iu.test(latest) // lang-ok
+  const question = !actionRequest && /\?|\b(?:explain|teach|tell me|asking about|show which|show me what|one (?:small |practical )?step)\b|giải thích|phân biệt|một bước|một việc/iu.test(latest) // lang-ok
   return { conversationOnly, question, answerFirst: conversationOnly || question }
 }
 
@@ -43,8 +44,8 @@ export function quantityEvidence(text: string, quantity: number, symbol: string 
 export const explicitAgeRefusal = (text: string) => /(?:not|don't|do not|rather not|prefer not).*?(?:share|give|say|tell).*?age|(?:skip|decline).*?age|(?:không muốn|không tiện|xin phép không).*?(?:tuổi)|bỏ qua.*?tuổi/iu.test(text) // lang-ok
 
 export function investmentCost(text: string, symbol: string | undefined): number | null {
-  const m = text.match(/\bi (?:invested|put)\s*\$([\d,]+(?:\.\d+)?)\s*(?:into|in)\s*(BTC|Bitcoin)\b/iu)
-  return m && /^(?:BTC|WBTC|CIRBTC)$/iu.test(symbol ?? '') ? Number(m[1].replace(/,/g, '')) : null
+  const cost = investedBasis(text, symbol)
+  return cost?.currency === 'USDC' ? cost.amount : null
 }
 
 type Proposal = { name: string; args: Record<string, unknown> }
@@ -90,21 +91,27 @@ export function factProposals(text: string, p: FinancialProfile): Proposal[] {
       ? { name: 'set_holding', args: { id: existing[0].id, worth: { amount, currency } } }
       : { name: 'add_holding', args: { type: 'savings', name: 'Bank savings', worth: { amount, currency } } })
   }
-  const amount = investmentCost(text, 'BTC')
-  if (amount !== null) {
+  const basis = investedBasis(text, 'BTC')
+  if (basis !== null) {
     const btc = p.holdings.filter(h => h.type === 'btc')
-    if (!btc.length) proposals.push({ name: 'add_holding', args: { type: 'btc', symbol: 'BTC', name: 'BTC', worth: { amount, currency: 'USDC' } } })
+    const quantity = text.match(/(?<![\d$])([\d]+(?:\.\d+)?)\s*BTC\b/iu)
+    const args = { worth: basis, ...(quantity ? { quantity: Number(quantity[1]) } : {}) }
+    if (!btc.length) proposals.push({ name: 'add_holding', args: { type: 'btc', symbol: 'BTC', name: 'BTC', ...args } })
+    else if (btc.length === 1 && (btc[0].priceSource !== 'self' || btc[0].value !== basis.amount || btc[0].currency !== basis.currency)) proposals.push({ name: 'set_holding', args: { id: btc[0].id, ...args } })
   }
   return proposals
 }
 
 export const TURN_POLICY = `WORKFLOW GUARD: Answer the user's actual question/concern first. When conversation-only is active: no intake, personal questionnaire, investment onboarding, bucket-choice question or unsolicited product/transaction offer. A negated mention of buying is not buy intent. Keep this preference until the user explicitly asks to start a plan or action. Record explicit current facts accurately even during teaching; say "noted" only for facts actually saved (or clearly label pending confirmation). Unknown targets/balances are unknown, not zero. Quote only computed financial targets; do not invent an "X of Y, Z to go". The vault balance is separate from available savings outside the app. Never turn a dollar cost into coin quantity.`
 /** Detect observable response failures; never treat model self-review as authoritative. */
-export function responseProblems(content: string, answerOnly: boolean, fundTargetUnknown = false): string[] {
+export function responseProblems(content: string, answerOnly: boolean, fundTargetUnknown = false, vi?: boolean): string[] {
   const problems: string[] = []
+  if (vi === true && /[a-z]{3}/iu.test(content) && !/[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]/iu.test(content)) problems.push('The real user wrote Vietnamese. Answer in Vietnamese, not English; keep technical symbols unchanged.')
+  if (vi === false && /\bmình\b|\bbạn\b/iu.test(content)) problems.push('The real user wrote English. Remove Vietnamese conversational words.') // lang-ok
+  if (/your latest (?:request|question)|the latest request|(?:already|have) answered|not going to repeat it|my last (?:draft|reply)|I shouldn.t have added/iu.test(content)) problems.push('Answer the actual question directly. Private drafts were never shown to the user; remove commentary claiming the answer was already given.')
   if (fundTargetUnknown && content.split(/(?<=[.!?])\s+/u).some(s => /fund|quỹ/iu.test(s) && /target|need|aim|cover|mục tiêu|cần|đủ/iu.test(s) && /your|our|you need|bạn|nhà mình/iu.test(s) && /\$\s*\d|\d[\d,.]*\s*(?:USD|USDC|VND|months?|tháng|triệu)/iu.test(s))) problems.push('The personalized fund target is unknown. Remove personal target amounts, months and gaps derived from defaults; explain which inputs remain unknown.') // lang-ok
   if (/that (?:last )?reply (?:did|needs|failed)|here it is again,? without changes|rewrite the (?:whole )?reply|instruction for your next reply|saved facts this turn|the (?:system|developer) (?:prompt|instruction)|(?:câu trả lời|phản hồi) (?:trước|vừa rồi).{0,35}(?:viết lại|chỉnh sửa)/iu.test(content)) problems.push('Return only the answer to the user. Remove editorial comments, evaluation feedback and internal instructions.') // lang-ok
-  if (/loss(?:es)? (?:is|are) only real (?:if|when)|only (?:lose|a loss) (?:if|when) you sell|chỉ (?:lỗ|thua) (?:khi|nếu) (?:bạn )?bán/iu.test(content)) problems.push('A market decline is an economic loss even before selling; selling realizes it. Holding does not guarantee recovery.') // lang-ok
+  if (/loss(?:es)? (?:is|are) only real (?:if|when)|(?:becomes?|become) (?:a )?real.{0,35}(?:only|if you sell)|only becomes? (?:a )?real|only (?:lose|a loss) (?:if|when) you sell|chỉ (?:lỗ|thua) (?:khi|nếu) (?:bạn )?bán/iu.test(content)) problems.push('A market decline is an economic loss even before selling; selling realizes it. Holding does not guarantee recovery.') // lang-ok
   if (/(?:real|legitimate|genuine) recover(?:y|ies|y services).{0,45}never.{0,25}(?:upfront|advance|fee)|(?:khôi phục|thu hồi|lấy lại tiền).{0,30}(?:hợp pháp|thật).{0,25}không bao giờ.{0,20}phí/iu.test(content)) problems.push('An upfront fee plus a recovery promise is a red flag, not proof that every legitimate service is free. Explain the specific warning signs and independent verification; never guarantee recovery.') // lang-ok
   if (answerOnly && /(?:how (?:much (?:do you|does your|is your)|old are you)|what (?:is your|are your)|do you have|is your income|bạn (?:bao nhiêu tuổi|thu nhập|chi tiêu|có (?:nợ|người phụ thuộc)))[^?？]*[?？]/iu.test(content)) problems.push('Answer the knowledge question without requesting personal income, spending, age, debt or dependents. Stop after the useful explanation.') // lang-ok
   return problems
