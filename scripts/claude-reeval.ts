@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { DEFAULT_CLAUDE_MODEL } from '../functions/_lib/llm'
 import { REEVAL_CASES } from './reeval-cases'
+import { CYCLE_FRESH_CASES } from './cycle-fresh-cases'
 import { existsSync, writeFileSync } from 'node:fs'
 import { SignJWT, exportJWK, generateKeyPair } from 'jose'
 import { normalizeProfile, applyOps, readOps } from '../src/lib/profile'
@@ -15,7 +16,7 @@ const label = flag('--run') ?? 'claude-reeval-2026-10-29'
 if (!/^[a-z0-9-]+$/.test(label)) throw new Error('Run label must contain only lowercase letters, digits and hyphens.')
 const OUT = 'docs/evals/' + label + '.json'
 const priority = ['cost-basis', 'irregular-family', 'no-consent', 'loss-listening', 'beginner-vi', 'shared-transfers']
-const ordered = [...FRAMEWORK_CASES.filter(c => priority.includes(c.id)), ...FRAMEWORK_CASES.filter(c => !priority.includes(c.id)), ...REEVAL_CASES]
+const ordered = [...FRAMEWORK_CASES.filter(c => priority.includes(c.id)), ...FRAMEWORK_CASES.filter(c => !priority.includes(c.id)), ...REEVAL_CASES, ...CYCLE_FRESH_CASES]
 const selected = flag('--only')?.split(',')
 const cases = selected ? ordered.filter(c => selected.includes(c.id)) : ordered
 if (selected && cases.length !== selected.length) throw new Error('Unknown or duplicate case id.')
@@ -26,6 +27,7 @@ if (process.argv.includes('--selftest')) {
   assert.ok(999_999 + reserve({}) > 1_000_000)
   assert.equal(REEVAL_CASES.length, 6)
   assert.equal(FRAMEWORK_CASES.length, 22)
+  assert.equal(CYCLE_FRESH_CASES.length, 3)
   console.log('Budget reservation / synthetic dataset selftest passed; no network.')
   process.exit(0)
 }

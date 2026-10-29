@@ -23,7 +23,7 @@ import { getPrices } from './prices'
 import { educationAnswer, EDUCATION_POLICY } from '../_lib/education'
 import { explicitAgeRefusal, factProposals, quantityEvidence, turnPolicy, TURN_POLICY, responseProblems, REPLY_DISCIPLINE, fundMissingInputs } from '../_lib/agentGuards'
 import { coachingBrief, recordingEvidence, COACH_POLICY, ALTCOIN_CHECK } from '../_lib/coaching'
-import { assertions, currentMarketValue, investedBasis, interestRateEvidence, passiveEvidence, zeroInterestEvidence } from '../_lib/mutationEvidence'
+import { assertions, currentMarketValue, investedBasis, interestRateEvidence, passiveEvidence, zeroInterestEvidence, repaymentEvidence, incompleteExpenses } from '../_lib/mutationEvidence'
 import { dependentEvidence, householdDefault, incomeUpdate, profileAgeAllowed, scopeBrief, scopeChoice, scopeQuestion } from '../../src/lib/planningScope'
 import { privyUserId } from '../_lib/privyAuth'
 import { addUsage, overBudget, type Meter } from '../_lib/budget'
@@ -584,7 +584,7 @@ function listing(p: FinancialProfile, b: Balance, prices: Prices | null, rate: n
  * when the user uses VND). The model mixed VND and USDC in one subtraction when it had to convert
  * itself (2026-10-22).
  */
-function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: number, rate: number | null, usesVnd: boolean, surplusDca: boolean): { text: string; floors: { months: number; texts: string[] }[]; cover: number | null; partial: number | null } {
+function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: number, rate: number | null, usesVnd: boolean, surplusDca: boolean, spendingIncomplete = false): { text: string; floors: { months: number; texts: string[] }[]; cover: number | null; partial: number | null } {
   let cover: number | null = null
   /** The wallet cannot fill the fund but can start it: what it can add now (persona test 2026-10-29: $50 in the wallet, $1,800 needed, no offer at all). */
   let partial: number | null = null
@@ -594,7 +594,7 @@ function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: nu
   // Rounded down to whole USDC: 2,300.58 shown as "2,301" was offered as a deposit above the wallet (real chat 2026-10-26).
   const spendable = wallet !== null ? Math.max(0, Math.floor(wallet - GAS_RESERVE_USDC)) : null
   const cf = b.cashflow
-  const missing = fundMissingInputs(p, cf.spending)
+  const missing = fundMissingInputs(p, spendingIncomplete ? null : cf.spending)
   const fundTargetKnown = missing.length === 0
   lines.push(wallet !== null ? `- App wallet SEEN onchain: ${show(Math.floor(wallet))} (NOT part of the totals below: only what the user declares counts; a card can add up to ${show(spendable ?? 0)} to the fund, keeping ${usdc(GAS_RESERVE_USDC)} for fees)` : '- App wallet: balance unknown')
   lines.push(b.fundUsd !== null ? `- App vault portion of the emergency fund: ${show(b.fundUsd)}${b.fund.months !== null ? ` = ${Math.round(b.fund.months * 10) / 10} months of spending` : ''}; outside reserves are separate and may be unknown` : '- App vault portion of the emergency fund: balance unknown; outside reserves are separate')
@@ -813,6 +813,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   const ctx = (body.context ?? {}) as Record<string, unknown>
   const latest = [...messages].reverse().find(m => m.role === 'user')?.content ?? ''
   const policy = turnPolicy(messages.filter(m => m.role === 'user').map(m => m.content))
+  const spendingIncomplete = incompleteExpenses(messages.filter(m => m.role === 'user').map(m => m.content))
   const lesson = educationAnswer(latest, VI_LETTERS.test(latest))
   if (lesson) return json({ content: lesson.content, ops: [], dcaStop: false, actions: [], ...(body.debug ? { education: lesson.id } : {}) })
   const scope = scopeChoice(latest)
@@ -1110,7 +1111,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       const patch: Partial<Holding> = {}
       const basis = investedBasis(evidence.text, h.symbol)
       if (w && basis && (w.currency !== basis.currency || Math.abs(w.amount - basis.amount) > .01)) return 'Not recorded: preserve the declared cost basis separately from current market value.'
-      if (w && priceKindOf(h.type) === 'crypto' && currentMarketValue(lastUserText) && !basis) return 'Not recorded: current market value must not overwrite invested cost basis.'
+      if (w && priceKindOf(h.type) === 'crypto' && !basis) return 'Not recorded: changing invested cost needs an explicit purchase-cost declaration; a current valuation or a question is insufficient.'
       if (typeof a.quantity === 'number' && stated(a.quantity) && quantityEvidence(evidence.text, a.quantity, h.symbol, priceKindOf(h.type))) {
         if (priceKindOf(h.type) === 'crypto' || (h.quantity !== undefined && h.priceSource === 'market')) patch.quantity = a.quantity
         else patch.value = a.quantity
@@ -1201,7 +1202,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
         ratePct: type === 'family_no_interest' ? 0 : rateArg, monthlyPayment: pay && stated(pay.amount) ? pay.amount : null, updatedAt: Date.now(),
         ...(typeof a.lender === 'string' && a.lender.trim() ? { lender: a.lender.trim() } : {}),
         ...(a.term === 'short' || a.term === 'long' ? { term: a.term } : {}),
-        ...(typeof a.required === 'boolean' ? { required: a.required } : {}),
+        ...(typeof a.required === 'boolean' && repaymentEvidence(lastUserText, a.required) ? { required: a.required } : {}),
       }
       // An unknown debt with the same balance or the same monthly payment is this one, now told in full.
       const same = profile.debts.find(x => x.type === d.type && x.name.toLowerCase() === d.name.toLowerCase())
@@ -1224,7 +1225,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       const pay = moneyArg(a.monthly_payment)
       if (pay && stated(pay.amount)) patch.monthlyPayment = pay.amount
       if (typeof a.lender === 'string' && a.lender.trim()) patch.lender = a.lender.trim()
-      if (typeof a.required === 'boolean') patch.required = a.required
+      if (typeof a.required === 'boolean' && repaymentEvidence(lastUserText, a.required)) patch.required = a.required
       if ((patch.type ?? d.type) === 'family_no_interest') patch.ratePct = 0
       // Same values again read back as "Noted: Loan from Mom: ratePct 0" (real chat 2026-10-26).
       for (const k of Object.keys(patch) as (keyof Debt)[]) if (patch[k] === d[k]) delete patch[k]
@@ -1468,6 +1469,26 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     profile = applyOps(profile, [op])
   }
   const balance = ops.length ? await balanceOf(profile) : startBalance
+  const declaredMoney = (value: number, currency: Currency | undefined) => currency === 'VND' ? moneyText({ amount: value, currency: 'VND' }) : dollars(value)
+  const btcHolding = profile.holdings.find(h => h.type === 'btc')
+  if (!pendingNote && !appEvent && policy.question && btcHolding && /cost basis|vốn bỏ vào|money I originally invested|số BTC/iu.test(lastUserText)) { // lang-ok
+    const basis = btcHolding.value === undefined ? (vi ? 'chưa khai' : 'not declared') : declaredMoney(btcHolding.value, btcHolding.currency) // lang-ok
+    const quantity = btcHolding.quantity === undefined ? (vi ? 'chưa khai; có thể xem trong ví hoặc sao kê' : 'not declared; it can be read from a wallet or statement') : `${btcHolding.quantity} BTC` // lang-ok
+    const content = vi
+      ? `Vốn mua đã lưu: **${basis}**. Số lượng BTC: **${quantity}**. Giá trị thị trường là giá trị hiện tại của số BTC đó; con số bạn tự báo có thể dùng để trao đổi nhưng không được lưu đè lên vốn mua, và chưa được xác minh bằng giá trực tiếp. Giá giảm đã làm giảm giá trị tài sản dù chưa bán; bán là hiện thực hóa lời/lỗ. Giá giảm tự nó không buộc bạn mua thêm để lấp phần Crypto.` // lang-ok
+      : `Recorded purchase cost: **${basis}**. BTC quantity: **${quantity}**. Market value is what that BTC is worth now; a value you quote can be discussed but does not overwrite purchase cost and is not independently verified without a price feed. A decline reduces economic value before sale; selling realizes the gain or loss. A price drop alone does not require refilling the Crypto allocation.`
+    return json({ content, ops, dcaStop, actions })
+  }
+  if (!pendingNote && !appEvent && policy.question && profile.holdings.length && /which numbers|cannot value|known and unknown|what.*know.*value/iu.test(lastUserText)) {
+    const rows = profile.holdings.map(h => {
+      const crypto = priceKindOf(h.type) === 'crypto'
+      const amount = h.value === undefined ? (vi ? 'chưa khai' : 'not declared') : declaredMoney(h.value, h.currency) // lang-ok
+      const quantity = h.quantity === undefined ? '' : `; ${h.quantity} ${h.unit ?? ''}`
+      const live = crypto && h.quantity !== undefined ? holdingUsd({ ...h, priceSource: 'market' }, prices, rate) : null
+      return `- ${h.name}: ${crypto ? (vi ? 'vốn mua' : 'purchase cost') : (vi ? 'giá trị đã khai' : 'declared value')} ${amount}${quantity}${crypto ? (live === null ? (vi ? '; chưa xác minh được giá trị thị trường' : '; current market value not verified') : `; ${vi ? 'giá trị thị trường' : 'market value'} ${dollars(live)}`) : ''}` // lang-ok
+    })
+    return json({ content: (vi ? 'Theo hồ sơ đã lưu:\n' : 'From the saved profile:\n') + rows.join('\n') + (vi ? '\nGiá thị trường bạn tự báo là thông tin để trao đổi, chưa phải giá được xác minh trực tiếp và không thay thế vốn mua.' : '\nA current value you quote is self-reported, not an independently verified price, and does not replace the recorded purchase cost.'), ops, dcaStop, actions }) // lang-ok
+  }
   // Deterministic answers for accounting facts: language models explain, code owns the totals.
   if (!pendingNote && !appEvent && policy.question && /income basis|total income|combined income|explain the totals|total income and spending|tổng thu nhập/iu.test(lastUserText) && balance.cashflow.income !== null) { // lang-ok
     const show = (n: number) => vi && rate ? moneyText({ amount: n * rate, currency: 'VND' }) : dollars(n)
@@ -1489,7 +1510,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   // Critical financial targets come from code, never a model's guessed X-of-Y.
   if (policy.question && !actions.length && !placement && /fund|quỹ/iu.test(lastUserText) && /target|how much|mục tiêu|tính|bao nhiêu/iu.test(lastUserText)) { // lang-ok
     const show = (n: number) => vi && rate ? moneyText({ amount: n * rate, currency: 'VND' }) : usdc(n)
-    const content = balance.fund.floorUsd === null || fundMissingInputs(profile, balance.cashflow.spending).length > 0
+    const content = balance.fund.floorUsd === null || spendingIncomplete || fundMissingInputs(profile, balance.cashflow.spending).length > 0
       ? (vi ? 'Chưa đủ dữ liệu về chi tiêu tháng và rủi ro thu nhập gia đình để chốt mục tiêu quỹ, gồm độ ổn định, người phụ thuộc và nguồn thu của cả nhà khi có liên quan. Số dư vault và tiền tiết kiệm bên ngoài là hai khoản riêng; khoản chưa khai không được coi là bằng 0.' : 'The fund target is not final until monthly spending and relevant household income risks are known: income stability, dependents and whether there is another earner when that changes the target. The vault balance and savings outside the app are separate; undeclared amounts are not zero.') // lang-ok
       : (vi ? `Theo framework hiện có: ${show(balance.cashflow.spending!)} chi tiêu tháng × ${balance.fund.floorMonths} tháng = **${show(balance.fund.floorUsd)}** mục tiêu quỹ dự phòng. Đây là mục tiêu theo dữ liệu đã khai; tiền trong vault và tiết kiệm bên ngoài cần phân biệt, không phải toàn bộ gia đình chỉ có số dư vault.` : `Using the existing framework: ${show(balance.cashflow.spending!)} monthly spending × ${balance.fund.floorMonths} months = **${show(balance.fund.floorUsd)}** emergency fund target. This uses the declared expenses. The app vault and savings outside it are separate; a zero vault does not mean the household has no available savings.`) // lang-ok
     return json({ content, ops, dcaStop, actions })
@@ -1505,7 +1526,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   if (!DCA_AVAILABLE) usedOnce.add('lock_open_surplus')
   const matched = matchPatterns(facts, usedOnce)
   const brief = patternBrief(matched, displayFacts(facts))
-  const { text: figs, floors, cover, partial } = figures(balance, profile, wallet, cir, rate, usesVnd, !usedOnce.has('lock_open_surplus'))
+  const { text: figs, floors, cover, partial } = figures(balance, profile, wallet, cir, rate, usesVnd, !usedOnce.has('lock_open_surplus'), spendingIncomplete)
   const collecting = matched.some(p => p.id === 'collecting' || p.id === 'age_unknown')
   // A question or a doubt from the user is answered first; the collection flow waits a turn.
   const directQuestion = QUESTIONS_US.test(lastUserText) || ASKS_WHY.test(lastUserText) || scopeQuestion(lastUserText) || /^(explain|teach|help me understand|tell me about|giải thích)(?!\p{L})/iu.test(lastUserText.trim()) // lang-ok
@@ -1530,7 +1551,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   const cryptoOffer = Math.floor(Math.min(cryptoFill, Math.max(0, (wallet ?? 0) - GAS_RESERVE_USDC), balance.suggest ? Math.max(0, balance.suggest.idle - balance.suggest.keep) : Infinity))
 
   // The plan is built here too, so each step says WHY (Hieu, 2026-10-28) and the numbers always match the figures (functions/_lib/plan.ts).
-  if (phase === 'plan' && (!appEvent || itemsEvent) && !placement && !userAsks && !toAsk.length && !actions.length && balance.target) {
+  if (phase === 'plan' && !spendingIncomplete && (!appEvent || itemsEvent) && !placement && !userAsks && !toAsk.length && !actions.length && balance.target) {
     const t = balance.target
     const half = (x: number) => Math.round(x * 2) / 2
     const [ps, pt, pc] = [half(t.safe), half(t.traditional), half(t.btc + t.large_cap + t.altcoin)]
@@ -1644,7 +1665,7 @@ ${ending}` })
   const grounding = [figs, wishLine, brief, usdc(cryptoOffer), ...done, readback.join(', '), ...messages.filter(m => m.role === 'user').map(m => m.content)]
   const prevAssistant = assistantTexts[assistantTexts.length - 1] ?? ''
   const recordedStable = ops.some(o => o.op === 'update_profile' && o.fields.incomeStable !== undefined)
-  const fundTargetUnknown = fundMissingInputs(profile, balance.cashflow.spending).length > 0
+  const fundTargetUnknown = spendingIncomplete || fundMissingInputs(profile, balance.cashflow.spending).length > 0
   let rewrites = 0
   const withPendingNote = (text: string) => text + (pendingNote ? `\n\n${pendingNote}` : '')
   const unreliableReply = () => (vi

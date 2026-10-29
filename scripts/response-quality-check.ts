@@ -75,11 +75,13 @@ try {
   assert.equal(viProfile.holdings.find(h => h.type === 'btc')?.quantity, undefined)
   checks += 2
   const debtor = normalizeProfile({ v: 2, debts: [{ id: 'relative', name: 'Relative loan', type: 'unknown', balance: 900, currency: 'USDC', ratePct: null, monthlyPayment: 75, updatedAt: 0 }] })
-  forcedTools = [tools('update_debt', { id: 'relative', type: 'family_no_interest', rate_pct: 0 })]
+  forcedTools = [tools('update_debt', { id: 'relative', type: 'family_no_interest', rate_pct: 0, required: false })]
   const uncertain = await ask('Can you assume it is an interest-free gift because it is family? Explain what we need to confirm.', true, [], { profile: debtor })
   const uncertainProfile = applyOps(debtor, readOps(uncertain.data.ops))
   assert.equal(uncertainProfile.debts[0].ratePct, null)
   assert.equal(uncertainProfile.debts[0].type, 'unknown')
+  assert.notEqual(uncertainProfile.debts[0].required, false)
+  checks++
   assert.match(uncertain.data.content ?? '', /annual rate/)
   assert.match(uncertain.data.content ?? '', /repayment schedule/)
   checks += 2
