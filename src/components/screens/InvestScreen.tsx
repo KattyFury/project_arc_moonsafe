@@ -172,6 +172,10 @@ function InvestOpen() {
             </div>
           </div>
           <div className="flex justify-between">
+            <span className="text-[14px]" style={{ color: 'var(--muted)' }}>Price per BTC</span>
+            <span className="text-[14px] font-medium" style={{ color: 'var(--ink)' }}>{`${Math.round(q.pricePerBtc).toLocaleString('en-US')} USD per BTC${q.premium !== null ? `, ${q.premium >= 0 ? '+' : ''}${(q.premium * 100).toFixed(1)}% vs market` : ''}`}</span>
+          </div>
+          <div className="flex justify-between">
             <span className="text-[14px]" style={{ color: 'var(--muted)' }}>Minimum received (slippage ≤ 3%)</span>
             <span className="text-[14px] font-medium" style={{ color: 'var(--ink)' }}>{q.estimate.stopLimit.amount} cirBTC</span>
           </div>

@@ -110,6 +110,9 @@ export function ActionCard({ action, title, onFinished }: { action: ChatAction; 
           </div>
         </div>
       )}
+      {kind === 'buy' && q && status !== 'done' && (
+        <p className="text-[14px] leading-5 text-center -mt-2" style={{ color: 'var(--subtle)' }}>{`Price ${Math.round(q.pricePerBtc).toLocaleString('en-US')} USD per BTC${q.premium !== null ? `, ${q.premium >= 0 ? '+' : ''}${(q.premium * 100).toFixed(1)}% vs market` : ''}`}</p>
+      )}
 
       {status === 'done' ? (
         <Notice tone="success" title={doneText}>
