@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict'
 import { readFileSync, writeFileSync } from 'node:fs'
 const dir = 'docs/evals/'
-const run = JSON.parse(readFileSync(dir + 'claude-reeval-2026-10-29.json', 'utf8'))
-const grades = JSON.parse(readFileSync(dir + 'claude-reeval-2026-10-29-scores.json', 'utf8'))
+const label = process.argv[2] ?? 'claude-reeval-2026-10-29'
+if (!/^[a-z0-9-]+$/.test(label)) throw new Error('Invalid run label')
+const run = JSON.parse(readFileSync(dir + label + '.json', 'utf8'))
+const grades = JSON.parse(readFileSync(dir + label + '-scores.json', 'utf8'))
 const dimensions = ['correctness','relevance','riskConsent','continuity','teaching','efficiency']
 const rows = run.apiCalls as Array<{ case: string; status: number; usage: { input_tokens: number; output_tokens: number; cache_read_input_tokens?: number; cache_creation_input_tokens?: number } }>
 const input = rows.reduce((n,c) => n + c.usage.input_tokens + (c.usage.cache_read_input_tokens ?? 0) + (c.usage.cache_creation_input_tokens ?? 0),0)
@@ -29,8 +31,8 @@ const summary = {
   targetAchieved: grades.achieved, newWordingCasesRun: grades.novelCases,
   comparisonLimit: run.comparisonLimit,
 }
-writeFileSync(dir+'claude-reeval-2026-10-29-summary.json',JSON.stringify(summary,null,2))
+writeFileSync(dir+label+'-summary.json',JSON.stringify(summary,null,2))
 let md='# Claude synthetic conversation traces — 2026-10-29\n\nModel: '+run.model+'. App commit: '+run.commit+'. No confirmation card or transaction was executed. See raw JSON for before/after state.\n'
 for(const t of run.transcript) md+='\n## '+t.case+' — turn '+t.turn+(t.complete?'':' (partial: budget guard)')+'\n\n**User:** '+t.user+'\n\n**Agent:** '+(t.content??'(no final content)')+'\n\nActions: '+JSON.stringify(t.actions)+'\n\nOperations: '+JSON.stringify(t.ops)+'\n'
-writeFileSync(dir+'claude-reeval-2026-10-29-transcripts.md',md.replace(/[ \t]+$/gm,''))
+writeFileSync(dir+label+'-transcripts.md',md.replace(/[ \t]+$/gm,''))
 console.log(JSON.stringify(summary,null,2))

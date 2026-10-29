@@ -39,8 +39,8 @@ try {
   }, { tokens: 0 } as Meter)
   assert.ok(!(revised instanceof Response))
   const revisionMessages = captured!.messages as Array<{ role: string; content: Array<{ text?: string }> }>
-  assert.equal(revisionMessages.at(-1)?.role, 'user', 'Haiku 5.5 must never receive an assistant prefill')
-  assert.equal(revisionMessages.at(-1)?.content[0].text, 'Please answer the latest user request.')
+  assert.equal(revisionMessages[revisionMessages.length - 1]?.role, 'user', 'Haiku 5.5 must never receive an assistant prefill')
+  assert.equal(revisionMessages[revisionMessages.length - 1]?.content[0].text, 'Please answer the latest user request.')
   assert.equal(revisionMessages[1].content[0].text, 'An overlong draft.')
   assert.equal(captured?.system, 'Base policy.\n\nCorrect the draft. Output only the answer.')
   console.log('Claude adapter: 14 checks passed; 0 paid calls.')
