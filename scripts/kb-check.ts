@@ -402,7 +402,23 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   if (formToItems(EMPTY_FORM, null).length !== 0) fail('form: an empty form saves nothing')
   if (formToItems({ ...EMPTY_FORM, home: '50000' }, null).length !== 0 || formToItems({ ...EMPTY_FORM, otherAssets: 'yes', home: '50000' }, null).length !== 1) fail('form: home, car, lent and business count only when the question was answered yes')
   const btcItems = formToItems({ ...EMPTY_FORM, btc: '1000' }, { goldUsdPerOz: null, usd: { 'crypto:BTC': 100000 } })
-  if (Math.abs((btcItems[0]?.ops[0] as { holding?: { quantity?: number } }).holding?.quantity ?? 0) < 0.00999 || btcItems.length !== 1) fail('form: Bitcoin is stored as a quantity at today\'s price')
+  const btcH = (btcItems[0]?.ops[0] as { holding?: { value?: number; quantity?: number; priceSource?: string } }).holding
+  if (btcItems.length !== 1 || btcH?.value !== 1000 || btcH?.quantity !== undefined || btcH?.priceSource !== 'self') fail('form: Bitcoin is stored as the money put in ($1,000), not a quantity revalued at the market')
+  // Cost basis (Hieu, 2026-10-29): a BTC price halving must not make the Crypto part look empty, so the plan never pushes to buy more.
+  {
+    const p = applyOps(normalizeProfile({ v: 2, age: 30 }), btcItems.flatMap(it => it.ops))
+    const at = (btc: number) => computeBalance({ profile: p, walletUsd: 0, vaultUsd: 0, cirBtcUsd: 0, prices: { goldUsdPerOz: null, usd: { 'crypto:BTC': btc } }, vndPerUsd: 25000 }).byGroup.btc
+    if (at(100000) !== 1000 || at(50000) !== 1000) fail(`cost basis: BTC put in stays $1,000 whatever the price (got ${at(100000)} / ${at(50000)})`)
+  }
+  // cirBTC bought in the app: recorded at what was paid; the onchain market value is no longer added on top.
+  {
+    const { cirBtcBuyOps } = await import('../src/lib/profile')
+    const p0 = normalizeProfile({ v: 2, age: 30 })
+    const p1 = applyOps(p0, cirBtcBuyOps(p0, 10))
+    const p2 = applyOps(p1, cirBtcBuyOps(p1, 5))
+    const b = computeBalance({ profile: p2, walletUsd: 0, vaultUsd: 0, cirBtcUsd: 7.5, prices: null, vndPerUsd: 25000 })
+    if (b.byGroup.btc !== 15) fail(`cirBTC: two buys of $10 and $5 count as $15 put in, not the $7.50 market value (got ${b.byGroup.btc})`)
+  }
   // The plan says WHY for every step, and offers the exact deposit with the wording the "yes" is matched on.
   const shares: [number, number, number] = [31, 35, 34]
   const plan = buildPlan({ p: base, b: bal(base, 1900, 0), shares, cover: 450, vi: false })!

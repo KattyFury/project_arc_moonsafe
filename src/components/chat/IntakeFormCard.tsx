@@ -103,7 +103,7 @@ export function IntakeFormCard({ keys, seen, values, status, saved, prices, onCh
         <Num label="Bank savings and cash" value={values.bank} onChange={set('bank')} />
       </div>
     ))
-    step('invest', 'Investments today', ['btc', 'coins', 'gold', 'stocks'], (
+    step('invest', 'Invested so far', ['btc', 'coins', 'gold', 'stocks'], (
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Num label="Bitcoin" value={values.btc} onChange={set('btc')} />
         <Num label="Altcoins" value={values.coins} onChange={set('coins')} />

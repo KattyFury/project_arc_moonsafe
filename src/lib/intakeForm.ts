@@ -71,23 +71,16 @@ export interface FormItem { text: string; ops: ProfileOp[] }
 const usd = (n: number) => `$${new Intl.NumberFormat('en-US', { maximumFractionDigits: n >= 100 ? 0 : 2 }).format(n)}`
 
 /**
- * The items a filled form stands for, in the order they are shown. Market-priced things (BTC, gold) are stored as a quantity at
- * today's price when a price is known, otherwise as the value the user typed; everything else keeps the typed value.
+ * The items a filled form stands for, in the order they are shown. Every amount is kept as typed: investments (Bitcoin, gold,
+ * stocks) are the money put in, never turned into a quantity revalued at the market (Hieu, 2026-10-29).
  */
-export function formToItems(v: FormValues, prices: Prices | null, now = Date.now()): FormItem[] {
+export function formToItems(v: FormValues, _prices: Prices | null, now = Date.now()): FormItem[] {
   const items: FormItem[] = []
   const add = (text: string, ...ops: ProfileOp[]) => items.push({ text, ops })
   const holding = (type: AssetType, name: string, amount: number | null, extra: Partial<Holding> = {}) => {
     if (amount === null) return
     const h: Holding = { id: newId('h'), type, name, value: amount, currency: 'USDC', priceSource: 'self', rebalanceable: defaultRebalanceable(type), updatedAt: now, ...extra }
     add(`${name} ${usd(amount)}`, { op: 'add_holding', holding: h })
-  }
-  const priced = (type: AssetType, name: string, symbol: string | undefined, amount: number | null, px: number | undefined, unit?: Holding['unit']) => {
-    if (amount === null) return
-    if (px && px > 0) {
-      const h: Holding = { id: newId('h'), type, name, ...(symbol ? { symbol } : {}), quantity: amount / px, ...(unit ? { unit } : {}), currency: 'USDC', priceSource: 'market', rebalanceable: defaultRebalanceable(type), updatedAt: now }
-      add(`${name} ${usd(amount)}`, { op: 'add_holding', holding: h })
-    } else holding(type, name, amount, symbol ? { symbol } : {})
   }
 
   const age = parseAmount(v.age)
@@ -125,9 +118,9 @@ export function formToItems(v: FormValues, prices: Prices | null, now = Date.now
   holding('stable_wallet', 'Stablecoins elsewhere', parseAmount(v.usdcElsewhere), { where: 'other wallets and exchanges' })
   holding('savings', 'Bank savings', parseAmount(v.bank))
   holding('cash', 'Cash', parseAmount(v.cash))
-  priced('btc', 'Bitcoin', 'BTC', parseAmount(v.btc), prices?.usd['crypto:BTC'])
+  holding('btc', 'Bitcoin', parseAmount(v.btc), { symbol: 'BTC' })
   holding('altcoin', 'Altcoins', parseAmount(v.coins))
-  priced('gold_physical', 'Gold', undefined, parseAmount(v.gold), prices?.goldUsdPerOz ?? undefined, 'oz')
+  holding('gold_physical', 'Gold', parseAmount(v.gold))
   holding('fund_bond', 'Stocks and funds', parseAmount(v.stocks))
   if (v.otherAssets === 'yes') {
     holding('home', 'Home or land', parseAmount(v.home))

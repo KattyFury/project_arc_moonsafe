@@ -10,7 +10,7 @@
 
 import { fundFloorMonths, isPriorityDebt, param, targetMix, type MixKey } from '../kb/kb'
 import type { Currency, Debt, FinancialProfile, Holding } from '../types'
-import { BTC_SYMBOLS, categoryOf, priceKindOf, STABLECOINS, subgroupOf } from './profile'
+import { BTC_SYMBOLS, categoryOf, cirBtcHolding, priceKindOf, STABLECOINS, subgroupOf } from './profile'
 
 export type Group = 'safe' | 'traditional' | 'btc' | 'large_cap' | 'altcoin' | 'idle'
 export const GROUPS: Group[] = ['safe', 'traditional', 'btc', 'large_cap', 'altcoin', 'idle']
@@ -174,7 +174,9 @@ export function computeBalance(input: BalanceInput): Balance {
   const unpriced: Holding[] = []
   // The balance SEEN in the connected wallet is not part of the total: people use several wallets, so only what the user
   // declares counts (Hieu, 2026-10-28). The agent reads it to know there is money, and to cap what a card can move.
-  if (input.cirBtcUsd !== null && input.cirBtcUsd > 0) items.push({ label: 'cirBTC', usd: input.cirBtcUsd, group: 'btc', place: 'base' })
+  // cirBTC bought in the app counts at what was paid (a profile holding, see cirBtcBuyOps). Only cirBTC from before that record
+  // existed is still valued onchain at the market price.
+  if (!cirBtcHolding(p) && input.cirBtcUsd !== null && input.cirBtcUsd > 0) items.push({ label: 'cirBTC', usd: input.cirBtcUsd, group: 'btc', place: 'base' })
   if (input.vaultUsd !== null && input.vaultUsd > 0) items.push({ label: 'Emergency fund', usd: input.vaultUsd, group: null, place: 'fund' })
   for (const h of p?.holdings ?? []) {
     const usd = holdingUsd(h, input.prices, rate)

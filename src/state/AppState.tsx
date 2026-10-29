@@ -9,7 +9,7 @@ import { cloudLoad, cloudSave, readOwner, setCloudAuth, writeOwner } from '@/lib
 import { hydrateChat, readLocalChat, writeChatExtras } from '@/hooks/useAgent'
 import { useVaultState, type VaultState } from '@/hooks/useVault'
 import { readLocalProfile, useProfileState, type ProfileState } from '@/hooks/useFinancialProfile'
-import { normalizeProfile, walletMoveOps } from '@/lib/profile'
+import { cirBtcBuyOps, normalizeProfile, walletMoveOps } from '@/lib/profile'
 import { useExchangeRateState, vndToUsdc6, usdc6ToVnd, type FxState } from '@/hooks/useExchangeRate'
 import { useCirBtcState, type CirBtcState } from '@/hooks/useCirBtc'
 import { usePricesState, type PricesState } from '@/hooks/usePrices'
@@ -93,7 +93,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     execute: async () => {
       const spent = Number(live.current.quote?.amountInUsdc ?? 0)
       const ok = await cirBtcRaw.execute()
-      if (ok && spent > 0) applyProfile(walletMoveOps(live.current.profile, -spent))
+      if (ok && spent > 0) applyProfile([...walletMoveOps(live.current.profile, -spent), ...cirBtcBuyOps(live.current.profile, spent)])
       return ok
     },
   }), [cirBtcRaw, applyProfile])
