@@ -165,7 +165,7 @@ const yep = await call([...history, { role: 'user', content: message }, { role: 
 const yepText = yep.body.content ?? ''
 console.log('\nstep 6: model calls', yep.calls, '\n' + yepText)
 expect(yep.calls === 0, `choosing a part costs no model call (got ${yep.calls})`)
-expect(/prepare a cirBTC buy of \*\*\d[\d,]* USDC\*\* from your wallet/.test(yepText), 'a yes to "start with Crypto?" gets the offer to prepare the cirBTC buy')
+expect(/prepare the first buy of \*\*\d[\d,]* USDC\*\*[^\n]*all \*\*\d[\d,]* USDC\*\* at once/.test(yepText), 'a yes to "start with Crypto?" gets the offer: the first of 6 monthly buys, or all at once')
 expect(!/Safety or Traditional|Which (part|bucket)/i.test(yepText), 'full parts are never offered')
 
 // 6b. After the user signs the emergency-fund deposit, the next step names only the parts that still have room.

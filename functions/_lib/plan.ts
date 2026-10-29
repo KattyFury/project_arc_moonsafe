@@ -11,6 +11,9 @@ import { bucketStanding, type Balance, type Standing } from '../../src/lib/alloc
 import { appWalletHolding } from '../../src/lib/profile'
 import type { FinancialProfile } from '../../src/types'
 
+/** Monthly buys a part is spread over when the user does not trade by the charts (Hieu, 2026-10-29). */
+export const DCA_MONTHS = 6
+
 const fmt = (n: number) => `${new Intl.NumberFormat('en-US', { maximumFractionDigits: n >= 100 ? 0 : 2 }).format(n)} USDC`
 
 /** The scale behind the number, so 3 or 6 months is never a bare figure (Hieu, 2026-10-28). */
@@ -195,18 +198,30 @@ export function buildPartAnswer({ b, vi, part, walletUsd }: { b: Balance; vi: bo
     if (amount < 1) {
       return vi ? `Crypto: ${mine}, ${toGo}. Ví này chưa có USDC để mua, hãy thêm USDC vào ví rồi nói với mình nhé.` : `Crypto: ${mine}, ${toGo}. The wallet does not have USDC to spend yet, so add some and tell me.` // lang-ok
     }
+    // Spread over DCA_MONTHS equal monthly buys unless the amount is too small to split.
+    const slice = Math.floor(amount / DCA_MONTHS)
+    if (slice < 1) {
+      return vi
+        ? `cirBTC là Bitcoin bạn có thể mua và giữ ngay trong app. Crypto: ${mine}, ${toGo}. Mình chuẩn bị một lệnh mua cirBTC **${fmt(amount)}** từ ví để bạn ký nhé?` // lang-ok
+        : `cirBTC is Bitcoin you can buy and hold in this app. Crypto: ${mine}, ${toGo}. Shall I prepare a cirBTC buy of **${fmt(amount)}** from your wallet for you to sign?`
+    }
     return vi
-      ? `cirBTC là Bitcoin bạn có thể mua và giữ ngay trong app. Crypto: ${mine}, ${toGo}. Mình chuẩn bị một lệnh mua cirBTC **${fmt(amount)}** từ ví để bạn ký nhé?` // lang-ok
-      : `cirBTC is Bitcoin you can buy and hold in this app. Crypto: ${mine}, ${toGo}. Shall I prepare a cirBTC buy of **${fmt(amount)}** from your wallet for you to sign?`
+      ? `cirBTC là Bitcoin bạn có thể mua và giữ ngay trong app. Crypto: ${mine}, ${toGo}. Không ai biết đâu là đỉnh hay đáy, nên nếu bạn không theo dõi chart thì chia nhỏ ra mua đều mỗi tháng (DCA) an toàn hơn mua một lần: khoảng **${fmt(slice)}** mỗi tháng trong ${DCA_MONTHS} tháng, dựa vào đà tăng dài hạn chứ không đoán thời điểm. Mình chuẩn bị lần mua đầu **${fmt(slice)}** để bạn ký nhé? Nếu muốn mua một lần cả **${fmt(amount)}** thì cứ nói.` // lang-ok
+      : `cirBTC is Bitcoin you can buy and hold in this app. Crypto: ${mine}, ${toGo}. Nobody knows where the top or the bottom is, so unless you trade by the charts, spreading it into equal monthly buys (DCA) is safer than one big buy: about **${fmt(slice)}** a month for ${DCA_MONTHS} months, riding the long-term growth instead of guessing the moment. Shall I prepare the first buy of **${fmt(slice)}** for you to sign? If you prefer all **${fmt(amount)}** at once, just say so.`
   }
   if (part === 'safe') {
     return vi
       ? `Safety nằm ngoài app, trong tiết kiệm ngân hàng hoặc earn linh hoạt. ${mine}, ${toGo}. Khi đã chuyển tiền, hãy nói với mình (ví dụ "I put 400 in my bank") để mình ghi lại.` // lang-ok
       : `Safety lives outside the app, in bank savings or flexible earn. ${mine}, ${toGo}. When you have moved the money, tell me (for example "I put 400 in my bank") and I will record it.`
   }
+  const tSlice = Math.floor(row.left / DCA_MONTHS)
+  const spread = tSlice >= 1
+    ? (vi ? ` Không ai biết đâu là đỉnh hay đáy, nên nếu bạn không theo dõi chart thì chia ra mua đều mỗi tháng (DCA), khoảng **${fmt(tSlice)}** mỗi tháng trong ${DCA_MONTHS} tháng, an toàn hơn mua một lần.` // lang-ok
+      : ` Nobody knows where the top or the bottom is, so unless you trade by the charts, equal monthly buys (DCA), about **${fmt(tSlice)}** a month for ${DCA_MONTHS} months, are safer than one big buy.`)
+    : ''
   return vi
-    ? `Traditional cũng nằm ngoài app: cổ phiếu hoặc quỹ chỉ số (ví dụ VOO) và vàng, qua nhà môi giới của bạn. ${mine}, ${toGo}. Khi đã mua, hãy nói với mình để mình ghi lại.` // lang-ok
-    : `Traditional lives outside the app too: stocks or index funds (for example VOO) and gold, through your broker. ${mine}, ${toGo}. When you have bought, tell me and I will record it.`
+    ? `Traditional cũng nằm ngoài app: cổ phiếu hoặc quỹ chỉ số (ví dụ VOO) và vàng, qua nhà môi giới của bạn. ${mine}, ${toGo}.${spread} Khi đã mua, hãy nói với mình để mình ghi lại.` // lang-ok
+    : `Traditional lives outside the app too: stocks or index funds (for example VOO) and gold, through your broker. ${mine}, ${toGo}.${spread} When you have bought, tell me and I will record it.`
 }
 
 /** After the user signs the emergency-fund deposit, or confirms a saved amount: where things stand, then only the parts with room. */
