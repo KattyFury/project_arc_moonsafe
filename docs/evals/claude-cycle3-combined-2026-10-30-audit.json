@@ -1,0 +1,12 @@
+{
+  "run": "claude-cycle3-combined-2026-10-30",
+  "commit": "23a541b40392d5a938a78574345b429bce88cfe4",
+  "used": 887311,
+  "cap": 1000000,
+  "checks": 66,
+  "passed": 66,
+  "failed": [],
+  "modelCalls": 93,
+  "completeTurns": 42,
+  "costUsd": 0.106276415
+}

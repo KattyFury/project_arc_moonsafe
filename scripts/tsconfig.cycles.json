@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.claude-reeval.json",
+  "include": [
+    "../functions/api/chat.ts",
+    "chat-typecheck.d.ts",
+    "cycle-audit.ts",
+    "cycle-report.ts",
+    "cycle-fresh-cases.ts",
+    "claude-reeval.ts",
+    "claude-eval-summary.ts"
+  ]
+}

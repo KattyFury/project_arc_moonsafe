@@ -32,7 +32,7 @@ const summary = {
   comparisonLimit: run.comparisonLimit,
 }
 writeFileSync(dir+label+'-summary.json',JSON.stringify(summary,null,2))
-let md='# Claude synthetic conversation traces — 2026-10-29\n\nModel: '+run.model+'. App commit: '+run.commit+'. No confirmation card or transaction was executed. See raw JSON for before/after state.\n'
+let md='# Claude synthetic conversation traces — '+label+'\n\nModel: '+run.model+'. App commit: '+run.commit+'. No confirmation card or transaction was executed. See raw JSON for before/after state.\n'
 for(const t of run.transcript) md+='\n## '+t.case+' — turn '+t.turn+(t.complete?'':' (partial: budget guard)')+'\n\n**User:** '+t.user+'\n\n**Agent:** '+(t.content??'(no final content)')+'\n\nActions: '+JSON.stringify(t.actions)+'\n\nOperations: '+JSON.stringify(t.ops)+'\n'
 writeFileSync(dir+label+'-transcripts.md',md.replace(/[ \t]+$/gm,''))
 console.log(JSON.stringify(summary,null,2))

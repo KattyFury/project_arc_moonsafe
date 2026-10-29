@@ -1,7 +1,7 @@
 {
   "mode": "offline",
   "paidCalls": 0,
-  "mockCalls": 13,
+  "mockCalls": 10,
   "mockedExternal": 5,
   "replay": [
     {
@@ -32,9 +32,40 @@
       "id": "vi-negated-btc",
       "user": "Mình bỏ 60 triệu VND mua Bitcoin, không phải mình có 60 BTC",
       "status": 200,
-      "ops": [],
-      "actions": [],
-      "savedQuantity": [],
+      "ops": [
+        {
+          "op": "add_holding",
+          "holding": {
+            "id": "hwworxq",
+            "type": "btc",
+            "name": "BTC",
+            "symbol": "BTC",
+            "updatedAt": 1793293809780,
+            "rebalanceable": true,
+            "value": 60000000,
+            "currency": "VND",
+            "priceSource": "self"
+          }
+        }
+      ],
+      "actions": [
+        {
+          "type": "intake_form",
+          "keys": [
+            "age",
+            "income",
+            "spending",
+            "stability",
+            "goal",
+            "other",
+            "debt"
+          ],
+          "seen": null
+        }
+      ],
+      "savedQuantity": [
+        null
+      ],
       "failed": false
     },
     {
