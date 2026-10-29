@@ -71,7 +71,7 @@ export function buildPlan({ p, b, shares, cover, vi }: PlanInput): string | null
   const [safe, trad, crypto] = standing
   const toDivide = Math.max(0, b.liquid - toFund - b.goalUsd)
   const [sSafe, sTrad, sCrypto] = shares
-  const line = (x: typeof safe) => `${vi ? 'Bạn có' : 'You have'} ${fmt(x.have)} ${vi ? 'trên' : 'of'} ${fmt(x.target)}; ${x.left > 0.5 ? `${fmt(x.left)} ${vi ? 'nữa để đủ' : 'to go'}` : vi ? 'đã đủ' : 'already full'}.` // lang-ok
+  const line = (x: typeof safe) => `${vi ? 'Bạn có' : 'You have'} ${fmt(x.have)} ${vi ? 'trên' : 'of'} ${fmt(x.target)}; ${!x.full ? `${fmt(x.left)} ${vi ? 'nữa để đủ' : 'to go'}` : vi ? 'đã đủ' : 'already full'}.` // lang-ok
   const est = b.ageIsDefault ? (vi ? ' (ước tính theo tuổi mặc định 30)' : ' (an estimate: the default age of 30 is used)') : '' // lang-ok
   const vault = b.fundUsd ?? 0
   const fundNow = vault >= b.fund.floorUsd - 0.005
@@ -133,7 +133,7 @@ export function buildStanding({ p, b, vi }: { p: FinancialProfile; b: Balance; v
     ? (vi ? `**Quỹ dự phòng:** ${fmt(vault)} trên ${fmt(b.fund.floorUsd)} (${b.fund.floorMonths} tháng chi tiêu)${vault >= b.fund.floorUsd - 0.005 ? ', đã đủ' : `, còn ${fmt(b.fund.floorUsd - vault)}`}.` : `**Emergency fund:** ${fmt(vault)} of ${fmt(b.fund.floorUsd)} (${b.fund.floorMonths} months of spending)${vault >= b.fund.floorUsd - 0.005 ? ', full' : `, ${fmt(b.fund.floorUsd - vault)} to go`}.`) // lang-ok
     : (vi ? `**Quỹ dự phòng:** ${fmt(vault)}; hãy cho mình biết chi tiêu hằng tháng để tính mức cần có.` : `**Emergency fund:** ${fmt(vault)}; tell me your monthly spending to work out how much it should be.`) // lang-ok
   const bank = p.holdings.filter(h => h.value !== undefined && ['savings', 'term_deposit', 'checking'].includes(h.type)).map(h => `${h.name} ${fmt(h.value!)}`)
-  const row = (x: typeof safe, detail?: string) => `**${x.name}:** ${fmt(x.have)} ${vi ? 'trên' : 'of'} ${fmt(x.target)}${x.left > 0.5 ? `, ${fmt(x.left)} ${vi ? 'nữa' : 'to go'}` : vi ? ', đã đủ' : ', full'}${detail ? ` (${detail})` : ''}.` // lang-ok
+  const row = (x: typeof safe, detail?: string) => `**${x.name}:** ${fmt(x.have)} ${vi ? 'trên' : 'of'} ${fmt(x.target)}${!x.full ? `, ${fmt(x.left)} ${vi ? 'nữa' : 'to go'}` : vi ? ', đã đủ' : ', full'}${detail ? ` (${detail})` : ''}.` // lang-ok
   const safeDetail = [bank.length ? bank.join(', ') : null, safe.goal ? (vi ? `gồm mục tiêu ${fmt(safe.goal)} + ${fmt(safe.rest ?? 0)}` : `target = goal ${fmt(safe.goal)} + ${fmt(safe.rest ?? 0)}`) : null].filter(Boolean).join('; ') // lang-ok
   return [fundLine, row(safe, safeDetail || undefined), row(trad), row(crypto)].join('\n')
 }
@@ -149,7 +149,7 @@ export type Part = 'safe' | 'traditional' | 'crypto'
 
 /** The question that follows the plan: only the parts that still have room, each with "X of Y". Never a purchase. */
 export function pickQuestion(standing: Standing[], vi: boolean): string {
-  const open = standing.filter(x => x.left > 0.5)
+  const open = standing.filter(x => !x.full)
   const names = (xs: string[]) => xs.length > 1 ? `${xs.slice(0, -1).join(', ')} ${vi ? 'hay' : 'or'} ${xs[xs.length - 1]}` : xs[0] // lang-ok
   const tag = (x: Standing) => `${x.name} (${fmt(x.have)} ${vi ? 'trên' : 'of'} ${fmt(x.target)})` // lang-ok
   if (open.length === 0) return vi ? 'Cả ba phần đã đạt mục tiêu. Số tiền mới bạn thêm vào có thể theo cùng tỷ lệ này.' : 'All three parts are at their targets. Any new money you add can follow the same split.' // lang-ok
@@ -187,15 +187,17 @@ export function buildPartAnswer({ b, vi, part, walletUsd }: { b: Balance; vi: bo
   const row = standing?.find(x => x.key === part)
   if (!standing || !row) return null
   const mine = `${vi ? 'Bạn có' : 'You have'} ${fmt(row.have)} ${vi ? 'trên' : 'of'} ${fmt(row.target)}` // lang-ok
-  if (row.left <= 0.5) {
+  if (row.full) {
     return vi ? `Phần ${row.name} đã đủ: ${mine}. ${pickQuestion(standing, vi)}` : `${row.name} is already full: ${mine}. ${pickQuestion(standing, vi)}` // lang-ok
   }
   const toGo = `${fmt(row.left)} ${vi ? 'nữa để đủ' : 'to go'}` // lang-ok
   if (part === 'crypto') {
     if (!b.lock.open) return `${b.lock.text}`
-    const spend = Math.floor(Math.max(0, walletUsd - 0.02))
-    const amount = Math.min(Math.floor(row.left), spend)
-    if (amount < 1) {
+    // In cents, not whole USDC: small plans (a target under 1 USDC) are real too (real chat 2026-10-29).
+    const cents = (n: number) => Math.floor(n * 100) / 100
+    const spend = cents(Math.max(0, walletUsd - 0.02))
+    const amount = Math.min(cents(row.left), spend)
+    if (amount < 0.01) {
       return vi ? `Crypto: ${mine}, ${toGo}. Ví này chưa có USDC để mua, hãy thêm USDC vào ví rồi nói với mình nhé.` : `Crypto: ${mine}, ${toGo}. The wallet does not have USDC to spend yet, so add some and tell me.` // lang-ok
     }
     // Spread over DCA_MONTHS equal monthly buys unless the amount is too small to split.
@@ -237,6 +239,6 @@ export function buildAfterSign({ b, vi, kind, summary }: { b: Balance; vi: boole
       : `Your emergency fund is now ${fmt(vault)} of ${fmt(b.fund.floorUsd)} (${b.fund.floorMonths} months of spending): full. ${pickQuestion(standing, vi)}`
   }
   const touched = /\(Safety\)/i.test(summary ?? '') ? standing[0] : /Traditional/i.test(summary ?? '') ? standing[1] : /Crypto/i.test(summary ?? '') ? standing[2] : null
-  const status = touched ? ` ${touched.name} ${vi ? 'giờ là' : 'is now'} ${fmt(touched.have)} ${vi ? 'trên' : 'of'} ${fmt(touched.target)}${touched.left > 0.5 ? `, ${fmt(touched.left)} ${vi ? 'nữa để đủ' : 'to go'}` : (vi ? ': đã đủ' : ': full')}.` : '' // lang-ok
+  const status = touched ? ` ${touched.name} ${vi ? 'giờ là' : 'is now'} ${fmt(touched.have)} ${vi ? 'trên' : 'of'} ${fmt(touched.target)}${!touched.full ? `, ${fmt(touched.left)} ${vi ? 'nữa để đủ' : 'to go'}` : (vi ? ': đã đủ' : ': full')}.` : '' // lang-ok
   return `${vi ? 'Đã lưu.' : 'Saved.'}${status} ${pickQuestion(standing, vi)}` // lang-ok
 }

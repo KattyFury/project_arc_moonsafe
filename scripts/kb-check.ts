@@ -464,14 +464,32 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   ]
   for (const [text, prev, want] of cases) if (detectPartChoice(text, prev) !== want) fail(`part choice: "${text}" after "${prev.slice(0, 24)}…" should be ${want}`)
   const rows = [
-    { key: 'safe' as const, name: 'Safety' as const, share: 21, have: 1000, target: 840, left: 0 },
-    { key: 'traditional' as const, name: 'Traditional' as const, share: 45, have: 2000, target: 1800, left: 0 },
-    { key: 'crypto' as const, name: 'Crypto' as const, share: 34, have: 0, target: 1354, left: 1354 },
+    { key: 'safe' as const, name: 'Safety' as const, share: 21, have: 1000, target: 840, left: 0, full: true },
+    { key: 'traditional' as const, name: 'Traditional' as const, share: 45, have: 2000, target: 1800, left: 0, full: true },
+    { key: 'crypto' as const, name: 'Crypto' as const, share: 34, have: 0, target: 1354, left: 1354, full: false },
   ]
   if (!/^Only Crypto \(0 USDC of 1,354 USDC\) still has room/.test(pickQuestion(rows, false))) fail('pick: only the part with room is named')
   if (/Safety|Traditional/.test(pickQuestion(rows, false))) fail('pick: full parts are never named')
-  if (!/All three parts are at their targets/.test(pickQuestion(rows.map(r => ({ ...r, left: 0 })), false))) fail('pick: all full')
-  if (!/Which part would you like to fill first: Safety \(300 USDC of 840 USDC\) or Crypto/.test(pickQuestion([{ ...rows[0], have: 300, left: 540 }, rows[1], rows[2]], false))) fail('pick: two parts with room, each as "X of Y"')
+  if (!/All three parts are at their targets/.test(pickQuestion(rows.map(r => ({ ...r, left: 0, full: true })), false))) fail('pick: all full')
+  if (!/Which part would you like to fill first: Safety \(300 USDC of 840 USDC\) or Crypto/.test(pickQuestion([{ ...rows[0], have: 300, left: 540, full: false }, rows[1], rows[2]], false))) fail('pick: two parts with room, each as "X of Y"')
+}
+
+// 12. Small plans (real chat 2026-10-29): Crypto 0 of 0.43 USDC was called "full" because "full" meant "less than 0.5 USDC left".
+{
+  const { buildPartAnswer, pickQuestion } = await import('../functions/_lib/plan')
+  const { bucketStanding } = await import('../src/lib/allocation')
+  const p = normalizeProfile({ v: 2, age: 21, incomeStable: true, dependents: 1, debtsComplete: true, noNearGoal: true,
+    incomes: [{ id: 'i', name: 'Salary', monthly: 0.2, currency: 'USDC', kind: 'active' }],
+    expenses: [{ id: 'e', name: 'Spending', monthly: 0.1, currency: 'USDC', kind: 'fixed' }],
+    holdings: [
+      { id: 'a', type: 'savings', name: 'Bank', value: 0.5, currency: 'USDC', priceSource: 'self', rebalanceable: true },
+      { id: 'b', type: 'fund_bond', name: 'Stocks', value: 0.5, currency: 'USDC', priceSource: 'self', rebalanceable: true },
+    ] })
+  const b = computeBalance({ profile: p, walletUsd: 5, vaultUsd: 0.6, cirBtcUsd: 0, prices: { goldUsdPerOz: null, usd: {} }, vndPerUsd: 25000 })
+  const crypto = bucketStanding(b)?.find(x => x.key === 'crypto')
+  if (!crypto || crypto.full || crypto.target >= 0.5) fail(`small plan: Crypto 0 of a target under 0.5 USDC must not be full (got ${JSON.stringify(crypto)})`)
+  if (!/prepare a cirBTC buy of \*\*0\.\d+ USDC\*\*/.test(buildPartAnswer({ b, vi: false, part: 'crypto', walletUsd: 5 }) ?? '')) fail('small plan: the cirBTC offer is in cents, not "the wallet has no USDC"')
+  if (/All three parts are at their targets/.test(pickQuestion(bucketStanding(b) ?? [], false))) fail('small plan: Crypto with room is not "all full"')
 }
 
 console.log(fails ? `\n${fails} problem(s).` : `\nKB OK: ${KB.patterns.length} patterns, ${personas.length} personas + ${reals.length} real profiles, formula matches the spec table.`)

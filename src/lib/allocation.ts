@@ -310,6 +310,8 @@ export interface Standing {
   target: number
   /** target - have, never below 0. */
   left: number
+  /** At its target: less than 1% of it left (at most 0.5 USDC of rounding). A part with a target and nothing in it is never full. */
+  full: boolean
   /** Safety only: the near-term goal inside the target, and the share of the rest on top of it. */
   goal?: number
   rest?: number
@@ -329,7 +331,8 @@ export function bucketStanding(b: Balance, leaving = 0): Standing[] | null {
   const part = (key: Standing['key'], name: Standing['name'], share: number, have: number, extra = 0): Standing => {
     const rest = toDivide * share / 100
     const target = rest + extra
-    return { key, name, share, have, target, left: Math.max(0, target - have), ...(extra > 0 ? { goal: extra, rest } : {}) }
+    const left = Math.max(0, target - have)
+    return { key, name, share, have, target, left, full: left <= Math.min(0.5, target * 0.01), ...(extra > 0 ? { goal: extra, rest } : {}) }
   }
   return [
     part('safe', 'Safety', t.safe, g.safe, b.goalUsd),
