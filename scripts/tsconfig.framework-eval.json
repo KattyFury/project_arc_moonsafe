@@ -1,0 +1,16 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "../functions/_lib/education.ts",
+    "education-eval.ts",
+    "framework-eval.ts",
+    "framework-eval-audit.ts",
+    "framework-eval-score.ts"
+  ]
+}

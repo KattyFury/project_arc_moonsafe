@@ -1,0 +1,133 @@
+// Real production handler, synthetic state, no fallback provider or wallet execution.
+// bun scripts/framework-eval.ts --live ; --selftest makes zero network calls.
+import assert from 'node:assert/strict'
+import { existsSync, writeFileSync } from 'node:fs'
+import { SignJWT, exportJWK, generateKeyPair } from 'jose'
+import { normalizeProfile, applyOps, readOps } from '../src/lib/profile'
+import { FRAMEWORK_CASES } from './framework-eval-cases'
+
+const CAP = 1_000_000
+const OUT = 'docs/evals/framework-1m-2026-10-29.json'
+const live = process.argv.includes('--live')
+const reserve = (body: Record<string, unknown>) => Buffer.byteLength(JSON.stringify(body), 'utf8') + Number(body.max_completion_tokens ?? 1500) + 4096
+if (process.argv.includes('--selftest')) {
+  assert.ok(reserve({ messages: [{ content: 'Xin chào' }], max_completion_tokens: 1200 }) > 1200)
+  assert.ok(999_999 + reserve({}) > CAP)
+  assert.equal(FRAMEWORK_CASES.length, 22)
+  console.log('Budget reservation / synthetic dataset selftest passed; no network.')
+  process.exit(0)
+}
+if (!live) throw new Error('Use --live to authorize paid requests, or --selftest for no network.')
+if (existsSync(OUT)) throw new Error('Result already exists. Do not overwrite or restart paid runs silently.')
+const key = process.env.OPENAI_API_KEY
+if (!key) throw new Error('OPENAI_API_KEY missing. Set it through desktop secrets; never paste into a command.')
+const { publicKey, privateKey } = await generateKeyPair('ES256')
+const jwk = { ...(await exportJWK(publicKey)), kid: 'framework-eval', alg: 'ES256', use: 'sig' }
+const token = await new SignJWT({}).setProtectedHeader({ alg: 'ES256', kid: jwk.kid })
+  .setIssuer('privy.io').setAudience('cmvhlli8900mk0gjmwdeypxh2').setSubject('did:privy:framework-eval')
+  .setIssuedAt().setExpirationTime('12h').sign(privateKey)
+const realFetch = globalThis.fetch
+const report = {
+  commit: '88ec416512af87e79a66f91b0e52f8f16b3d4a64', model: 'gpt-5.4-mini', cap: CAP,
+  started: new Date().toISOString(), ended: '', input: 0, output: 0, cached: 0, calls: 0,
+  conservativeUnknownUsage: 0, stopped: '',
+  fixture: { vndPerUsd: 25000, walletUsdc: 50, vaultUsdc: 0, hasVault: true, prices: 'unavailable' },
+  apiCalls: [] as Array<Record<string, unknown>>, transcript: [] as Array<Record<string, unknown>>,
+}
+const checkpoint = () => writeFileSync(OUT, JSON.stringify(report, null, 2))
+let activeCase = '', activeTurn = 0
+let halted = false
+const used = () => report.input + report.output + report.conservativeUnknownUsage
+globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+  const u = String(url)
+  if (u.includes('auth.privy.io')) return Response.json({ keys: [jwk] })
+  if (u === 'https://api.openai.com/v1/chat/completions') {
+    const body = JSON.parse(String(init?.body))
+    const hold = reserve(body)
+    if (halted || used() + hold > CAP) {
+      halted = true
+      report.stopped ||= 'budget-reservation'
+      checkpoint()
+      return Response.json({ error: 'Evaluation budget guard: no dispatch' }, { status: 400 })
+    }
+    if (body.model !== report.model) throw new Error('Unexpected model; no dispatch.')
+    const start = Date.now()
+    report.calls++
+    try {
+      const res = await realFetch(url, { ...init, signal: AbortSignal.timeout(90_000) })
+      const data = await res.clone().json().catch(() => ({}))
+      const usage = data.usage
+      if (usage && typeof usage.prompt_tokens === 'number' && typeof usage.completion_tokens === 'number') {
+        report.input += usage.prompt_tokens
+        report.output += usage.completion_tokens
+        report.cached += usage.prompt_tokens_details?.cached_tokens ?? 0
+      } else if (res.ok) {
+        report.conservativeUnknownUsage += hold
+        halted = true
+        report.stopped = 'missing-usage'
+      }
+      report.apiCalls.push({ case: activeCase, turn: activeTurn, status: res.status, ms: Date.now() - start,
+        phase: body.tool_choice === 'required' ? 'planner' : 'reply', usage,
+        tools: data.choices?.[0]?.message?.tool_calls?.map((t: { function: unknown }) => t.function) ?? [],
+        finish: data.choices?.[0]?.finish_reason,
+      })
+      if (!res.ok) { halted = true; report.stopped = `provider-http-${res.status}` }
+      checkpoint()
+      // Never return provider error text (which could contain sensitive request data).
+      return res.ok ? res : Response.json({ error: 'Evaluation provider error; stopping' }, { status: 400 })
+    } catch {
+      report.conservativeUnknownUsage += hold
+      halted = true
+      report.stopped = 'network-error-usage-unknown'
+      checkpoint()
+      return Response.json({ error: 'Evaluation network error; stopping' }, { status: 400 })
+    }
+  }
+  // No real FX, pricing, fallback, transaction or other service calls during this eval.
+  if (/open\.er-api\.com/.test(u)) return Response.json({ result: 'success', rates: { VND: 25000 } })
+  return Response.json({ usd: {}, goldUsdPerOz: null })
+}) as typeof fetch
+;(globalThis as { caches?: unknown }).caches = { default: { match: async () => undefined, put: async () => undefined } }
+const store = new Map<string, string>()
+const env = { OPENAI_API_KEY: key, USERDATA: { get: async (k: string) => store.get(k) ?? null, put: async (k: string, v: string) => { store.set(k, v) } },
+  FREE_TURNS_PER_DAY: '10000', USER_DAILY_TOKEN_BUDGET: String(CAP), DAILY_TOKEN_BUDGET: String(CAP) }
+const handlerPath = '../functions/api/chat'
+const { onRequestPost } = await import(handlerPath) as { onRequestPost: (ctx: { env: typeof env; request: Request }) => Promise<Response> }
+console.log('Credential available; value hidden. Starting capped live evaluation.')
+checkpoint()
+try {
+  for (const scenario of FRAMEWORK_CASES) {
+    if (halted) break
+    activeCase = scenario.id
+    let profile = normalizeProfile({ v: 2 })
+    const history: Array<{ role: string; content: string }> = []
+    for (const [i, user] of scenario.lines.entries()) {
+      if (halted) break
+      activeTurn = i + 1
+      const start = Date.now(), before = used(), callsBefore = report.calls
+      const beforeProfile = profile
+      history.push({ role: 'user', content: user })
+      const res = await onRequestPost({ env, request: new Request('http://localhost/api/chat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ messages: history.slice(-30), context: { profile, walletUsdc: 50, vaultUsdc: 0, cirBtcUsdc: 0, hasVault: true }, debug: true }),
+      }) })
+      const data = await res.json() as { content?: string; ops?: unknown[]; actions?: unknown[] }
+      profile = applyOps(profile, readOps(data.ops ?? []))
+      history.push({ role: 'assistant', content: data.content ?? '' })
+      report.transcript.push({ case: scenario.id, category: scenario.category, turn: activeTurn, user, status: res.status,
+        content: data.content, ops: data.ops ?? [], actions: data.actions ?? [], beforeProfile, profile,
+        tokens: used() - before, calls: report.calls - callsBefore, ms: Date.now() - start, complete: !halted && res.status === 200,
+      })
+      if (res.status !== 200) { halted = true; report.stopped ||= `handler-http-${res.status}` }
+      checkpoint()
+      console.log(`${scenario.id} ${activeTurn}/${scenario.lines.length}: status ${res.status}, calls ${report.calls - callsBefore}, total ${used()}/${CAP}`)
+    }
+  }
+  report.stopped ||= 'dataset-complete'
+} finally {
+  globalThis.fetch = realFetch
+  report.ended = new Date().toISOString()
+  checkpoint()
+}
+assert.ok(used() <= CAP, 'Token budget exceeded')
+console.log(JSON.stringify({ stopped: report.stopped, turns: report.transcript.length, calls: report.calls, input: report.input, output: report.output, cached: report.cached, unknown: report.conservativeUnknownUsage }))
