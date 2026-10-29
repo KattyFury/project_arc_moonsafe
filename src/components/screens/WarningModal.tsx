@@ -1,13 +1,18 @@
 // "Before you start" (spec 8.4): the three points from the KB, the only place besides the order
 // cards where the disclaimer lives (never repeated in chat). Testnet note kept under them.
 
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, Mail } from 'lucide-react'
+import { usePrivy } from '@privy-io/react-auth'
 import { KB } from '@/kb/kb'
 import { IS_MAINNET } from '@/lib/network'
 
 interface WarningModalProps { onAcknowledge: () => void }
 
 export function WarningModal({ onAcknowledge }: WarningModalProps) {
+  // Every account needs an email (2026-10-29): wallet-only logins add one here, before anything else. It is where MoonSafe
+  // will warn about vault recovery requests. Google logins already carry an email.
+  const { user, linkEmail } = usePrivy()
+  const hasEmail = Boolean(user?.email?.address ?? user?.google?.email)
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center px-4"
@@ -42,10 +47,30 @@ export function WarningModal({ onAcknowledge }: WarningModalProps) {
         </ul>
         <p className="text-[14px] leading-5 -mt-2" style={{ color:'var(--muted)' }}>{IS_MAINNET ? 'This version runs on Arc mainnet with real USDC and cirBTC. You sign every transaction in your own wallet, and a signed transaction cannot be undone.' : 'Test version on Arc Testnet: USDC and cirBTC here are test tokens with no real value. You sign every transaction in your own wallet.'}</p>
 
+        {!hasEmail && (
+          <div className="flex flex-col gap-2 p-4" style={{ background:'var(--surface-muted)', borderRadius:16 }}>
+            <div className="flex items-center gap-2">
+              <Mail size={20} style={{ color:'var(--accent)' }} />
+              <p className="font-semibold text-[16px] leading-6" style={{ color:'var(--ink)' }}>Add your email</p>
+            </div>
+            <p className="text-[14px] leading-5" style={{ color:'var(--subtle)' }}>
+              A wallet alone can be lost or stolen. Your email is how MoonSafe warns you about important changes to your vault.
+            </p>
+            <button
+              onClick={() => { linkEmail() }}
+              className="w-full h-12 rounded-2xl font-semibold text-[16px] leading-6"
+              style={{ background:'white', color:'var(--accent)', border:'1px solid var(--accent)' }}
+            >
+              Add email
+            </button>
+          </div>
+        )}
+
         <button
           onClick={onAcknowledge}
-          className="w-full h-12 rounded-2xl font-semibold text-[16px] leading-6 text-white"
-          style={{ background:'var(--accent)' }}
+          disabled={!hasEmail}
+          className="w-full h-12 rounded-2xl font-semibold text-[16px] leading-6"
+          style={hasEmail ? { background:'var(--accent)', color:'white' } : { background:'var(--surface-muted)', color:'var(--muted)', cursor:'not-allowed' }}
         >
           I understand
         </button>
