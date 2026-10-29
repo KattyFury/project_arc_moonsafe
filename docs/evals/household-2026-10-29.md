@@ -6,6 +6,7 @@ Continuation of review branch `codex/finance-coach-depth` / PR #30, based on `de
 
 - Optional persisted `planningScope` in the existing v2 financial profile. Existing profiles and amounts remain intact; no schema reset or new database.
 - The existing six-card intake offers **Just me / Household**. Household labels cover combined salary, shared spending, income stability, dependents and one vs multiple earners. The age field explicitly uses the profile holder's age.
+- A clear current first-person marriage disclosure defaults an unset scope to household. A saved individual preference wins; questions, quoted examples and hypotheticals do not switch scope. Existing personal amounts need confirmation before being treated as complete family totals.
 - A short explicit scope command is handled after authentication/quota checks, without model/FX calls. A question about combining finances does not select a scope or force intake.
 - Planner/reply context and deterministic plan/status text retain household scope after history is shortened. The scope survives profile normalization and normal profile synchronization.
 - A spouse's salary no longer falls through to updating the single generic legacy `Income` line. Combined totals and their component incomes of the same kind cannot silently coexist. Primary salary corrections to a legacy line remain supported; an explicitly additional side job can remain additional.
@@ -16,7 +17,7 @@ See [the framework working contract](../AGENT-FRAMEWORK.md) for the preserved de
 
 ## Tests and manual verification
 
-- `bun run eval:education`: **225 offline checks pass**, including the previous education/coaching tests and new household persistence, totals, form, explicit scope, age/dependent attribution and deliberately incorrect planner calls.
+- `bun run eval:education`: **252 offline checks pass**, including the previous education/coaching tests and new household persistence, totals, form, explicit scope, age/dependent attribution and deliberately incorrect planner calls.
 - `bun run flow` and `bun scripts/kb-check.ts`: existing flow, formula, floor, debt and lock regressions pass.
 - `bun run typecheck:education`: passes for the statically imported knowledge/coaching/household and eval code.
 - Changed-file lint: no errors; existing unused-plan-variable and ChatScreen effect warnings remain. `node scripts/check-lang.mjs` passes.

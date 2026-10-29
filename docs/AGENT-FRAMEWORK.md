@@ -24,11 +24,11 @@ Help users understand their money, build resilience and make their own decisions
 
 ## Individual and household basis
 
-The profile has an optional `planningScope`: `individual` or `household`. Older profiles continue as individual plans. This is one active dataset, not two separate profiles or a shared login.
+The profile has an optional `planningScope`: `individual` or `household`. Older profiles keep their entries and remain individual until a clear current marriage disclosure defaults an unset scope to household. A saved individual choice is respected. This is one active dataset, not two separate profiles or a shared login.
 
 Household scope uses the included family income, spending, assets and debts once. Partners may enter one combined monthly salary in the intake form or declare distinct salary sources in chat. Do not count a combined total alongside its components. Transfers within the household do not create new earnings.
 
-Marriage alone does not select household scope. Questions about household planning do not mutate the profile. Scope is selected on the form or with explicit commands such as `Plan for my household`, `Plan for me`, or `Lập kế hoạch cho gia đình`. Switching keeps existing entries; users must review which entries belong in the chosen budget. Never silently import a spouse's money, clear debts or merge records.
+A clear first-person current marriage disclosure (including a statement about their wife/husband) defaults an unset scope to household. Questions, hypothetical or quoted examples and third-person stories do not select scope. No partner amounts, dependents or income stability are inferred. Existing personal figures must be confirmed as household totals before treating the family plan as complete. A saved individual preference prevents automatic switching. Scope can also be selected on the form or with explicit commands such as `Plan for my household`, `Plan for me`, or `Lập kế hoạch cho gia đình`. Switching keeps existing entries; users must review which entries belong in the chosen budget. Never silently import a spouse's money, clear debts or merge records.
 
 Use the profile holder's age for the unchanged reference allocation and make that basis visible. A partner's stated age must not replace it. A working spouse is not automatically a dependent. Several income sources do not prove several earners. Household stability concerns the dependable combined income, not the mere existence of one salary. The form asks for dependents and whether only one person earns; otherwise leave unknown facts unknown.
 

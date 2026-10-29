@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { dependentEvidence, incomeUpdate, profileAgeAllowed, scopeBrief, scopeChoice, scopeQuestion } from '../src/lib/planningScope'
+import { dependentEvidence, householdDefault, incomeUpdate, profileAgeAllowed, scopeBrief, scopeChoice, scopeQuestion } from '../src/lib/planningScope'
 import { normalizeProfile, applyOps, readOps } from '../src/lib/profile'
 import { EMPTY_FORM, formToItems } from '../src/lib/intakeForm'
 import { computeBalance } from '../src/lib/allocation'
@@ -8,6 +8,16 @@ import type { Income } from '../src/types'
 
 export function householdChecks(): number {
   let checks = 0
+  for (const text of ['I am married', "I'm married", 'My wife earns $1500', 'Mình đã có gia đình', 'Vợ mình lương 15 triệu']) { // lang-ok
+    assert.equal(householdDefault(undefined, text), true, text)
+    assert.equal(householdDefault('individual', text), false, text)
+    assert.equal(householdDefault('household', text), false, text)
+    checks += 3
+  }
+  for (const text of ['I am not married', 'My friend is married', 'If I am married', 'My ex-wife earns $1500', 'Can my wife join?', '"I am married"', 'Mình chưa kết hôn', 'Ví dụ vợ mình lương 15 triệu']) { // lang-ok
+    assert.equal(householdDefault(undefined, text), false, text)
+    checks++
+  }
   assert.equal(profileAgeAllowed('My wife is 28 years old', 28), false)
   assert.equal(profileAgeAllowed("I am 34 and my wife is 28", 34), true)
   assert.equal(profileAgeAllowed("I am 34 and my wife is 28", 28), false)

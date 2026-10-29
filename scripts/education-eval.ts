@@ -172,6 +172,14 @@ try {
     const two = applyOps(incomeProfile, readOps(added.data.ops))
     assert.equal(two.incomes.length, 2)
     assert.equal(two.incomes.find(i => i.id === 'self')?.monthly, 2000)
+    const automatic = await ask('My wife earns $1500 a month', true, [], { profile: { ...incomeProfile, planningScope: undefined } })
+    const autoProfile = applyOps({ ...incomeProfile, planningScope: undefined }, readOps(automatic.data.ops))
+    assert.equal(autoProfile.planningScope, 'household')
+    assert.equal(autoProfile.incomes.length, 2)
+    assert.equal(autoProfile.incomes.find(i => i.id === 'self')?.monthly, 2000)
+    const optedOut = await ask('My wife earns $1500 a month', true, [], { profile: { ...incomeProfile, planningScope: 'individual' } })
+    assert.deepEqual(optedOut.data.ops, [])
+    checks += 4
     forcedTools = [incomeTool('Combined household salary', 3500)]
     const total = await ask('Our combined household salary is $3500 a month', true, [], { profile: two })
     assert.deepEqual(total.data.ops, [], 'Do not count a combined salary alongside two component salaries')

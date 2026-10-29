@@ -19,6 +19,15 @@ export function dependentEvidence(message: string, previous: string): boolean {
   return words.test(message) || (words.test(previous) && /^\s*(?:\d+|yes|no|có|không|ko)\s*[.!]?\s*$/iu.test(message)) // lang-ok
 }
 
+/** Default to a household only on a clear current, first-person family disclosure.
+ * A saved individual scope is an explicit preference and always wins over this default.
+ */
+export function householdDefault(scope: PlanningScope | undefined, text: string): boolean {
+  if (scope !== undefined || /\?|\b(?:if|suppose|imagine|example|hypothetically|divorced|separated|unmarried|ex-wife|ex-husband)\b|nếu|ví dụ|ly hôn|ly thân/iu.test(text)) return false // lang-ok
+  const plain = text.replace(/"[^"\n]*"|“[^”\n]*”/gu, '')
+  return plain.split(/[.!;\n]/u).some(part => /^(?:\s*)(?:i(?: am|['’]m) (?:married|a (?:wife|husband))\b|my (?:wife|husband)\b|(?:mình|tôi|em|anh) (?:đã |đang )?(?:có gia đình|kết hôn)|(?:vợ|chồng) (?:của )?(?:mình|tôi|em|anh)(?:\s|$))/iu.test(part)) // lang-ok
+}
+
 /** Only explicit scope-setting statements change the saved plan; questions do not. */
 export function scopeChoice(text: string): PlanningScope | null {
   const t = text.trim().replace(/[.!]+$/u, '').trim()
@@ -29,8 +38,8 @@ export function scopeChoice(text: string): PlanningScope | null {
 
 export function scopeBrief(scope: PlanningScope | undefined): string {
   return scope === 'household'
-    ? 'Planning scope: HOUSEHOLD. Income and spending describe the shared family budget. Count each income, asset and debt once; partner-to-partner transfers are not extra household income. Use the profile holder\'s age for the unchanged MoonSafe formula, never an average of spouses\' ages. A working spouse is not automatically a dependent. Two income sources do not prove two earners; ask only when needed. Stability refers to the combined dependable income; do not infer it from one salary. Do not assume ownership or permission to spend a partner\'s money. Switching scope never imports, deletes or merges records: review existing entries with the user.'
-    : 'Planning scope: INDIVIDUAL. Do not silently include a partner\'s finances just because the user is married. Discuss household planning if asked; change scope only on an explicit choice. Preserve the existing age-based framework.'
+    ? 'Planning scope: HOUSEHOLD. Income and spending describe the shared family budget. Explain a newly defaulted household basis briefly and allow an individual opt-out. Existing personal entries are not proof of complete household totals; ask whether they cover both partners before treating a plan as complete. Unknown partner amounts remain unknown. Count each income, asset and debt once; partner-to-partner transfers are not extra household income. Use the profile holder\'s age for the unchanged MoonSafe formula, never an average of spouses\' ages. A working spouse is not automatically a dependent. Two income sources do not prove two earners; ask only when needed. Stability refers to the combined dependable income; do not infer it from one salary. Do not assume ownership or permission to spend a partner\'s money. Switching scope never imports, deletes or merges records: review existing entries with the user.'
+    : 'Planning scope: INDIVIDUAL. Respect this personal scope when explicitly chosen. With no saved preference, a clear current marriage disclosure defaults to household planning. Never invent or import a partner\'s amounts. Preserve the existing age-based framework.'
 }
 
 const subject = (name: string): 'partner' | 'combined' | 'self' =>

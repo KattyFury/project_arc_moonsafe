@@ -22,7 +22,7 @@
 import { getPrices } from './prices'
 import { educationAnswer, EDUCATION_POLICY } from '../_lib/education'
 import { coachingBrief, recordingEvidence, COACH_POLICY, ALTCOIN_CHECK } from '../_lib/coaching'
-import { dependentEvidence, incomeUpdate, profileAgeAllowed, scopeBrief, scopeChoice, scopeQuestion } from '../../src/lib/planningScope'
+import { dependentEvidence, householdDefault, incomeUpdate, profileAgeAllowed, scopeBrief, scopeChoice, scopeQuestion } from '../../src/lib/planningScope'
 import { privyUserId } from '../_lib/privyAuth'
 import { addUsage, overBudget, type Meter } from '../_lib/budget'
 import { callModel as openai, DEFAULT_CLAUDE_MODEL, type Keys, type ToolCall } from '../_lib/llm'
@@ -826,6 +826,13 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   let profile = startProfile
   const ops: ProfileOp[] = []
   const readback: string[] = []
+  if (householdDefault(startProfile.planningScope, latest)) {
+    profile = { ...profile, planningScope: 'household' }
+    ops.push({ op: 'update_profile', fields: { planningScope: 'household' } })
+    readback.push(VI_LETTERS.test(latest)
+      ? 'Mình sẽ mặc định tính theo gia đình vì bạn đã chia sẻ về vợ/chồng. Các khoản đang có được giữ nguyên; khoản nào chưa rõ là cá nhân hay cả nhà cần được xác nhận. Bạn vẫn có thể chọn tính riêng.' // lang-ok
+      : 'I will default to a household plan based on what you shared about your marriage. Existing entries stay; we still need to confirm whether they cover you or the household. You can choose an individual plan.')
+  }
   let dcaStop = false
   const actions: Array<Record<string, unknown>> = []
   const done: string[] = []
