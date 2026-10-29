@@ -1,0 +1,23 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "../functions/_lib/education.ts",
+    "education-eval.ts",
+    "framework-eval.ts",
+    "framework-eval-audit.ts",
+    "framework-eval-score.ts",
+    "agent-reeval.ts",
+    "reeval-cases.ts",
+    "reeval-grade.ts",
+    "offline-guard-probes.ts",
+    "offline-negative-replay.ts",
+    "claude-reeval.ts",
+    "claude-eval-summary.ts"
+  ]
+}
