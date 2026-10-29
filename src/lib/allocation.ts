@@ -10,7 +10,7 @@
 
 import { fundFloorMonths, isPriorityDebt, param, targetMix, type MixKey } from '../kb/kb'
 import type { Currency, Debt, FinancialProfile, Holding } from '../types'
-import { BTC_SYMBOLS, categoryOf, priceKindOf, STABLECOINS, subgroupOf } from './profile'
+import { BTC_SYMBOLS, categoryOf, cirBtcHolding, priceKindOf, STABLECOINS, subgroupOf } from './profile'
 
 export type Group = 'safe' | 'traditional' | 'btc' | 'large_cap' | 'altcoin' | 'idle'
 export const GROUPS: Group[] = ['safe', 'traditional', 'btc', 'large_cap', 'altcoin', 'idle']
@@ -174,7 +174,9 @@ export function computeBalance(input: BalanceInput): Balance {
   const unpriced: Holding[] = []
   // The balance SEEN in the connected wallet is not part of the total: people use several wallets, so only what the user
   // declares counts (Hieu, 2026-10-28). The agent reads it to know there is money, and to cap what a card can move.
-  if (input.cirBtcUsd !== null && input.cirBtcUsd > 0) items.push({ label: 'cirBTC', usd: input.cirBtcUsd, group: 'btc', place: 'base' })
+  // cirBTC bought in the app counts at what was paid (a profile holding, see cirBtcBuyOps). Only cirBTC from before that record
+  // existed is still valued onchain at the market price.
+  if (!cirBtcHolding(p) && input.cirBtcUsd !== null && input.cirBtcUsd > 0) items.push({ label: 'cirBTC', usd: input.cirBtcUsd, group: 'btc', place: 'base' })
   if (input.vaultUsd !== null && input.vaultUsd > 0) items.push({ label: 'Emergency fund', usd: input.vaultUsd, group: null, place: 'fund' })
   for (const h of p?.holdings ?? []) {
     const usd = holdingUsd(h, input.prices, rate)
@@ -310,6 +312,8 @@ export interface Standing {
   target: number
   /** target - have, never below 0. */
   left: number
+  /** At its target: less than 1% of it left (at most 0.5 USDC of rounding). A part with a target and nothing in it is never full. */
+  full: boolean
   /** Safety only: the near-term goal inside the target, and the share of the rest on top of it. */
   goal?: number
   rest?: number
@@ -329,7 +333,8 @@ export function bucketStanding(b: Balance, leaving = 0): Standing[] | null {
   const part = (key: Standing['key'], name: Standing['name'], share: number, have: number, extra = 0): Standing => {
     const rest = toDivide * share / 100
     const target = rest + extra
-    return { key, name, share, have, target, left: Math.max(0, target - have), ...(extra > 0 ? { goal: extra, rest } : {}) }
+    const left = Math.max(0, target - have)
+    return { key, name, share, have, target, left, full: left <= Math.min(0.5, target * 0.01), ...(extra > 0 ? { goal: extra, rest } : {}) }
   }
   return [
     part('safe', 'Safety', t.safe, g.safe, b.goalUsd),

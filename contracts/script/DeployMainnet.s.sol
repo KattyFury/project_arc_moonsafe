@@ -6,7 +6,7 @@ import {VaultProxy} from "../VaultProxy.sol";
 import {VaultFactory} from "../VaultFactory.sol";
 
 /// @notice Deploys the vault implementation and the factory on Arc mainnet (chain 5042). YOU run this, from your own machine and
-/// your own wallet; Arc Studio never deploys to mainnet. Read docs/mainnet-plan-2026-10-29.md first.
+/// your own wallet; Arc Studio never deploys to mainnet. Read docs/archive/mainnet-plan-2026-10-29.md first.
 ///
 /// Inputs (environment variables, public values only; the signing key is NEVER passed here, use a keystore or a hardware wallet
 /// with `forge script ... --keystore <file>` / `--ledger`):

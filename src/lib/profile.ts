@@ -234,7 +234,21 @@ export function walletMoveOps(p: FinancialProfile | null, deltaUsd: number, now 
   const cents = (n: number) => Math.round(n * 100) / 100
   if (h) return [{ op: 'set_holding', id: h.id, patch: { value: Math.max(0, cents((h.value ?? 0) + deltaUsd)) } }]
   if (deltaUsd < 0) return []
-  return [{ op: 'add_holding', holding: { id: newId('h'), type: 'stable_wallet', name: 'USDC in this wallet', where: 'app wallet', value: cents(deltaUsd), currency: 'USDC', priceSource: 'self', rebalanceable: defaultRebalanceable('stable_wallet'), updatedAt: now } }]
+  return [{ op: 'add_holding', holding: { id: newId('h'), type: 'stable_wallet', name: 'Stablecoins in this wallet', where: 'app wallet', value: cents(deltaUsd), currency: 'USDC', priceSource: 'self', rebalanceable: defaultRebalanceable('stable_wallet'), updatedAt: now } }]
+}
+
+/** Where the app records the cirBTC it bought: one holding, at the USDC paid (cost), never revalued at the market. */
+export const CIRBTC_WHERE = 'MoonSafe'
+export const cirBtcHolding = (p: FinancialProfile | null): Holding | undefined =>
+  p?.holdings.find(h => h.type === 'btc' && h.where === CIRBTC_WHERE)
+
+/** After a cirBTC buy in the app: add what was paid to the "cirBTC (bought in MoonSafe)" holding. */
+export function cirBtcBuyOps(p: FinancialProfile | null, paidUsd: number, now = Date.now()): ProfileOp[] {
+  if (!p || !Number.isFinite(paidUsd) || paidUsd < 0.005) return []
+  const cents = (n: number) => Math.round(n * 100) / 100
+  const h = cirBtcHolding(p)
+  if (h) return [{ op: 'set_holding', id: h.id, patch: { value: cents((h.value ?? 0) + paidUsd), updatedAt: now } }]
+  return [{ op: 'add_holding', holding: { id: newId('h'), type: 'btc', name: 'cirBTC (bought in MoonSafe)', symbol: 'cirBTC', where: CIRBTC_WHERE, value: cents(paidUsd), currency: 'USDC', priceSource: 'self', rebalanceable: defaultRebalanceable('btc'), updatedAt: now } }]
 }
 
 export type ProfileOp =

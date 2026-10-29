@@ -59,7 +59,11 @@ export function AppShell({ onLogout }: { onLogout: () => void }) {
   // switched to another wallet app): no address, so the vault can never load.
   const noWallet = !address && walletsReady && (wallets.length === 0 || syncTimedOut)
 
-  const go = (t: NavTab) => { setError(null); setTab(t) }
+  // Tabs open step by step (Hieu, 2026-10-29): Balance once the emergency fund is full, Invest once buying is open (fund full, no priority debt).
+  const locked: Partial<Record<NavTab, boolean>> = { balance: !math.fundOk, invest: !math.investUnlocked }
+  const go = (t: NavTab) => { if (locked[t]) return; setError(null); setTab(t) }
+  // A tab that locks again (the fund dropped below its floor) sends the user back to the chat.
+  useEffect(() => { if (locked[tab]) setTab('chat') }, [tab, locked.balance, locked.invest]) // eslint-disable-line react-hooks/exhaustive-deps
   const openChat = () => go('chat')
 
   // "Mở màn …" from the agent. Deposit / withdraw / buy / DCA stay in the chat as cards.
@@ -95,23 +99,12 @@ export function AppShell({ onLogout }: { onLogout: () => void }) {
     )
   }
 
-  if (!vault.vaultAddress) {
-    return (
-      <Column>
-        <SetupHeader onLogout={onLogout} />
-        {vault.readError ? (
-          <div className="flex-1 px-4 py-6 flex flex-col gap-4">
-            <Notice tone="warning" title={`Could not read data from ${NET.name}`}>The network may be slow. The app retries every 15 seconds.</Notice>
-            <Btn variant="outline" onClick={() => { void vault.refresh() }}>Try again</Btn>
-          </div>
-        ) : <VaultSetup />}
-      </Column>
-    )
-  }
+  // No vault yet: straight into the chat. The agent offers the vault once the user has shared their numbers (Hieu, 2026-10-29),
+  // and the Emergency tab shows the opening screen.
 
   return (
     <Column wide>
-      <NavBar active={tab} onChange={go} investLocked={!math.investUnlocked} />
+      <NavBar active={tab} onChange={go} locked={locked} />
 
       {cloud.error && (
         <div className="flex-shrink-0 px-4 py-2 text-[14px] leading-5 text-center" style={{ background: '#FEF5D9', color: '#8A5F00' }}>
@@ -125,7 +118,13 @@ export function AppShell({ onLogout }: { onLogout: () => void }) {
       )}
       <main className="flex-1 overflow-hidden flex flex-col min-h-0">
         {tab === 'chat'    && <ChatScreen onError={setError} onActions={runActions} />}
-        {tab === 'fund'    && <FundScreen onOpenChat={openChat} />}
+        {tab === 'fund'    && (vault.vaultAddress ? <FundScreen onOpenChat={openChat} />
+          : vault.readError ? (
+            <div className="flex-1 px-4 py-6 flex flex-col gap-4">
+              <Notice tone="warning" title={`Could not read data from ${NET.name}`}>The network may be slow. The app retries every 15 seconds.</Notice>
+              <Btn variant="outline" onClick={() => { void vault.refresh() }}>Try again</Btn>
+            </div>
+          ) : <VaultSetup />)}
         {tab === 'invest'  && <InvestScreen onOpenFund={() => go('fund')} onOpenChat={openChat} />}
         {tab === 'balance' && <BalanceSheet onOpenChat={openChat} />}
         {tab === 'menu'    && <SettingsScreen onLogout={onLogout} />}

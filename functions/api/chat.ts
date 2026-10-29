@@ -23,11 +23,12 @@ import { getPrices } from './prices'
 import { privyUserId } from '../_lib/privyAuth'
 import { addUsage, overBudget, type Meter } from '../_lib/budget'
 import { callModel as openai, DEFAULT_CLAUDE_MODEL, type Keys, type ToolCall } from '../_lib/llm'
-import { powerState, takeTurn, type PowerEnv } from '../_lib/quota'
+import { DEFAULT_FREE, powerState, takeTurn, type PowerEnv } from '../_lib/quota'
+import { POWER_PER_PURCHASE } from '../../src/lib/power'
 import { recordStats } from '../_lib/stats'
 import { BATCH_MARK, INTAKE_MIN_UNKNOWN, buildIntake, intakeKeys, unknownBullets } from '../_lib/intake'
 import { getConfig, isBlocked, effectiveEnv } from '../_lib/config'
-import { buildAfterSign, buildPartAnswer, buildPlan, buildStanding, detectPartChoice } from '../_lib/plan'
+import { buildAfterSign, buildPartAnswer, buildPlan, buildStanding, detectPartChoice, openVaultOffer } from '../_lib/plan'
 import { KB, fundFloorMonths, matchPatterns, patternBrief, param } from '../../src/kb/kb'
 import { computeFacts, displayFacts, amountsUsd } from '../../src/kb/facts'
 import { bucketStanding, computeBalance, holdingUsd, priceKey, symbolOf, toUsd, GOLD_UNITS_TO_OZ, GROUP_LABEL, type Balance, type Prices } from '../../src/lib/allocation'
@@ -68,7 +69,7 @@ const json = (body: unknown, status = 200) =>
 const RULES = `## MoonSafe principles
 ${KB.principles.map(p => `- ${p}`).join('\n')}
 ## Framework (by age, only age changes it)
-- Three buckets of the money to divide (liquid assets, minus money for a near-term goal): Safety = age %; the rest 4/7 Traditional (stocks, index funds, gold) and 3/7 Crypto as ONE bucket, mostly BTC (say it in words; no share for other coins, never suggest buying small coins or memecoins). Age 30: Safety 30, Traditional 40, Crypto 30. BTC never goes to 0. Coins they already hold just count in Crypto.
+- Three buckets of the money to divide (liquid assets, minus money for a near-term goal): Safety = age %; the rest split EVENLY between Traditional (stocks, index funds, gold) and Crypto as ONE bucket, mostly BTC (say it in words; no share for other coins, never suggest buying small coins or memecoins). Age 30: Safety 30, Traditional 35, Crypto 35. Why even: if crypto crashes, Traditional can carry them; if stocks and gold fall, crypto can; if both fall, the emergency fund and Safety still stand. It is an objective, balanced suggestion, not a bet on either side: never argue that one deserves more. BTC never goes to 0. Coins they already hold just count in Crypto.
 - Money for a big expense within 5 years (car, wedding, school) stays in Safety, never invested.
 - They said they could not hold through a 50% crypto drop → you may suggest a smaller Crypto part for now (their call); never change the numbers yourself.
 - The emergency fund (USDC in the MoonSafe vault) stands apart. Floor in months of spending (fixed + essential variable + debt payments): 3 stable income; 6 stable with dependents or irregular without; 9 irregular with dependents; 12 if also the sole earner.
@@ -108,6 +109,13 @@ const QUESTIONS_US = /\?|(?<!\p{L})(why|you mean|wrong|how come|sao|tại sao|sa
 // "my mom not using interest on me" was not read as 0% (real chat 2026-10-26).
 const NO_INTEREST = /interest[- ]free|(no|not|never|without|zero|0%?)\s+(\p{L}+\s+){0,3}interest|(doesn'?t|does not|don'?t|do not|won'?t)\s+(\p{L}+\s+){0,2}(charge|take|ask|use)\s+(\p{L}+\s+){0,2}interest|(không|ko|chẳng)\s+(tính\s+|lấy\s+)?lãi/iu // lang-ok
 const DEBT_PAY_NAME = /loan|debt|repay|mortgage|installment|credit card|(?<!\p{L})(mom|dad|mother|father)(?!\p{L})|nợ|trả góp/iu // lang-ok
+// A plain "no" to an offer (real chat 2026-10-29: "no" to the deposit offer got the same offer again). Short answers only, so
+// "no, make it 10" or "no I already have savings" still go through the normal path.
+const SAYS_NO = /^\s*(no+|nope|nah|not (now|yet|today)|maybe later|later|no,? thanks?( you)?|i('?m| am) (good|fine)|i don'?t want( to)?( do (it|that))?|not interested|skip( it)?|không|chưa|thôi|để sau|ko|k)\s*[.!]*\s*$/iu // lang-ok
+const OFFERS_ACTION = /(prepare|set up)[^.?!\n]{0,60}(deposit|card|buy|purchase|withdraw)|open it for you to sign/i
+// Our offer to open the vault (openVaultOffer in plan.ts), and a request to open one in the user's words.
+const OPEN_OFFERED = /open it for you to sign|mở nó để bạn ký/i // lang-ok
+const ASKS_OPEN = /(?<!\p{L})(open|create|set ?up|make|mở|tạo)(?!\p{L})[^.?!\n]{0,30}(vault|emergency fund|quỹ)/iu // lang-ok
 const OFFERS_DEPOSIT = /prepare[^.?!\n]{0,60}(card|deposit)|card to (add|deposit)/i
 const IDLE_AMOUNT = /(\d[\d,.]*\d|\d)\s*USDC\s*(?:of|in)\s*idle|idle money[^.?!\n]{0,30}?(\d[\d,.]*\d|\d)\s*USDC/gi
 const YES_NO = /^\W*(yes|yeah|yep|yup|no|nope|not really|sure|mostly|kind of|có|không|ko|ừ|uh|đúng)(?!\p{L})/iu // lang-ok
@@ -125,7 +133,9 @@ const ACTION_VERB: Record<string, RegExp> = {
 // Questions where the reply must state the target split by age.
 const ASKS_TARGET = /(what (percent|percentage|share)|how much (should|can) i invest|allocat|split|how is my money|bao nhiêu (phần trăm|%)|tỷ lệ|tỉ lệ|phân bổ|chia (tiền|thế nào|sao))/iu // lang-ok
 // "why not invest right away instead of keeping a fund?" asks why; it is not a request to invest.
-const ASKS_WHY = /(?<!\p{L})(why|what for|what is|what are|what does|mean|means|don'?t get|don'?t understand|confused|explain|sao|tại sao|vì sao|làm gì|là gì|nghĩa là|không hiểu)(?!\p{L})/iu // lang-ok
+// "Is it free?", "what does it cost?": answered from the real numbers, never by the model (Hieu, 2026-10-29).
+const ASKS_PRICE = /(?<!\p{L})(is (?:it|this|moonsafe|the (?:app|agent|advisor)) free|free to use|for free|any (?:fees?|costs?|charges?)|what (?:does (?:it|this|moonsafe|the app) cost|are the fees)|how much (?:does|do) (?:it|this|you|moonsafe|the app) cost|do i (?:have to |need to )?pay|pricing|subscription|có mất phí|có tốn phí|miễn phí|phí (?:bao nhiêu|gì)|mất tiền không)(?!\p{L})/iu // lang-ok
+const ASKS_WHY = /(?<!\p{L})(why|what for|what if|how (?:do|should|can) i (?:buy|invest|start)|when (?:should i|to|do i) (?:buy|invest)|(?:don'?t|do not) know (?:how|when|what) to (?:buy|invest)|right time|top|bottom|lump sum|all at once|do i (?:really )?need|should i|have to|must i|can i skip|is it (?:really )?necessary|without (?:an? |the )?(?:emergency )?fund|nếu không|có cần|what is|what are|what does|mean|means|don'?t get|don'?t understand|confused|explain|sao|tại sao|vì sao|làm gì|là gì|nghĩa là|không hiểu)(?!\p{L})/iu // lang-ok
 const DEPOSIT_WORD = /(?<!\p{L})(deposit|nạp)(?!\p{L})/iu // lang-ok
 // An overall check-up ("how are my finances doing?"): the reply follows debt → fund → allocation.
 const ASKS_OVERVIEW = /how (am i|are my finances|is my (financial )?situation)|my finances|tình hình (tài chính)?/i // lang-ok
@@ -298,10 +308,17 @@ ${RULES}
 - "MATCHING SITUATIONS" lists what applies to this user right now, most important first. Follow "does", you may use the "may say" lines, never do the "never" lines. Only bring up a situation when it fits what they asked, the most important one first.
 
 ## Actions and recording
-${DCA_AVAILABLE ? '' : '- DCA (recurring buys) is NOT available yet; it comes on mainnet. Never offer, suggest or set it up, whatever other rules say. If the user asks for it, say so in one sentence and offer a single cirBTC buy card instead (when buying is open).\n'}- Only describe what the "Actions just taken" note lists. Cards (add to the fund, withdraw, buy cirBTC, DCA) are confirmation CARDS the user signs: never say deposited / bought / done. To offer one: "Would you like me to prepare … for you to sign?".
+${DCA_AVAILABLE ? '' : '- AUTOMATIC recurring buys in the app are NOT available yet: never say the app will buy for them on a schedule, never set it up. DCA as a WAY OF BUYING is still your advice (next rule): they buy the monthly amount themselves (cirBTC in this app with a card each time, stocks or gold at their broker).\n'}- How to buy (Hieu, 2026-10-29): nobody knows where the top or the bottom is; one big buy right before a fall hurts (think stocks at a peak while interest rates stay high). So when they do not know how or when to buy, or worry about timing, recommend DCA: the same amount every month, for example over 6 months, which trusts the long-term growth that stocks and Bitcoin have shown over decades instead of guessing the moment. If they say they read charts or trade, respect their way and help with the amount; never push DCA on them.
+- No vault yet (a note says so): the emergency fund needs the user's own vault first. Offer to open it (one-time fee, said kindly) before any deposit; never offer a deposit card.
+- They said no to an offer (a deposit, a buy, a withdrawal) → respect it: do not offer it again or push it in later replies until THEY bring it up; answer what they ask.
+- Investments count at the money put in (Hieu, 2026-10-29): "I put $1,000 into BTC" is recorded as $1,000 (value, priceSource self), never revalued at today's price. If they only give a quantity ("0.1 BTC"), ask how much they put in. A price drop never means a part needs more money: never suggest buying more because prices fell.
+- Money (Hieu, 2026-10-29): write values in dollars with a $ sign ($500, $0.43): savings, cash, gold, stocks, crypto value, targets, totals, spending, income. Write "USDC" only for the token that moves onchain: a deposit into or a withdrawal from the emergency fund, the amount paid for cirBTC, the vault fee. USDC, USDT and other dollar coins together are "stablecoins".
+- Only describe what the "Actions just taken" note lists. Cards (add to the fund, withdraw, buy cirBTC, DCA) are confirmation CARDS the user signs: never say deposited / bought / done. To offer one: "Would you like me to prepare … for you to sign?".
 - Something recorded → start with the read-back from the notes, then (TEACH mode only) one sentence on what the new number means for them, then end with "Right?" (that is your one question). When a "Next question" is given, ask it instead of "Right?" (with why you ask). Never mention what they said before or that it changed.
+- The Balance and Invest tabs open step by step: Balance once the emergency fund is full, Invest once buying is open too (fund full, no priority debt). Before that, never send them to those tabs; give the numbers in chat.
 - The app cannot move money to a bank or an exchange; the Safe part is their own savings or flexible earn (e.g. Binance Simple Earn Flexible), never the emergency fund.
 - They want a big BTC share (even 50%) → understand and respect it, Web3 thinking is heavy on BTC; only the fund comes first. They want a big low-cap / memecoin share → the reality check from the matching situation, once.
+- They question the emergency fund or want to invest without it ("what if I don't save it?", "do I really need it?", "can I skip it?") → TEACH: before investing you need a cushion for bad times. Without one, a lost job, a hospital bill or a slow month forces you to sell your investments, often right when prices are down, and turns a paper loss into a real one. So do not start investing until the fund is in place; say how much is still missing from their figures, then offer to prepare the deposit.
 - They want to buy cirBTC while it is locked → what is missing and how much (the "Buy lock" line), then why the lock exists in one sentence: without the cushion, if BTC drops right when they need cash, they would have to sell at a loss. No longer lecture.
 - Buying is OPEN and they agree to invest without an amount → offer the "cirBTC buy to offer" amount as a cirBTC card for them to sign; never ask the same yes / no again.
 
@@ -332,7 +349,7 @@ const PLAN_PROMPT = `You are MoonSafe's action planner. Read the user's LATEST m
 - A loan from family / friends: family_no_interest when they say there is no interest, family_interest when there is; not said → family_interest without rate_pct (the agent asks).
 - show_allocation ONLY when they ask how their money is split, what to do with idle money, or for the chart. show_cashflow ONLY when they ask about income vs spending, how much they save, or financial freedom.
 - They want to add to the fund → prepare_deposit; withdraw → prepare_withdraw; buy cirBTC → prepare_buy_cirbtc;${DCA_AVAILABLE ? ' recurring buys → propose_dca; stop them → stop_dca;' : ''} open a screen → open_screen.
-- A plain yes right after the agent's offer ("ok", "yes", "do it", "as you said", ${VI_YES}) → that exact action with the offered amount. A message that adds information is not a yes.
+- A plain yes right after the agent's offer ("ok", "yes", "do it", "as you said", ${VI_YES}) → that exact action with the offered amount (when the offer gave a first monthly buy AND an all-at-once amount, a plain yes means the first monthly buy; "all", "all at once", "everything" means the full amount). A message that adds information is not a yes.
 - prepare_deposit is ONLY for the emergency fund, never for the Safe part (their own savings).
 
 ## Asset types
@@ -497,7 +514,10 @@ async function vndPerUsd(): Promise<number | null> {
   }
 }
 
+/** The token the user signs for (deposits, cirBTC buys): what the wallet shows. */
 const usdc = (n: number) => `${new Intl.NumberFormat('en-US', { maximumFractionDigits: Math.abs(n) >= 100 ? 0 : 2 }).format(n)} USDC`
+/** A value in dollars (Hieu, 2026-10-29): savings, gold, stocks, targets, totals. */
+const dollars = (n: number) => `${n < 0 ? '-' : ''}$${new Intl.NumberFormat('en-US', { maximumFractionDigits: Math.abs(n) >= 100 ? 0 : 2 }).format(Math.abs(n))}`
 const vnd = (n: number) => n >= 1_000_000
   ? `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(n / 1_000_000)}M VND`
   : `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(n)} VND`
@@ -551,7 +571,7 @@ function listing(p: FinancialProfile, b: Balance, prices: Prices | null, rate: n
  */
 function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: number, rate: number | null, usesVnd: boolean, surplusDca: boolean): { text: string; floors: { months: number; texts: string[] }[]; cover: number | null } {
   let cover: number | null = null
-  const show = (n: number) => usesVnd && rate ? `${usdc(n)} (≈ ${vnd(n * rate)})` : usdc(n)
+  const show = (n: number) => usesVnd && rate ? `${dollars(n)} (≈ ${vnd(n * rate)})` : dollars(n)
   const lines: string[] = []
   const floors: { months: number; texts: string[] }[] = []
   // Rounded down to whole USDC: 2,300.58 shown as "2,301" was offered as a deposit above the wallet (real chat 2026-10-26).
@@ -619,7 +639,7 @@ function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: nu
     lines.push(`- Target by the MoonSafe framework at age ${b.age}${b.ageIsDefault ? ' (DEFAULT age 30: the user declined; say the split is an estimate)' : ''}: Safety ${ts}%, Traditional ${ttr}%, Crypto ${tcr}% (mostly BTC; no target for other coins)`)
     // Totals, not only what is missing (Hieu, 2026-10-28): "X of Y, Z to go" for each part; Safety carries a near-term goal first.
     const st = bucketStanding(b)
-    if (st) lines.push(`- Where they stand in the three parts of the money to divide (${show(Math.max(0, b.liquid - b.goalUsd))}${b.goalUsd > 0 ? `, not counting the near-term goal ${show(b.goalUsd)}` : ''}). Copy "X of Y, Z to go" exactly. Safety = bank savings outside the app, it is NOT the emergency fund: ${st.map(x => `${x.name} ${show(x.have)} of ${show(x.target)}${x.goal ? ` (= goal ${show(x.goal)} + ${x.share}% of the rest ${show(x.rest ?? 0)})` : ''}, ${x.left >= 0.5 ? `${show(x.left)} to go` : 'full'}`).join('; ')}`)
+    if (st) lines.push(`- Where they stand in the three parts of the money to divide (${show(Math.max(0, b.liquid - b.goalUsd))}${b.goalUsd > 0 ? `, not counting the near-term goal ${show(b.goalUsd)}` : ''}). Copy "X of Y, Z to go" exactly. Safety = bank savings outside the app, it is NOT the emergency fund: ${st.map(x => `${x.name} ${show(x.have)} of ${show(x.target)}${x.goal ? ` (= goal ${show(x.goal)} + ${x.share}% of the rest ${show(x.rest ?? 0)})` : ''}, ${!x.full ? `${show(x.left)} to go` : 'full'}`).join('; ')}`)
   } else lines.push('- Target: AGE UNKNOWN. Ask the age before talking about any share.')
   if (!b.declared) lines.push('- Nothing is declared yet: the user has not said what they hold (the wallet balance seen onchain does not count until they declare it). If they ask how to split or invest: suggest NO split and NO purchase, turn NO percentage into an amount; ask about the next item of the collection flow instead.')
   else if (b.suggest) {
@@ -644,7 +664,7 @@ const TOPICS: { key: string; ask: string; asked: RegExp; known: (p: FinancialPro
   { key: 'insurance', ask: 'Do you have health or life insurance that would protect the people who rely on you?', asked: /insurance[^.?!\n]{0,80}\?|bảo hiểm[^.?!\n]{0,80}\?/i, known: p => !((p.dependents ?? 0) > 0 || p.soleEarner === true) || (p.insured !== null && p.insured !== undefined) }, // lang-ok
   { key: 'bank', ask: 'How much do you keep in the bank (savings or checking)?', asked: /bank[^.?!\n]{0,60}\?|ngân hàng[^.?!\n]{0,60}\?/i, known: p => p.holdings.some(h => ['savings', 'term_deposit', 'checking', 'cash'].includes(h.type)) }, // lang-ok
   { key: 'stables', ask: 'Any USDC / USDT on exchanges or in other wallets?', asked: /(stablecoin|USDT|USDC on|exchange)[^.?!\n]{0,60}\?/i, known: p => p.holdings.some(h => ['stable_wallet', 'flexible_earn', 'locked_earn', 'defi_stable'].includes(h.type)) },
-  { key: 'crypto', ask: 'Which coins do you hold (BTC, ETH, others), and how much?', asked: /(coins?|crypto|BTC|ETH)[^.?!\n]{0,60}\?/i, known: p => p.holdings.some(h => ['btc', 'eth', 'top10', 'altcoin', 'staked_large_cap', 'nft'].includes(h.type)) },
+  { key: 'crypto', ask: 'How much do you hold in Bitcoin, and how much in altcoins?', asked: /(coins?|crypto|BTC|ETH|bitcoin|altcoins?)[^.?!\n]{0,60}\?/i, known: p => p.holdings.some(h => ['btc', 'eth', 'top10', 'altcoin', 'staked_large_cap', 'nft'].includes(h.type)) },
   { key: 'traditional', ask: 'Do you hold any gold or stocks?', asked: /(gold|stocks?|ETF|vàng|cổ phiếu)[^.?!\n]{0,60}\?/i, known: p => p.holdings.some(h => ['gold_physical', 'gold_token', 'us_stock', 'vn_stock', 'fund_bond'].includes(h.type)) }, // lang-ok
   { key: 'property', ask: 'Do you own a home, land or a car?', asked: /(home|house|property|land|car|nhà|đất|xe)[^.?!\n]{0,60}\?/i, known: p => p.holdings.some(h => ['home', 'car', 'rental_property'].includes(h.type)) }, // lang-ok
   { key: 'lending', ask: 'Have you lent money to anyone, or put money into a business?', asked: /(lent|lend|business|cho vay|góp vốn|kinh doanh)[^.?!\n]{0,60}\?/i, known: p => p.holdings.some(h => ['loan_given', 'business_stake'].includes(h.type)) }, // lang-ok
@@ -722,10 +742,12 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   if (text.length > MAX_BODY_CHARS) return json({ error: 'That message is too long' }, 413)
   let body: RequestBody
   try { body = JSON.parse(text) as RequestBody } catch { return json({ error: 'Invalid JSON' }, 400) }
-  // Only role + text go on: no tool fields, no odd types. Long whitespace runs are collapsed (security review 2026-10-29: they made a regex take seconds).
+  // Only role + text go on (no tool fields, no odd types). A user message keeps its start; an agent reply keeps its END, where the
+  // offer a "yes" answers sits (a 2,400-character plan once lost its closing offer, so "yes" matched nothing; 2026-10-29).
+  // Long whitespace runs are collapsed: they made a regex take seconds (security review 2026-10-29).
   body.messages = (Array.isArray(body.messages) ? body.messages : [])
     .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
-    .map(m => ({ role: m.role, content: m.content.slice(0, MAX_MESSAGE_CHARS).replace(/\s{3,}/g, ' ') }))
+    .map(m => ({ role: m.role, content: (m.role === 'assistant' ? m.content.slice(-MAX_MESSAGE_CHARS) : m.content.slice(0, MAX_MESSAGE_CHARS)).replace(/\s{3,}/g, ' ') }))
 
   // What the admin switched (functions/_lib/config.ts): the agent can be paused, an account can be blocked, the limits can be changed.
   const cfg = await getConfig(context.env)
@@ -735,7 +757,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   context = { ...context, env: effectiveEnv(context.env, cfg) }
 
   // A safety valve on tokens (functions/_lib/budget.ts) and the user's daily "AI power" (functions/_lib/quota.ts).
-  // The verified owner has no per-user token cap (only the global one): 90 messages a day must be possible (real chat 2026-10-28).
+  // The verified owner has no per-user token cap (only the global one): 60 messages a day must be possible (real chat 2026-10-28).
   const before = await powerState(context.env, userId)
   const limit = await overBudget(context.env, userId, before?.boosted === true)
   if (limit) return json({ error: limit, code: 'token_budget' }, 429)
@@ -783,6 +805,32 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   const prevUserText = [...messages.slice(0, lastUserAt)].reverse().find(m => m.role === 'user')?.content ?? ''
   const assistantTexts = messages.filter(m => m.role === 'assistant').map(m => m.content)
   const vi = VI_LETTERS.test(lastUserText)
+  // No vault yet (the app sends hasVault): "yes" to the opening offer, or asking to open one, gets the opening card (no model call).
+  const hasVault = ctx.hasVault !== false
+  const vaultFee = typeof ctx.vaultFeeUsdc === 'number' && ctx.vaultFeeUsdc > 0 ? ctx.vaultFeeUsdc : 1
+  if (!hasVault && !lastUserText.startsWith('[app event]') && ((OPEN_OFFERED.test(prevAssistantText) && AGREES.test(lastUserText)) || ASKS_OPEN.test(lastUserText))) {
+    return json({
+      content: vi ? 'Đây rồi: ký thẻ bên dưới để mở vault của bạn.' : 'Here it is: sign the card below to open your vault.', // lang-ok
+      ops: [], dcaStop: false, actions: [{ type: 'prepare_open_vault' }],
+    })
+  }
+  if (SAYS_NO.test(lastUserText) && OFFERS_ACTION.test(prevAssistantText)) {
+    return json({
+      content: vi
+        ? 'Không sao, đây là quyết định của bạn. Kế hoạch vẫn ở đây khi bạn cần. Muốn hỏi thêm, đổi một con số hay bắt đầu sau này thì cứ nhắn mình.' // lang-ok
+        : 'No problem, that is your call. The plan stays here whenever you want it. If you want to ask something, change a number or start later, just message me.',
+      ops: [], dcaStop: false, actions: [],
+    })
+  }
+  if (ASKS_PRICE.test(lastUserText) && !lastUserText.startsWith('[app event]')) {
+    const free = Number(context.env.FREE_TURNS_PER_DAY) > 0 ? Math.floor(Number(context.env.FREE_TURNS_PER_DAY)) : DEFAULT_FREE
+    return json({
+      content: vi
+        ? `Có, phần tư vấn là miễn phí: bạn có **${free} tin nhắn mỗi ngày** với mình. Mở quỹ dự phòng (vault riêng của bạn trên Arc) tốn **1 USDC một lần**. Ngoài ra MoonSafe không thu phí gì thêm: nạp, rút hay mua cirBTC chỉ tốn phí mạng rất nhỏ (vài cent), và nếu muốn chat nhiều hơn ${free} tin/ngày thì có thể mua thêm ${POWER_PER_PURCHASE} tin với 1 USDC, không bắt buộc.` // lang-ok
+        : `Yes, the advice is free: you get **${free} messages a day** with me. Opening your emergency fund (your own vault on Arc) costs **1 USDC, once**. MoonSafe charges nothing else: deposits, withdrawals and cirBTC buys only cost a tiny network fee (a few cents), and if you ever want more than ${free} messages a day you can add ${POWER_PER_PURCHASE} messages for 1 USDC, entirely optional.`,
+      ops: [], dcaStop: false, actions: [],
+    })
+  }
   const said = numbersIn(lastUserText)
   const saidBefore = numbersIn(prevUserText)
   const vnClauses = lastUserText.split(/[.;\n]|,(?!\d)|\band\b/i).filter(c => VN_MARKET.test(c))
@@ -884,7 +932,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       if (!stated(amount.amount)) return 'Not recorded: the value is not in the user\'s words.'
       return { ...base, value: amount.amount, currency: amount.currency, priceSource: 'self' }
     }
-    // Market-priced: gold units → troy ounces; a worth → quantity at the live price.
+    // Market-priced, given as a quantity (no cost known): gold units → troy ounces, valued at the live price.
     if (quantity !== undefined) {
       if (!stated(quantity)) return 'Not recorded: the quantity is not in the user\'s words.'
       if (kind === 'gold') return { ...base, quantity: quantity * (GOLD_UNITS_TO_OZ[String(a.unit ?? 'oz')] ?? 1), unit: 'oz', priceSource: 'market' }
@@ -892,12 +940,9 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     }
     if (!w) return `Not recorded: ask how much ${name} they hold (or what it is worth).`
     if (!stated(w.amount)) return 'Not recorded: the value is not in the user\'s words.'
-    const pr = kind === 'gold' ? await getPrices([], []) : await getPrices(kind === 'stock' && sym ? [sym] : [], kind === 'crypto' && sym ? [sym] : [])
-    const price = kind === 'gold' ? pr.goldUsdPerOz : sym ? pr.usd[`${kind}:${sym}`] : undefined
-    const usd = toUsd(w.amount, w.currency, rate)
-    // No live price (spec 12): the user's value is the truth, labelled self-declared.
-    if (!price || usd === null) return { ...base, value: w.amount, currency: w.currency, priceSource: 'self' }
-    return { ...base, quantity: usd / price, unit: kind === 'gold' ? 'oz' : kind === 'stock' ? 'shares' : 'coins', priceSource: 'market' }
+    // A money amount is the money put in (Hieu, 2026-10-29): kept as said, never turned into a quantity revalued at the market,
+    // so a price drop never makes a part look empty and push for more buying.
+    return { ...base, value: w.amount, currency: w.currency, priceSource: 'self' }
   }
 
   // One tool call → its result for the next PLAN step.
@@ -1161,6 +1206,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       }
       if (actions.some(x => x.type === name)) return 'Already shown under the reply, not repeated.'
       // "ok" to a split once turned the safe part (bank savings) into a fund deposit card (real chat 2026-10-24).
+      if (name === 'prepare_deposit' && !hasVault) return `Not done: the user has no vault yet. Offer to open it first, in these words: "${openVaultOffer(vi, vaultFee)}"`
       if (name === 'prepare_deposit' && startBalance.fund.met && !FUND_WORD.test(lastUserText) && !DEPOSIT_WORD.test(lastUserText)) {
         console.log('dropped prepare_deposit: fund already full')
         return 'Not done: the emergency fund is already full; nothing to add unless the user asks to.'
@@ -1335,7 +1381,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   if (phase === 'plan' && (!appEvent || itemsEvent) && !placement && !userAsks && !toAsk.length && !actions.length && balance.target) {
     const t = balance.target
     const [ps, pt, pc] = wholeShares([t.safe, t.traditional, t.btc + t.large_cap + t.altcoin])
-    const built = buildPlan({ p: profile, b: balance, shares: [ps, pt, pc], cover, vi })
+    const built = buildPlan({ p: profile, b: balance, shares: [ps, pt, pc], cover, vi, hasVault, vaultFee })
     if (built) return json({ content: built, ops, dcaStop, actions })
   }
 
@@ -1350,6 +1396,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   if (planGiven && balance.target && balance.declared && !placement) {
     const next = partChoice && !readback.length ? buildPartAnswer({ b: balance, vi, part: partChoice, walletUsd: wallet ?? 0 })
       : /^\[app event\] The user signed the card: Added .*emergency fund/i.test(lastUserText) ? buildAfterSign({ b: balance, vi, kind: 'deposit' })
+      : /^\[app event\] The user signed the card: Opened/i.test(lastUserText) ? buildAfterSign({ b: balance, vi, kind: 'open', cover })
       : lastUserText.startsWith('[app event] The user confirmed recording') ? buildAfterSign({ b: balance, vi, kind: 'record', summary: lastUserText })
       : null
     if (next) return json({ content: next, ops, dcaStop, actions })
@@ -1411,7 +1458,7 @@ ${ending}` })
   }
   const BUCKETS_RULE = 'Name only parts that still have room ("to go" above 0); a part marked full is never offered. Give every amount as "X of Y" (what they have of the target) plus what is left, never only what is missing. If only ONE bucket is left, say what it is and ask whether they want to start with it; NEVER open with a purchase or a card: the cirBTC buy is offered only after they say they want crypto. Safety and Traditional are done outside the app. If none is left, say the plan is complete.'
   // After the plan they fill one bucket at a time, the one they pick (Hieu, 2026-10-27).
-  if (phase === 'start' && planGiven && balance.fund.met && !appEvent && !placement && !actions.some(x => x.type === 'prepare_buy_cirbtc' || x.type === 'propose_dca')) replyMessages.push({ role: 'system', content: `The plan was given and the emergency fund is full. They fill one bucket at a time, the one THEY pick, no need to split every dollar. If they pick one: Crypto → ${balance.lock.open && cryptoOffer >= 1 ? `offer exactly: "Would you like me to prepare a cirBTC buy of **${usdc(cryptoOffer)}** for you to sign?" (that fills the Crypto bucket as far as the wallet allows; ignore the split in "Suggested use of idle money")` : 'say what is missing to buy in the app'}; Safety → their own bank savings or flexible earn, outside the app, with the amount; Traditional → bought outside the app with a broker (an index fund such as VOO, or gold), with the amount. If they have not picked yet, ask which one they want to fill first. ${BUCKETS_RULE}` })
+  if (phase === 'start' && planGiven && balance.fund.met && !appEvent && !placement && !actions.some(x => x.type === 'prepare_buy_cirbtc' || x.type === 'propose_dca')) replyMessages.push({ role: 'system', content: `The plan was given and the emergency fund is full. They fill one bucket at a time, the one THEY pick, no need to split every dollar. If they pick one: Crypto → ${balance.lock.open && cryptoOffer >= 1 ? `the amount that fills the Crypto bucket as far as the wallet allows is ${usdc(cryptoOffer)} (ignore the split in "Suggested use of idle money"); unless they trade by the charts, suggest spreading it over 6 equal monthly buys and offer the first one ("Would you like me to prepare the first cirBTC buy of **${usdc(Math.floor(cryptoOffer / 6))}** for you to sign?"); if they want it all at once, offer **${usdc(cryptoOffer)}**` : 'say what is missing to buy in the app'}; Safety → their own bank savings or flexible earn, outside the app, with the amount; Traditional → bought outside the app with a broker (an index fund such as VOO, or gold), with the amount. If they have not picked yet, ask which one they want to fill first. ${BUCKETS_RULE}` })
   const recordEvent = lastUserText.startsWith('[app event] The user confirmed recording')
   const dcaApproved = lastUserText.startsWith('[app event] The user approved the DCA plan')
   if (placement && dupBox) replyMessages.push({ role: 'system', content: boxSaved ? `The user repeats ${usdc(placement.amountUsd)} for ${placement.name}, but that amount was saved a moment ago through the box. Nothing more is recorded. Say in ONE short sentence that it is already saved and the Safety figure is unchanged. No question.` : `The user repeats ${usdc(placement.amountUsd)} for ${placement.name}: the box from your previous reply is still waiting, and nothing is saved until they pick the source in it and tap Confirm. Say that in ONE short sentence. Record nothing, no new box, no question.` })
@@ -1513,7 +1560,7 @@ ${ending}` })
       if (phase === 'plan' && profile.cryptoDropOk === false && !/smaller|less|lower|reduce|nhỏ hơn|ít hơn|giảm/i.test(plain)) problems.push('they said they could not hold through a 50% crypto drop: offer a smaller Crypto part for now as an option (their call)') // lang-ok
       if (phase === 'plan' && profile.nearGoal && !plain.toLowerCase().includes(profile.nearGoal.name.toLowerCase()) && !/goal|mục tiêu/i.test(plain)) problems.push(`say that the money for ${profile.nearGoal.name} stays in savings, not invested, because it is needed soon`) // lang-ok
       // They picked Crypto after the plan but got the question back (v2 test 2026-10-27): offer the cirBTC card with a server-computed amount.
-      if (phase === 'start' && planGiven && balance.lock.open && /crypto|btc|bitcoin/i.test(lastUserText) && !actions.some(x => x.type === 'prepare_buy_cirbtc' || x.type === 'propose_dca') && !/prepare[^.?!\n]{0,60}(cirBTC|buy|DCA)/i.test(plain) && cryptoOffer >= 1) problems.push(`they picked Crypto: offer a cirBTC buy of **${usdc(cryptoOffer)}** for them to sign ("Would you like me to prepare a cirBTC buy of … for you to sign?")`)
+      if (phase === 'start' && planGiven && balance.lock.open && /crypto|btc|bitcoin/i.test(lastUserText) && !actions.some(x => x.type === 'prepare_buy_cirbtc' || x.type === 'propose_dca') && !/prepare[^.?!\n]{0,60}(cirBTC|buy|DCA)/i.test(plain) && cryptoOffer >= 1) problems.push(`they picked Crypto: offer a cirBTC buy for them to sign: the first of 6 monthly buys (**${usdc(Math.floor(cryptoOffer / 6))}**), or all **${usdc(cryptoOffer)}** at once if they asked for that ("Would you like me to prepare a cirBTC buy of … for you to sign?")`)
       // A beginner may think stocks or savings are bought in the app (v2 test 2026-10-27).
       if (phase === 'start' && planGiven && !placement && !recordEvent && /stock|traditional|index|gold|savings|bank|cổ phiếu|vàng|tiết kiệm/i.test(lastUserText) && !/outside|broker|your (own )?bank|bên ngoài/i.test(plain)) problems.push('say plainly this part is done outside the app (a broker for stocks or index funds, their own bank for savings), with the amount from "Still to fill"') // lang-ok
       // Phase 1 is for listening: advice about the fund gap or the lock waits for the plan (Hieu, 2026-10-27).

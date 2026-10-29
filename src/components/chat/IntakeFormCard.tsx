@@ -1,10 +1,12 @@
-// The first questions as a form inside the chat (Hieu, 2026-10-28): "Your age: [   ]", "Any other income? [Yes / No]".
-// Whatever is left empty is "prefer not to say". "Save" turns the values into items (src/lib/intakeForm.ts) and saves them straight
-// away: sending the form is the user's confirmation, there is no confirm card after it. Pure props (no app context).
+// The first questions inside the chat (Hieu, 2026-10-28), as at most SIX cards of the same size, one topic each (Hieu, 2026-10-29:
+// one question per card made 32 cards). Only what the plan needs is asked: age, salary, spending, income steadiness, dependents, cash
+// and stablecoins, investments, a big expense within 5 years, debt. Home / car / business, passive income, airdrops, the number of
+// dependents, the goal's name and who a debt is owed to were dropped (the agent can still ask in chat). Skip clears the card,
+// Next keeps it; the last card saves straight away (sending is the user's confirmation). Pure props (no app context).
 
-import type { ReactNode } from 'react'
-import { ClipboardList } from 'lucide-react'
-import { Btn, Caps, GlassCard, IconBox, Toggle } from '@/components/ui/kit'
+import { useState, type ReactNode } from 'react'
+import { ChevronLeft, ClipboardList } from 'lucide-react'
+import { Btn, GlassCard, IconBox, Toggle } from '@/components/ui/kit'
 import { EMPTY_FORM, formToItems, type FormValues, type SectionKey, type YesNo } from '@/lib/intakeForm'
 import type { Prices } from '@/lib/allocation'
 
@@ -22,10 +24,11 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 
 const BOX = 'h-12 flex items-center gap-2 px-4 rounded-2xl border border-[var(--line)] focus-within:border-[var(--accent)] focus-within:shadow-[inset_0_0_0_1px_var(--accent)]'
 
-function Num({ label, hint, value, onChange, suffix = 'USDC' }: { label: string; hint?: string; value: string; onChange: (v: string) => void; suffix?: string }) {
+function Num({ label, hint, value, onChange, suffix = '', money = true }: { label: string; hint?: string; value: string; onChange: (v: string) => void; suffix?: string; money?: boolean }) {
   return (
     <Field label={label} hint={hint}>
       <div className={BOX} style={{ background: 'var(--surface-muted)' }}>
+        {money && <span className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--subtle)' }}>$</span>}
         <input inputMode="decimal" value={value} placeholder="0" aria-label={label}
           onChange={e => onChange(e.target.value.replace(/[^0-9.,kKmM$ ]/g, '').slice(0, 14))}
           className="flex-1 min-w-0 bg-transparent text-[16px] leading-6 tabular-nums outline-none placeholder:text-[var(--muted)]" style={{ color: 'var(--ink)' }} />
@@ -44,6 +47,8 @@ function Ask({ label, value, onChange }: { label: string; value: YesNo; onChange
   )
 }
 
+interface Step { key: string; title: string; fields: (keyof FormValues)[]; view: ReactNode }
+
 export function IntakeFormCard({ keys, seen, values, status, saved, prices, onChange, onReview, onSkip }: {
   /** The sections still unknown (functions/_lib/intake.ts keys). */
   keys: string[]
@@ -58,9 +63,7 @@ export function IntakeFormCard({ keys, seen, values, status, saved, prices, onCh
   onReview: (v: FormValues) => void
   onSkip: () => void
 }) {
-  const has = (k: SectionKey) => keys.includes(k)
-  const set = <K extends keyof FormValues>(k: K) => (v: FormValues[K]) => onChange({ ...values, [k]: v })
-  const filled = formToItems({ ...EMPTY_FORM, ...values }, prices).length
+  const [at, setAt] = useState(0)
 
   if (status) {
     return (
@@ -71,113 +74,98 @@ export function IntakeFormCard({ keys, seen, values, status, saved, prices, onCh
     )
   }
 
-  const seenText = seen !== null && seen >= 1 ? `I can see ${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Math.floor(seen))} USDC in this wallet` : undefined
+  const has = (k: SectionKey) => keys.includes(k)
+  const set = <K extends keyof FormValues>(k: K) => (v: FormValues[K]) => onChange({ ...values, [k]: v })
+  const seenText = seen !== null && seen >= 1 ? `I can see ${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Math.floor(seen))} USDC here` : undefined
+
+  const steps: Step[] = []
+  const step = (key: string, title: string, fields: (keyof FormValues)[], view: ReactNode) => steps.push({ key, title, fields, view })
+
+  // From 640px wide the fields sit two to a row (debt: three), so a card stays short on a laptop (Hieu, 2026-10-29).
+  if (has('age') || has('income') || has('spending')) step('you', 'About you', ['age', 'salary', 'spending'], (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {has('age') && <Num label="Your age" value={values.age} onChange={set('age')} money={false} />}
+      {has('income') && <Num label="Salary a month" value={values.salary} onChange={set('salary')} />}
+      {has('spending') && <div className="sm:col-span-2"><Num label="Spending a month (an estimate is fine)" value={values.spending} onChange={set('spending')} /></div>}
+    </div>
+  ))
+  if (has('stability')) step('income', 'Your income', ['steady', 'reliers'], (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <Ask label="Is your income steady?" value={values.steady} onChange={set('steady')} />
+      <Ask label="Does anyone rely on it?" value={values.reliers} onChange={set('reliers')} />
+    </div>
+  ))
+  if (has('assets')) {
+    step('cash', 'Cash and stablecoins', ['usdcThis', 'usdcElsewhere', 'bank'], (
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Num label="Stablecoins in this wallet" hint={seenText} value={values.usdcThis} onChange={set('usdcThis')} />
+        <Num label="Stablecoins elsewhere" value={values.usdcElsewhere} onChange={set('usdcElsewhere')} />
+        <Num label="Bank savings and cash" value={values.bank} onChange={set('bank')} />
+      </div>
+    ))
+    step('invest', 'Invested so far', ['btc', 'coins', 'gold', 'stocks'], (
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <Num label="Bitcoin" value={values.btc} onChange={set('btc')} />
+        <Num label="Altcoins" value={values.coins} onChange={set('coins')} />
+        <Num label="Gold" value={values.gold} onChange={set('gold')} />
+        <Num label="Stocks, funds" value={values.stocks} onChange={set('stocks')} />
+      </div>
+    ))
+  }
+  if (has('goal')) step('goal', 'Big expense ahead', ['goal', 'goalAmount', 'goalYears'], <>
+    <Ask label="A big expense in the next 5 years (car, wedding, school)?" value={values.goal} onChange={set('goal')} />
+    {values.goal === 'yes' && (
+      <div className="grid grid-cols-2 gap-4">
+        <Num label="How much?" value={values.goalAmount} onChange={set('goalAmount')} />
+        <Num label="In how many years?" value={values.goalYears} onChange={set('goalYears')} money={false} />
+      </div>
+    )}
+  </>)
+  if (has('debt')) step('debt', 'Debt', ['debt', 'debtOwed', 'debtRate', 'debtMonthly'], <>
+    <Ask label="Any debt?" value={values.debt} onChange={set('debt')} />
+    {values.debt === 'yes' && (
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="col-span-2 sm:col-span-1"><Num label="Total you still owe" value={values.debtOwed} onChange={set('debtOwed')} /></div>
+        <Num label="Interest a year" value={values.debtRate} onChange={set('debtRate')} suffix="%" money={false} />
+        <Num label="You pay a month" value={values.debtMonthly} onChange={set('debtMonthly')} />
+      </div>
+    )}
+  </>)
+
+  if (!steps.length) return null
+  const i = Math.min(at, steps.length - 1)
+  const cur = steps[i]
+  const last = i === steps.length - 1
+  const count = formToItems({ ...EMPTY_FORM, ...values }, prices).length
+  const next = (v: FormValues) => { if (last) onReview(v); else setAt(i + 1) }
+  // Skip: this question's answer is cleared ("prefer not to say"), then the next question (or save, on the last one).
+  const skip = () => {
+    const cleared: FormValues = { ...values }
+    for (const f of cur.fields) (cleared as unknown as Record<string, unknown>)[f] = EMPTY_FORM[f]
+    onChange(cleared)
+    if (last && formToItems({ ...EMPTY_FORM, ...cleared }, prices).length === 0) onSkip()
+    else next(cleared)
+  }
+
   return (
-    <GlassCard className="ml-10 p-4 flex flex-col gap-4">
-      <div className="flex items-center gap-4">
-        <IconBox><ClipboardList size={24} style={{ color: 'var(--accent)' }} /></IconBox>
-        <div>
-          <p className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--ink)' }}>Your details</p>
-          <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>Leave a field empty to skip it.</p>
-        </div>
+    <GlassCard className="ml-10 p-4 flex flex-col gap-4 w-[calc(100%-40px)] max-w-[480px] sm:max-w-[640px]">
+      <div className="flex items-center gap-2">
+        {i > 0
+          ? <button onClick={() => setAt(i - 1)} aria-label="Previous question" className="w-8 h-8 -ml-2 flex items-center justify-center rounded-full" style={{ color: 'var(--subtle)' }}><ChevronLeft size={20} /></button>
+          : <ClipboardList size={20} style={{ color: 'var(--accent)' }} />}
+        <p className="flex-1 min-w-0 truncate text-[14px] leading-5 font-semibold tabular-nums" style={{ color: 'var(--subtle)' }}>{i + 1} of {steps.length} · <span style={{ color: 'var(--ink)' }}>{cur.title}</span></p>
+        <button onClick={onSkip} className="h-8 px-2 text-[14px] leading-5 font-semibold" style={{ color: 'var(--subtle)' }}>Skip all</button>
+      </div>
+      <div className="h-1 rounded-full overflow-hidden" style={{ background: 'var(--line)' }} aria-hidden>
+        <div className="h-full rounded-full" style={{ width: `${Math.round(((i + 1) / steps.length) * 100)}%`, background: 'var(--accent)' }} />
       </div>
 
-      {has('age') && <Num label="Your age" value={values.age} onChange={set('age')} suffix="" />}
-
-      {has('income') && (
-        <>
-          <Caps>Income</Caps>
-          <Num label="Your salary a month" value={values.salary} onChange={set('salary')} />
-          <Ask label="Any other income?" value={values.otherIncome} onChange={set('otherIncome')} />
-          {values.otherIncome === 'yes' && (
-            <>
-              <Num label="Passive income a month (interest, staking, rent)" value={values.passive} onChange={set('passive')} />
-              <Ask label="Airdrops or other income that comes only now and then?" value={values.windfalls} onChange={set('windfalls')} />
-              {values.windfalls === 'yes' && <Num label="About how much a year?" hint="Noted, but not counted as monthly income: it cannot be relied on." value={values.windfallsYearly} onChange={set('windfallsYearly')} />}
-            </>
-          )}
-        </>
-      )}
-
-      {has('spending') && <Num label="What you spend a month" hint="An estimate is fine." value={values.spending} onChange={set('spending')} />}
-
-      {has('stability') && (
-        <>
-          <Ask label="Is your income steady?" value={values.steady} onChange={set('steady')} />
-          <Ask label="Does anyone rely on your income?" value={values.reliers} onChange={set('reliers')} />
-          {values.reliers === 'yes' && <Num label="How many people?" value={values.reliersCount} onChange={set('reliersCount')} suffix="" />}
-        </>
-      )}
-
-      {has('goal') && (
-        <>
-          <Ask label="A big expense in the next 5 years?" value={values.goal} onChange={set('goal')} />
-          {values.goal === 'yes' && (
-            <>
-              <Field label="What for?">
-                <div className={BOX} style={{ background: 'var(--surface-muted)' }}>
-                  <input value={values.goalName} placeholder="A wedding, a car…" aria-label="What for?" maxLength={40} onChange={e => set('goalName')(e.target.value)}
-                    className="flex-1 min-w-0 bg-transparent text-[16px] leading-6 outline-none placeholder:text-[var(--muted)]" style={{ color: 'var(--ink)' }} />
-                </div>
-              </Field>
-              <Num label="How much?" value={values.goalAmount} onChange={set('goalAmount')} />
-              <Num label="In how many years?" value={values.goalYears} onChange={set('goalYears')} suffix="" />
-            </>
-          )}
-        </>
-      )}
-
-      {has('assets') && (
-        <>
-          <Caps>What you hold</Caps>
-          <Num label="USDC in this wallet" hint={seenText} value={values.usdcThis} onChange={set('usdcThis')} />
-          <Num label="USDC or USDT in other wallets or exchanges" value={values.usdcElsewhere} onChange={set('usdcElsewhere')} />
-          <Num label="Bank savings" value={values.bank} onChange={set('bank')} />
-          <Num label="Cash" value={values.cash} onChange={set('cash')} />
-          <Num label="Bitcoin (BTC), value today" value={values.btc} onChange={set('btc')} />
-          <Num label="Ethereum (ETH), value today" value={values.eth} onChange={set('eth')} />
-          <Num label="Other coins, value today" value={values.coins} onChange={set('coins')} />
-          <Num label="Gold, value today" value={values.gold} onChange={set('gold')} />
-          <Num label="Stocks or funds, value today" value={values.stocks} onChange={set('stocks')} />
-        </>
-      )}
-
-      {has('other') && (
-        <>
-          <Caps>Other</Caps>
-          <Ask label="Do you own a home, land, a car or a business, or have you lent money?" value={values.otherAssets} onChange={set('otherAssets')} />
-          {values.otherAssets === 'yes' && (
-            <>
-              <Num label="Home or land, value" value={values.home} onChange={set('home')} />
-              <Num label="Car, value" value={values.car} onChange={set('car')} />
-              <Num label="Money you lent" value={values.lent} onChange={set('lent')} />
-              <Num label="A business you own, value" value={values.business} onChange={set('business')} />
-            </>
-          )}
-        </>
-      )}
-
-      {has('debt') && (
-        <>
-          <Caps>Debt</Caps>
-          <Ask label="Any debt?" value={values.debt} onChange={set('debt')} />
-          {values.debt === 'yes' && (
-            <>
-              <div className="flex flex-col gap-2">
-                <span className="text-[14px] leading-5 font-semibold" style={{ color: 'var(--subtle)' }}>Owed to</span>
-                <Toggle value={values.debtKind} options={[{ value: 'bank' as const, label: 'Bank or card' }, { value: 'family' as const, label: 'Family or friends' }]} onChange={set('debtKind')} />
-              </div>
-              <Num label="Total you still owe" value={values.debtOwed} onChange={set('debtOwed')} />
-              <Num label="Interest a year (0 if none)" value={values.debtRate} onChange={set('debtRate')} suffix="%" />
-              <Num label="You pay a month" value={values.debtMonthly} onChange={set('debtMonthly')} />
-            </>
-          )}
-        </>
-      )}
+      {/* Fixed height: room for the biggest card (three amounts with a hint, or debt with its details), so every card is the same size. */}
+      <div key={cur.key} className="h-[288px] sm:h-[200px] flex flex-col gap-4">{cur.view}</div>
 
       <div className="grid grid-cols-2 gap-2">
-        <Btn variant="outline" onClick={onSkip}>Skip all</Btn>
-        <Btn disabled={filled === 0} onClick={() => onReview(values)}>{filled === 0 ? 'Save' : `Save ${filled}`}</Btn>
+        <Btn variant="outline" onClick={skip}>Skip</Btn>
+        <Btn disabled={last && count === 0} onClick={() => next(values)}>{last ? (count ? `Save ${count}` : 'Save') : 'Next'}</Btn>
       </div>
     </GlassCard>
   )

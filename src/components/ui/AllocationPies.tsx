@@ -110,7 +110,7 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
 
   // What is still missing to match the plan, per part: the same totals as the agent's (bucketStanding).
   const standing = bucketStanding(b)
-  const missing = (standing ?? []).filter(x => x.left >= 0.5)
+  const missing = (standing ?? []).filter(x => !x.full)
   const toDivide = Math.max(0, liquid - b.goalUsd)
   return (
     <div className="flex flex-col gap-4">

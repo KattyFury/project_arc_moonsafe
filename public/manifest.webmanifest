@@ -1,7 +1,7 @@
 {
   "name": "MoonSafe",
   "short_name": "MoonSafe",
-  "description": "Onchain personal finance for Web3",
+  "description": "Your personal finance agent for Web3",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#FFFFFF",

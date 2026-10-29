@@ -31,7 +31,7 @@ export interface FormValues {
   bank: string
   cash: string
   btc: string
-  eth: string
+  /** Every coin other than Bitcoin (Hieu, 2026-10-29: ask Bitcoin and altcoins only). */
   coins: string
   gold: string
   stocks: string
@@ -51,7 +51,7 @@ export interface FormValues {
 
 export const EMPTY_FORM: FormValues = {
   age: '', salary: '', otherIncome: null, passive: '', windfalls: null, windfallsYearly: '', spending: '', steady: null, reliers: null, reliersCount: '1',
-  goal: null, goalName: '', goalAmount: '', goalYears: '', usdcThis: '', usdcElsewhere: '', bank: '', cash: '', btc: '', eth: '', coins: '', gold: '', stocks: '',
+  goal: null, goalName: '', goalAmount: '', goalYears: '', usdcThis: '', usdcElsewhere: '', bank: '', cash: '', btc: '', coins: '', gold: '', stocks: '',
   otherAssets: null, home: '', car: '', lent: '', business: '', debt: null, debtKind: null, debtOwed: '', debtRate: '', debtMonthly: '',
 }
 
@@ -68,26 +68,19 @@ export function parseAmount(text: string): number | null {
 /** A confirm item: a line of text and the operations that save it. */
 export interface FormItem { text: string; ops: ProfileOp[] }
 
-const usd = (n: number) => `${new Intl.NumberFormat('en-US', { maximumFractionDigits: n >= 100 ? 0 : 2 }).format(n)} USDC`
+const usd = (n: number) => `$${new Intl.NumberFormat('en-US', { maximumFractionDigits: n >= 100 ? 0 : 2 }).format(n)}`
 
 /**
- * The items a filled form stands for, in the order they are shown. Market-priced things (BTC, ETH, gold) are stored as a quantity at
- * today's price when a price is known, otherwise as the value the user typed; everything else keeps the typed value.
+ * The items a filled form stands for, in the order they are shown. Every amount is kept as typed: investments (Bitcoin, gold,
+ * stocks) are the money put in, never turned into a quantity revalued at the market (Hieu, 2026-10-29).
  */
-export function formToItems(v: FormValues, prices: Prices | null, now = Date.now()): FormItem[] {
+export function formToItems(v: FormValues, _prices: Prices | null, now = Date.now()): FormItem[] {
   const items: FormItem[] = []
   const add = (text: string, ...ops: ProfileOp[]) => items.push({ text, ops })
   const holding = (type: AssetType, name: string, amount: number | null, extra: Partial<Holding> = {}) => {
     if (amount === null) return
     const h: Holding = { id: newId('h'), type, name, value: amount, currency: 'USDC', priceSource: 'self', rebalanceable: defaultRebalanceable(type), updatedAt: now, ...extra }
     add(`${name} ${usd(amount)}`, { op: 'add_holding', holding: h })
-  }
-  const priced = (type: AssetType, name: string, symbol: string | undefined, amount: number | null, px: number | undefined, unit?: Holding['unit']) => {
-    if (amount === null) return
-    if (px && px > 0) {
-      const h: Holding = { id: newId('h'), type, name, ...(symbol ? { symbol } : {}), quantity: amount / px, ...(unit ? { unit } : {}), currency: 'USDC', priceSource: 'market', rebalanceable: defaultRebalanceable(type), updatedAt: now }
-      add(`${name} ${usd(amount)}`, { op: 'add_holding', holding: h })
-    } else holding(type, name, amount, symbol ? { symbol } : {})
   }
 
   const age = parseAmount(v.age)
@@ -121,14 +114,13 @@ export function formToItems(v: FormValues, prices: Prices | null, now = Date.now
       { op: 'update_profile', fields: { nearGoal: { name, amount: goalAmount, currency: 'USDC', years: years !== null && years <= 5 ? years : null } } })
   }
 
-  holding('stable_wallet', 'USDC in this wallet', parseAmount(v.usdcThis), { where: 'app wallet' })
-  holding('stable_wallet', 'USDC or USDT elsewhere', parseAmount(v.usdcElsewhere), { where: 'other wallets and exchanges' })
+  holding('stable_wallet', 'Stablecoins in this wallet', parseAmount(v.usdcThis), { where: 'app wallet' })
+  holding('stable_wallet', 'Stablecoins elsewhere', parseAmount(v.usdcElsewhere), { where: 'other wallets and exchanges' })
   holding('savings', 'Bank savings', parseAmount(v.bank))
   holding('cash', 'Cash', parseAmount(v.cash))
-  priced('btc', 'Bitcoin', 'BTC', parseAmount(v.btc), prices?.usd['crypto:BTC'])
-  priced('eth', 'Ethereum', 'ETH', parseAmount(v.eth), prices?.usd['crypto:ETH'])
-  holding('altcoin', 'Other coins', parseAmount(v.coins))
-  priced('gold_physical', 'Gold', undefined, parseAmount(v.gold), prices?.goldUsdPerOz ?? undefined, 'oz')
+  holding('btc', 'Bitcoin', parseAmount(v.btc), { symbol: 'BTC' })
+  holding('altcoin', 'Altcoins', parseAmount(v.coins))
+  holding('gold_physical', 'Gold', parseAmount(v.gold))
   holding('fund_bond', 'Stocks and funds', parseAmount(v.stocks))
   if (v.otherAssets === 'yes') {
     holding('home', 'Home or land', parseAmount(v.home))

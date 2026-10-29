@@ -1,77 +1,105 @@
-// Screen 1 — Trang chủ (Figma "01 Trang chủ"): mobile = lockup, tagline, four steps,
-// sign-in at the bottom; desktop = hero 6 col + fund preview card 6 col.
+// The landing page (Hieu, 2026-10-29: "short and beautiful, so people get what the app does at a glance"), on the nguyen0xhieu
+// design system: web-mobile-* type on 393, web-* on 1440, spacing in 8s, radius 16, shadow Y2, one gradient region (desktop: the
+// chat preview). Fits one screen on both (393×852, 1440×900). The only action is "Get started" (Privy sign-in).
 
 import { useLogin } from '@privy-io/react-auth'
-import { Vault } from 'lucide-react'
+import { MessageCircle, TrendingUp, Vault, type LucideIcon } from 'lucide-react'
 import { Wordmark } from '@/components/ui/kit'
 
-const STEPS = ['Know your cash flow', 'Build an emergency fund', 'Balance your assets', 'Unlock investing']
+const POINTS: Array<{ icon: LucideIcon; title: string; text: string }> = [
+  { icon: MessageCircle, title: 'Learn as you chat', text: 'Plain answers on cash flow, safety nets and how to split your money.' },
+  { icon: Vault, title: 'A safety net onchain', text: 'Your emergency fund sits in your own USDC vault on Arc. Only you can withdraw.' },
+  { icon: TrendingUp, title: 'Invest in balance', text: 'Stocks, gold and Bitcoin, split by your age and bought step by step.' },
+]
 
-function Steps() {
+const PRICE = 'Free: 20 messages a day. Opening your vault: 1 USDC, once.'
+
+function Point({ icon: Icon, title, text }: (typeof POINTS)[number]) {
   return (
-    <ol className="w-full max-w-[296px] lg:max-w-[384px] flex flex-col gap-2">
-      {STEPS.map((step, i) => (
-        <li key={step} className="h-12 flex items-center gap-4 px-4 rounded-2xl" style={{ background: 'var(--surface-muted)' }}>
-          <span className="w-6 h-6 rounded-full flex items-center justify-center text-[14px] leading-5 font-semibold flex-shrink-0" style={{ background: 'var(--accent)', color: 'white' }}>{i + 1}</span>
-          <span className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--ink)' }}>{step}</span>
-        </li>
-      ))}
-    </ol>
+    <div className="flex items-start gap-4">
+      <span className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'var(--accent-soft)' }}>
+        <Icon size={20} style={{ color: 'var(--accent)' }} />
+      </span>
+      <div className="flex flex-col">
+        <span className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--ink)' }}>{title}</span>
+        <span className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>{text}</span>
+      </div>
+    </div>
+  )
+}
+
+/** A short exchange with the agent: what the app does, shown instead of told. The one gradient region on the page. */
+function ChatPreview() {
+  const bubble = 'px-4 py-2 rounded-2xl text-[16px] leading-6'
+  return (
+    <div className="w-full max-w-[488px] p-8 flex flex-col gap-4 rounded-2xl"
+      style={{ background: 'linear-gradient(to top right, var(--accent-dark), var(--accent))', boxShadow: 'var(--shadow-y2)' }}>
+      <div className={`${bubble} self-end max-w-[80%]`} style={{ background: 'var(--accent-dark)', color: 'white' }}>
+        I have $3,000 and want to start investing.
+      </div>
+      <div className={`${bubble} self-start max-w-[90%] flex flex-col gap-2`} style={{ background: 'var(--bg)', color: 'var(--ink)' }}>
+        <span>First, a safety net: <strong>3 months of spending</strong> in your own vault, so a bad month never forces you to sell.</span>
+        <span>Then split the rest by your age, 30: <strong>30% safe</strong>, <strong>35% stocks and gold</strong>, <strong>35% crypto</strong>, mostly Bitcoin.</span>
+      </div>
+      <div className={`${bubble} self-end max-w-[80%]`} style={{ background: 'var(--accent-dark)', color: 'white' }}>
+        Why that split?
+      </div>
+    </div>
   )
 }
 
 export function LoginScreen() {
   const { login } = useLogin()
-  const signIn = (
+  const cta = (wide: boolean) => (
     <button onClick={() => login()}
-      className="w-full max-w-[296px] h-12 lg:w-auto lg:h-14 lg:px-8 rounded-2xl text-[16px] leading-6 font-semibold"
+      className={`${wide ? 'h-14 px-8' : 'w-full h-12 px-6'} rounded-2xl text-[16px] leading-6 font-semibold`}
       style={{ background: 'var(--accent)', color: 'white', boxShadow: 'var(--shadow-y2)' }}>
-      Log in
+      Get started
     </button>
   )
 
   return (
     <div className="min-h-dvh" style={{ background: 'var(--bg)' }}>
-      {/* Mobile */}
-      <div className="lg:hidden min-h-dvh flex flex-col items-center justify-between px-4 pt-24 pb-12">
-        <div className="flex flex-col items-center gap-8">
-          <div className="flex flex-col items-center gap-4 text-center">
-            <h1><Wordmark size={32} /></h1>
-            <p className="max-w-[296px] text-[24px] leading-8 font-semibold" style={{ color: 'var(--ink)' }}>Onchain personal finance for Web3</p>
-          </div>
-          <Steps />
+      {/* Mobile web 393: margins 16, blocks 32 apart */}
+      <div className="lg:hidden min-h-dvh flex flex-col px-4 pt-12 pb-8 gap-8">
+        <Wordmark size={24} />
+        <div className="flex flex-col gap-4">
+          <h1 className="display text-[40px] leading-[48px] font-bold" style={{ color: 'var(--ink)' }}>Your personal finance agent for Web3</h1>
+          <p className="text-[18px] leading-7" style={{ color: 'var(--subtle)' }}>Tell it about your money. It shows you what to do next, and why.</p>
         </div>
-        {signIn}
+        <div className="flex flex-col gap-4">
+          {POINTS.map(p => <Point key={p.title} {...p} />)}
+        </div>
+        <div className="mt-auto flex flex-col gap-2">
+          {cta(false)}
+          <p className="text-[14px] leading-5 text-center" style={{ color: 'var(--subtle)' }}>{PRICE}</p>
+        </div>
       </div>
 
-      {/* Desktop */}
-      <div className="hidden lg:flex min-h-dvh items-center">
-        <div className="w-full max-w-[1248px] mx-auto px-6 grid grid-cols-12 gap-6 items-center">
-          <div className="col-span-6 flex flex-col items-start gap-8">
-            <h1><Wordmark size={40} /></h1>
-            <p className="display text-[56px] leading-[64px] font-bold" style={{ color: 'var(--ink)' }}>Onchain personal finance for Web3</p>
-            <Steps />
-            {signIn}
-          </div>
-          <div className="col-span-6 flex justify-center">
-            {/* The one gradient region on this screen */}
-            <div className="w-[384px] p-8 flex flex-col gap-2 rounded-2xl"
-              style={{ background: 'linear-gradient(to top right, #0F3DB2, #1E6DF7)', boxShadow: 'var(--shadow-y2)' }}>
-              <div className="flex items-center gap-2">
-                <Vault size={20} color="white" />
-                <span className="text-[14px] leading-5 font-semibold text-white">Emergency fund</span>
+      {/* Web 1440: content 1200 on 12 columns, gutter 24, blocks 64 apart */}
+      <div className="hidden lg:flex min-h-dvh flex-col">
+        <header className="w-full max-w-[1248px] mx-auto px-6 h-[72px] flex items-center justify-between">
+          <Wordmark size={20} />
+          <button onClick={() => login()} className="h-10 px-4 rounded-2xl text-[16px] leading-6 font-semibold" style={{ color: 'var(--accent)' }}>Log in</button>
+        </header>
+        <main className="flex-1 w-full max-w-[1248px] mx-auto px-6 flex flex-col justify-center gap-16 py-12">
+          <div className="grid grid-cols-12 gap-6 items-center">
+            <div className="col-span-6 flex flex-col items-start gap-8">
+              <div className="flex flex-col gap-6">
+                <h1 className="display text-[56px] leading-[64px] font-bold" style={{ color: 'var(--ink)' }}>Your personal finance agent for Web3</h1>
+                <p className="max-w-[520px] text-[18px] leading-7" style={{ color: 'var(--subtle)' }}>Tell it about your money. It shows you what to do next, and why: a safety net first, then a balanced way to invest.</p>
               </div>
-              <div className="flex items-baseline gap-2">
-                <span className="display text-[48px] leading-[56px] font-bold text-white tabular-nums">1.000</span>
-                <span className="text-[20px] leading-7 font-semibold text-white">USDC</span>
-              </div>
-              <p className="text-[16px] leading-6 text-white">3 to 6 months of essential spending</p>
-              <div className="h-2 rounded-full" style={{ background: 'rgba(255,255,255,0.24)' }}>
-                <div className="h-full w-1/2 rounded-full bg-white" />
+              <div className="flex flex-col gap-2">
+                {cta(true)}
+                <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>{PRICE}</p>
               </div>
             </div>
+            <div className="col-span-6 flex justify-end"><ChatPreview /></div>
           </div>
-        </div>
+          <div className="grid grid-cols-3 gap-6">
+            {POINTS.map(p => <Point key={p.title} {...p} />)}
+          </div>
+        </main>
       </div>
     </div>
   )

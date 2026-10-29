@@ -1,11 +1,12 @@
 # Cloudflare Pages project "moonsafe": static site (dist) + Pages Functions (functions/).
-# Deploy: bun run cf:deploy:mainnet (pushing to GitHub does NOT deploy). moonsafe.app is MAINNET since 2026-10-29.
+# Deploy: VITE_NETWORK=mainnet VITE_FACTORY_ADDRESS=<factory> bun run cf:deploy (pushing to GitHub does NOT deploy). moonsafe.app is MAINNET since 2026-10-29.
 # Mirrors the project's dashboard settings; secrets (OPENAI_API_KEY) stay in Cloudflare.
 name = "moonsafe"
 pages_build_output_dir = "dist"
 compatibility_date = "2025-01-01"
 
 # Per-user data (profile, chat), functions/api/userdata.ts.
+# Mainnet KV "USERDATA_MAINNET" since 2026-10-29. Rollback to testnet: id f5f9fd482e3b4810898171fa71dca952.
 [[kv_namespaces]]
 binding = "USERDATA"
 # id = the PRODUCTION (mainnet) users store, as bound in the Cloudflare dashboard on 2026-10-29; preview_id = the old testnet store.

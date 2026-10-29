@@ -17,11 +17,11 @@ const MAX_KEEP = 80
 const MAX_SEND = 30
 
 /** Greeting shown to someone who already saved a declaration (UI only, never sent to the model). */
-export const WELCOME_BACK = 'Welcome back! I still have the finances you shared, you can review them in the **Balance** tab. If anything has changed, just tell me and I will update it.\n\nWhat shall we look at today: spending, your emergency fund or investing?'
+export const welcomeBack = (balanceOpen: boolean) => `Welcome back! I still have the finances you shared${balanceOpen ? ', you can review them in the **Balance** tab' : ''}. If anything has changed, just tell me and I will update it.\n\nWhat shall we look at today: spending, your emergency fund or investing?`
 
 export const WELCOME: ChatMessage = {
   role: 'assistant',
-  content: 'Hi! I am MoonSafe\u2019s personal finance advisor.\n\nWe go step by step: get clear on your cash flow, build an **emergency fund** in USDC for the unexpected, then invest.\n\nNo forms to fill in. Share as much as you like and I will advise from there. Where would you like to start: spending, saving or investing?',
+  content: 'Hi! I am MoonSafe, your **personal finance advisor** for Web3.\n\nI help you **understand where your money goes**, keep a **safety net** for bad months, and **invest in balance** across stocks, gold and crypto, with the reason behind every step.\n\nShare as much as you like and I will advise from there. Where would you like to start: spending, saving or investing?',
   timestamp: 0,
 }
 
@@ -62,7 +62,7 @@ export function clearChatStorage() {
 // component state and vanished when the chat remounted mid-signature (real chat 2026-10-27).
 const EXTRAS_KEY = 'moonsafe_chat_extras_v1'
 export type StoredCard =
-  | { id: number; at: number; kind: 'deposit' | 'withdraw' | 'buy' | 'dca'; amount: string; intervalDays?: number; status?: 'done' | 'cancelled' }
+  | { id: number; at: number; kind: 'open' | 'deposit' | 'withdraw' | 'buy' | 'dca'; amount: string; intervalDays?: number; status?: 'done' | 'cancelled' }
   /** A reported placement waiting for the user's confirmation (src/lib/record.ts). */
   | { id: number; at: number; kind: 'record'; record: RecordRequest; status?: 'done' | 'cancelled' }
   /** Several declared things waiting to be confirmed one by one (src/components/chat/ItemsCard.tsx); `ask` = what the agent still has to ask once they are done. */
@@ -94,7 +94,7 @@ export interface AgentHooks {
 }
 
 export interface AgentAction {
-  type: 'prepare_deposit' | 'prepare_withdraw' | 'prepare_buy_cirbtc' | 'propose_dca' | 'open_screen' | 'show_allocation' | 'show_cashflow' | 'confirm_record' | 'confirm_items' | 'intake_form'
+  type: 'prepare_open_vault' | 'prepare_deposit' | 'prepare_withdraw' | 'prepare_buy_cirbtc' | 'propose_dca' | 'open_screen' | 'show_allocation' | 'show_cashflow' | 'confirm_record' | 'confirm_items' | 'intake_form'
   /** intake_form: the sections to show, and the USDC the app sees in the wallet (a hint). */
   keys?: string[]
   seen?: number | null

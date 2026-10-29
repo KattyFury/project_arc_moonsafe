@@ -1,5 +1,8 @@
 # MoonSafe: Spec chốt (framework phân bổ, dòng tiền, tool của agent)
 
+> **Cập nhật 2026-10-29 (Hiếu):** phần còn lại r = 100 − tuổi chia ĐỀU: Truyền thống = r/2, Crypto = r/2 (crypto sập thì truyền thống đỡ, truyền thống giảm thì crypto đỡ, cả hai cùng giảm vẫn còn quỹ dự phòng + Safety). Mọi chỗ 4/7 – 3/7 bên dưới đã cũ.
+
+
 > Ngày chốt: 2026-10-25. File này thay thế file câu hỏi `MoonSafe-spec-framework-2026-10-25.md`.
 > Claude Code build đúng theo file này, không tự đoán. Chỗ nào thiếu hoặc mâu thuẫn thì hỏi lại Hiếu, không tự ngoại suy.
 >
@@ -320,7 +323,7 @@ Hiện theo thứ tự:
 
 ## 14. Việc Claude Code làm sau khi nhận file này
 
-1. Cập nhật `docs/FRAMEWORK-TAI-CHINH.md` theo đúng file này.
+1. Cập nhật `docs/archive/FRAMEWORK-TAI-CHINH.md` theo đúng file này.
 2. Sửa `src/lib/allocation.ts` theo công thức mục 4, cơ sở % theo mục 2, trường `rebalanceable`. Sửa màn Balance theo mục 11.
 3. Thiết kế lại tool theo mục 10, thêm dữ liệu dòng tiền (mục 6) và nợ từng khoản (mục 5.2).
 4. Xây kho tình huống tư vấn (mục 9) dạng dữ liệu.

@@ -16,6 +16,11 @@ import { DCA_AVAILABLE } from '@/lib/features'
 export const CIRBTC_ADDRESS = NET.cirBtc
 export const CIRBTC_DECIMALS = 8
 const SLIPPAGE_BPS = 300
+/**
+ * Price guard (mainnet, 2026-10-29): a quote whose price per BTC is more than this above the market BTC price (/api/price) is
+ * refused, so a thin or broken pool can never sell cirBTC far above Bitcoin (the testnet pool once priced it at ~2.6x).
+ */
+const MAX_PREMIUM = 0.03
 const POLL_MS = 30_000
 const DCA_KEY = 'moonsafe_dca_v1'
 
@@ -29,7 +34,13 @@ export interface CirBtcQuote {
   amountInUsdc: string   // "12.5" (dot decimal, App Kit format)
   estimate: SwapEstimate
   address: string
+  /** USD per BTC this quote pays, and how far that is above the market price (0.01 = 1%); null when the market price is unknown. */
+  pricePerBtc: number
+  premium: number | null
 }
+
+/** USD per BTC a quote pays: what goes in over the cirBTC that comes out. */
+export const quotePrice = (amountInUsdc: string, outCirBtc: string) => Number(amountInUsdc) / Number(outCirBtc)
 
 function readDca(): DcaPlan | null {
   if (!DCA_AVAILABLE) return null // plans saved before DCA was switched off are ignored
@@ -127,13 +138,21 @@ export function useCirBtcState(): CirBtcState {
         tokenIn: 'USDC', tokenOut: 'cirBTC', amountIn,
         config: { slippageBps: SLIPPAGE_BPS },
       })
-      setQuote({ amountInUsdc: amountIn, estimate: est, address })
+      const pricePerBtc = quotePrice(amountIn, est.estimatedOutput.amount)
+      // The market price is read fresh here, so the guard never compares against a stale or missing number.
+      let market = btcUsd
+      try { const r = await fetch('/api/price'); const d = await r.json() as { btcUsd?: number }; if (d.btcUsd && d.btcUsd > 0) market = d.btcUsd } catch { /* keep the last one */ }
+      const premium = market ? pricePerBtc / market - 1 : null
+      if (!Number.isFinite(pricePerBtc) || pricePerBtc <= 0) throw new Error('The quote came back empty, please try again')
+      if (premium === null) throw new Error('Could not check the BTC price right now, so no purchase. Please try again in a minute.')
+      if (premium > MAX_PREMIUM) throw new Error(`This quote prices Bitcoin at ${Math.round(pricePerBtc).toLocaleString('en-US')} USD, ${(premium * 100).toFixed(1)}% above the market (${Math.round(market!).toLocaleString('en-US')} USD). MoonSafe does not buy above ${MAX_PREMIUM * 100}%, please try later.`)
+      setQuote({ amountInUsdc: amountIn, estimate: est, address, pricePerBtc, premium })
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not get a quote')
     } finally {
       setBusy(false)
     }
-  }, [address, getAdapter])
+  }, [address, getAdapter, btcUsd])
 
   const execute = useCallback(async (): Promise<boolean> => {
     if (!quote) return false

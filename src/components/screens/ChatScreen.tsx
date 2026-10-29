@@ -6,7 +6,7 @@ import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Loader2, Send } from 'lucide-react'
 import { toast } from 'sonner'
 import { useApp } from '@/state/AppState'
-import { WELCOME, WELCOME_BACK, readChatExtras, useAgent, writeChatExtras, type AgentAction, type StoredCard } from '@/hooks/useAgent'
+import { WELCOME, welcomeBack, readChatExtras, useAgent, writeChatExtras, type AgentAction, type StoredCard } from '@/hooks/useAgent'
 import { dcaNextRun } from '@/hooks/useCirBtc'
 import { useNow } from '@/hooks/useNow'
 import { isOutOfPower, useAiPower } from '@/hooks/useAiPower'
@@ -69,6 +69,8 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
         if (items.length) next.push({ id: Date.now() + next.length, at, kind: 'items', items, ask: a.ask ?? [] })
         continue
       }
+      // The vault opening: the card carries the fee the factory asks for (read by the app).
+      if (a.type === 'prepare_open_vault') { next.push({ id: Date.now() + next.length, at, kind: 'open', amount: (vault.fee ?? 1_000_000n).toString() }); continue }
       if (a.type === 'open_screen' || a.type === 'show_allocation' || a.type === 'show_cashflow' || !a.amount) continue
       const amount = a.amount.currency === 'USDC' ? BigInt(Math.round(a.amount.amount * 1_000_000)) : vndToUsdc(a.amount.amount)
       if (amount === null || amount <= 0n) { toast.error('Could not convert the amount (no exchange rate). Please say it in USDC.'); continue }
@@ -114,9 +116,10 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
   const now = useNow()
   const [input, setInput] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
-  const { power, setPower, verifyOwner } = useAiPower()
+  const { power, setPower, verifyOwner, buy } = useAiPower()
   const [powerOpen, setPowerOpen] = useState(false)
   const outOfPower = isOutOfPower(power)
   const { messages, loading, sendMessage } = useAgent({
@@ -124,6 +127,9 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
     getContext: () => ({
       profile: profile.profile,
       vaultUsdc: vault.vaultBalance !== null ? Number(vault.vaultBalance) / 1_000_000 : null,
+      // No vault yet: the agent offers to open it once the user has shared their numbers (Hieu, 2026-10-29).
+      hasVault: !!vault.vaultAddress,
+      vaultFeeUsdc: vault.fee !== null ? Number(vault.fee) / 1_000_000 : null,
       walletUsdc: vault.walletBalance !== null ? Number(vault.walletBalance) / 1_000_000 : null,
       cirBtcUsdc: cirBtc.balance === 0n ? 0 : cirBtc.valueUsdc6 !== null ? Number(cirBtc.valueUsdc6) / 1_000_000 : null,
       dca: cirBtc.dca ? { amountUsdc: formatUsdc(BigInt(cirBtc.dca.amountUsdc)), everyDays: cirBtc.dca.intervalDays } : null,
@@ -135,7 +141,14 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
   })
 
   const count = messages.length
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [count, loading])
+  // A new reply from the agent is shown from its first line, not its last: a long reply never has to be scrolled back up to read
+  // (Hieu, 2026-10-29). The user's own message and the "thinking" dots still scroll to the bottom.
+  useEffect(() => {
+    const last = [...messages].reverse().find(m => !m.hidden)
+    const el = last?.role === 'assistant' && !loading ? listRef.current?.querySelector<HTMLElement>(`[data-msg="${messages.lastIndexOf(last)}"]`) : null
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    else bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [count, loading]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!signed || loading) return
     setSigned(null)
@@ -158,14 +171,14 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
   const dueAmount = dcaDue && cirBtc.dca ? BigInt(cirBtc.dca.amountUsdc) : dueDone
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 w-full lg:max-w-[840px] lg:mx-auto lg:px-6 lg:py-12">
+    <div className="flex flex-col flex-1 min-h-0 w-full lg:max-w-[960px] lg:mx-auto lg:px-6 lg:py-4">
       <div className="flex flex-col flex-1 min-h-0 lg:rounded-2xl lg:shadow-[0_2px_8px_0_rgba(0,0,0,0.32)] lg:overflow-hidden" style={{ background: 'var(--bg)' }}>
         {/* Messages above the fold fade out under the nav bar, so it reads as "there is more". */}
-        <div className="flex-1 overflow-y-auto no-scrollbar px-4 py-4 lg:p-6 flex flex-col gap-4 [&>*]:flex-shrink-0"
+        <div ref={listRef} className="flex-1 overflow-y-auto no-scrollbar px-4 py-4 lg:p-6 flex flex-col gap-4 [&>*]:flex-shrink-0"
           onScroll={e => setScrolled(e.currentTarget.scrollTop > 0)} style={scrolled ? FADE_TOP : undefined}>
           {messages.map((msg, i) => msg.hidden ? null : (
             <Fragment key={i}>
-              <div className={`flex gap-2 items-end ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div data-msg={i} className={`flex gap-2 items-end scroll-mt-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {msg.role === 'assistant' && <Avatar />}
                 <div className="max-w-[85%] px-4 py-4 text-[16px] leading-6 rounded-2xl"
                   style={msg.role === 'user'
@@ -173,7 +186,7 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
                     : msg.error
                       ? { background: '#FDE8EB', color: 'var(--danger)' }
                       : { background: 'var(--surface-muted)', color: 'var(--ink)' }}>
-                  {renderContent(msg.timestamp === 0 ? (profile.known ? WELCOME_BACK : WELCOME.content) : msg.content)}
+                  {renderContent(msg.timestamp === 0 ? (profile.known ? welcomeBack(math.fundOk) : WELCOME.content) : msg.content)}
                 </div>
               </div>
               {msg.role === 'assistant' && cards.filter(c => c.at === msg.timestamp).map(c => <ActionCard key={c.id} action={c} onFinished={(s, summary) => finishCard(c.id, s, summary)} />)}
@@ -201,10 +214,10 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
         </div>
 
         {power && <PowerMeter power={power} onOpen={() => setPowerOpen(true)} />}
-        {powerOpen && power && <PowerSheet power={power} verifyOwner={verifyOwner} onClose={() => setPowerOpen(false)} />}
+        {powerOpen && power && <PowerSheet power={power} verifyOwner={verifyOwner} buy={buy} onClose={() => setPowerOpen(false)} />}
 
         {/* Composer */}
-        <div className="flex-shrink-0 flex px-4 py-4 lg:px-6 lg:pb-6 lg:pt-0" style={{ background: 'var(--bg)' }}>
+        <div className="flex-shrink-0 flex px-4 pt-2 pb-4 lg:px-6 lg:pb-6" style={{ background: 'var(--bg)' }}>
           {/* One rounded box: the Send button sits INSIDE it, at the bottom right, so it stays put as the box grows (Hieu, 2026-10-28).
               The box grows with the text up to COMPOSER_MAX_PX, then scrolls (scrollbar hidden). No JS measuring: an invisible copy of
               the text sits in the same grid cell and gives the cell its height, so the box is always exactly as tall as its text.

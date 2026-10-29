@@ -1,6 +1,8 @@
-# Security headers for every page (Cloudflare Pages). A Content-Security-Policy is NOT set yet: Privy, WalletConnect and the wallet
-# RPCs need a long allowlist, so it has to be tried in Report-Only mode first (see docs/audit-mainnet-2026-10-29.md).
+# Cloudflare Pages response headers. No other site may show MoonSafe inside a frame (clickjacking on wallet signing).
+# A full Content-Security-Policy is NOT set yet: Privy, WalletConnect and the RPCs need a long allowlist, so try it in Report-Only first
+# (docs/audit-mainnet-2026-10-29.md).
 /*
   X-Frame-Options: DENY
+  Content-Security-Policy: frame-ancestors 'none'
   Strict-Transport-Security: max-age=31536000; includeSubDomains
   Permissions-Policy: geolocation=(), microphone=(), payment=()

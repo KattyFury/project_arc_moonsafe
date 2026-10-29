@@ -20,7 +20,7 @@ Scope: what is live on moonsafe.app right after the mainnet launch: the two vaul
 - **Fixed in this PR:** the site sent only `nosniff` and a referrer policy. `public/_headers` now adds `X-Frame-Options: DENY`, HSTS and a minimal Permissions-Policy. **No CSP yet** (Privy, WalletConnect and the RPCs need a long allowlist; try it in Report-Only first).
 
 ## 3. Cloudflare configuration
-- Production KV binding is `4dca45d1...` (the mainnet store) and preview is the old testnet store `f5f9fd48...`. **The repo's `wrangler.toml` still had the testnet id** while production used another: a deploy from the repo could have re-bound production to the testnet store. Fixed (id = production, preview_id = testnet). Also `bun run cf:deploy` now refuses to run (a plain build points the site at testnet); use `bun run cf:deploy:mainnet`.
+- Production KV binding is `4dca45d1...` (the mainnet store) and preview is the old testnet store `f5f9fd48...`. **The repo's `wrangler.toml` still had the testnet id** while production used another: a deploy from the repo could have re-bound production to the testnet store. Fixed (id = production, preview_id = testnet). `bun run cf:deploy` (main already gates it with `scripts/check-deploy-env.mjs`) must be run with `VITE_NETWORK=mainnet VITE_FACTORY_ADDRESS=0xA9A5447a1Dd9874c25238d69E285249Fa1c9E10A`: a plain build would point the live site at testnet.
 - Secrets present: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` and a stale `GEMINI_API_KEY` (**delete it**). The **preview** environment also holds `OPENAI_API_KEY`: remove it (a preview deployment is a second way to reach the paid model).
 
 ## 4. Server code: independent review (read-only sub-review of `functions/`)
