@@ -8,6 +8,7 @@
  */
 
 import { privyUserId } from '../_lib/privyAuth'
+import { isBlocked } from '../_lib/config'
 import { buyPower, ownerChallenge, powerState, verifyOwner, type PowerEnv } from '../_lib/quota'
 
 interface Env extends PowerEnv { PRIVY_APP_ID?: string }
@@ -37,6 +38,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     return json({ ok: true, power: await powerState(env, id) })
   }
   if (body.action === 'buy') {
+    if (await isBlocked(env, id)) return json({ error: 'This account is paused. Please contact MoonSafe.' }, 403)
     const r = await buyPower(env, id, typeof body.txHash === 'string' ? body.txHash : '')
     if (!r.ok) return json({ error: r.error ?? 'Could not count the payment', retry: r.retry === true }, r.retry ? 409 : 400)
     return json({ ok: true, power: await powerState(env, id) })

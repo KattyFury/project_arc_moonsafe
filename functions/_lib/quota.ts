@@ -12,6 +12,7 @@
 
 import { createPublicClient, http, recoverMessageAddress } from 'viem'
 import type { BudgetEnv, Kv } from './budget'
+import { audit } from './admin'
 import { DEFAULT_POWER_PAYMENT_ADDRESS, POWER_PER_PURCHASE, POWER_PRICE_NATIVE, powerMemo } from '../../src/lib/power'
 
 export interface PowerEnv extends BudgetEnv {
@@ -136,19 +137,47 @@ export async function buyPower(env: PowerEnv, id: string, txHash: string): Promi
   if (!kv) return { ok: false, error: 'Data storage is not configured' }
   if (!/^0x[0-9a-fA-F]{64}$/.test(txHash)) return { ok: false, error: 'That is not a transaction hash' }
   const hash = txHash.toLowerCase() as `0x${string}`
-  if (await kv.get(`powertx:${hash}`)) return { ok: false, error: 'This payment was already counted' }
-  const client = createPublicClient({ transport: http(env.ARC_RPC || 'https://rpc.mainnet.arc.io') })
+  // Fail closed on a bad configuration (security review 2026-10-29): a typo in the payment address or an RPC that is not Arc mainnet
+  // must never be able to credit anything.
+  const pay = paymentAddress(env)
+  const rpc = env.ARC_RPC || 'https://rpc.mainnet.arc.io'
+  if (!/^0x[0-9a-f]{40}$/.test(pay) || !/^https:\/\//.test(rpc)) return { ok: false, error: 'Payments are not configured right now' }
+
+  // At most 10 failed checks an hour per account: every check costs two RPC calls.
+  const failKey = `buyfail:${id}:${new Date().toISOString().slice(0, 13)}`
+  if ((await num(kv, failKey)) >= 10) return { ok: false, error: 'Too many attempts, try again in an hour' }
+  const fail = async (error: string, retry = false) => { try { await kv.put(failKey, String((await num(kv, failKey)) + 1), { expirationTtl: 7200 }) } catch { /* advisory */ } return { ok: false, error, retry } }
+
+  // Claim the payment BEFORE the slow onchain check, so a parallel request sees it (KV is not atomic, so this narrows the window,
+  // it does not close it: a Durable Object or D1 is the real fix, see docs/audit-mainnet-2026-10-29.md).
+  const claimKey = `powertx:${hash}`
+  const claim = await kv.get(claimKey)
+  if (claim && claim !== `pending:${id}`) return { ok: false, error: 'This payment was already counted' }
+  await kv.put(claimKey, `pending:${id}`)
+  const release = async () => { try { await kv.delete?.(claimKey) } catch { /* the claim stays pending for this account, which only this account can resume */ } }
+
+  const client = createPublicClient({ transport: http(rpc, { retryCount: 1, timeout: 8000 }) })
   let tx, receipt
   try {
+    if ((await client.getChainId()) !== 5042) { await release(); return fail('Payments are not configured right now') }
     [tx, receipt] = await Promise.all([client.getTransaction({ hash }), client.getTransactionReceipt({ hash })])
-  } catch {
-    return { ok: false, retry: true, error: 'The payment is not confirmed yet, try again in a moment' }
+  } catch (e) {
+    await release()
+    const notFound = /could not be found|not found/i.test(String((e as Error)?.message ?? e))
+    return fail(notFound ? 'The payment is not confirmed yet, try again in a moment' : 'The payment check is unavailable right now, try again in a moment', true)
   }
-  if (receipt.status !== 'success') return { ok: false, error: 'The payment failed onchain' }
-  if (tx.to?.toLowerCase() !== paymentAddress(env)) return { ok: false, error: 'The payment went to a different address' }
-  if (tx.value !== POWER_PRICE_NATIVE) return { ok: false, error: 'The payment must be exactly 1 USDC' }
-  if (tx.input.toLowerCase() !== powerMemo(id).toLowerCase()) return { ok: false, error: 'This payment was not made for your account' }
-  await kv.put(`powertx:${hash}`, id)
-  await kv.put(kPower(id), String((await num(kv, kPower(id))) + POWER_PER_PURCHASE))
+  if (tx.hash.toLowerCase() !== hash || receipt.transactionHash.toLowerCase() !== hash || tx.blockHash !== receipt.blockHash) { await release(); return fail('The payment could not be verified') }
+  if (receipt.status !== 'success') { await release(); return fail('The payment failed onchain') }
+  if (tx.to?.toLowerCase() !== pay) { await release(); return fail('The payment went to a different address') }
+  if (tx.value !== POWER_PRICE_NATIVE) { await release(); return fail('The payment must be exactly 1 USDC') }
+  if (tx.input.toLowerCase() !== powerMemo(id).toLowerCase()) { await release(); return fail('This payment was not made for your account') }
+  await kv.put(claimKey, id)
+  try {
+    await kv.put(kPower(id), String((await num(kv, kPower(id))) + POWER_PER_PURCHASE))
+  } catch {
+    // Paid and claimed but the credit did not land: never ask the user to pay again. The log lets MoonSafe fix it by hand.
+    await audit(env, 'system', 'power_credit_failed', { hash, id })
+    return { ok: false, error: 'Your payment was received but the credit is delayed. MoonSafe will add it; do not pay again.' }
+  }
   return { ok: true }
 }

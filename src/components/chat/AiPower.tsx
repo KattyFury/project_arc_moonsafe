@@ -10,7 +10,7 @@ import { messagesLeft, type AiPower } from '@/hooks/useAiPower'
 import { txErrorMessage } from '@/hooks/useVault'
 import { ensureArcChain } from '@/lib/chain'
 import { CHAIN_ID, IS_MAINNET } from '@/lib/network'
-import { powerMemo } from '@/lib/power'
+import { DEFAULT_POWER_PAYMENT_ADDRESS, POWER_PRICE_NATIVE, powerMemo } from '@/lib/power'
 import { Btn, Notice, Sheet } from '@/components/ui/kit'
 
 function untilReset(resetsAt: number, now: number): string {
@@ -60,19 +60,39 @@ export function PowerSheet({ power, verifyOwner, buy, onClose }: {
   const [bought, setBought] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // A payment that was sent but not yet counted is remembered, so a slow confirmation never leads to a second payment
+  // (security review 2026-10-29): the button then re-checks it instead of paying again.
+  const pendingKey = `moonsafe_power_pending:${user?.id ?? ''}`
+  const [pending, setPending] = useState<string | null>(() => { try { return localStorage.getItem(pendingKey) } catch { return null } })
+  const settle = async (hash: string) => {
+    await buy(hash)
+    try { localStorage.removeItem(pendingKey) } catch { /* private mode */ }
+    setPending(null); setBought(true)
+  }
+
   // 1 USDC to the payment address, with this account's memo as calldata (src/lib/power.ts); the server checks it onchain.
+  // The address and the price are the ones baked into this app, NOT whatever the server says: a wrong server answer must never
+  // be able to make the wallet ask for another destination or amount (security review 2026-10-29).
   const purchase = async () => {
     if (!user?.id || !publicClient) return
     setBuying(true); setError(null); setBought(false)
     try {
+      if (pending) { await settle(pending); return }
+      if (power.paymentAddress.toLowerCase() !== DEFAULT_POWER_PAYMENT_ADDRESS || BigInt(power.pricePerPurchase) !== POWER_PRICE_NATIVE) {
+        throw new Error('The payment details from the server do not match this app, so nothing was sent. Please contact MoonSafe.')
+      }
+      // Only a plain wallet (or an email wallet) can pay: the server credits a payment whose top-level destination is ours.
+      if (address) {
+        const code = await publicClient.getCode({ address })
+        if (code && code !== '0x' && !code.toLowerCase().startsWith('0xef0100')) throw new Error('Smart-contract wallets cannot pay for AI power yet. Use a normal wallet or your email wallet.')
+      }
       await ensureArcChain(connector, switchChainAsync)
-      const hash = await sendTransactionAsync({
-        to: power.paymentAddress as `0x${string}`, value: BigInt(power.pricePerPurchase), data: powerMemo(user.id), chainId: CHAIN_ID,
-      })
-      const receipt = await publicClient.waitForTransactionReceipt({ hash })
-      if (receipt.status !== 'success') throw new Error('The payment was rejected onchain')
-      await buy(hash)
-      setBought(true)
+      const hash = await sendTransactionAsync({ to: DEFAULT_POWER_PAYMENT_ADDRESS as `0x${string}`, value: POWER_PRICE_NATIVE, data: powerMemo(user.id), chainId: CHAIN_ID })
+      try { localStorage.setItem(pendingKey, hash) } catch { /* private mode */ }
+      setPending(hash)
+      const receipt = await publicClient.waitForTransactionReceipt({ hash, timeout: 120_000 })
+      if (receipt.status !== 'success') { try { localStorage.removeItem(pendingKey) } catch { /* */ } setPending(null); throw new Error('The payment was rejected onchain') }
+      await settle(hash)
     } catch (e) { setError(txErrorMessage(e)) }
     finally { setBuying(false) }
   }
@@ -111,7 +131,8 @@ export function PowerSheet({ power, verifyOwner, buy, onClose }: {
             Need more? 1 USDC adds {power.messagesPerPurchase} messages that never expire. They are used after the free messages.
           </p>
           {bought && <Notice tone="success">{power.messagesPerPurchase} messages added.</Notice>}
-          <Btn loading={buying} onClick={() => { void purchase() }}>Buy {power.messagesPerPurchase} messages · 1 USDC</Btn>
+          {pending && <Notice tone="info">A payment was sent but is not counted yet. Check it instead of paying again.</Notice>}
+          <Btn loading={buying} onClick={() => { void purchase() }}>{pending ? 'Check my payment' : `Buy ${power.messagesPerPurchase} messages · 1 USDC`}</Btn>
         </>
       ) : (
         <Notice tone="info" title="Need more?">

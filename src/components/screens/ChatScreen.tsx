@@ -128,7 +128,9 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
       profile: profile.profile,
       vaultUsdc: vault.vaultBalance !== null ? Number(vault.vaultBalance) / 1_000_000 : null,
       // No vault yet: the agent offers to open it once the user has shared their numbers (Hieu, 2026-10-29).
-      hasVault: !!vault.vaultAddress,
+      // Unknown (not read yet, or the read failed) is NOT "no vault": the server treats a missing value as a vault that exists,
+      // so nobody is offered a second vault (and a second fee) because of a slow or failed read (security review 2026-10-29).
+      hasVault: vault.ready && !vault.readError ? !!vault.vaultAddress : undefined,
       vaultFeeUsdc: vault.fee !== null ? Number(vault.fee) / 1_000_000 : null,
       walletUsdc: vault.walletBalance !== null ? Number(vault.walletBalance) / 1_000_000 : null,
       cirBtcUsdc: cirBtc.balance === 0n ? 0 : cirBtc.valueUsdc6 !== null ? Number(cirBtc.valueUsdc6) / 1_000_000 : null,
