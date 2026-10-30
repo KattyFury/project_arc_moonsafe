@@ -1,0 +1,102 @@
+{
+  "sourceDiffSha256": "787b1c81a66573f553118a098491c06be9b16275fdc586533710cddf0cedafa4",
+  "commit": "fd7c73114602dfc4afa7954f1dad3eb1887ba554",
+  "cases": [
+    {
+      "id": "day-small-savings",
+      "turns": 3
+    },
+    {
+      "id": "day-pooling-choice",
+      "turns": 3
+    },
+    {
+      "id": "day-purchase-pause",
+      "turns": 3
+    },
+    {
+      "id": "beginner-vi",
+      "turns": 3
+    },
+    {
+      "id": "irregular-family",
+      "turns": 3
+    },
+    {
+      "id": "testnet-reality",
+      "turns": 3
+    },
+    {
+      "id": "unknown-vs-zero",
+      "turns": 3
+    },
+    {
+      "id": "education-follow-up",
+      "turns": 3
+    }
+  ],
+  "model": "claude-haiku-5-5",
+  "provider": "anthropic",
+  "comparisonLimit": "OpenAI baseline used an older app commit; this is not a paired model-only comparison.",
+  "cap": 650000,
+  "started": "2026-10-30T01:37:49.103Z",
+  "ended": "2026-10-30T01:37:50.277Z",
+  "input": 0,
+  "output": 0,
+  "cached": 0,
+  "cacheCreated": 0,
+  "cacheCreated5m": 0,
+  "cacheCreated1h": 0,
+  "calls": 1,
+  "conservativeUnknownUsage": 30072,
+  "stopped": "network-error-usage-unknown",
+  "fixture": {
+    "vndPerUsd": 25000,
+    "walletUsdc": 50,
+    "vaultUsdc": 0,
+    "hasVault": true,
+    "prices": "unavailable"
+  },
+  "apiCalls": [],
+  "transcript": [
+    {
+      "case": "day-small-savings",
+      "category": "education",
+      "turn": 1,
+      "user": "Education only, no forms. Suppose someone starts with no savings and can save 200000 VND per month. How does that help with a surprise 1000000 VND bill? Give an everyday example.",
+      "status": 502,
+      "ops": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "tokens": 30072,
+      "calls": 1,
+      "ms": 261,
+      "complete": false
+    }
+  ]
+}

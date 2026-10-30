@@ -1783,7 +1783,7 @@ ${ending}` })
       // Users found replies wordy (2026-10-24, median 305 chars), then found them bossy with no reasons (Hieu, 2026-10-27):
       // room for one "why" sentence. Checked only once the content is right.
       const maxChars = phase === 'plan' && !userAsks ? 1800 : teach ? 900 : 360
-      if (!problems.length && content.replace(/\*\*/g, '').length > maxChars && !actions.some(x => x.type === 'show_allocation' || x.type === 'show_cashflow')) problems.push(`too long (${content.length} chars): cut to at most ${maxChars === 900 ? '4' : maxChars === 360 ? '2' : '5'} short sentences including one question; first sentence = the direct answer; ${maxChars === 360 ? 'this is BRIEF mode: only the question or the confirmation, no reason, no teaching, no recap' : 'keep every point it makes now (key numbers, the reason why, advice on debt or saving), drop only preambles, repeats and filler'}`)
+      if (!problems.length && content.replace(/\*\*/g, '').length > maxChars && !actions.some(x => x.type === 'show_allocation' || x.type === 'show_cashflow')) problems.push(`too long (${content.length} chars): cut to at most ${maxChars === 900 ? '4' : maxChars === 360 ? '2' : '5'} short sentences${next ? ' with only the supplied next question' : '; do not add a question or an offer to continue'}; first sentence = the direct answer; ${maxChars === 360 ? 'this is BRIEF mode: only the question or the confirmation, no reason, no teaching, no recap' : 'keep the direct answer, essential figures and one useful example; drop preambles, repetition and unsolicited advice'}`)
       if (problems.length && rewrites < 2 && round < 4) {
         rewrites++
         meter.rewrites = rewrites

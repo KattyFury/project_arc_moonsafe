@@ -5,7 +5,9 @@ import { execFileSync } from 'node:child_process'
 import { DEFAULT_CLAUDE_MODEL } from '../functions/_lib/llm'
 import { REEVAL_CASES } from './reeval-cases'
 import { CYCLE_FRESH_CASES } from './cycle-fresh-cases'
+import { DAY_EVAL_CASES } from './day-eval-cases'
 import { existsSync, writeFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { SignJWT, exportJWK, generateKeyPair } from 'jose'
 import { normalizeProfile, applyOps, readOps } from '../src/lib/profile'
 import { FRAMEWORK_CASES } from './framework-eval-cases'
@@ -16,10 +18,10 @@ const label = flag('--run') ?? 'claude-reeval-2026-10-29'
 if (!/^[a-z0-9-]+$/.test(label)) throw new Error('Run label must contain only lowercase letters, digits and hyphens.')
 const OUT = 'docs/evals/' + label + '.json'
 const priority = ['cost-basis', 'irregular-family', 'no-consent', 'loss-listening', 'beginner-vi', 'shared-transfers']
-const ordered = [...FRAMEWORK_CASES.filter(c => priority.includes(c.id)), ...FRAMEWORK_CASES.filter(c => !priority.includes(c.id)), ...REEVAL_CASES, ...CYCLE_FRESH_CASES]
+const ordered = [...FRAMEWORK_CASES.filter(c => priority.includes(c.id)), ...FRAMEWORK_CASES.filter(c => !priority.includes(c.id)), ...REEVAL_CASES, ...CYCLE_FRESH_CASES, ...DAY_EVAL_CASES]
 const selected = flag('--only')?.split(',')
-const cases = selected ? ordered.filter(c => selected.includes(c.id)) : ordered
-if (selected && cases.length !== selected.length) throw new Error('Unknown or duplicate case id.')
+const cases = selected ? selected.flatMap(id => ordered.filter(c => c.id === id)) : ordered
+if (selected && (new Set(selected).size !== selected.length || cases.length !== selected.length)) throw new Error('Unknown or duplicate case id.')
 const live = process.argv.includes('--live')
 const reserve = (body: Record<string, unknown>) => Buffer.byteLength(JSON.stringify(body), 'utf8') + Number(body.max_tokens ?? 1500) + 4096
 if (process.argv.includes('--selftest')) {
@@ -43,6 +45,7 @@ const token = await new SignJWT({}).setProtectedHeader({ alg: 'ES256', kid: jwk.
   .setIssuedAt().setExpirationTime('12h').sign(privateKey)
 const realFetch = globalThis.fetch
 const report = {
+  sourceDiffSha256: createHash('sha256').update(execFileSync('git', ['diff', '--', 'functions', 'src'], { encoding: 'utf8' })).digest('hex'),
   commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), cases: cases.map(c => ({ id: c.id, turns: c.lines.length })), model: DEFAULT_CLAUDE_MODEL, provider: 'anthropic', comparisonLimit: 'OpenAI baseline used an older app commit; this is not a paired model-only comparison.', cap: CAP,
   started: new Date().toISOString(), ended: '', input: 0, output: 0, cached: 0, cacheCreated: 0, cacheCreated5m: 0, cacheCreated1h: 0, calls: 0,
   conservativeUnknownUsage: 0, stopped: '',

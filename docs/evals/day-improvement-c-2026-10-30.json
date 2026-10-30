@@ -1,0 +1,1754 @@
+{
+  "sourceDiffSha256": "df5d090f03ecb841d0f85d8d8907455ced9e281ea2755c270de0119951b63e88",
+  "commit": "fd7c73114602dfc4afa7954f1dad3eb1887ba554",
+  "cases": [
+    {
+      "id": "day-small-savings",
+      "turns": 3
+    },
+    {
+      "id": "day-pooling-choice",
+      "turns": 3
+    },
+    {
+      "id": "day-purchase-pause",
+      "turns": 3
+    },
+    {
+      "id": "beginner-vi",
+      "turns": 3
+    },
+    {
+      "id": "irregular-family",
+      "turns": 3
+    },
+    {
+      "id": "education-follow-up",
+      "turns": 3
+    }
+  ],
+  "model": "claude-haiku-5-5",
+  "provider": "anthropic",
+  "comparisonLimit": "OpenAI baseline used an older app commit; this is not a paired model-only comparison.",
+  "cap": 378555,
+  "started": "2026-10-30T01:40:07.462Z",
+  "ended": "2026-10-30T01:41:15.858Z",
+  "input": 340361,
+  "output": 5245,
+  "cached": 53863,
+  "cacheCreated": 286216,
+  "cacheCreated5m": 286216,
+  "cacheCreated1h": 0,
+  "calls": 36,
+  "conservativeUnknownUsage": 0,
+  "stopped": "budget-reservation",
+  "fixture": {
+    "vndPerUsd": 25000,
+    "walletUsdc": 50,
+    "vaultUsdc": 0,
+    "hasVault": true,
+    "prices": "unavailable"
+  },
+  "apiCalls": [
+    {
+      "case": "day-small-savings",
+      "turn": 1,
+      "status": 200,
+      "ms": 1012,
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 9784,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 9784,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "day-small-savings",
+      "turn": 1,
+      "status": 200,
+      "ms": 2420,
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 8670,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 8670,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 272,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "day-small-savings",
+      "turn": 1,
+      "status": 200,
+      "ms": 2159,
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 8803,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 8803,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 244,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "day-small-savings",
+      "turn": 2,
+      "status": 200,
+      "ms": 1122,
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 10029,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 10029,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "day-small-savings",
+      "turn": 2,
+      "status": 200,
+      "ms": 1950,
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 289,
+        "cache_read_input_tokens": 8670,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 289,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 166,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "day-small-savings",
+      "turn": 3,
+      "status": 200,
+      "ms": 773,
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 10184,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 10184,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "day-small-savings",
+      "turn": 3,
+      "status": 200,
+      "ms": 1268,
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 9293,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 9293,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 108,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "day-small-savings",
+      "turn": 3,
+      "status": 200,
+      "ms": 1360,
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 9372,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 9372,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 137,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "day-small-savings",
+      "turn": 3,
+      "status": 200,
+      "ms": 2222,
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 9470,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 9470,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 108,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "day-pooling-choice",
+      "turn": 1,
+      "status": 200,
+      "ms": 1954,
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 9719,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 9719,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "day-pooling-choice",
+      "turn": 1,
+      "status": 200,
+      "ms": 2135,
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 8649,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 8649,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 175,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "day-pooling-choice",
+      "turn": 1,
+      "status": 200,
+      "ms": 2700,
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 8732,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 8732,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 215,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "day-pooling-choice",
+      "turn": 1,
+      "status": 200,
+      "ms": 2402,
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 8877,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 8877,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 239,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "day-pooling-choice",
+      "turn": 2,
+      "status": 200,
+      "ms": 1156,
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 10054,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 10054,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "day-pooling-choice",
+      "turn": 2,
+      "status": 200,
+      "ms": 2146,
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 9006,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 9006,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 238,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "day-pooling-choice",
+      "turn": 2,
+      "status": 200,
+      "ms": 1622,
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 9120,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 9120,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 171,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "day-pooling-choice",
+      "turn": 2,
+      "status": 200,
+      "ms": 2027,
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 9239,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 9239,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 162,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "day-pooling-choice",
+      "turn": 3,
+      "status": 200,
+      "ms": 2055,
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 493,
+        "cache_read_input_tokens": 8649,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 493,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 198,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "day-purchase-pause",
+      "turn": 1,
+      "status": 200,
+      "ms": 888,
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 9724,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 9724,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "day-purchase-pause",
+      "turn": 1,
+      "status": 200,
+      "ms": 2721,
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 8654,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 8654,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 211,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "day-purchase-pause",
+      "turn": 2,
+      "status": 200,
+      "ms": 793,
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 10020,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 10020,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "day-purchase-pause",
+      "turn": 2,
+      "status": 200,
+      "ms": 1840,
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 252,
+        "cache_read_input_tokens": 8654,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 252,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 201,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "day-purchase-pause",
+      "turn": 3,
+      "status": 200,
+      "ms": 767,
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 10181,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 10181,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "day-purchase-pause",
+      "turn": 3,
+      "status": 200,
+      "ms": 2082,
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 9201,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 9201,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 191,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "day-purchase-pause",
+      "turn": 3,
+      "status": 200,
+      "ms": 1672,
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 9266,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 9266,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 76,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "beginner-vi",
+      "turn": 1,
+      "status": 200,
+      "ms": 1681,
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 9745,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 9745,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "beginner-vi",
+      "turn": 1,
+      "status": 200,
+      "ms": 2435,
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 8894,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 8894,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 346,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "beginner-vi",
+      "turn": 1,
+      "status": 200,
+      "ms": 2397,
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 9091,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 9091,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 280,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "beginner-vi",
+      "turn": 1,
+      "status": 200,
+      "ms": 6444,
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 9201,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 9201,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 287,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "beginner-vi",
+      "turn": 2,
+      "status": 200,
+      "ms": 2948,
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 357,
+        "cache_read_input_tokens": 9745,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 357,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 39,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        },
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "beginner-vi",
+      "turn": 2,
+      "status": 200,
+      "ms": 2066,
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 357,
+        "cache_read_input_tokens": 8894,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 357,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 269,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "beginner-vi",
+      "turn": 3,
+      "status": 200,
+      "ms": 881,
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 10366,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 10366,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "beginner-vi",
+      "turn": 3,
+      "status": 200,
+      "ms": 1468,
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 309,
+        "cache_read_input_tokens": 9251,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 309,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 147,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "irregular-family",
+      "turn": 1,
+      "status": 200,
+      "ms": 1857,
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 9925,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 9925,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 339,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "update_profile",
+          "arguments": {
+            "age": 38,
+            "sole_earner": true,
+            "dependents": 3,
+            "income_stable": false
+          }
+        },
+        {
+          "name": "set_income",
+          "arguments": {
+            "name": "Freelance income (household)",
+            "monthly": {
+              "amount": 3000,
+              "currency": "USDC"
+            },
+            "kind": "irregular"
+          }
+        },
+        {
+          "name": "set_expense",
+          "arguments": {
+            "name": "Household spending",
+            "monthly": {
+              "amount": 1800,
+              "currency": "USDC"
+            },
+            "kind": "fixed"
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "irregular-family",
+      "turn": 1,
+      "status": 200,
+      "ms": 699,
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 10684,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 10684,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "irregular-family",
+      "turn": 2,
+      "status": 200,
+      "ms": 1333,
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 10206,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 10206,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 250,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "update_profile",
+          "arguments": {
+            "debts_complete": true,
+            "no_near_goal": true,
+            "income_stable": false,
+            "sole_earner": true,
+            "dependents": 3
+          }
+        },
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "savings",
+            "name": "Household savings",
+            "worth": {
+              "amount": 5000,
+              "currency": "USDC"
+            }
+          }
+        }
+      ],
+      "finish": "tool_use"
+    }
+  ],
+  "transcript": [
+    {
+      "case": "day-small-savings",
+      "category": "education",
+      "turn": 1,
+      "user": "Education only, no forms. Suppose someone starts with no savings and can save 200000 VND per month. How does that help with a surprise 1000000 VND bill? Give an everyday example.",
+      "status": 200,
+      "content": "Saving 200,000 VND a month builds up slowly, so it does not cover a 1,000,000 VND bill right away.\n\nHere is how the math works: 200,000 VND a month × 5 months = 1,000,000 VND. After five months of saving with no withdrawals, the money would be enough to pay that bill in full.\n\nEveryday example (illustrative only): imagine a phone repair costs 1,000,000 VND and you have nothing set aside. If you save 200,000 VND each month, you could pay it in cash after five months. If the repair is needed next week, you would not yet have the money, so you would need another option, such as asking the shop for a payment plan or borrowing. Borrowing has its own cost, so it is worth checking the interest before you choose it.",
+      "ops": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "tokens": 27811,
+      "calls": 3,
+      "ms": 5667,
+      "complete": true
+    },
+    {
+      "case": "day-small-savings",
+      "category": "education",
+      "turn": 2,
+      "user": "But the bill is due today, before they saved anything. Can that plan pay it today? Explain the timing without suggesting an investment return.",
+      "status": 200,
+      "content": "No, a plan that saves 200,000 VND a month cannot pay a bill due today, because the money has to build up over time. Starting from zero, the savings at the moment the bill arrives would be 0 VND, so the plan only helps with bills that come after you have saved enough.\n\nWhat helps with a bill due today is a small amount already set aside, even a little, or a conversation with the company about pushing the due date or splitting the payment. Saving starts working for future surprises, so the same habit helps the next time a bill like this comes up.",
+      "ops": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "tokens": 19188,
+      "calls": 2,
+      "ms": 3094,
+      "complete": true
+    },
+    {
+      "case": "day-small-savings",
+      "category": "education",
+      "turn": 3,
+      "user": "What one private habit can they try this month? Do not save the example amounts as my finances.",
+      "status": 200,
+      "content": "A simple habit to try this month: right after you get paid, move a small fixed amount into a separate account or envelope you do not spend from. Pick an amount you can keep even in a tight month, and treat it like a bill you pay yourself first.\n\nNothing you have said here has been saved as your finances, so this is just a general idea you can test privately.",
+      "ops": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "tokens": 38714,
+      "calls": 4,
+      "ms": 5649,
+      "complete": true
+    },
+    {
+      "case": "day-pooling-choice",
+      "category": "household",
+      "turn": 1,
+      "user": "Just explain, do not start a plan. Does being married mean we should combine every bank account and can spend all of each other's savings?",
+      "status": 200,
+      "content": "Being married doesn't automatically mean you share every account or can spend each other's savings. Marriage is a legal partnership, but how you handle money together is something you agree on as a couple. Some couples pool everything, some share only the bills, and some keep their money completely separate. Each arrangement can work, as long as you both know which one you've chosen.\n\nA simple way to picture it: if you each keep your own savings but split the rent and groceries from a shared account, you each have access to your own money and to the shared budget, but not to each other's private savings. Before moving money around, it helps to talk about what you each expect, especially for big purchases.\n\nIf you ever want to set up a shared approach, I'm happy to walk through the options with you. Nothing needs to change in the meantime.",
+      "ops": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "tokens": 36648,
+      "calls": 4,
+      "ms": 9212,
+      "complete": true
+    },
+    {
+      "case": "day-pooling-choice",
+      "category": "household",
+      "turn": 2,
+      "user": "Suppose one partner contributes $650 toward shared bills but keeps the rest private. Is $650 their entire salary? Is the private balance zero?",
+      "status": 200,
+      "content": "No, the $650 is not their whole salary, and it doesn't tell us their private balance. It's only the amount they put toward shared bills. Their full salary, and whatever they keep for themselves, are separate numbers that we don't know from this alone.\n\nIn the example, the private money isn't zero. It just isn't part of the shared budget. If the $650 is paid every month, that's a monthly contribution; if it's a one-time payment, it's not. The timing matters for planning, so it's worth checking which one it is.",
+      "ops": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "tokens": 38032,
+      "calls": 4,
+      "ms": 6967,
+      "complete": true
+    },
+    {
+      "case": "day-pooling-choice",
+      "category": "household",
+      "turn": 3,
+      "user": "Explain one way to agree on shared expenses while keeping separate accounts. This is a made-up household, not mine.",
+      "status": 200,
+      "content": "Here's one common way, using a made-up household:\n\nSay Alex and Sam each earn different amounts. They open one shared account for the bills, rent, and groceries. Each person puts in a share based on their income, for example, Alex pays 60% and Sam pays 40%, so the load feels fair to both. Everything else stays in their own separate accounts, and each decides freely what to do with it.\n\nThe key is agreeing on three things up front: what counts as a shared bill, how much each person adds and how often, and what happens if one person falls short one month. Writing this down, even on a single page, keeps it clear and avoids arguments later.",
+      "ops": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "tokens": 9344,
+      "calls": 1,
+      "ms": 2082,
+      "complete": true
+    },
+    {
+      "case": "day-purchase-pause",
+      "category": "education",
+      "turn": 1,
+      "user": "Teach me without onboarding. I want to buy a fancy phone because my friends upgraded. Explain needs versus wants using this example.",
+      "status": 200,
+      "content": "Need vs. want is about whether your life stops working without the thing. A phone that makes calls, texts, and lets you get to work or handle your bills is a need. A newer, pricier model that does the same jobs is a want, even when it's a great phone.\n\nHere's the test: ask \"If I don't buy this, what actually gets harder?\" If the answer is \"nothing I can't already do,\" it's a want. Your friends upgrading is a reason you feel the pull, not a reason the phone is a need.\n\nWants aren't bad. They're just the first thing to pay for after your needs, bills, and savings, which is why a pause before buying helps you check that the money is actually left over.",
+      "ops": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "tokens": 18623,
+      "calls": 2,
+      "ms": 3633,
+      "complete": true
+    },
+    {
+      "case": "day-purchase-pause",
+      "category": "education",
+      "turn": 2,
+      "user": "If I wait two days, is it guaranteed I will no longer want it? What is the point of waiting if the urge remains?",
+      "status": 200,
+      "content": "No, waiting doesn't guarantee the urge disappears. Many people still want the phone after two days, and that's fine.\n\nThe point of waiting isn't to kill the wish. It gives you time to compare the purchase with what the money is already for: bills, rent, savings, and any goal you care about. A want that still looks good after you've checked those things is a choice you can make on purpose, not a reaction to your friends' posts.\n\nIf the urge is still there after the pause, you could ask yourself one more thing: \"Is this still worth it after I've set aside what I need?\" Only buy if you can answer yes with money that's truly left over after essentials.",
+      "ops": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "tokens": 19161,
+      "calls": 2,
+      "ms": 2646,
+      "complete": true
+    },
+    {
+      "case": "day-purchase-pause",
+      "category": "education",
+      "turn": 3,
+      "user": "Give me one private check before buying, no income questionnaire and no coin offer.",
+      "status": 200,
+      "content": "Before you buy, check this one thing privately: after your bills, debt payments, and any money set for near-term goals, is there still room for the phone without touching your basic needs or savings? If yes, it's your call. If not, the phone can wait.",
+      "ops": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "tokens": 28953,
+      "calls": 3,
+      "ms": 4539,
+      "complete": true
+    },
+    {
+      "case": "beginner-vi",
+      "category": "education",
+      "turn": 1,
+      "user": "Mình chưa biết quản lý tiền. Phân biệt giúp nhu cầu thiết yếu và mong muốn bằng một ví dụ đời thường, đừng mở form.",
+      "status": 200,
+      "content": "Nhu cầu thiết yếu là thứ bạn phải chi để sống và đi làm: tiền thuê nhà, điện nước, ăn uống cơ bản, đi lại, thuốc men. Mong muốn là thứ làm cuộc sống dễ chịu hơn nhưng không bắt buộc: cà phê mỗi sáng, phim ảnh, đồ mới.\n\nVí dụ: Tháng này bạn có 1.000.000 đồng để chi. Trả tiền nhà 600.000 và tiền điện nước 100.000 là việc phải làm trước. Phần còn lại 300.000 đồng mới là chỗ bạn chọn: ăn ngoài, mua quần áo hay để dành. Biết phân loại như vậy giúp bạn thấy rõ tiền đang đi đâu.",
+      "ops": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "tokens": 37886,
+      "calls": 4,
+      "ms": 13020,
+      "complete": true
+    },
+    {
+      "case": "beginner-vi",
+      "category": "education",
+      "turn": 2,
+      "user": "Mình thu nhập ít nên thấy đầu tư mới thoát nghèo được. Bạn giải thích giúp tiết kiệm có ích gì khi số tiền nhỏ?",
+      "status": 200,
+      "content": "Tiết kiệm không làm bạn giàu ngay, nhưng nó tạo ra một tấm đệm. Ví dụ: nếu mỗi tháng để dành 200.000 đồng, sau 5 tháng bạn có 1.000.000 đồng (giả sử không rút ra). Khi xe hỏng hoặc phải đi khám bệnh, bạn có tiền trả mà không phải vay nóng với lãi cao. Với thu nhập ít, đây thường là bước đầu tiên trước khi đầu tư, vì nếu gặp chuyện bất ngờ mà không có tiền, bạn có thể phải bán đồ hoặc vay đắt, và tiền đầu tư sẽ bị kéo đi giải quyết việc trước mắt.",
+      "ops": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "tokens": 19679,
+      "calls": 2,
+      "ms": 5036,
+      "complete": true
+    },
+    {
+      "case": "beginner-vi",
+      "category": "education",
+      "turn": 3,
+      "user": "Hôm nay làm đúng một việc gì để bắt đầu? Không cần mua coin nhé.",
+      "status": 200,
+      "content": "Bạn có thể bắt đầu bằng việc ghi lại tất cả khoản chi trong tuần này, dù nhỏ đến đâu, vào một tờ giấy hoặc ghi chú điện thoại. Sau 7 ngày, bạn sẽ biết tiền đang đi đâu, và phân loại theo hai nhóm: thiết yếu và mong muốn như ví dụ lúc nãy.",
+      "ops": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "tokens": 20107,
+      "calls": 2,
+      "ms": 2398,
+      "complete": true
+    },
+    {
+      "case": "irregular-family",
+      "category": "household",
+      "turn": 1,
+      "user": "I am married and 38. I am the only earner supporting my spouse and two children. My freelance income varies; it averages $3000 monthly. Household spending is $1800.",
+      "status": 200,
+      "content": "Noted: I will default to a household plan based on what you shared about your marriage. Existing entries stay; we still need to confirm whether they cover you or the household. You can choose an individual plan., age 38, income irregular, 3 dependents, sole earner, Freelance income (household) 3,000 USDC a month (irregular), Household spending 1,800 USDC a month (fixed).\n\nI need some information to show you where your money goes. Share whatever you're comfortable with in the form below; anything you leave empty I'll take as \"prefer not to say\" and skip it.",
+      "ops": [
+        {
+          "op": "update_profile",
+          "fields": {
+            "planningScope": "household"
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "age": 38
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "incomeStable": false
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "dependents": 3
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "soleEarner": true
+          }
+        },
+        {
+          "op": "set_income",
+          "income": {
+            "id": "iga1242",
+            "name": "Freelance income (household)",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "irregular",
+            "updatedAt": 1793324473759
+          }
+        },
+        {
+          "op": "set_expense",
+          "expense": {
+            "id": "ekp0xh2",
+            "name": "Household spending",
+            "monthly": 1800,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793324473763
+          }
+        }
+      ],
+      "actions": [
+        {
+          "type": "intake_form",
+          "keys": [
+            "goal",
+            "assets",
+            "other",
+            "debt"
+          ],
+          "seen": 50
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": 38,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 3,
+        "soleEarner": true,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [
+          {
+            "id": "iga1242",
+            "name": "Freelance income (household)",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "irregular",
+            "updatedAt": 1793324473759
+          }
+        ],
+        "expenses": [
+          {
+            "id": "ekp0xh2",
+            "name": "Household spending",
+            "monthly": 1800,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793324473763
+          }
+        ],
+        "planningScope": "household"
+      },
+      "tokens": 20990,
+      "calls": 2,
+      "ms": 2623,
+      "complete": true
+    },
+    {
+      "case": "irregular-family",
+      "category": "household",
+      "turn": 2,
+      "user": "We have $5000 in savings, no debts and no near-term goals. Explain how irregular income and being the only earner change the fund target.",
+      "status": 502,
+      "ops": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 38,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 3,
+        "soleEarner": true,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [
+          {
+            "id": "iga1242",
+            "name": "Freelance income (household)",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "irregular",
+            "updatedAt": 1793324473759
+          }
+        ],
+        "expenses": [
+          {
+            "id": "ekp0xh2",
+            "name": "Household spending",
+            "monthly": 1800,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793324473763
+          }
+        ],
+        "planningScope": "household"
+      },
+      "profile": {
+        "v": 2,
+        "age": 38,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 3,
+        "soleEarner": true,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [
+          {
+            "id": "iga1242",
+            "name": "Freelance income (household)",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "irregular",
+            "updatedAt": 1793324473759
+          }
+        ],
+        "expenses": [
+          {
+            "id": "ekp0xh2",
+            "name": "Household spending",
+            "monthly": 1800,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793324473763
+          }
+        ],
+        "planningScope": "household"
+      },
+      "tokens": 10470,
+      "calls": 1,
+      "ms": 1358,
+      "complete": false
+    }
+  ]
+}

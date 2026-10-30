@@ -1,0 +1,188 @@
+{
+  "budget": 1000000,
+  "verified": 936979,
+  "unknown": 30072,
+  "calls": 99,
+  "accounted": 967051,
+  "remaining": 32949,
+  "checks": [
+    {
+      "run": "day-improvement-b-2026-10-30",
+      "case": "day-small-savings",
+      "turn": 1,
+      "check": "illustrative conversation has no mutations or actions",
+      "passed": true
+    },
+    {
+      "run": "day-improvement-b-2026-10-30",
+      "case": "day-small-savings",
+      "turn": 2,
+      "check": "illustrative conversation has no mutations or actions",
+      "passed": true
+    },
+    {
+      "run": "day-improvement-b-2026-10-30",
+      "case": "day-small-savings",
+      "turn": 3,
+      "check": "illustrative conversation has no mutations or actions",
+      "passed": true
+    },
+    {
+      "run": "day-improvement-b-2026-10-30",
+      "case": "day-pooling-choice",
+      "turn": 1,
+      "check": "illustrative conversation has no mutations or actions",
+      "passed": true
+    },
+    {
+      "run": "day-improvement-b-2026-10-30",
+      "case": "day-pooling-choice",
+      "turn": 2,
+      "check": "illustrative conversation has no mutations or actions",
+      "passed": true
+    },
+    {
+      "run": "day-improvement-b-2026-10-30",
+      "case": "day-pooling-choice",
+      "turn": 3,
+      "check": "illustrative conversation has no mutations or actions",
+      "passed": true
+    },
+    {
+      "run": "day-improvement-b-2026-10-30",
+      "case": "day-purchase-pause",
+      "turn": 1,
+      "check": "illustrative conversation has no mutations or actions",
+      "passed": true
+    },
+    {
+      "run": "day-improvement-b-2026-10-30",
+      "case": "day-purchase-pause",
+      "turn": 2,
+      "check": "illustrative conversation has no mutations or actions",
+      "passed": true
+    },
+    {
+      "run": "day-improvement-b-2026-10-30",
+      "case": "day-purchase-pause",
+      "turn": 3,
+      "check": "illustrative conversation has no mutations or actions",
+      "passed": true
+    },
+    {
+      "run": "day-improvement-b-2026-10-30",
+      "check": "savings timing explicitly five months",
+      "passed": true
+    },
+    {
+      "run": "day-improvement-b-2026-10-30",
+      "check": "private balance not asserted to be nonzero",
+      "passed": true
+    },
+    {
+      "run": "day-improvement-c-2026-10-30",
+      "case": "day-small-savings",
+      "turn": 1,
+      "check": "illustrative conversation has no mutations or actions",
+      "passed": true
+    },
+    {
+      "run": "day-improvement-c-2026-10-30",
+      "case": "day-small-savings",
+      "turn": 2,
+      "check": "illustrative conversation has no mutations or actions",
+      "passed": true
+    },
+    {
+      "run": "day-improvement-c-2026-10-30",
+      "case": "day-small-savings",
+      "turn": 3,
+      "check": "illustrative conversation has no mutations or actions",
+      "passed": true
+    },
+    {
+      "run": "day-improvement-c-2026-10-30",
+      "case": "day-pooling-choice",
+      "turn": 1,
+      "check": "illustrative conversation has no mutations or actions",
+      "passed": true
+    },
+    {
+      "run": "day-improvement-c-2026-10-30",
+      "case": "day-pooling-choice",
+      "turn": 2,
+      "check": "illustrative conversation has no mutations or actions",
+      "passed": true
+    },
+    {
+      "run": "day-improvement-c-2026-10-30",
+      "case": "day-pooling-choice",
+      "turn": 3,
+      "check": "illustrative conversation has no mutations or actions",
+      "passed": true
+    },
+    {
+      "run": "day-improvement-c-2026-10-30",
+      "case": "day-purchase-pause",
+      "turn": 1,
+      "check": "illustrative conversation has no mutations or actions",
+      "passed": true
+    },
+    {
+      "run": "day-improvement-c-2026-10-30",
+      "case": "day-purchase-pause",
+      "turn": 2,
+      "check": "illustrative conversation has no mutations or actions",
+      "passed": true
+    },
+    {
+      "run": "day-improvement-c-2026-10-30",
+      "case": "day-purchase-pause",
+      "turn": 3,
+      "check": "illustrative conversation has no mutations or actions",
+      "passed": true
+    },
+    {
+      "run": "day-improvement-c-2026-10-30",
+      "check": "savings timing explicitly five months",
+      "passed": true
+    },
+    {
+      "run": "day-improvement-c-2026-10-30",
+      "check": "private balance not asserted to be nonzero",
+      "passed": false
+    }
+  ],
+  "runs": [
+    {
+      "label": "day-improvement-a-2026-10-30",
+      "tokens": 0,
+      "unknown": 30072,
+      "stopped": "network-error-usage-unknown",
+      "sourceDiffSha256": "787b1c81a66573f553118a098491c06be9b16275fdc586533710cddf0cedafa4",
+      "completeTurns": 0,
+      "completeCases": 0,
+      "calls": 1
+    },
+    {
+      "label": "day-improvement-b-2026-10-30",
+      "tokens": 591373,
+      "unknown": 0,
+      "stopped": "budget-reservation",
+      "sourceDiffSha256": "787b1c81a66573f553118a098491c06be9b16275fdc586533710cddf0cedafa4",
+      "completeTurns": 23,
+      "completeCases": 7,
+      "calls": 62
+    },
+    {
+      "label": "day-improvement-c-2026-10-30",
+      "tokens": 345606,
+      "unknown": 0,
+      "stopped": "budget-reservation",
+      "sourceDiffSha256": "df5d090f03ecb841d0f85d8d8907455ced9e281ea2755c270de0119951b63e88",
+      "completeTurns": 13,
+      "completeCases": 4,
+      "calls": 36
+    }
+  ]
+}
