@@ -3,11 +3,12 @@
 // Buying cirBTC has no cap and no warning above the target: how much is the user's call (Hieu, 2026-10-30).
 
 import { useState, type ReactNode } from 'react'
-import { ArrowRight, Bitcoin, ExternalLink, Landmark, Lock, ShieldCheck, X, type LucideIcon } from 'lucide-react'
+import { Bitcoin, ExternalLink, Landmark, Lock, ShieldCheck, X, type LucideIcon } from 'lucide-react'
 import { bucketStanding } from '@/lib/allocation'
 import { useApp } from '@/state/AppState'
 import { explorerTx } from '@/lib/network'
 import { spendable } from '@/lib/invest'
+import { GAS_ESTIMATE_USDC6 } from '@/hooks/useVault'
 import { dcaNextRun, formatCirBtc } from '@/hooks/useCirBtc'
 import { DCA_AVAILABLE } from '@/lib/features'
 import { useNow } from '@/hooks/useNow'
@@ -205,27 +206,26 @@ function InvestOpen({ onAsk }: { onAsk: (question: string) => void }) {
 
       {q && (
         <Sheet>
-          <p className="font-semibold text-[20px] leading-7" style={{ color: 'var(--ink)' }}>Confirm purchase</p>
-          <div className="flex items-center gap-2 px-4 py-4 rounded-2xl" style={{ background: 'var(--surface-muted)' }}>
-            <div className="text-center flex-1">
-              <p className="font-bold text-[16px]" style={{ color: 'var(--ink)' }}>{q.amountInUsdc} USDC</p>
-              <p className="text-[14px]" style={{ color: 'var(--muted)' }}>You pay</p>
-            </div>
-            <ArrowRight size={18} style={{ color: 'var(--muted)' }} className="flex-shrink-0" />
-            <div className="text-center flex-1">
-              <p className="font-bold text-[16px]" style={{ color: 'var(--ink)' }}>{q.estimate.estimatedOutput.amount} cirBTC</p>
-              <p className="text-[14px]" style={{ color: 'var(--muted)' }}>You get (estimate)</p>
-            </div>
+          {/* Laid out like a trading app's review step (Hieu, 2026-10-30): the amount first, then exactly the four lines such apps show. */}
+          <div className="flex flex-col items-center gap-1 pt-2 text-center">
+            <span className="text-[15px] leading-5" style={{ color: 'var(--subtle)' }}>You pay</span>
+            <span className="display text-[40px] leading-[48px] font-bold tabular-nums" style={{ color: 'var(--ink)', letterSpacing: '-0.03em' }}>{q.amountInUsdc} USDC</span>
+            <span className="text-[15px] leading-5" style={{ color: 'var(--subtle)' }}>You get about <strong style={{ color: 'var(--ink)' }}>{q.estimate.estimatedOutput.amount} cirBTC</strong></span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-[14px]" style={{ color: 'var(--muted)' }}>Price per BTC</span>
-            <span className="text-[14px] font-medium" style={{ color: 'var(--ink)' }}>{`${Math.round(q.pricePerBtc).toLocaleString('en-US')} USD per BTC${q.premium !== null ? `, ${q.premium >= 0 ? '+' : ''}${(q.premium * 100).toFixed(1)}% vs market` : ''}`}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-[14px]" style={{ color: 'var(--muted)' }}>Minimum received (slippage ≤ 3%)</span>
-            <span className="text-[14px] font-medium" style={{ color: 'var(--ink)' }}>{q.estimate.stopLimit.amount} cirBTC</span>
-          </div>
-          <Notice tone="warning">The final price may differ from the estimate. Only invest money you can afford to lose.</Notice>
+          <dl className="flex flex-col [&>div:last-child]:border-b-0" style={{ borderTop: '1px solid var(--line)' }}>
+            {[
+              ['Rate', `1 BTC = $${Math.round(q.pricePerBtc).toLocaleString('en-US')}`],
+              ['Price vs market', q.premium !== null ? `${q.premium >= 0 ? '+' : ''}${(q.premium * 100).toFixed(1)}%` : DASH],
+              ['Minimum received', `${q.estimate.stopLimit.amount} cirBTC`],
+              ['Network fee', `about ${formatUsdc(GAS_ESTIMATE_USDC6)}`],
+            ].map(([k, v]) => (
+              <div key={k} className="flex justify-between gap-4 py-3 border-b border-[var(--line)] text-[15px] leading-5">
+                <dt style={{ color: 'var(--subtle)' }}>{k}</dt>
+                <dd className="font-semibold tabular-nums text-right" style={{ color: 'var(--ink)' }}>{v}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="text-[13px] leading-5 text-center" style={{ color: 'var(--muted)' }}>Prices can fall. The amount you get may differ slightly, never below the minimum.</p>
           {cirBtc.error && <Notice tone="danger">{cirBtc.error}</Notice>}
           <div className="flex gap-4">
             <Btn variant="outline" disabled={cirBtc.busy} onClick={cirBtc.clearQuote}>Cancel</Btn>

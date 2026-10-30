@@ -106,7 +106,7 @@ export function ActionCard({ action, title, onFinished }: { action: ChatAction; 
       {kind === 'buy' && q && status !== 'done' && (
         <div className="flex flex-col gap-1 p-4 rounded-2xl" style={{ background: 'var(--surface-muted)' }}>
           <p className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--ink)' }}>You get ≈ {q.estimate.estimatedOutput.amount} cirBTC</p>
-          <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>{`At least ${q.estimate.stopLimit.amount} · ${Math.round(q.pricePerBtc).toLocaleString('en-US')} USD per BTC${q.premium !== null ? ` (${q.premium >= 0 ? '+' : ''}${(q.premium * 100).toFixed(1)}% vs market)` : ''}`}</p>
+          <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>{`At least ${q.estimate.stopLimit.amount} cirBTC. 1 BTC = $${Math.round(q.pricePerBtc).toLocaleString('en-US')}${q.premium !== null ? ` (${q.premium >= 0 ? '+' : ''}${(q.premium * 100).toFixed(1)}% vs market)` : ''}`}</p>
         </div>
       )}
 
