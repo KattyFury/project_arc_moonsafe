@@ -49,6 +49,8 @@ export function ActionCard({ action, title, onFinished }: { action: ChatAction; 
     else if (wb !== null && wb < amount + GAS_ESTIMATE_USDC6) block = `The wallet needs about ${formatUsdc(amount + GAS_ESTIMATE_USDC6)} (the opening fee plus a network fee). Add USDC to this wallet, then tap again.`
   } else if (kind === 'deposit') {
     if (maxDeposit !== null && amount > maxDeposit) block = `More than the wallet can add (up to ${formatUsdc(maxDeposit)}, keeping ${formatUsdc(GAS_RESERVE_USDC6)} for fees).`
+    // Money from another wallet of the same person: say where it goes (review 2026-10-29).
+    else if (vault.vaultOwner && !vault.isOwner) warnings.push(`This goes into the emergency fund opened by ${vault.vaultOwner.slice(0, 6)}…${vault.vaultOwner.slice(-4)}. Only that wallet can withdraw it.`)
   } else if (kind === 'withdraw') {
     if (vb !== null && amount > vb) block = `More than the emergency fund holds (${formatUsdc(vb)}).`
     else if (wb !== null && wb < GAS_ESTIMATE_USDC6) block = `The wallet needs about ${formatUsdc(GAS_ESTIMATE_USDC6)} to pay the withdrawal fee.`
@@ -68,7 +70,7 @@ export function ActionCard({ action, title, onFinished }: { action: ChatAction; 
   const run = async () => {
     setStatus('busy'); setError(null)
     try {
-      if (kind === 'open') await vault.createVault()
+      if (kind === 'open') await vault.createVault(amount)
       else if (kind === 'deposit') await vault.deposit(amount)
       else if (kind === 'withdraw') await vault.withdraw(amount)
       else if (kind === 'dca') cirBtc.startDca(amount, action.intervalDays)

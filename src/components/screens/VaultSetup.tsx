@@ -27,7 +27,7 @@ export function VaultSetup() {
 
   const sign = async () => {
     setSigning(true); setError(null)
-    try { await vault.createVault() }
+    try { await vault.createVault(vault.fee ?? undefined) }
     catch (e) { setError(txErrorMessage(e)); setTries(t => t + 1) }
     finally { setSigning(false) }
   }

@@ -350,6 +350,46 @@ expect(safe.calls === 0 && /Safety lives outside the app/.test(safeText) && /You
     await post({ op: 'config', patch: { cardsEnabled: false } }, okProof)
     expect(!opens(await vaultChat('please open my vault')), 'vault: the pause-transactions switch also stops the open-vault card')
     await post({ op: 'config', patch: { cardsEnabled: true } }, okProof)
+
+    // The "yes to an offered amount" fast path obeys the buy lock and the pause switch (review 2026-10-30).
+    const yes = async (offer: string, text = 'yes', ctx: Record<string, unknown> = { hasVault: true }) => {
+      const r = await onRequestPost({ request: new Request('http://local/api/chat', { method: 'POST', headers: headers(), body: JSON.stringify({ messages: [{ role: 'assistant', content: offer }, { role: 'user', content: text }], context: ctx }) }), env: env as unknown as Record<string, string> })
+      return await r.json() as { actions?: Array<{ type: string }> }
+    }
+    const has = (r: { actions?: Array<{ type: string }> }, t: string) => !!r.actions?.some(a => a.type === t)
+    const buyOffer = 'Shall I prepare a cirBTC buy of **100 USDC** from your wallet for you to sign?'
+    const depOffer = 'Ready to start? The first step is your emergency fund: shall I prepare a deposit of **450 USDC** from your wallet for you to sign?'
+    expect(!has(await yes(buyOffer), 'prepare_buy_cirbtc'), 'fast path: "yes" to a buy offer does not make a buy card while buying is locked')
+    expect(has(await yes(depOffer), 'prepare_deposit'), 'fast path: "yes" to a deposit offer makes the deposit card')
+    expect(!has(await yes(depOffer, 'yes', { hasVault: false }), 'prepare_deposit'), 'fast path: no deposit card without a vault')
+    expect(!has(await yes(buyOffer, 'make it 5$'), 'prepare_buy_cirbtc'), 'fast path: a new amount for a buy offer is refused while buying is locked')
+    await post({ op: 'config', patch: { cardsEnabled: false } }, okProof)
+    expect(!has(await yes(depOffer), 'prepare_deposit') && !has(await yes(depOffer, 'make it 5$'), 'prepare_deposit'), 'fast path: the pause switch stops deposit cards from both fast paths')
+    await post({ op: 'config', patch: { cardsEnabled: true } }, okProof)
+  }
+
+  // Round 3 (2026-10-30): every regex the chat runs, against 2,000-character repetitive inputs (user text and the agent's previous reply).
+  {
+    const battery: Array<[string, string]> = [
+      ['digits', '1'.repeat(2000)], ['spaced digits', '1 '.repeat(1000)], ['thousands', '1,'.repeat(1000)], ['dollars', '$1'.repeat(1000)],
+      ['dots', '1.'.repeat(1000)], ['words', 'a '.repeat(1000)], ['k', 'k '.repeat(1000)], ['1 k', '1 k '.repeat(500)],
+      ['have 1', 'I have 1' + ' 1'.repeat(900)], ['put in bank', 'I put ' + '1,'.repeat(900) + ' in my bank'], ['long word', 'I have ' + 'x'.repeat(1900)],
+      ['sentences', '. '.repeat(1000)], ['parens', '('.repeat(2000)], ['per month', '1 usdc a month '.repeat(130)], ['nines', 'my savings are $' + '9'.repeat(1900)],
+      ['maybe', 'maybe '.repeat(300)], ['vietnamese', 'đồng triệu '.repeat(180)], ['i am', "I'm 3 " .repeat(300)], ['no debt', 'no debt '.repeat(240)], ['question marks', '?'.repeat(2000)],
+      ['offer text', 'prepare a deposit of **1 USDC** '.repeat(60)], ['percent', '5% '.repeat(600)], ['to repay', '1 to repay '.repeat(170)],
+    ]
+    let worst = ['', 0]
+    for (const [name, text] of battery) {
+      for (const asAssistant of [false, true]) {
+        const msgs = asAssistant ? [{ role: 'assistant', content: text }, { role: 'user', content: 'yes' }] : [{ role: 'user', content: text }]
+        const t = Date.now()
+        await onRequestPost({ request: new Request('http://local/api/chat', { method: 'POST', headers: headers(), body: JSON.stringify({ messages: msgs, context: { hasVault: true } }) }), env: env as unknown as Record<string, string> })
+        const ms = Date.now() - t
+        if (ms > (worst[1] as number)) worst = [`${name}${asAssistant ? ' (as the agent reply)' : ''}`, ms]
+        expect(ms < 800, `regex DoS: "${name}"${asAssistant ? ' as the previous agent reply' : ''} took ${ms} ms`)
+      }
+    }
+    console.log(`  info: slowest adversarial message: ${worst[0]} ${worst[1]} ms`)
   }
 
   // Security review 2026-10-29: fail closed without KV; a whitespace bomb must not cost seconds of CPU.
