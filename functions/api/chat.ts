@@ -117,8 +117,11 @@ const DEBT_PAY_NAME = /loan|debt|repay|mortgage|installment|credit card|(?<!\p{L
 // "no, make it 10" or "no I already have savings" still go through the normal path.
 // Widened 2026-10-30 (real chat: "no just leave it" was not read as a no): one or more refusal phrases, joined by filler words only.
 const NO_PHRASE = String.raw`no+|nope|nah|not (?:now|yet|today|right now|for now)|maybe later|later|no,? thanks?(?: you)?|i(?:'?m| am) (?:good|fine|ok(?:ay)?)|i don'?t want(?: to)?(?: do (?:it|that))?|not interested|skip(?: it)?|(?:just )?leave it(?: (?:as is|as it is|alone|there|for now))?|let it be|forget (?:it|about it)|never ?mind|no need|(?:i'?ll )?pass|don'?t|không(?: cần)?|chưa|thôi|để sau|để vậy|cứ để (?:vậy|đó|đấy)|bỏ qua|ko|k` // lang-ok
-const NO_FILLER = String.raw`just|it|for now|right now|then|please|pls|ok(?:ay)?|thanks?(?: you)?|bro|man|cứ|đi|nhé|nha|ạ|vậy|đã|mà|đâu` // lang-ok
-const SAYS_NO = new RegExp(String.raw`^\s*(?:${NO_PHRASE})(?:[\s,.!]+(?:${NO_PHRASE}|${NO_FILLER}))*[\s.!]*$`, 'iu') // lang-ok
+const NO_FILLER = String.raw`for now|right now|then|please|pls|ok(?:ay)?|thanks?(?: you)?|bro|man|cứ|đi|nhé|nha|ạ|vậy|đã|mà|đâu` // lang-ok
+const SAYS_NO_RE = new RegExp(String.raw`^\s*(?:${NO_PHRASE})(?:[\s,.!]+(?:${NO_PHRASE}|${NO_FILLER}))*[\s.!]*$`, 'iu') // lang-ok
+// A refusal is short. The phrases overlap ("leave it", "just leave it"), so the pattern backtracks on long repeats ("just leave it" × 140
+// took 45 s, audit 2026-10-30): it only ever sees 120 characters or fewer.
+const SAYS_NO = { test: (t: string) => t.length <= 120 && SAYS_NO_RE.test(t) }
 // A new amount right after our buy / deposit offer ("make it 1$", "1 đô thôi", "buy $5 instead"; real chat 2026-10-29: "make it 1$" // lang-ok
 // got the same question again). A dollar amount, no question, no VND.
 const OFFERED_BUY = /cirBTC buy of|first buy of|lệnh mua cirBTC|lần mua đầu/i // lang-ok

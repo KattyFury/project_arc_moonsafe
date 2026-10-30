@@ -405,7 +405,7 @@ expect(safe.calls === 0 && /Safety lives outside the app/.test(safeText) && /You
       ['dots', '1.'.repeat(1000)], ['words', 'a '.repeat(1000)], ['k', 'k '.repeat(1000)], ['1 k', '1 k '.repeat(500)],
       ['have 1', 'I have 1' + ' 1'.repeat(900)], ['put in bank', 'I put ' + '1,'.repeat(900) + ' in my bank'], ['long word', 'I have ' + 'x'.repeat(1900)],
       ['sentences', '. '.repeat(1000)], ['parens', '('.repeat(2000)], ['per month', '1 usdc a month '.repeat(130)], ['nines', 'my savings are $' + '9'.repeat(1900)],
-      ['maybe', 'maybe '.repeat(300)], ['vietnamese', 'đồng triệu '.repeat(180)], ['i am', "I'm 3 " .repeat(300)], ['no debt', 'no debt '.repeat(240)], ['question marks', '?'.repeat(2000)],
+      ['maybe', 'maybe '.repeat(300)], ['just leave it', 'just leave it '.repeat(140)], ['no no', 'no '.repeat(660)], ['vietnamese', 'đồng triệu '.repeat(180)], ['i am', "I'm 3 " .repeat(300)], ['no debt', 'no debt '.repeat(240)], ['question marks', '?'.repeat(2000)],
       ['offer text', 'prepare a deposit of **1 USDC** '.repeat(60)], ['percent', '5% '.repeat(600)], ['to repay', '1 to repay '.repeat(170)],
     ]
     let worst = ['', 0]
