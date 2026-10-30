@@ -16,8 +16,8 @@ function read(): FinancialProfile | null {
     if (!raw) return null
     const stored = JSON.parse(raw) as Record<string, unknown>
     const p = normalizeProfile(stored)
-    // A v1 record is migrated once and written back, so its new ids stay the same.
-    if (stored.v !== 2) writeLocal(p)
+    // An older record is migrated once and written back, so its new ids stay the same (and dropped holdings stay dropped).
+    if (stored.v !== 3) writeLocal(p)
     return p
   } catch {
     return null

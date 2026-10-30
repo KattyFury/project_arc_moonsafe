@@ -24,7 +24,7 @@ export const TOP10_SYMBOLS = new Set(['BNB', 'SOL', 'XRP', 'DOGE', 'ADA', 'TRX',
 export type PriceKind = 'gold' | 'stock' | 'crypto' | 'stable' | 'self'
 const PRICE_KIND: Partial<Record<AssetType, PriceKind>> = {
   gold_physical: 'gold', gold_token: 'crypto', us_stock: 'stock', btc: 'crypto', eth: 'crypto', top10: 'crypto',
-  altcoin: 'crypto', staked_large_cap: 'crypto', stable_wallet: 'stable', flexible_earn: 'stable', defi_stable: 'stable',
+  altcoin: 'crypto', crypto: 'crypto', staked_large_cap: 'crypto', stable_wallet: 'stable', flexible_earn: 'stable', defi_stable: 'stable',
 }
 export const priceKindOf = (type: AssetType): PriceKind => PRICE_KIND[type] ?? 'self'
 
@@ -175,19 +175,22 @@ function migrateV1(raw: Record<string, unknown>, now: number): FinancialProfile 
   return p
 }
 
-/** Any stored shape (v2, v1, Arc Studio's) → v2. */
+/**
+ * Any stored shape (v3, v2, v1, Arc Studio's) → v3. Before v3 some holdings were the money put in, not what they are worth now, so
+ * they are dropped and the user declares them again by quantity (Balance Sheet v2, Hieu 2026-10-30). Everything else is kept.
+ */
 export function normalizeProfile(raw: Record<string, unknown> | null | undefined, now = Date.now()): FinancialProfile {
   if (!raw) return { ...EMPTY_PROFILE }
-  if (raw.v !== 2) return migrateV1(raw, now)
+  if (raw.v !== 2 && raw.v !== 3) return { ...migrateV1(raw, now), holdings: [] }
   return {
-    v: 2,
+    v: 3,
     age: num(raw.age),
     ageDeclined: raw.ageDeclined === true,
     ...(raw.planningScope === 'individual' || raw.planningScope === 'household' ? { planningScope: raw.planningScope } : {}),
     incomeStable: bool(raw.incomeStable),
     dependents: num(raw.dependents),
     soleEarner: bool(raw.soleEarner),
-    holdings: list(raw.holdings, x => readHolding(x, now)),
+    holdings: raw.v === 3 ? list(raw.holdings, x => readHolding(x, now)) : [],
     debts: list(raw.debts, x => readDebt(x, now)),
     debtsComplete: raw.debtsComplete === true,
     incomes: list(raw.incomes, x => readFlow<Income>(x, ['active', 'passive', 'irregular'], 'i', now)),
@@ -236,20 +239,6 @@ export function walletMoveOps(p: FinancialProfile | null, deltaUsd: number, now 
   if (h) return [{ op: 'set_holding', id: h.id, patch: { value: Math.max(0, cents((h.value ?? 0) + deltaUsd)) } }]
   if (deltaUsd < 0) return []
   return [{ op: 'add_holding', holding: { id: newId('h'), type: 'stable_wallet', name: 'Stablecoins in this wallet', where: 'app wallet', value: cents(deltaUsd), currency: 'USDC', priceSource: 'self', rebalanceable: defaultRebalanceable('stable_wallet'), updatedAt: now } }]
-}
-
-/** Where the app records the cirBTC it bought: one holding, at the USDC paid (cost), never revalued at the market. */
-export const CIRBTC_WHERE = 'MoonSafe'
-export const cirBtcHolding = (p: FinancialProfile | null): Holding | undefined =>
-  p?.holdings.find(h => h.type === 'btc' && h.where === CIRBTC_WHERE)
-
-/** After a cirBTC buy in the app: add what was paid to the "cirBTC (bought in MoonSafe)" holding. */
-export function cirBtcBuyOps(p: FinancialProfile | null, paidUsd: number, now = Date.now()): ProfileOp[] {
-  if (!p || !Number.isFinite(paidUsd) || paidUsd < 0.005) return []
-  const cents = (n: number) => Math.round(n * 100) / 100
-  const h = cirBtcHolding(p)
-  if (h) return [{ op: 'set_holding', id: h.id, patch: { value: cents((h.value ?? 0) + paidUsd), updatedAt: now } }]
-  return [{ op: 'add_holding', holding: { id: newId('h'), type: 'btc', name: 'cirBTC (bought in MoonSafe)', symbol: 'cirBTC', where: CIRBTC_WHERE, value: cents(paidUsd), currency: 'USDC', priceSource: 'self', rebalanceable: defaultRebalanceable('btc'), updatedAt: now } }]
 }
 
 export type ProfileOp =

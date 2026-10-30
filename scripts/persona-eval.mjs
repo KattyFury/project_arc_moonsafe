@@ -43,7 +43,7 @@ const log = s => { out += s + '\n'; console.log(s) }
 for (const [name, lines] of Object.entries(PERSONAS)) {
   if (ONLY && name !== ONLY) continue
   log(`\n==================== ${name.toUpperCase()} ====================`)
-  let profile = normalizeProfile({ v: 2 })
+  let profile = normalizeProfile({ v: 3 })
   const msgs = []
   let vault = 0, wallet = 50, hasVault = true, lastCard = null
   const say = async (text, hidden = false) => {

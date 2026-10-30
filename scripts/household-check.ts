@@ -38,7 +38,7 @@ export function householdChecks(): number {
     ['Plan for my household. Buy BTC', null], ['I do not want a household plan', null],
   ] as const) { assert.equal(scopeChoice(text), want); checks++ }
   for (const scope of [undefined, 'individual', 'household', 'invalid', null]) {
-    const p = normalizeProfile({ v: 2, planningScope: scope, age: 34 })
+    const p = normalizeProfile({ v: 3, planningScope: scope, age: 34 })
     assert.equal(p.age, 34)
     assert.equal(p.planningScope, scope === 'household' || scope === 'individual' ? scope : undefined)
     checks++
@@ -61,7 +61,7 @@ export function householdChecks(): number {
   assert.equal(incomeUpdate([combined], { id: 'both', name: combined.name, kind: 'active' }, 'Our combined salary is now $4000').old?.id, 'both')
   assert.ok(incomeUpdate([{ ...combined, kind: 'passive' }], { name: "Wife's rental income", kind: 'passive' }, 'My wife receives $500 in rent', 'household').error)
   checks += 13
-  const base = normalizeProfile({ v: 2, age: 34, incomeStable: true, dependents: 2, soleEarner: false, debtsComplete: true, noNearGoal: true,
+  const base = normalizeProfile({ v: 3, age: 34, incomeStable: true, dependents: 2, soleEarner: false, debtsComplete: true, noNearGoal: true,
     incomes: both, expenses: [{ id: 'spend', name: 'Household spending', monthly: 1200, currency: 'USDC', kind: 'fixed' }],
     holdings: [{ id: 'bank', name: 'Shared bank savings', type: 'savings', value: 10000, currency: 'USDC', priceSource: 'self' }],
     debts: [{ id: 'd', name: 'Family loan', type: 'family_no_interest', balance: 1000, currency: 'USDC', ratePct: 0, monthlyPayment: 100 }],
@@ -82,7 +82,7 @@ export function householdChecks(): number {
   assert.match(scopeBrief('household'), /not extra household income/)
   checks += 11
   const form = { ...EMPTY_FORM, planningScope: 'household' as const, age: '34', salary: '3500', spending: '1200', steady: 'yes' as const, reliers: 'yes' as const, reliersCount: '2', onlyEarner: 'no' as const }
-  const p = applyOps(normalizeProfile({ v: 2 }), formToItems(form, null).flatMap(i => i.ops))
+  const p = applyOps(normalizeProfile({ v: 3 }), formToItems(form, null).flatMap(i => i.ops))
   assert.equal(p.planningScope, 'household')
   assert.equal(p.incomes.length, 1)
   assert.equal(p.incomes[0].monthly, 3500)

@@ -10,7 +10,7 @@
 
 import { fundFloorMonths, isPriorityDebt, param, targetMix, type MixKey } from '../kb/kb'
 import type { Currency, Debt, FinancialProfile, Holding } from '../types'
-import { BTC_SYMBOLS, categoryOf, cirBtcHolding, priceKindOf, STABLECOINS, subgroupOf } from './profile'
+import { BTC_SYMBOLS, categoryOf, priceKindOf, STABLECOINS, subgroupOf } from './profile'
 
 export type Group = 'safe' | 'traditional' | 'btc' | 'large_cap' | 'altcoin' | 'idle'
 export const GROUPS: Group[] = ['safe', 'traditional', 'btc', 'large_cap', 'altcoin', 'idle']
@@ -147,12 +147,12 @@ export interface Balance {
     text: string
   }
   /**
-   * How to place idle money (spec 5.4), keeping 1 month of spending: starter fund, priority debt,
-   * the rest of the fund, money for a near-term goal (kept in Safety), then the groups below target
-   * with Safe first. null until the spending and an age (or the declined default) are known, or with no idle money.
+   * How to place idle money (spec 5.4), keeping 1 month of spending: starter fund, priority debt, the rest of the fund, then the
+   * three parts by what each still needs (toGoal is always 0 since Balance Sheet v2). null until the spending and an age (or the
+   * declined default) are known, or with no idle money.
    */
   suggest: { idle: number; keep: number; toFund: number; toDebt: number; toGoal: number; to: Record<MixKey, number> } | null
-  /** A big expense within 5 years, in USD: held in Safety and left out of the money to divide (framework v2). */
+  /** A big expense within 5 years, in USD: the agent says to keep it in savings; not taken out of any target (Balance Sheet v2). */
   goalUsd: number
 }
 
@@ -174,9 +174,8 @@ export function computeBalance(input: BalanceInput): Balance {
   const unpriced: Holding[] = []
   // The balance SEEN in the connected wallet is not part of the total: people use several wallets, so only what the user
   // declares counts (Hieu, 2026-10-28). The agent reads it to know there is money, and to cap what a card can move.
-  // cirBTC bought in the app counts at what was paid (a profile holding, see cirBtcBuyOps). Only cirBTC from before that record
-  // existed is still valued onchain at the market price.
-  if (!cirBtcHolding(p) && input.cirBtcUsd !== null && input.cirBtcUsd > 0) items.push({ label: 'cirBTC', usd: input.cirBtcUsd, group: 'btc', place: 'base' })
+  // cirBTC is read onchain and valued at the market price (Balance Sheet v2, 2026-10-30).
+  if (input.cirBtcUsd !== null && input.cirBtcUsd > 0) items.push({ label: 'cirBTC', usd: input.cirBtcUsd, group: 'btc', place: 'base' })
   if (input.vaultUsd !== null && input.vaultUsd > 0) items.push({ label: 'Emergency fund', usd: input.vaultUsd, group: null, place: 'fund' })
   for (const h of p?.holdings ?? []) {
     const usd = holdingUsd(h, input.prices, rate)
@@ -263,7 +262,8 @@ export function computeBalance(input: BalanceInput): Balance {
   const age = p?.age ?? (p?.ageDeclined ? param('default_age') : null)
   const target = age !== null ? targetMix(age) : null
 
-  // Idle money (spec 5.4).
+  // Idle money (spec 5.4): keep 1 month of spending, then the starter fund, priority debt and the rest of the fund; what is left
+  // goes to the three parts by what each still needs (bucketStanding, Balance Sheet v2), then by the split.
   let suggest: Balance['suggest'] = null
   if (target && spending !== null && byGroup.idle > 0) {
     const keep = Math.min(byGroup.idle, spending * param('idle_keep_months'))
@@ -273,24 +273,10 @@ export function computeBalance(input: BalanceInput): Balance {
     const toStarter = take((starterUsd ?? 0) - vaultNow)
     const toDebt = take(debts.priorityTotal)
     const toFund = toStarter + take((floorUsd ?? 0) - vaultNow - toStarter)
-    // A near-term goal is held in Safety first (framework v2): savings already there count toward it.
-    const toGoal = take(goalUsd - byGroup.safe)
-    // Targets apply to the liquid money left after the reserve, the fund, the debt and the goal.
-    const base = liquid - keep - toFund - toDebt - goalUsd
-    const safeFree = Math.max(0, byGroup.safe + toGoal - goalUsd)
-    const gap = Object.fromEntries(TARGET_GROUPS.map(g => [g, Math.max(0, base * target[g] / 100 - byGroup[g])])) as Record<MixKey, number>
-    gap.safe = Math.max(0, base * target.safe / 100 - safeFree)
-    // Crypto is one bucket: coins already held (ETH, small coins) count toward it, new money goes to BTC.
-    gap.btc = Math.max(0, base * (target.btc + target.large_cap + target.altcoin) / 100 - (byGroup.btc + byGroup.large_cap + byGroup.altcoin))
-    gap.large_cap = 0
-    gap.altcoin = 0
-    const to = { safe: take(gap.safe), traditional: 0, btc: 0, large_cap: 0, altcoin: 0 }
-    const investGap = gap.traditional + gap.btc + gap.large_cap + gap.altcoin
-    if (investGap > 0) {
-      const k = Math.min(1, left / investGap)
-      for (const g of ['traditional', 'btc', 'large_cap', 'altcoin'] as const) to[g] = gap[g] * k
-    }
-    suggest = { idle: byGroup.idle, keep, toFund, toDebt, toGoal, to }
+    const placed = placeNew(standingOf(byGroup, target), left)
+    // Crypto is one part: new money goes to BTC.
+    const to = { safe: placed.safe, traditional: placed.traditional, btc: placed.crypto, large_cap: 0, altcoin: 0 }
+    suggest = { idle: byGroup.idle, keep, toFund, toDebt, toGoal: 0, to }
   }
 
   return {
@@ -300,47 +286,68 @@ export function computeBalance(input: BalanceInput): Balance {
   }
 }
 
-/** One of the three parts of the money to divide, with its TOTAL (Hieu, 2026-10-28: "tell me the total, not only what is missing"). */
+/**
+ * One of the three parts (Balance Sheet v2, docs/SPEC-BALANCE-SHEET-v2-2026-10-30.md). There is no total of the user's money: the part
+ * that is furthest ahead of its share (the anchor) sets the implied total, and the others are measured against it.
+ */
 export interface Standing {
   key: 'safe' | 'traditional' | 'crypto'
   name: 'Safety' | 'Traditional' | 'Crypto'
-  /** Share of the money to divide, in %. */
+  /** Target share by age, in %. */
   share: number
-  /** What they hold in this part now. */
+  /** What they hold in this part now, at today's prices. */
   have: number
-  /** The whole target: for Safety it includes a near-term goal (kept in savings first); otherwise the share of the money to divide. */
+  /** Share of the implied total now, in %. */
+  now: number
+  /** Implied total × share. */
   target: number
-  /** target - have, never below 0. */
+  /** target - have, never below 0: the new money that brings this part to its share without selling anything. */
   left: number
-  /** At its target: less than 1% of it left (at most 0.5 USDC of rounding). A part with a target and nothing in it is never full. */
+  /** anchor = the part that sets the total; under = below its share by more than the 5/25 band; else on_track. */
+  status: 'anchor' | 'on_track' | 'under'
+  /** status !== 'under'. Nothing held anywhere = every part under. */
   full: boolean
-  /** Safety only: the near-term goal inside the target, and the share of the rest on top of it. */
-  goal?: number
-  rest?: number
+}
+
+/** 5/25 band (Swedroe): a part is under when its share is lower than the target by more than 5 points or 25% of the target, whichever is smaller. */
+export const bandPts = (share: number) => Math.min(5, share * 0.25)
+
+function standingOf(g: Record<Group, number>, t: Record<MixKey, number>): Standing[] {
+  const parts: Array<[Standing['key'], Standing['name'], number, number]> = [
+    ['safe', 'Safety', t.safe, g.safe],
+    ['traditional', 'Traditional', t.traditional, g.traditional],
+    ['crypto', 'Crypto', t.btc + t.large_cap + t.altcoin, g.btc + g.large_cap + g.altcoin],
+  ]
+  const ratio = (p: typeof parts[number]) => p[2] > 0 ? p[3] / p[2] : 0
+  const anchor = parts.reduce((a, p) => ratio(p) > ratio(a) ? p : a, parts[0])
+  const total = ratio(anchor) * 100
+  return parts.map(p => {
+    const [key, name, share, have] = p
+    const target = total * share / 100
+    const now = total > 0 ? have / total * 100 : 0
+    const status = total <= 0 ? 'under' : p === anchor ? 'anchor' : share - now > bandPts(share) + 1e-9 ? 'under' : 'on_track'
+    return { key, name, share, have, now, target, left: Math.max(0, target - have), status, full: status !== 'under' }
+  })
+}
+
+/** Safety, Traditional and Crypto measured against the anchor. Money not placed yet (Idle) is not in any part: it is what fills them. */
+export function bucketStanding(b: Balance): Standing[] | null {
+  return b.target ? standingOf(b.byGroup, b.target) : null
 }
 
 /**
- * Have / target / left for Safety, Traditional and Crypto. `leaving` = money about to move out of the liquid pool (the deposit that
- * will fill the emergency fund), so the numbers quoted before the deposit are the ones after it. Safety counts a near-term goal first:
- * target = goal + its share of what remains, so adding savings always lowers what is left (it used to vanish into the goal).
+ * New money split across the parts: first what each still needs (in proportion when it is not enough), then anything beyond that
+ * by the target shares. Never takes money out of a part.
  */
-export function bucketStanding(b: Balance, leaving = 0): Standing[] | null {
-  const t = b.target
-  if (!t) return null
-  const toDivide = Math.max(0, b.liquid - leaving - b.goalUsd)
-  const g = b.byGroup
-  const cryptoShare = t.btc + t.large_cap + t.altcoin
-  const part = (key: Standing['key'], name: Standing['name'], share: number, have: number, extra = 0): Standing => {
-    const rest = toDivide * share / 100
-    const target = rest + extra
-    const left = Math.max(0, target - have)
-    return { key, name, share, have, target, left, full: left <= Math.min(0.5, target * 0.01), ...(extra > 0 ? { goal: extra, rest } : {}) }
-  }
-  return [
-    part('safe', 'Safety', t.safe, g.safe, b.goalUsd),
-    part('traditional', 'Traditional', t.traditional, g.traditional),
-    part('crypto', 'Crypto', cryptoShare, g.btc + g.large_cap + g.altcoin),
-  ]
+export function placeNew(st: Standing[], money: number): Record<Standing['key'], number> {
+  const out = { safe: 0, traditional: 0, crypto: 0 }
+  if (!(money > 0)) return out
+  const need = st.reduce((s, x) => s + x.left, 0)
+  const k = need > 0 ? Math.min(1, money / need) : 0
+  const rest = money - need * k
+  const shares = st.reduce((s, x) => s + x.share, 0) || 1
+  for (const x of st) out[x.key] = x.left * k + rest * x.share / shares
+  return out
 }
 
 /** Share of liquid assets in %, 0 without any. */

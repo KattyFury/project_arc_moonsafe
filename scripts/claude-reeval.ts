@@ -121,7 +121,7 @@ try {
   for (const scenario of cases) {
     if (halted) break
     activeCase = scenario.id
-    let profile = normalizeProfile({ v: 2 })
+    let profile = normalizeProfile({ v: 3 })
     const history: Array<{ role: string; content: string }> = []
     for (const [i, user] of scenario.lines.entries()) {
       if (halted) break

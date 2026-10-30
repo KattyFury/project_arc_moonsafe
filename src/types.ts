@@ -74,11 +74,11 @@ export interface Income { id: string; name: string; monthly: number; currency: C
 export interface Expense { id: string; name: string; monthly: number; currency: Currency; kind: 'fixed' | 'variable'; updatedAt: number }
 
 /**
- * What the user told the agent (v2, 2026-10-25). Stored in localStorage + KV under the same keys
- * as v1; a v1 record is migrated when read (src/lib/profile.ts).
+ * What the user told the agent (v3, 2026-10-30). Stored in localStorage + KV under the same keys
+ * as v1; older records are migrated when read, without their holdings (src/lib/profile.ts).
  */
 export interface FinancialProfile {
-  v: 2
+  v: 3
   /** One active financial plan; household scope does not create shared wallet permissions. */
   planningScope?: 'individual' | 'household'
   age: number | null
@@ -117,7 +117,7 @@ export interface NearGoal {
 }
 
 export const EMPTY_PROFILE: FinancialProfile = {
-  v: 2, age: null, ageDeclined: false, incomeStable: null, dependents: null, soleEarner: null,
+  v: 3, age: null, ageDeclined: false, incomeStable: null, dependents: null, soleEarner: null,
   holdings: [], debts: [], debtsComplete: false, incomes: [], expenses: [],
 }
 

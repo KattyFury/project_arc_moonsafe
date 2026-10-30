@@ -13,7 +13,11 @@ const items = formToItems({ ...EMPTY_FORM, age: '30', bank: '1000', usdcThis: '5
 let p = { ...EMPTY_PROFILE, holdings: [] as typeof EMPTY_PROFILE.holdings }
 p = applyOps(p, items.flatMap(i => i.ops))
 const crypto = p.holdings.find(h => h.name === 'Crypto')
-expect(crypto?.type === 'crypto' && crypto.value === 2000, 'the Crypto field saves one crypto holding of 2,000')
+expect(crypto?.type === 'crypto' && crypto.value === 2000, 'without a price yet, the Crypto field saves one crypto holding of $2,000')
+const priced = applyOps({ ...EMPTY_PROFILE, holdings: [] }, formToItems({ ...EMPTY_FORM, crypto: '2000' }, { goldUsdPerOz: null, usd: { 'crypto:BTC': 100000 } }).flatMap(i => i.ops)).holdings[0]
+expect(priced?.type === 'crypto' && priced.quantity === 0.02 && priced.priceSource === 'market', 'with the BTC price, $2,000 of crypto is 0.02 followed at the BTC price (Balance Sheet v2)')
+const pb = computeBalance({ profile: { ...EMPTY_PROFILE, holdings: [priced!] }, walletUsd: 0, vaultUsd: 0, cirBtcUsd: 0, prices: { goldUsdPerOz: null, usd: { 'crypto:BTC': 50000 } }, vndPerUsd: null })
+expect(Math.abs(pb.byGroup.btc - 1000) < 0.01, `when BTC halves, that crypto is worth $1,000 (got ${pb.byGroup.btc})`)
 expect(appWalletHolding(p)?.name === 'Stablecoin onchain' && appWalletHolding(p)?.value === 500, 'Stablecoin onchain is the app-wallet holding the app updates')
 expect(!p.holdings.some(h => h.type === 'btc' || h.type === 'altcoin'), 'no Bitcoin or Altcoins holding is made from the Crypto total')
 

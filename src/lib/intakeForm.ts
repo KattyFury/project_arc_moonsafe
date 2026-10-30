@@ -78,16 +78,25 @@ export interface FormItem { text: string; ops: ProfileOp[] }
 const usd = (n: number) => `$${new Intl.NumberFormat('en-US', { maximumFractionDigits: n >= 100 ? 0 : 2 }).format(n)}`
 
 /**
- * The items a filled form stands for, in the order they are shown. Every amount is kept as typed: investments (Bitcoin, gold,
- * stocks) are the money put in, never turned into a quantity revalued at the market (Hieu, 2026-10-29).
+ * The items a filled form stands for, in the order they are shown. What the user types is what it is worth today; Crypto and Gold are
+ * turned into a quantity at today's price (BTC, troy ounces) so they follow the market from then on (Balance Sheet v2, Hieu
+ * 2026-10-30). Without a price yet, or with no price source (stocks and funds have no ticker here), the amount is kept as money.
  */
-export function formToItems(v: FormValues, _prices: Prices | null, now = Date.now()): FormItem[] {
+export function formToItems(v: FormValues, prices: Prices | null, now = Date.now()): FormItem[] {
   const items: FormItem[] = []
   const add = (text: string, ...ops: ProfileOp[]) => items.push({ text, ops })
   const holding = (type: AssetType, name: string, amount: number | null, extra: Partial<Holding> = {}) => {
     if (amount === null) return
     const h: Holding = { id: newId('h'), type, name, value: amount, currency: 'USDC', priceSource: 'self', rebalanceable: defaultRebalanceable(type), updatedAt: now, ...extra }
     add(`${name} ${usd(amount)}`, { op: 'add_holding', holding: h })
+  }
+  /** Dollars typed → a quantity at today's price, priced by the market from then on. */
+  const priced = (type: AssetType, name: string, amount: number | null, price: number | null | undefined, unit: string, extra: Partial<Holding> = {}) => {
+    if (amount === null) return
+    if (!price) return holding(type, name, amount, extra)
+    const quantity = Math.round(amount / price * 1e8) / 1e8
+    const h: Holding = { id: newId('h'), type, name, quantity, unit, priceSource: 'market', rebalanceable: defaultRebalanceable(type), updatedAt: now, ...extra }
+    add(`${name} ${usd(amount)} (${new Intl.NumberFormat('en-US', { maximumSignificantDigits: 4 }).format(quantity)} ${unit === 'oz' ? 'oz' : 'BTC'} at ${usd(price)})`, { op: 'add_holding', holding: h })
   }
 
   const age = parseAmount(v.age)
@@ -131,9 +140,9 @@ export function formToItems(v: FormValues, _prices: Prices | null, now = Date.no
   holding('cash', 'Cash', parseAmount(v.cash))
   holding('btc', 'Bitcoin', parseAmount(v.btc), { symbol: 'BTC' })
   holding('altcoin', 'Altcoins', parseAmount(v.coins))
-  // One Crypto total (2026-10-30): counted in the Crypto bucket, never called BTC (type 'crypto').
-  holding('crypto', 'Crypto', parseAmount(v.crypto ?? ''))
-  holding('gold_physical', 'Gold', parseAmount(v.gold))
+  // One Crypto total (2026-10-30), never called BTC (type 'crypto'), but followed at the BTC price: most of it is Bitcoin for most people.
+  priced('crypto', 'Crypto', parseAmount(v.crypto ?? ''), prices?.usd['crypto:BTC'], 'coins', { symbol: 'BTC' })
+  priced('gold_physical', 'Gold', parseAmount(v.gold), prices?.goldUsdPerOz, 'oz')
   holding('fund_bond', 'Stocks and funds', parseAmount(v.stocks))
   if (v.otherAssets === 'yes') {
     holding('home', 'Home or land', parseAmount(v.home))

@@ -6,7 +6,7 @@
 // Pure module with relative imports only (functions/api/chat.ts and scripts/kb-check.ts).
 
 import { param, type Facts } from './kb'
-import { holdingUsd, type Balance, type Prices } from '../lib/allocation'
+import { bucketStanding, holdingUsd, type Balance, type Prices } from '../lib/allocation'
 import type { FinancialProfile } from '../types'
 
 const DAY = 86_400_000
@@ -63,13 +63,10 @@ export function computeFacts(i: FactsInput): Facts {
   const share = (usd: number) => liquid > 0 ? usd / liquid : null
   const g = b.byGroup
   const crypto = g.btc + g.large_cap + g.altcoin
-  // Off target: placed money (liquid minus idle) against the target split; idle money is handled by the suggestion.
+  // Off target (Balance Sheet v2): how far the part furthest below its share is, against the anchor's implied total; never "over".
   const placed = liquid - g.idle
-  // Three buckets (framework v2): Safety, Traditional, Crypto as one (held ETH or small coins are not "off target").
-  const maxGap = b.target && placed > 0
-    ? Math.max(Math.abs(g.safe / placed * 100 - b.target.safe), Math.abs(g.traditional / placed * 100 - b.target.traditional),
-      Math.abs(crypto / placed * 100 - (b.target.btc + b.target.large_cap + b.target.altcoin)))
-    : null
+  const standing = bucketStanding(b)
+  const maxGap = standing && placed > 0 ? Math.max(0, ...standing.map(x => x.share - x.now)) : null
   const holdings = p?.holdings ?? []
   const stale = holdings.filter(h => h.priceSource === 'self' && now - h.updatedAt > param('stale_self_declared_days') * DAY)
     .sort((x, y) => x.updatedAt - y.updatedAt)

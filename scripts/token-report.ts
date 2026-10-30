@@ -28,7 +28,7 @@ const jwk = { ...(await exportJWK(publicKey)), kid: 'local', alg: 'ES256', use: 
 const token = await new SignJWT({}).setProtectedHeader({ alg: 'ES256', kid: 'local' }).setIssuer('privy.io').setAudience(APP_ID).setSubject('did:privy:token-report').setIssuedAt().setExpirationTime('10m').sign(privateKey)
 
 const profile = normalizeProfile({
-  v: 2, age: 31, ageDeclined: false, incomeStable: false, dependents: 0, soleEarner: null, debtsComplete: true, noNearGoal: true, cryptoDropOk: true,
+  v: 3, age: 31, ageDeclined: false, incomeStable: false, dependents: 0, soleEarner: null, debtsComplete: true, noNearGoal: true, cryptoDropOk: true,
   holdings: [
     { id: 'h1', type: 'savings', name: 'Bank savings', value: 1600, currency: 'USDC', priceSource: 'self', rebalanceable: true, updatedAt: 1 },
     { id: 'h2', type: 'gold_physical', name: 'Gold', quantity: 0.5003, unit: 'oz', priceSource: 'market', rebalanceable: true, updatedAt: 1 },
@@ -92,7 +92,7 @@ for (const [name, text] of Object.entries(firstMessages)) {
   calls = []
   const request = new Request('http://local/api/chat', {
     method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
-    body: JSON.stringify({ messages: [{ role: 'user', content: text }], context: { profile: normalizeProfile({ v: 2 }), vaultUsdc: 0, walletUsdc: 0, cirBtcUsdc: 0 } }),
+    body: JSON.stringify({ messages: [{ role: 'user', content: text }], context: { profile: normalizeProfile({ v: 3 }), vaultUsdc: 0, walletUsdc: 0, cirBtcUsdc: 0 } }),
   })
   const res = await onRequestPost({ request, env: { OPENAI_API_KEY: 'fake', LOCAL_DEV: '1' } })
   const body = await res.json() as { content?: string }

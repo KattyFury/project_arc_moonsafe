@@ -78,7 +78,7 @@ function PartRow({ icon: Icon, color, name, have, target, left, full, note, acti
       </div>
       <div className="flex items-center justify-between gap-4">
         <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>
-          {full ? <strong style={{ color: 'var(--success)' }}>Full. </strong> : <strong style={{ color: 'var(--ink)' }}>{left} to go. </strong>}{note}
+          {full ? <strong style={{ color: 'var(--success)' }}>On track. </strong> : <strong style={{ color: 'var(--ink)' }}>{left} to go. </strong>}{note}
         </p>
         {action}
       </div>

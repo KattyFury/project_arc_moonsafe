@@ -78,7 +78,7 @@ globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
 
 const history = [
   { role: 'user', content: 'I want investing' },
-  { role: 'assistant', content: buildIntake(normalizeProfile({ v: 2 }), 'I want investing', false, [], 1916) ?? '' },
+  { role: 'assistant', content: buildIntake(normalizeProfile({ v: 3 }), 'I want investing', false, [], 1916) ?? '' },
 ]
 async function call(messages: Array<{ role: string; content: string }>, profile: ReturnType<typeof normalizeProfile>, vaultUsdc = 0, extra: Record<string, unknown> = {}) {
   modelCalls = 0
@@ -92,7 +92,7 @@ let bad = 0
 const expect = (ok: boolean, what: string) => { if (!ok) { bad++; console.log('FAIL', what) } }
 
 // 0. A brand-new user's first message: the questions come as a FORM to fill in (server-built, no model call).
-const hello = await call([{ role: 'user', content: 'investing' }], normalizeProfile({ v: 2 }), 0)
+const hello = await call([{ role: 'user', content: 'investing' }], normalizeProfile({ v: 3 }), 0)
 const formAction = hello.body.actions?.find(a => a.type === 'intake_form') as { keys?: string[]; seen?: number | null } | undefined
 console.log('step 0: model calls', hello.calls, '| form sections', formAction?.keys?.join(','), '| wallet seen', formAction?.seen)
 expect(hello.calls === 0, 'the first message costs no model call')
@@ -101,7 +101,7 @@ expect(formAction?.seen === 1916, 'the form is told what the app sees in the wal
 expect(/Share whatever you're comfortable with/.test(hello.body.content ?? '') && !/^• /m.test(hello.body.content ?? ''), 'the message above the form is short, not a bulleted list')
 
 // 1. A NEW user types everything in one message: it is saved at once (no confirm card), and the plan follows in the same reply.
-const empty = normalizeProfile({ v: 2 })
+const empty = normalizeProfile({ v: 3 })
 const first = await call([...history, { role: 'user', content: message }], empty)
 const firstText = first.body.content ?? ''
 console.log('step 1: status', first.status, '| model calls', first.calls, '| ops', first.body.ops?.length)
@@ -127,7 +127,8 @@ expect(/Here is your plan, in order/.test(text) && /by your age, 31/.test(text) 
 expect(/Airdrops come in bursts/.test(text), 'the plan explains that airdrops are not steady income')
 for (const [what, re] of [['the fund', /Emergency fund: \$450\*\* = 3 months of spending, because/], ['Safety', /Safety 31%[^\n]*any time/], ['Traditional', /Traditional 34\.5%[^\n]*index funds/], ['Crypto', /Crypto 34\.5%[^\n]*Bitcoin/]] as const) expect(re.test(text), `the plan says why for ${what}`)
 expect(/prepare a deposit of \*\*450 USDC\*\*/.test(text), 'the plan offers the deposit')
-expect(/\$3,950, after the emergency fund/.test(text), 'the plan is quoted on the money left after the fund (the wallet seen onchain is not added)')
+expect(/You have \*\*\$1,450\*\* not placed yet/.test(text), 'the money not placed yet is what the declared wallet keeps after the fund (the wallet seen onchain is not added)')
+expect(/Traditional 34\.5%[^\n]*on track/.test(text) && /Safety 31%[^\n]*of \$[\d,]+, \$[\d,]+ to go/.test(text), 'Balance Sheet v2: the part furthest ahead is on track, the others say what they have of the target and what is left')
 
 // 2b. The same answer from someone whose emergency fund is ALREADY full: the overview still comes first, never a straight offer to buy.
 const full = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: crafted }, { role: 'user', content: event }], saved, 900)
@@ -144,7 +145,7 @@ expect(!/Here is your plan/.test(none.body.content ?? ''), 'with nothing saved t
 
 // 3b. Safety net: the planner records NOTHING for "2500 in USDC, 500 in cash, 2000 in gold" (real chat 2026-10-28): the server still does.
 planMode = 'noop'
-const known = normalizeProfile({ v: 2, age: 21, incomeStable: false, dependents: 0, debtsComplete: true, noNearGoal: true })
+const known = normalizeProfile({ v: 3, age: 21, incomeStable: false, dependents: 0, debtsComplete: true, noNearGoal: true })
 const net = await call([...history, { role: 'user', content: '2500 in USDC, 500 in cash, 2000 in gold that\'s all' }], known, 0)
 const netCard = net.body.actions?.find(a => a.type === 'confirm_items')
 console.log('\nstep 3b: items', netCard?.items?.map(i => i.text).join(' / '))
@@ -169,7 +170,7 @@ expect(!/Safety[^\n]*months of spending/.test(howText), 'Safety never carries mo
 
 
 // 6. Safety and Traditional are full, only Crypto has room: "Yep" to "start with it?" gets the cirBTC offer, never "Safety or Traditional?"
-const base = normalizeProfile({ v: 2, age: 21, incomeStable: false, dependents: 0, debtsComplete: true, noNearGoal: true,
+const base = normalizeProfile({ v: 3, age: 21, incomeStable: false, dependents: 0, debtsComplete: true, noNearGoal: true,
   incomes: [{ id: 'i1', name: 'Salary', monthly: 150, currency: 'USDC', kind: 'active' }],
   expenses: [{ id: 'e1', name: 'Spending', monthly: 150, currency: 'USDC', kind: 'fixed' }],
   holdings: [
@@ -247,7 +248,7 @@ expect(small.calls === 0 && /emergency fund is now \$5 of \$[\d,]+/.test(smallTe
 const rec = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: firstText }, { role: 'user', content: '[app event] The user confirmed recording: Recorded 500 USDC in Bank savings (Safety), from Binance.' }], base, 900)
 const recText = rec.body.content ?? ''
 console.log('\nstep 6c: model calls', rec.calls, '\n' + recText)
-expect(rec.calls === 0 && /^Saved\. Safety is now \$[\d,]+ of \$[\d,]+/.test(recText) && /Only Crypto/.test(recText), 'after a saved amount: which part it touched, then only the part with room')
+expect(rec.calls === 0 && /^Saved\. Safety is now \$[\d,]+(: on track| of \$[\d,]+)/.test(recText) && /Only Crypto/.test(recText), 'after a saved amount: which part it touched, then only the part with room')
 
 // 6d. Naming a part answers where it lives and what is left; Safety is outside the app.
 const safe = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: firstText }, { role: 'user', content: '[app event] The user signed the card: Added 900 USDC to your emergency fund.' }, { role: 'assistant', content: 'Which part would you like to fill first: Safety (300 USDC of 840 USDC) or Crypto (0 USDC of 1,354 USDC)?' }, { role: 'user', content: 'How about the "safe" part' }], { ...base, holdings: base.holdings.map(h => h.id === 'h2' ? { ...h, value: 300 } : h) }, 900)

@@ -39,7 +39,7 @@ for (const [id, text, expected] of [
 check('individual-optout', false, householdDefault('individual', 'My wife earns $1500'))
 check('explicit-refusal', true, explicitAgeRefusal('I prefer not to share my age'))
 check('ordinary-fact-not-refusal', false, explicitAgeRefusal('I have $600 in savings'))
-const empty = normalizeProfile({ v: 2 })
+const empty = normalizeProfile({ v: 3 })
 check('actual-savings-recovery', true, factProposals('I have $600 in savings', empty).some(p => p.name === 'add_holding'))
 check('hypothetical-no-recovery', false, factProposals(recordingEvidence('If I have $600 in savings').text, empty).some(p => p.name === 'add_holding'))
 check('uncertain-no-recovery', false, factProposals('Maybe I have $600 in savings', empty).some(p => p.name === 'add_holding'))

@@ -111,7 +111,7 @@ try {
   ] as const) {
     forcedTools = [{ id: 'hostile-quantity', type: 'function', function: { name: 'add_holding', arguments: JSON.stringify({ type: 'btc', symbol: 'BTC', quantity }) } }]
     const result = await ask(text)
-    const profile = applyOps(normalizeProfile({ v: 2 }), readOps(result.data.ops ?? []))
+    const profile = applyOps(normalizeProfile({ v: 3 }), readOps(result.data.ops ?? []))
     replay.push({ id, user: text, status: result.status, ops: result.data.ops, actions: result.data.actions, savedQuantity: profile.holdings.filter(h => h.type === 'btc').map(h => h.quantity), failed: profile.holdings.some(h => h.type === 'btc' && h.quantity === quantity) })
   }
   forcedTools = []

@@ -23,7 +23,7 @@ import { getPrices } from './prices'
 import { educationAnswer, EDUCATION_POLICY } from '../_lib/education'
 import { explicitAgeRefusal, factProposals, quantityEvidence, turnPolicy, TURN_POLICY, responseProblems, REPLY_DISCIPLINE, fundMissingInputs } from '../_lib/agentGuards'
 import { coachingBrief, recordingEvidence, COACH_POLICY, ALTCOIN_CHECK } from '../_lib/coaching'
-import { assertions, currentMarketValue, investedBasis, interestRateEvidence, passiveEvidence, zeroInterestEvidence, repaymentEvidence, incompleteExpenses } from '../_lib/mutationEvidence'
+import { assertions, investedBasis, interestRateEvidence, passiveEvidence, zeroInterestEvidence, repaymentEvidence, incompleteExpenses } from '../_lib/mutationEvidence'
 import { dependentEvidence, householdDefault, incomeUpdate, profileAgeAllowed, scopeBrief, scopeChoice, scopeQuestion } from '../../src/lib/planningScope'
 import { privyUserId } from '../_lib/privyAuth'
 import { addUsage, overBudget, type Meter } from '../_lib/budget'
@@ -342,7 +342,7 @@ ${DCA_AVAILABLE ? '' : '- AUTOMATIC recurring buys in the app are NOT available 
 - Never end with a question of your own about their life (age group, country, job…): the only personal question you may ask is the "Next question" when one is given. Answering a question about the app, trust or safety needs no question at the end.
 - Do not bring up cirBTC or buying unless they talk about buying, crypto or investing now.
 - They said no to an offer (a deposit, a buy, a withdrawal) → respect it: do not offer it again or push it in later replies until THEY bring it up; answer what they ask.
-- Investments count at the money put in (Hieu, 2026-10-29): "I put $1,000 into BTC" is recorded as $1,000 (value, priceSource self), never revalued at today's price. If they only give a quantity ("0.1 BTC"), ask how much they put in. A price drop never means a part needs more money: never suggest buying more because prices fell.
+- Holdings count at what they are worth TODAY (Balance Sheet v2, Hieu 2026-10-30): "0.1 BTC" → quantity; "$2,000 of gold" → worth (the app turns it into ounces at today's price). What was paid is not tracked: "I put $1,000 into BTC" → ask how much BTC they hold or what it is worth now. A price drop never means a part needs more money: never suggest buying more because prices fell, and never suggest selling.
 - Money (Hieu, 2026-10-29): write values in dollars with a $ sign ($500, $0.43): savings, cash, gold, stocks, crypto value, targets, totals, spending, income. Write "USDC" only for the token that moves onchain: a deposit into or a withdrawal from the emergency fund, the amount paid for cirBTC, the vault fee. USDC, USDT and other dollar coins together are "stablecoins".
 - Only describe what the "Actions just taken" note lists. Cards (add to the fund, withdraw, buy cirBTC, DCA) are confirmation CARDS the user signs: never say deposited / bought / done. To offer one: "Would you like me to prepare … for you to sign?".
 - Something recorded → acknowledge the saved fact briefly and naturally when useful, then answer their request. No mandatory "Noted" or "Right?". Pending confirmations are not saved facts. Ask the supplied Next question only when the user has invited personal planning; do not let recording replace the explanation.
@@ -556,14 +556,6 @@ const dollars = (n: number) => `${n < 0 ? '-' : ''}$${new Intl.NumberFormat('en-
 const vnd = (n: number) => n >= 1_000_000
   ? `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(n / 1_000_000)}M VND`
   : `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(n)} VND`
-/** Whole percentages that add up like the exact ones (largest remainder), so a shown split sums to 100. */
-function wholeShares(exact: number[]): number[] {
-  const floors = exact.map(Math.floor)
-  let left = Math.round(exact.reduce((a, b) => a + b, 0)) - floors.reduce((a, b) => a + b, 0)
-  const order = exact.map((v, i) => ({ i, r: v - Math.floor(v) })).sort((x, y) => y.r - x.r)
-  for (const { i } of order) { if (left <= 0) break; floors[i]++; left-- }
-  return floors
-}
 const qty = (n: number) => `${Math.round(n * 10_000) / 10_000}`
 
 /** A tool amount ({amount, currency}) read loosely. */
@@ -661,17 +653,17 @@ function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: nu
   } else lines.push(p.debtsComplete ? '- Debts: none (the user said so)' : '- Debts: not asked yet')
 
   // Totals (spec 2) and the split (spec 4).
-  lines.push(`- Liquid assets (base of every %): ${show(b.liquid)} · Net worth: ${show(b.netWorth)} (all assets ${show(b.assets)} incl. fund, lifestyle ${show(b.lifestyle)}, not rebalanceable ${show(b.grey)}; minus debt ${show(b.debtTotal)})`)
+  // Balance Sheet v2 (2026-10-30): no total of their money and no net worth; every holding at what it is worth today.
+  if (b.grey > 0.5 || b.lifestyle > 0.5) lines.push(`- Outside the three parts: ${show(b.grey + b.lifestyle)} (home, car, business, loans given…), never counted in the split`)
   // Three buckets (framework v2, 2026-10-27): Safety, Traditional, Crypto as one; whole % that add to 100.
   const g = b.byGroup
   const cryptoNow = g.btc + g.large_cap + g.altcoin
   // The intake form asks one Crypto total (2026-10-30): it sits in the btc group for the maths but is never called BTC.
   const cryptoTotal = b.items.filter(i => i.holding?.type === 'crypto').reduce((n, i) => n + i.usd, 0)
   if (b.liquid > 0) {
-    const [s, tr, c, id] = wholeShares([g.safe, g.traditional, cryptoNow, g.idle].map(v => v / b.liquid * 100))
-    lines.push(`- Split now (% of liquid): Safety ${s}% (${show(g.safe)}), Traditional ${tr}% (${show(g.traditional)}), Crypto ${c}% (${show(cryptoNow)}${cryptoNow > 0 ? `: ${[cryptoTotal > 0.01 ? `crypto not split by coin ${show(cryptoTotal)}` : '', g.btc - cryptoTotal > 0.01 ? `BTC ${show(g.btc - cryptoTotal)}` : '', g.large_cap + g.altcoin > 0.01 ? `other coins ${show(g.large_cap + g.altcoin)}` : ''].filter(Boolean).join(', ')}` : ''}), not placed yet ${id}% (${show(g.idle)})`)
+    lines.push(`- Held now, at today's prices: Safety ${show(g.safe)}, Traditional ${show(g.traditional)}, Crypto ${show(cryptoNow)}${cryptoNow > 0 ? ` (${[cryptoTotal > 0.01 ? `crypto not split by coin ${show(cryptoTotal)}` : '', g.btc - cryptoTotal > 0.01 ? `BTC ${show(g.btc - cryptoTotal)}` : '', g.large_cap + g.altcoin > 0.01 ? `other coins ${show(g.large_cap + g.altcoin)}` : ''].filter(Boolean).join(', ')})` : ''}, not placed yet (stablecoins, cash) ${show(g.idle)}`)
   }
-  if (b.goalUsd > 0 && p.nearGoal) lines.push(`- Near-term goal: ${p.nearGoal.name} ${show(b.goalUsd)}${p.nearGoal.years ? ` in ${p.nearGoal.years} year${p.nearGoal.years === 1 ? '' : 's'}` : ''}: kept in Safety (savings), NOT invested; it is left out of the money to divide`)
+  if (b.goalUsd > 0 && p.nearGoal) lines.push(`- Near-term goal: ${p.nearGoal.name} ${show(b.goalUsd)}${p.nearGoal.years ? ` in ${p.nearGoal.years} year${p.nearGoal.years === 1 ? '' : 's'}` : ''}: keep that money in savings, NOT invested`)
   const parts = b.items.filter(i => i.holding || i.label === 'cirBTC')
   if (parts.length) lines.push(`- Items: ${parts.map(i => `${i.label} ${show(i.usd)} (${i.group ? (i.group === 'btc' || i.group === 'large_cap' || i.group === 'altcoin' ? 'Crypto' : GROUP_LABEL[i.group]) : i.place === 'grey' ? 'not rebalanceable' : i.place})${i.holding?.priceSource === 'self' ? ' self-declared' : ''}`).join('; ')}`)
   if (b.unpriced.length) lines.push(`- No price yet, left out for now: ${b.unpriced.map(h => h.name).join(', ')}`)
@@ -681,16 +673,16 @@ function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: nu
     // Half percents, the same as the plan, so an even split never reads 35% / 34% (2026-10-29).
     const [ts, ttr, tcr] = [t.safe, t.traditional, tc].map(x => Math.round(x * 2) / 2)
     lines.push(`- Target by the MoonSafe framework at age ${b.age}${b.ageIsDefault ? ' (DEFAULT age 30: the user declined; say the split is an estimate)' : ''}: Safety ${ts}%, Traditional ${ttr}%, Crypto ${tcr}% (mostly BTC; no target for other coins)`)
-    // Totals, not only what is missing (Hieu, 2026-10-28): "X of Y, Z to go" for each part; Safety carries a near-term goal first.
+    // Balance Sheet v2: the part furthest ahead of its share (the anchor) sets the targets of the others; 5/25 bands.
     const st = bucketStanding(b)
-    if (st) lines.push(`- Where they stand in the three parts of the money to divide (${show(Math.max(0, b.liquid - b.goalUsd))}${b.goalUsd > 0 ? `, not counting the near-term goal ${show(b.goalUsd)}` : ''}). Copy "X of Y, Z to go" exactly. Safety = bank savings outside the app, it is NOT the emergency fund: ${st.map(x => `${x.name} ${show(x.have)} of ${show(x.target)}${x.goal ? ` (= goal ${show(x.goal)} + ${x.share}% of the rest ${show(x.rest ?? 0)})` : ''}, ${!x.full ? `${show(x.left)} to go` : 'full'}`).join('; ')}`)
+    if (st) lines.push(`- Where they stand in the three parts. The part furthest ahead of its share is the anchor and sets the others' targets; a part within 5 points (or 25% of its target, the smaller) is on track. Copy "X of Y, Z to go" exactly; say "on track" for the others, never "full" or "above". Never suggest selling. Safety = bank savings outside the app, it is NOT the emergency fund: ${st.map(x => `${x.name} ${show(x.have)} of ${show(x.target)}, ${x.status === 'under' ? `under, ${show(x.left)} to go` : x.status === 'anchor' ? 'on track (the anchor)' : 'on track'}`).join('; ')}`)
   } else lines.push('- Target: AGE UNKNOWN. Ask the age before talking about any share.')
   if (!b.declared) lines.push('- Nothing is declared yet: the user has not said what they hold (the wallet balance seen onchain does not count until they declare it). If they ask how to split or invest: suggest NO split and NO purchase, turn NO percentage into an amount; ask about the next item of the collection flow instead.')
   else if (b.suggest && fundTargetKnown) {
     const s = b.suggest
     // No split across buckets here: they fill one bucket at a time, the one they pick (Hieu, 2026-10-27; a proportional 429 USDC crypto offer came from this line).
     const rest = Object.values(s.to).reduce((x, y) => x + y, 0)
-    lines.push(`- Suggested use of idle money ${show(s.idle)}: keep ${show(s.keep)} for daily spending${s.toFund > 0.01 ? `; emergency fund ${show(s.toFund)}` : ''}${s.toDebt > 0.01 ? `; priority debt ${show(s.toDebt)}` : ''}${s.toGoal > 0.01 ? `; near-term goal (savings) ${show(s.toGoal)}` : ''}${rest >= 0.01 ? `; the rest, ${show(rest)}, goes to the bucket they pick (see Still to fill)` : ''}${rest < 0.01 && s.toFund < 0.01 && s.toDebt < 0.01 && s.toGoal < 0.01 ? '; nothing to place' : ''}`)
+    lines.push(`- Suggested use of idle money ${show(s.idle)}: keep ${show(s.keep)} for daily spending${s.toFund > 0.01 ? `; emergency fund ${show(s.toFund)}` : ''}${s.toDebt > 0.01 ? `; priority debt ${show(s.toDebt)}` : ''}${rest >= 0.01 ? `; the rest, ${show(rest)}, goes to the bucket they pick (see Still to fill)` : ''}${rest < 0.01 && s.toFund < 0.01 && s.toDebt < 0.01 ? '; nothing to place' : ''}`)
   }
   lines.push(fundTargetKnown
     ? `- Buy lock: ${b.lock.open ? 'cirBTC buying is OPEN' : `LOCKED. ${b.lock.text}`}`
@@ -1078,12 +1070,12 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     // Vietnamese stocks are not price-tracked.
     if (type === 'us_stock' && (vnClauses.some(c => sym && c.toUpperCase().includes(sym)) || (!sym && vnClauses.length))) type = 'vn_stock'
     const kind = priceKindOf(type)
+    // Balance Sheet v2 (Hieu, 2026-10-30): a holding counts at what it is worth today, never at what was paid. "I put $1,000 into
+    // BTC" says what was paid, so without a quantity the agent asks how much they hold or what it is worth now.
     const basis = investedBasis(evidence.text, sym)
-    if (basis && w && (w.currency !== basis.currency || Math.abs(w.amount - basis.amount) > .01)) return 'Not recorded: that is market value, not the declared investment cost. Keep cost basis separate.'
-    if (kind === 'crypto' && !basis && currentMarketValue(lastUserText)) return 'Not recorded: current market value is not invested cost. Keep the existing holding and explain the distinction.'
+    if (basis && kind !== 'self' && kind !== 'stable' && quantity === undefined) return `Not recorded: MoonSafe counts what ${name} is worth today, not what was paid. Ask how much they hold (coins, ounces, shares) or what it is worth now.`
     const category = type === 'other' && ['safe', 'invest', 'idle', 'lifestyle'].includes(String(a.category)) ? a.category as Holding['category'] : undefined
     const base = { id: newId('h'), type, name, ...(sym && kind !== 'self' ? { symbol: sym } : {}), ...(typeof a.where === 'string' && a.where.trim() ? { where: a.where.trim() } : kind === 'stable' && APP_WALLET.test(lastUserText) ? { where: 'app wallet' } : {}), updatedAt: Date.now(), rebalanceable: defaultRebalanceable(type, category), ...(category ? { category } : {}), ...(a.loan_status === 'on_time' || a.loan_status === 'overdue' ? { loanStatus: a.loan_status as Holding['loanStatus'] } : {}) }
-    if (basis) return { ...base, value: basis.amount, currency: basis.currency, priceSource: 'self', ...(quantity !== undefined && quantityEvidence(evidence.text, quantity, sym, kind) ? { quantity, unit: 'coins' } : {}) }
     if (kind === 'stable') {
       const amount = w ?? (quantity !== undefined ? { amount: quantity, currency: 'USDC' as Currency } : null)
       if (!amount || !stated(amount.amount)) return 'Not recorded: the amount is not in the user\'s words.'
@@ -1106,8 +1098,13 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     }
     if (!w) return `Not recorded: ask how much ${name} they hold (or what it is worth).`
     if (!stated(w.amount)) return 'Not recorded: the value is not in the user\'s words.'
-    // A money amount is the money put in (Hieu, 2026-10-29): kept as said, never turned into a quantity revalued at the market,
-    // so a price drop never makes a part look empty and push for more buying.
+    // What it is worth today, turned into a quantity at today's price so it follows the market (Balance Sheet v2). No price (a stock
+    // with no ticker, a price source down): kept as money.
+    const usd = toUsd(w.amount, w.currency, rate)
+    const pr = sym || kind === 'gold' ? await loadPrices(profile, kind === 'stock' || kind === 'crypto' ? [{ kind, sym: sym! }] : []) : null
+    const key = priceKey({ type, symbol: sym })
+    const price = kind === 'gold' ? pr?.goldUsdPerOz : key ? pr?.usd[key] : undefined
+    if (price && usd !== null) return { ...base, quantity: usd / price, unit: kind === 'gold' ? 'oz' : kind === 'stock' ? 'shares' : 'coins', priceSource: 'market' }
     return { ...base, value: w.amount, currency: w.currency, priceSource: 'self' }
   }
 
@@ -1182,21 +1179,22 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       if (!h) return `No item with id ${String(a.id)}.`
       const w = moneyArg(a.worth)
       const patch: Partial<Holding> = {}
+      // Worth today, never what was paid (Balance Sheet v2).
       const basis = investedBasis(evidence.text, h.symbol)
-      if (w && basis && (w.currency !== basis.currency || Math.abs(w.amount - basis.amount) > .01)) return 'Not recorded: preserve the declared cost basis separately from current market value.'
-      if (w && priceKindOf(h.type) === 'crypto' && !basis) return 'Not recorded: changing invested cost needs an explicit purchase-cost declaration; a current valuation or a question is insufficient.'
+      if (w && basis && priceKindOf(h.type) !== 'self' && priceKindOf(h.type) !== 'stable') return `Not recorded: MoonSafe counts what ${h.name} is worth today, not what was paid. Ask how much they hold or what it is worth now.`
       if (typeof a.quantity === 'number' && stated(a.quantity) && quantityEvidence(evidence.text, a.quantity, h.symbol, priceKindOf(h.type))) {
         if (priceKindOf(h.type) === 'crypto' || (h.quantity !== undefined && h.priceSource === 'market')) patch.quantity = a.quantity
         else patch.value = a.quantity
       }
       if (w && stated(w.amount)) {
-        if (basis || h.priceSource === 'self' || priceKindOf(h.type) === 'self' || priceKindOf(h.type) === 'stable') { patch.value = w.amount; patch.currency = w.currency; if (basis) patch.priceSource = 'self' }
+        if (priceKindOf(h.type) === 'self' || priceKindOf(h.type) === 'stable') { patch.value = w.amount; patch.currency = w.currency }
         else {
-          // A value for a coin without a price (spec 12): accepted as self-declared.
+          // Worth today → a quantity at today's price; without a price, kept as money.
           const usd = toUsd(w.amount, w.currency, rate)
           const key = priceKey(h)
-          const price = priceKindOf(h.type) === 'gold' ? prices?.goldUsdPerOz : key ? prices?.usd[key] : undefined
-          if (price && usd !== null) patch.quantity = usd / price
+          const pr = await loadPrices(profile)
+          const price = priceKindOf(h.type) === 'gold' ? pr?.goldUsdPerOz : key ? pr?.usd[key] : undefined
+          if (price && usd !== null) { patch.quantity = usd / price; patch.priceSource = 'market'; patch.value = undefined }
           else { patch.value = w.amount; patch.currency = w.currency; patch.priceSource = 'self' }
         }
       }
@@ -1542,25 +1540,26 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     profile = applyOps(profile, [op])
   }
   const balance = ops.length ? await balanceOf(profile) : startBalance
-  const declaredMoney = (value: number, currency: Currency | undefined) => currency === 'VND' ? moneyText({ amount: value, currency: 'VND' }) : dollars(value)
   const btcHolding = profile.holdings.find(h => h.type === 'btc')
+  // Balance Sheet v2 (Hieu, 2026-10-30): every holding counts at what it is worth today; what was paid is not tracked.
   if (!pendingNote && !appEvent && policy.question && btcHolding && /cost basis|vốn bỏ vào|money I originally invested|số BTC/iu.test(lastUserText)) { // lang-ok
-    const basis = btcHolding.value === undefined ? (vi ? 'chưa khai' : 'not declared') : declaredMoney(btcHolding.value, btcHolding.currency) // lang-ok
-    const quantity = btcHolding.quantity === undefined ? (vi ? 'chưa khai; có thể xem trong ví hoặc sao kê' : 'not declared; it can be read from a wallet or statement') : `${btcHolding.quantity} BTC` // lang-ok
+    const live = holdingUsd(btcHolding, prices, rate)
+    const quantity = btcHolding.quantity === undefined ? null : `${qty(btcHolding.quantity)} BTC`
+    const now = live === null ? (vi ? 'chưa có giá' : 'no price yet') : dollars(live) // lang-ok
     const content = vi
-      ? `Vốn mua đã lưu: **${basis}**. Số lượng BTC: **${quantity}**. Giá trị thị trường là giá trị hiện tại của số BTC đó; con số bạn tự báo có thể dùng để trao đổi nhưng không được lưu đè lên vốn mua, và chưa được xác minh bằng giá trực tiếp. Giá giảm đã làm giảm giá trị tài sản dù chưa bán; bán là hiện thực hóa lời/lỗ. Giá giảm tự nó không buộc bạn mua thêm để lấp phần Crypto.` // lang-ok
-      : `Recorded purchase cost: **${basis}**. BTC quantity: **${quantity}**. Market value is what that BTC is worth now; a value you quote can be discussed but does not overwrite purchase cost and is not independently verified without a price feed. A decline reduces economic value before sale; selling realizes the gain or loss. A price drop alone does not require refilling the Crypto allocation.`
+      ? `MoonSafe tính theo giá trị hiện tại, không theo số tiền bạn đã bỏ ra: ${quantity ? `**${quantity}** ≈ **${now}** theo giá hôm nay` : `**${now}**`}. Giá giảm thì giá trị giảm theo, nhưng không có nghĩa là phải mua thêm.` // lang-ok
+      : `MoonSafe counts what it is worth today, not what you paid: ${quantity ? `**${quantity}** ≈ **${now}** at today's price` : `**${now}**`}. A price drop lowers the value, but it never means you have to buy more.`
     return json({ content, ops, dcaStop, actions })
   }
   if (!pendingNote && !appEvent && policy.question && profile.holdings.length && /which numbers|cannot value|known and unknown|what.*know.*value/iu.test(lastUserText)) {
     const rows = profile.holdings.map(h => {
-      const crypto = priceKindOf(h.type) === 'crypto'
-      const amount = h.value === undefined ? (vi ? 'chưa khai' : 'not declared') : declaredMoney(h.value, h.currency) // lang-ok
-      const quantity = h.quantity === undefined ? '' : `; ${h.quantity} ${h.unit ?? ''}`
-      const live = crypto && h.quantity !== undefined ? holdingUsd({ ...h, priceSource: 'market' }, prices, rate) : null
-      return `- ${h.name}: ${crypto ? (vi ? 'vốn mua' : 'purchase cost') : (vi ? 'giá trị đã khai' : 'declared value')} ${amount}${quantity}${crypto ? (live === null ? (vi ? '; chưa xác minh được giá trị thị trường' : '; current market value not verified') : `; ${vi ? 'giá trị thị trường' : 'market value'} ${dollars(live)}`) : ''}` // lang-ok
+      const live = holdingUsd(h, prices, rate)
+      const market = h.priceSource === 'market' && h.quantity !== undefined && priceKindOf(h.type) !== 'stable'
+      const quantity = market ? `${qty(h.quantity!)} ${h.unit ?? ''}`.trim() + ' ' : ''
+      const value = live === null ? (vi ? 'chưa có giá' : 'no price yet') : dollars(live) // lang-ok
+      return `- ${h.name}: ${quantity}${market ? `≈ ${value} ${vi ? 'theo giá hôm nay' : "at today's price"}` : `${value} ${vi ? '(số bạn khai)' : '(as you told me)'}`}` // lang-ok
     })
-    return json({ content: (vi ? 'Theo hồ sơ đã lưu:\n' : 'From the saved profile:\n') + rows.join('\n') + (vi ? '\nGiá thị trường bạn tự báo là thông tin để trao đổi, chưa phải giá được xác minh trực tiếp và không thay thế vốn mua.' : '\nA current value you quote is self-reported, not an independently verified price, and does not replace the recorded purchase cost.'), ops, dcaStop, actions }) // lang-ok
+    return json({ content: (vi ? 'Theo hồ sơ đã lưu:\n' : 'From the saved profile:\n') + rows.join('\n'), ops, dcaStop, actions }) // lang-ok
   }
   // Deterministic answers for accounting facts: language models explain, code owns the totals.
   if (!pendingNote && !appEvent && policy.question && /income basis|total income|combined income|explain the totals|total income and spending|tổng thu nhập/iu.test(lastUserText) && balance.cashflow.income !== null) { // lang-ok
@@ -1619,7 +1618,8 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   const phase: 'collect' | 'plan' | 'start' = pending || toAsk.length ? 'collect' : !planGiven && balance.target ? 'plan' : 'start'
   // Crypto to buy now: the smaller of what the Crypto bucket still needs and what the wallet can spend.
   const tCrypto = balance.target ? balance.target.btc + balance.target.large_cap + balance.target.altcoin : 0
-  const cryptoFill = Math.max(0, (balance.liquid - balance.goalUsd) * tCrypto / 100 - (balance.byGroup.btc + balance.byGroup.large_cap + balance.byGroup.altcoin))
+  // Balance Sheet v2: what the money not placed yet should put into Crypto (its share of the needs), else what Crypto still needs.
+  const cryptoFill = tCrypto > 0 ? balance.suggest?.to.btc ?? bucketStanding(balance)?.[2].left ?? 0 : 0
   // Spec 5.4: idle money keeps 1 month of spending for daily life before any purchase.
   const cryptoOffer = Math.floor(Math.min(cryptoFill, Math.max(0, (wallet ?? 0) - GAS_RESERVE_USDC), balance.suggest ? Math.max(0, balance.suggest.idle - balance.suggest.keep) : Infinity))
 
@@ -1704,7 +1704,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
 ${points.map((x, k) => `${k + 1}. ${x}`).join('\n')}
 ${ending}` })
   }
-  const BUCKETS_RULE = 'Name only parts that still have room ("to go" above 0); a part marked full is never offered. Give every amount as "X of Y" (what they have of the target) plus what is left, never only what is missing. If only ONE bucket is left, say what it is and ask whether they want to start with it; NEVER open with a purchase or a card: the cirBTC buy is offered only after they say they want crypto. Safety and Traditional are done outside the app. If none is left, say the plan is complete.'
+  const BUCKETS_RULE = 'Name only parts that are under ("to go" above 0); a part on track is never offered. Give every amount as "X of Y" (what they have of the target) plus what is left, never only what is missing. If only ONE bucket is left, say what it is and ask whether they want to start with it; NEVER open with a purchase or a card: the cirBTC buy is offered only after they say they want crypto. Safety and Traditional are done outside the app. If none is under, say all three parts are on track.'
   // After the plan they fill one bucket at a time, the one they pick (Hieu, 2026-10-27).
   if (!userAsks && phase === 'start' && planGiven && balance.fund.met && !appEvent && !placement && !actions.some(x => x.type === 'prepare_buy_cirbtc' || x.type === 'propose_dca')) replyMessages.push({ role: 'system', content: `The plan was given and the emergency fund is full. They fill one bucket at a time, the one THEY pick, no need to split every dollar. If they pick one: Crypto → ${balance.lock.open && cryptoOffer >= 1 ? `the amount that fills the Crypto bucket as far as the wallet allows is ${usdc(cryptoOffer)} (ignore the split in "Suggested use of idle money"); unless they trade by the charts, suggest spreading it over 6 equal monthly buys and offer the first one ("Would you like me to prepare the first cirBTC buy of **${usdc(Math.floor(cryptoOffer / 6))}** for you to sign?"); if they want it all at once, offer **${usdc(cryptoOffer)}**` : 'say what is missing to buy in the app'}; Safety → their own bank savings or flexible earn, outside the app, with the amount; Traditional → bought outside the app with a broker (an index fund such as VOO, or gold), with the amount. If they have not picked yet, ask which one they want to fill first. ${BUCKETS_RULE}` })
   const recordEvent = lastUserText.startsWith('[app event] The user confirmed recording')

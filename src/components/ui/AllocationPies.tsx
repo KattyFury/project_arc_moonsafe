@@ -9,7 +9,7 @@
 
 import { useApp } from '@/state/AppState'
 import type { ReactNode } from 'react'
-import { GROUP_LABEL, bucketStanding, shareOfLiquid } from '@/lib/allocation'
+import { GROUP_LABEL, bucketStanding, shareOfLiquid, type Standing } from '@/lib/allocation'
 
 type Segment = 'safe' | 'traditional' | 'crypto' | 'idle' | 'grey'
 
@@ -106,32 +106,26 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
     </div>
   )
 
-  // Each part as a bar against its target (Hieu, 2026-10-30, option B): the black line is 100% (the target for their age); the bar shows
-  // what is held, so 54% or 167% reads at a glance. Same totals as the agent's (bucketStanding). Money not placed yet and items outside
-  // the split follow as plain rows.
+  // Each part as a bar against its target (Balance Sheet v2, 2026-10-30): the part furthest ahead of its share sets the targets of
+  // the others, so no bar goes past its end. Within the 5/25 band a part is on track; below it, what is left shows. Same numbers as
+  // the agent's (bucketStanding). Money not placed yet follows as a plain row.
   const standing = bucketStanding(b)
   const color: Record<string, string> = { safe: SEG_COLOR.safe, traditional: SEG_COLOR.traditional, crypto: SEG_COLOR.crypto }
-  // The track runs to 150%, so the 100% line sits at two thirds and an overshoot stays visible.
-  const MAX = 1.5
-  const bar = (key: string, name: string, have: number, tgt: number, full: boolean, left: number) => {
-    const p = tgt > 0 ? have / tgt : 0
+  const bar = (x: Standing) => {
+    const p = x.target > 0 ? Math.min(1, x.have / x.target) : 0
+    const onTrack = x.status !== 'under'
     return (
-      <li key={key} className="py-3 flex flex-col gap-2 border-b border-[var(--line)]">
+      <li key={x.key} className="py-3 flex flex-col gap-2 border-b border-[var(--line)]">
         <div className="flex items-baseline justify-between gap-4">
-          <span className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--ink)' }}>{name}</span>
-          <span className="text-[16px] leading-6 tabular-nums"><strong style={{ color: 'var(--ink)' }}>{moneyUsd(have)}</strong> <span style={{ color: 'var(--subtle)' }}>of {moneyUsd(tgt)}</span></span>
+          <span className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--ink)' }}>{x.name} <span className="font-normal" style={{ color: 'var(--subtle)' }}>{Math.round(x.share * 2) / 2}%</span></span>
+          <span className="text-[16px] leading-6 tabular-nums"><strong style={{ color: 'var(--ink)' }}>{moneyUsd(x.have)}</strong>{x.target > 0 && <span style={{ color: 'var(--subtle)' }}> of {moneyUsd(x.target)}</span>}</span>
         </div>
-        <div className="relative h-7 rounded-lg" style={{ background: 'var(--surface-muted)' }} role="img" aria-label={`${name}: ${Math.round(p * 100)}% of its target`}>
-          <div className="absolute inset-y-0 left-0 rounded-lg" style={{ width: `${100 / MAX}%`, background: `${color[key]}1f` }} />
-          <div className="fill-in absolute top-1 bottom-1 left-0 rounded-md" style={{ width: `${Math.min(p, MAX) / MAX * 100}%`, background: color[key] }} />
-          <div className="absolute -top-1 -bottom-1 w-0.5" style={{ left: `${100 / MAX}%`, background: 'var(--ink)' }} />
+        <div className="relative h-2 rounded-full overflow-hidden" style={{ background: 'var(--surface-muted)' }} role="img" aria-label={`${x.name}: ${Math.round(p * 100)}% of its target`}>
+          <div className="fill-in absolute inset-y-0 left-0 rounded-full" style={{ width: `${p * 100}%`, background: color[x.key] }} />
         </div>
-        <div className="flex justify-between gap-4 text-[14px] leading-5">
-          <span style={{ color: 'var(--subtle)' }}>
-            {full ? <><strong style={{ color: 'var(--success)' }}>Full</strong>{have - tgt >= 0.5 ? `, ${moneyUsd(have - tgt)} above` : ''}</> : `${moneyUsd(left)} to go`}
-          </span>
-          <strong className="tabular-nums" style={{ color: full ? 'var(--success)' : 'var(--ink)' }}>{Math.round(p * 100)}%</strong>
-        </div>
+        <span className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>
+          {onTrack ? <strong style={{ color: 'var(--success)' }}>On track</strong> : x.target > 0 ? <><strong style={{ color: 'var(--ink)' }}>{moneyUsd(x.left)}</strong> to go</> : 'Nothing yet'}
+        </span>
       </li>
     )
   }
@@ -143,14 +137,13 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
   )
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>{target ? `The black line is 100%: the target for your age, ${b.age}${b.ageIsDefault ? ' (default)' : ''}.` : 'Tell the agent your age to see your targets.'}</p>
+      <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>{target ? `Shares follow your age, ${b.age}${b.ageIsDefault ? ' (default)' : ''}, at today's prices. The part furthest ahead sets the targets for the others.` : 'Tell the agent your age to see your targets.'}</p>
       {walletOnly || (
         <ul className="flex flex-col [&>li:last-child]:border-b-0">
           {standing
-            ? standing.map(x => bar(x.key, x.name, x.have, x.target, x.full, x.left))
+            ? standing.map(bar)
             : (['safe', 'traditional', 'crypto'] as const).map(s => line(s, SEG_COLOR[s], SEG_NAME[s], <strong style={{ color: 'var(--ink)' }}>{moneyUsd(held[s])}</strong>))}
           {held.idle > 0.5 && line('idle', SEG_COLOR.idle, 'Not placed yet', <strong style={{ color: 'var(--ink)' }}>{moneyUsd(held.idle)}</strong>)}
-          {grey > 0.5 && line('grey', SEG_COLOR.grey, 'Outside the split', <strong style={{ color: 'var(--ink)' }}>{moneyUsd(grey)}</strong>)}
         </ul>
       )}
       {unpriced.length > 0 && (

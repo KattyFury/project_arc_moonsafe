@@ -7,7 +7,7 @@
 
 import { KB, targetMix, fundFloorMonths, isPriorityDebt, matchPatterns, patternBrief, type Cond, type Facts } from '../src/kb/kb'
 import { computeFacts, displayFacts } from '../src/kb/facts'
-import { computeBalance } from '../src/lib/allocation'
+import { computeBalance, type Standing } from '../src/lib/allocation'
 import { applyOps, normalizeProfile } from '../src/lib/profile'
 import { buildRecordOps, detectPlacement, sourceOptions } from '../src/lib/record'
 import { EMPTY_PROFILE, type Debt, type FinancialProfile, type Holding } from '../src/types'
@@ -126,7 +126,7 @@ for (const [msg, want] of placed) {
   const got = detectPlacement(msg, 25000)
   if (JSON.stringify(got && { amountUsd: got.amountUsd, holdingType: got.holdingType, source: got.source }) !== JSON.stringify(want)) fail(`placement "${msg}": ${JSON.stringify(got)}`)
 }
-const cashP = normalizeProfile({ v: 2, holdings: [{ id: 'h1', type: 'cash', name: 'Cash', value: 1500, currency: 'USDC', priceSource: 'self', rebalanceable: true, updatedAt: 1 }] })
+const cashP = normalizeProfile({ v: 3, holdings: [{ id: 'h1', type: 'cash', name: 'Cash', value: 1500, currency: 'USDC', priceSource: 'self', rebalanceable: true, updatedAt: 1 }] })
 const req = detectPlacement('I put 1000$ in my bank', null)!
 const valuesOf = (p: FinancialProfile) => p.holdings.map(h => `${h.type}:${h.value}`).join(',')
 if (sourceOptions(cashP, req, null).map(h => h.id).join() !== 'h1') fail('the cash item should be offered as a source')
@@ -173,7 +173,7 @@ const reals: Real[] = [
   { name: 'says where it came from: no question', p: healthy, vault: 4500, msg: 'I just moved $1,000 from my wallet into my savings', open: true, want: ['lock_open_surplus'] },
   { name: 'wants to go all in altcoins', p: healthy, vault: 4500, msg: 'I want to go all in on memecoins', open: true, want: ['altcoin_heavy', 'lock_open_surplus'] },
   { name: 'nothing declared', p: EMPTY_PROFILE, vault: 0, wallet: 50, open: false, want: ['age_unknown', 'collecting', 'new_starter'] },
-  { name: 'v1 record migrated (debt type unknown)', p: normalizeProfile({ monthlyIncome: 3000, monthlyExpenses: 1500, debtAmount: 500, age: 30, incomeStable: true, units: { monthlyIncome: 'USDC', monthlyExpenses: 'USDC', debtAmount: 'USDC' }, holdings: [{ kind: 'savings', quantity: 9000, currency: 'USDC' }] }, NOW), vault: 4500, open: false, want: ['priority_debt', 'collecting', 'off_target'] },
+  { name: 'v1 record migrated (debt type unknown, holdings dropped)', p: normalizeProfile({ monthlyIncome: 3000, monthlyExpenses: 1500, debtAmount: 500, age: 30, incomeStable: true, units: { monthlyIncome: 'USDC', monthlyExpenses: 'USDC', debtAmount: 'USDC' }, holdings: [{ kind: 'savings', quantity: 9000, currency: 'USDC' }] }, NOW), vault: 4500, open: false, want: ['priority_debt', 'collecting', 'new_starter'] },
 ]
 const floorCases: [Partial<FinancialProfile>, number][] = [[{ incomeStable: true, dependents: 0 }, 3], [{ incomeStable: true, dependents: 1 }, 6], [{ incomeStable: false, dependents: 0 }, 6], [{ incomeStable: false, dependents: 2, soleEarner: false }, 9], [{ incomeStable: false, dependents: 2, soleEarner: true }, 12]]
 for (const [over, months] of floorCases) {
@@ -324,7 +324,7 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
 // 12. The first questions go out as one list (functions/_lib/intake.ts): no model, only what is unknown, once.
 {
   const { BATCH_MARK, buildIntake, unknownBullets } = await import('../functions/_lib/intake')
-  const fresh = normalizeProfile({ v: 2 })
+  const fresh = normalizeProfile({ v: 3 })
   const invest = buildIntake(fresh, 'I want to invest in a right way', false, [])
   if (!invest || !invest.includes('build a plan to invest the right way') || !BATCH_MARK.test(invest)) fail('intake: invest wording')
   const { intakeKeys } = await import('../functions/_lib/intake')
@@ -335,9 +335,9 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   if (!buildIntake(fresh, 'hello', true, [])?.includes('thoải mái chia sẻ')) fail('intake: the Vietnamese version') // lang-ok
   const told = buildIntake(fresh, 'I am 31', false, ['age 31'])
   if (!told?.startsWith('Noted: age 31.')) fail('intake: what the message recorded comes first')
-  const knownMost = normalizeProfile({ v: 2, age: 31, incomes: [{ id: 'i1', name: 'Pay', monthly: 100, currency: 'USDC', kind: 'active', updatedAt: 1 }], expenses: [{ id: 'e1', name: 'Rent', monthly: 50, currency: 'USDC', kind: 'fixed', updatedAt: 1 }] })
+  const knownMost = normalizeProfile({ v: 3, age: 31, incomes: [{ id: 'i1', name: 'Pay', monthly: 100, currency: 'USDC', kind: 'active', updatedAt: 1 }], expenses: [{ id: 'e1', name: 'Rent', monthly: 50, currency: 'USDC', kind: 'fixed', updatedAt: 1 }] })
   if (unknownBullets(knownMost).length !== 5) fail('intake: known things are left out of the list')
-  const nearlyDone = normalizeProfile({ v: 2, age: 31, incomeStable: true, dependents: 0, debtsComplete: true, noNearGoal: true,
+  const nearlyDone = normalizeProfile({ v: 3, age: 31, incomeStable: true, dependents: 0, debtsComplete: true, noNearGoal: true,
     incomes: [{ id: 'i1', name: 'Pay', monthly: 100, currency: 'USDC', kind: 'active', updatedAt: 1 }], expenses: [{ id: 'e1', name: 'Rent', monthly: 50, currency: 'USDC', kind: 'fixed', updatedAt: 1 }] })
   if (buildIntake(nearlyDone, 'hi', false, []) !== null) fail('intake: with fewer than 3 things missing one question is enough, no list')
 }
@@ -348,7 +348,7 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   const { buildPlan } = await import('../functions/_lib/plan')
   const { buildIntake } = await import('../functions/_lib/intake')
   const H = (o: Record<string, unknown>) => ({ priceSource: 'self', rebalanceable: true, updatedAt: 1, currency: 'USDC', ...o })
-  const chat = (extra: unknown[] = []) => normalizeProfile({ v: 2, age: 31, incomeStable: true, dependents: 0, debtsComplete: true, noNearGoal: true,
+  const chat = (extra: unknown[] = []) => normalizeProfile({ v: 3, age: 31, incomeStable: true, dependents: 0, debtsComplete: true, noNearGoal: true,
     incomes: [{ id: 'i1', name: 'Salary', monthly: 150, currency: 'USDC', kind: 'active', updatedAt: 1 }],
     expenses: [{ id: 'e1', name: 'Spending', monthly: 150, currency: 'USDC', kind: 'fixed', updatedAt: 1 }],
     holdings: [H({ id: 'h1', type: 'savings', name: 'Bank savings', value: 500 }), H({ id: 'h2', type: 'gold_physical', name: 'Gold', quantity: 0.5, unit: 'oz', priceSource: 'market', value: undefined }),
@@ -359,14 +359,13 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   const a = bal(base, 1900), b2 = bal(base, 5000), c2 = bal(chat([]), 0)
   if (a.liquid !== b2.liquid || a.liquid !== c2.liquid) fail('wallet seen onchain must not change the total')
   if (a.walletSeen !== 1900) fail('the wallet seen is still reported')
-  if (bal(normalizeProfile({ v: 2, age: 31 }), 3000).liquid !== 0) fail('nothing declared = no money, however much the wallet holds')
+  if (bal(normalizeProfile({ v: 3, age: 31 }), 3000).liquid !== 0) fail('nothing declared = no money, however much the wallet holds')
   // The transcript of 2026-10-28: 500 from the declared wallet into the bank. Total, targets and the other buckets do not move.
   const req = detectPlacement('I withdraw 500 USDC on this wallet, put it in the bank', null)!
   const moved = applyOps(base, buildRecordOps(base, req, { kind: 'holding', id: 'hw' }, null))
   const before = bal(base, 1900), after = bal(moved, 1900)
   if (Math.abs(before.liquid - after.liquid) > 0.01) fail('moving declared money between places must not change the total')
-  const toFill = (x: ReturnType<typeof bal>) => x.liquid * x.target!.safe / 100 - x.byGroup.safe
-  if (Math.abs((toFill(before) - toFill(after)) - 500) > 0.01) fail('Safety still-to-fill must fall by exactly what was added to Safety')
+  if (Math.abs((after.byGroup.safe - before.byGroup.safe) - 500) > 0.01) fail('Safety holds exactly what was added to it')
   // New money does grow the total, and each target grows by its share of it.
   const fresh = applyOps(base, buildRecordOps(base, req, { kind: 'new' }, null))
   const grown = bal(fresh, 1900)
@@ -376,58 +375,72 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   if (appWalletHolding(dep)?.value !== 1450) fail('a fund deposit lowers the declared wallet')
   if (appWalletHolding(applyOps(dep, walletMoveOps(dep, 450)))?.value !== 1900) fail('a withdrawal raises it back')
   if (appWalletHolding(applyOps(base, walletMoveOps(base, -99999)))?.value !== 0) fail('never below zero')
-  const none = normalizeProfile({ v: 2, age: 31 })
+  const none = normalizeProfile({ v: 3, age: 31 })
   if (walletMoveOps(none, -450).length !== 0) fail('no declared wallet: a deposit takes nothing away')
   if (applyOps(none, walletMoveOps(none, 450)).holdings[0]?.value !== 450) fail('no declared wallet: a withdrawal starts one')
-  if (appWalletHolding(normalizeProfile({ v: 2, holdings: [H({ id: 'x', type: 'stable_wallet', name: 'USDT', where: 'Binance', value: 10 })] }))) fail('an exchange balance is not the app wallet')
+  if (appWalletHolding(normalizeProfile({ v: 3, holdings: [H({ id: 'x', type: 'stable_wallet', name: 'USDT', where: 'Binance', value: 10 })] }))) fail('an exchange balance is not the app wallet')
   // The form: filled values become items (plain code, no model), and the totals use only what was typed.
   const { formToItems, parseAmount, EMPTY_FORM } = await import('../src/lib/intakeForm')
   if (parseAmount('2,500') !== 2500 || parseAmount('$2500') !== 2500 || parseAmount('2.5k') !== 2500 || parseAmount('') !== null || parseAmount('abc') !== null || parseAmount('0') !== null) fail('form: amounts are read like a person types them')
   const filled = { ...EMPTY_FORM, age: '21', salary: '150', spending: '150', steady: 'no' as const, reliers: 'no' as const, goal: 'no' as const, usdcThis: '2500', cash: '500', gold: '2000', debt: 'no' as const }
   const formItems = formToItems(filled, { goldUsdPerOz: 4000, usd: {} })
   if (formItems.length !== 10) fail(`form: 10 items expected, got ${formItems.length}: ${formItems.map(i => i.text).join(' / ')}`)
-  let fromForm = normalizeProfile({ v: 2 })
+  let fromForm = normalizeProfile({ v: 3 })
   for (const it of formItems) fromForm = applyOps(fromForm, it.ops)
   const fb = computeBalance({ profile: fromForm, walletUsd: 36.58, vaultUsd: 0, cirBtcUsd: 0, prices, vndPerUsd: 25000 })
   if (fromForm.age !== 21 || fromForm.incomeStable !== false || fromForm.dependents !== 0 || !fromForm.noNearGoal || !fromForm.debtsComplete) fail('form: the facts reach the profile')
-  if (Math.abs(fb.liquid - 5000) > 0.5) fail(`form: liquid money is exactly what was typed (2500 + 500 + 2000 gold), got ${fb.liquid}`)
+  if (Math.abs(fb.liquid - 5000) > 0.5) fail(`form: liquid money is exactly what was typed at today's price (2500 + 500 + 2000 gold), got ${fb.liquid}`)
+  const goldH = fromForm.holdings.find(h => h.type === 'gold_physical')
+  if (goldH?.quantity !== 0.5 || goldH.priceSource !== 'market') fail(`form: $2,000 of gold at $4,000/oz is stored as 0.5 oz priced by the market (got ${JSON.stringify(goldH)})`)
   if (fb.cashflow.income !== 150 || fb.cashflow.spending !== 150) fail('form: salary and spending reach the cash flow')
   const windfall = formToItems({ ...EMPTY_FORM, salary: '150', otherIncome: 'yes', windfalls: 'yes', windfallsYearly: '3000' }, null)
-  let wp = normalizeProfile({ v: 2 })
+  let wp = normalizeProfile({ v: 3 })
   for (const it of windfall) wp = applyOps(wp, it.ops)
   if (!wp.hasWindfalls || wp.windfallsYearly !== 3000 || wp.incomes.length !== 1) fail('form: airdrops are noted (with the yearly guess) and are NOT a monthly income line')
   const famDebt = formToItems({ ...EMPTY_FORM, debt: 'yes', debtKind: 'family', debtOwed: '500', debtMonthly: '20' }, null)
-  const dp = applyOps(normalizeProfile({ v: 2 }), famDebt.flatMap(i => i.ops))
+  const dp = applyOps(normalizeProfile({ v: 3 }), famDebt.flatMap(i => i.ops))
   if (dp.debts[0]?.type !== 'family_no_interest' || dp.debts[0]?.ratePct !== 0) fail('form: family debt with no interest typed is interest-free')
   if (formToItems(EMPTY_FORM, null).length !== 0) fail('form: an empty form saves nothing')
   if (formToItems({ ...EMPTY_FORM, home: '50000' }, null).length !== 0 || formToItems({ ...EMPTY_FORM, otherAssets: 'yes', home: '50000' }, null).length !== 1) fail('form: home, car, lent and business count only when the question was answered yes')
-  const btcItems = formToItems({ ...EMPTY_FORM, btc: '1000' }, { goldUsdPerOz: null, usd: { 'crypto:BTC': 100000 } })
+  // Balance Sheet v2 (Hieu, 2026-10-30): Crypto typed in dollars becomes BTC at today's price and then follows the market.
+  const btcItems = formToItems({ ...EMPTY_FORM, crypto: '1000' }, { goldUsdPerOz: null, usd: { 'crypto:BTC': 100000 } })
   const btcH = (btcItems[0]?.ops[0] as { holding?: { value?: number; quantity?: number; priceSource?: string } }).holding
-  if (btcItems.length !== 1 || btcH?.value !== 1000 || btcH?.quantity !== undefined || btcH?.priceSource !== 'self') fail('form: Bitcoin is stored as the money put in ($1,000), not a quantity revalued at the market')
-  // Cost basis (Hieu, 2026-10-29): a BTC price halving must not make the Crypto part look empty, so the plan never pushes to buy more.
+  if (btcItems.length !== 1 || btcH?.quantity !== 0.01 || btcH?.priceSource !== 'market') fail(`form: $1,000 of crypto at $100,000 is 0.01 BTC priced by the market (got ${JSON.stringify(btcH)})`)
+  if (formToItems({ ...EMPTY_FORM, crypto: '1000' }, null)[0]?.ops[0] && ((formToItems({ ...EMPTY_FORM, crypto: '1000' }, null)[0].ops[0] as { holding?: { value?: number } }).holding?.value !== 1000)) fail('form: without a price the crypto amount is kept as money')
   {
-    const p = applyOps(normalizeProfile({ v: 2, age: 30 }), btcItems.flatMap(it => it.ops))
+    const p = applyOps(normalizeProfile({ v: 3, age: 30 }), btcItems.flatMap(it => it.ops))
     const at = (btc: number) => computeBalance({ profile: p, walletUsd: 0, vaultUsd: 0, cirBtcUsd: 0, prices: { goldUsdPerOz: null, usd: { 'crypto:BTC': btc } }, vndPerUsd: 25000 }).byGroup.btc
-    if (at(100000) !== 1000 || at(50000) !== 1000) fail(`cost basis: BTC put in stays $1,000 whatever the price (got ${at(100000)} / ${at(50000)})`)
+    if (Math.abs(at(100000) - 1000) > 0.01 || Math.abs(at(50000) - 500) > 0.01) fail(`market value: 0.01 BTC is $1,000 at $100,000 and $500 at $50,000 (got ${at(100000)} / ${at(50000)})`)
   }
-  // cirBTC bought in the app: recorded at what was paid; the onchain market value is no longer added on top.
+  // cirBTC bought in the app is read onchain at the market price.
   {
-    const { cirBtcBuyOps } = await import('../src/lib/profile')
-    const p0 = normalizeProfile({ v: 2, age: 30 })
-    const p1 = applyOps(p0, cirBtcBuyOps(p0, 10))
-    const p2 = applyOps(p1, cirBtcBuyOps(p1, 5))
-    const b = computeBalance({ profile: p2, walletUsd: 0, vaultUsd: 0, cirBtcUsd: 7.5, prices: null, vndPerUsd: 25000 })
-    if (b.byGroup.btc !== 15) fail(`cirBTC: two buys of $10 and $5 count as $15 put in, not the $7.50 market value (got ${b.byGroup.btc})`)
+    const b = computeBalance({ profile: normalizeProfile({ v: 3, age: 30 }), walletUsd: 0, vaultUsd: 0, cirBtcUsd: 7.5, prices: null, vndPerUsd: 25000 })
+    if (b.byGroup.btc !== 7.5) fail(`cirBTC: counted at its onchain market value (got ${b.byGroup.btc})`)
+  }
+  // Holdings saved before v3 could be the money put in: they are dropped, everything else is kept.
+  {
+    const old = normalizeProfile({ v: 2, age: 30, holdings: [{ id: 'x', type: 'savings', name: 'Bank', value: 100, currency: 'USDC', priceSource: 'self', rebalanceable: true, updatedAt: 1 }] })
+    if (old.v !== 3 || old.holdings.length !== 0 || old.age !== 30) fail('v2 profile: holdings dropped, age kept')
+  }
+  // The anchor and the 5/25 bands (docs/SPEC-BALANCE-SHEET-v2-2026-10-30.md, section 8): age 30, Safety 4,000, Traditional 1,500, Crypto 4,200.
+  {
+    const { bucketStanding } = await import('../src/lib/allocation')
+    const H = (o: Record<string, unknown>) => ({ priceSource: 'self', rebalanceable: true, updatedAt: 1, currency: 'USDC', ...o })
+    const p = normalizeProfile({ v: 3, age: 30, holdings: [H({ id: 's', type: 'savings', name: 'Bank', value: 4000 }), H({ id: 't', type: 'fund_bond', name: 'Funds', value: 1500 }), H({ id: 'c', type: 'btc', name: 'BTC', symbol: 'BTC', quantity: 0.042, priceSource: 'market' })] })
+    const st = bucketStanding(computeBalance({ profile: p, walletUsd: 0, vaultUsd: 0, cirBtcUsd: 0, prices, vndPerUsd: 25000 }))!
+    const [s0, t0, c0] = st
+    if (s0.status !== 'anchor' || Math.abs(s0.target - 4000) > 0.5) fail(`anchor: Safety sets the total (got ${JSON.stringify(s0)})`)
+    if (t0.status !== 'under' || Math.abs(t0.left - 3166.67) > 1) fail(`bands: Traditional is under with $3,167 to go (got ${JSON.stringify(t0)})`)
+    if (c0.status !== 'on_track' || !c0.full || Math.abs(c0.left - 466.67) > 1) fail(`bands: Crypto 3.5 points below is on track (got ${JSON.stringify(c0)})`)
   }
   // The plan says WHY for every step, and offers the exact deposit with the wording the "yes" is matched on.
   const shares: [number, number, number] = [31, 35, 34]
   const plan = buildPlan({ p: base, b: bal(base, 1900, 0), shares, cover: 450, vi: false })!
   for (const [what, re] of [['fund', /3 months of spending, because your income is steady/], ['safety', /Safety 31%[^\n]*any time/], ['traditional', /Traditional 3[45]%[^\n]*index funds/], ['crypto', /Crypto 3[45]%[^\n]*Bitcoin[^\n]*halve/]] as const) if (!re.test(plan)) fail(`plan: the reason for the ${what} is missing`)
   if (!/prepare a deposit of \*\*450 USDC\*\* from your wallet for you to sign/.test(plan)) fail('plan: the deposit offer wording')
-  // The numbers quoted before the deposit are the numbers after it (the goalposts do not move).
-  const safeInPlan = Number(/Safety 31% = ([\d,]+) USDC/.exec(plan)?.[1].replace(/,/g, ''))
-  const afterDeposit = bal(applyOps(base, walletMoveOps(base, -450)), 1450, 450)
-  if (Math.abs(safeInPlan - afterDeposit.liquid * afterDeposit.target!.safe / 100) > 1) fail(`plan: Safety ${safeInPlan} must equal the target after the deposit ${afterDeposit.liquid * afterDeposit.target!.safe / 100}`)
+  // Money not placed yet, after the deposit, is split with the parts that are under first (Balance Sheet v2).
+  if (!/You have \*\*\$1,450\*\* not placed yet/.test(plan)) fail(`plan: the money not placed yet after the deposit is named\n${plan}`)
+  if (/full|above/i.test(plan.split('\n\n').slice(1).join(' '))) fail('plan: no "full" or "above" for the parts, only on track / to go')
   if (!/Traditional[^\n]{0,80}\d+%/.test(plan)) fail('plan: must be recognised as the plan already given')
   const fullPlan = buildPlan({ p: base, b: bal(base, 1900, 450), shares, cover: null, vi: false })!
   if (!/Which part would you like to fill first: Safety \([^)]*\) or Crypto \([^)]*\)\?|Only [^.]* still has room/.test(fullPlan)) fail('plan: with the fund full it asks which part to fill, naming only the parts that still have room')
@@ -449,7 +462,7 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   const { buildPlan, buildStanding } = await import('../functions/_lib/plan')
   const { bucketStanding } = await import('../src/lib/allocation')
   const H = (o: Record<string, unknown>) => ({ priceSource: 'self', rebalanceable: true, updatedAt: 1, currency: 'USDC', ...o })
-  const goalP = (bank: number, wallet = 2000, extra: unknown[] = []) => normalizeProfile({ v: 2, age: 21, incomeStable: false, dependents: 0, debtsComplete: true, nearGoal: { name: 'Marriage', amount: 4000, currency: 'USDC', years: 2 },
+  const goalP = (bank: number, wallet = 2000, extra: unknown[] = []) => normalizeProfile({ v: 3, age: 21, incomeStable: false, dependents: 0, debtsComplete: true, nearGoal: { name: 'Marriage', amount: 4000, currency: 'USDC', years: 2 },
     incomes: [{ id: 'i1', name: 'Pay', monthly: 150, currency: 'USDC', kind: 'active', updatedAt: 1 }], expenses: [{ id: 'e1', name: 'Spending', monthly: 100, currency: 'USDC', kind: 'fixed', updatedAt: 1 }],
     holdings: [H({ id: 'b', type: 'savings', name: 'Bank savings', value: bank }), H({ id: 'w', type: 'stable_wallet', name: 'USDC in this wallet', where: 'app wallet', value: wallet }),
       H({ id: 'g', type: 'gold_physical', name: 'Gold', quantity: 0.5, unit: 'oz', priceSource: 'market', value: undefined }), ...extra] })
@@ -458,13 +471,12 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   const s500 = bucketStanding(bal(goalP(500)))!.find(x => x.key === 'safe')!
   const s1000 = bucketStanding(bal(goalP(1000, 1500)))!.find(x => x.key === 'safe')! // 500 moved from the declared wallet into the bank
   if (Math.abs((s500.left - s1000.left) - 500) > 0.01) fail(`Safety left must fall by exactly the 500 added (${s500.left} -> ${s1000.left})`)
-  if (Math.abs(s500.target - (4000 + (s500.rest ?? 0))) > 0.01 || s500.goal !== 4000) fail('Safety target = goal + its share of the rest')
   const plan = buildPlan({ p: goalP(500), b: bal(goalP(500), 600), shares: [21, 45, 34], cover: null, vi: false })!
-  if (!/Near-term goal: Marriage \$4,000/.test(plan) || !/your \$4,000 goal \+ 21% of the rest/.test(plan)) fail('plan: the near-term goal is explained and added to the Safety target')
-  if (!/Safety[^\n]*\(your \$4,000 goal \+ 21% of the rest[^\n]*You have \$500, \$[\d,]+ to go/.test(plan)) fail('plan: Safety shows its total (goal + share) and what they have and what is left')
+  if (!/Near-term goal: Marriage \$4,000\*\*: keep it in savings/.test(plan)) fail('plan: the near-term goal is a note to keep it in savings, not part of any target')
+  if (!/Safety[^\n]*You have \$500 of \$[\d,]+, \$[\d,]+ to go/.test(plan)) fail(`plan: Safety under shows what they have of the target and what is left\n${plan}`)
   if (!/6 months of spending, because/.test(plan)) fail('plan: the months are explained (why this number)')
   const st = buildStanding({ p: goalP(1000, 1500), b: bal(goalP(1000, 1500), 600), vi: false })!
-  if (!/Emergency fund:\*\* \$600 of \$600 \(6 months of spending\), full/.test(st) || !/\*\*Safety:\*\* \$1,000 of \$[\d,]+, \$[\d,]+ to go \(Bank savings \$1,000; target = goal \$4,000/.test(st)) fail(`standing: the emergency fund and Safety are separate lines with totals\n${st}`)
+  if (!/Emergency fund:\*\* \$600 of \$600 \(6 months of spending\), full/.test(st) || !/\*\*Safety:\*\* \$1,000: on track \(Bank savings \$1,000\)/.test(st)) fail(`standing: the emergency fund and Safety are separate lines with totals\n${st}`)
   if (/Safety[^\n]*months of spending/.test(st)) fail('standing: Safety never carries months')
 }
 
@@ -479,22 +491,22 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
     ['Yep', 'Hello there', null], ['safe', 'Ready to start? shall I prepare a deposit of 450 USDC?', null],
   ]
   for (const [text, prev, want] of cases) if (detectPartChoice(text, prev) !== want) fail(`part choice: "${text}" after "${prev.slice(0, 24)}…" should be ${want}`)
-  const rows = [
-    { key: 'safe' as const, name: 'Safety' as const, share: 21, have: 1000, target: 840, left: 0, full: true },
-    { key: 'traditional' as const, name: 'Traditional' as const, share: 45, have: 2000, target: 1800, left: 0, full: true },
-    { key: 'crypto' as const, name: 'Crypto' as const, share: 34, have: 0, target: 1354, left: 1354, full: false },
+  const rows: Standing[] = [
+    { key: 'safe', name: 'Safety', share: 21, have: 1000, now: 25, target: 840, left: 0, status: 'anchor', full: true },
+    { key: 'traditional', name: 'Traditional', share: 45, have: 2000, now: 45, target: 1800, left: 0, status: 'on_track', full: true },
+    { key: 'crypto', name: 'Crypto', share: 34, have: 0, now: 0, target: 1354, left: 1354, status: 'under', full: false },
   ]
   if (!/^Only Crypto \(\$0 of \$1,354\) still has room/.test(pickQuestion(rows, false))) fail('pick: only the part with room is named')
   if (/Safety|Traditional/.test(pickQuestion(rows, false))) fail('pick: full parts are never named')
-  if (!/All three parts are at their targets/.test(pickQuestion(rows.map(r => ({ ...r, left: 0, full: true })), false))) fail('pick: all full')
-  if (!/Which part would you like to fill first: Safety \(\$300 of \$840\) or Crypto/.test(pickQuestion([{ ...rows[0], have: 300, left: 540, full: false }, rows[1], rows[2]], false))) fail('pick: two parts with room, each as "X of Y"')
+  if (!/All three parts are on track/.test(pickQuestion(rows.map(r => ({ ...r, left: 0, status: 'on_track' as const, full: true })), false))) fail('pick: all on track')
+  if (!/Which part would you like to fill first: Safety \(\$300 of \$840\) or Crypto/.test(pickQuestion([{ ...rows[0], have: 300, left: 540, status: 'under', full: false }, rows[1], rows[2]], false))) fail('pick: two parts under, each as "X of Y"')
 }
 
 // 12. Small plans (real chat 2026-10-29): Crypto 0 of 0.43 USDC was called "full" because "full" meant "less than 0.5 USDC left".
 {
   const { buildPartAnswer, pickQuestion } = await import('../functions/_lib/plan')
   const { bucketStanding } = await import('../src/lib/allocation')
-  const p = normalizeProfile({ v: 2, age: 21, incomeStable: true, dependents: 1, debtsComplete: true, noNearGoal: true,
+  const p = normalizeProfile({ v: 3, age: 21, incomeStable: true, dependents: 1, debtsComplete: true, noNearGoal: true,
     incomes: [{ id: 'i', name: 'Salary', monthly: 0.2, currency: 'USDC', kind: 'active' }],
     expenses: [{ id: 'e', name: 'Spending', monthly: 0.1, currency: 'USDC', kind: 'fixed' }],
     holdings: [
@@ -503,9 +515,9 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
     ] })
   const b = computeBalance({ profile: p, walletUsd: 5, vaultUsd: 0.6, cirBtcUsd: 0, prices: { goldUsdPerOz: null, usd: {} }, vndPerUsd: 25000 })
   const crypto = bucketStanding(b)?.find(x => x.key === 'crypto')
-  if (!crypto || crypto.full || crypto.target >= 0.5) fail(`small plan: Crypto 0 of a target under 0.5 USDC must not be full (got ${JSON.stringify(crypto)})`)
+  if (!crypto || crypto.full || crypto.target > 1) fail(`small plan: Crypto 0 of a target under 0.5 USDC must not be full (got ${JSON.stringify(crypto)})`)
   if (!/prepare a cirBTC buy of \*\*0\.\d+ USDC\*\*/.test(buildPartAnswer({ b, vi: false, part: 'crypto', walletUsd: 5 }) ?? '')) fail('small plan: the cirBTC offer is in cents, not "the wallet has no USDC"')
-  if (/All three parts are at their targets/.test(pickQuestion(bucketStanding(b) ?? [], false))) fail('small plan: Crypto with room is not "all full"')
+  if (/All three parts are on track/.test(pickQuestion(bucketStanding(b) ?? [], false))) fail('small plan: Crypto under is not "all on track"')
 }
 
 console.log(fails ? `\n${fails} problem(s).` : `\nKB OK: ${KB.patterns.length} patterns, ${personas.length} personas + ${reals.length} real profiles, formula matches the spec table.`)

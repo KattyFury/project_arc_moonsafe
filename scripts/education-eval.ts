@@ -161,7 +161,7 @@ try {
     assert.ok(!JSON.stringify(mixed.data.ops).includes('12000'))
     checks++
     forcedTools = []
-    const incomeProfile = normalizeProfile({ v: 2, planningScope: 'household', incomes: [{ id: 'self', name: 'Income', monthly: 2000, kind: 'active', currency: 'USDC' }] })
+    const incomeProfile = normalizeProfile({ v: 3, planningScope: 'household', incomes: [{ id: 'self', name: 'Income', monthly: 2000, kind: 'active', currency: 'USDC' }] })
     forcedTools = [{ id: 'facts', type: 'function', function: { name: 'update_profile', arguments: JSON.stringify({ age: 28, dependents: 1 }) } }]
     const spouseFacts = await ask('My wife is 28 and earns $1500 a month', true, [], { profile: { ...incomeProfile, age: 34 } })
     assert.deepEqual(spouseFacts.data.ops, [], 'Do not use a spouse\'s age or assume a working spouse is a dependent')
@@ -210,14 +210,14 @@ try {
     checks += 9
     forcedTools = [{ id: 'bad-btc', type: 'function', function: { name: 'add_holding', arguments: JSON.stringify({ type: 'btc', symbol: 'BTC', quantity: 4000 }) } }]
     const btcCost = await ask('I invested $4000 into BTC. Its current market value is $2000 after a 50% fall.')
-    const btcProfile = applyOps(normalizeProfile({ v: 2 }), readOps(btcCost.data.ops))
+    const btcProfile = applyOps(normalizeProfile({ v: 3 }), readOps(btcCost.data.ops))
     assert.equal(btcProfile.holdings.length, 1)
     assert.equal(btcProfile.holdings[0].value, 4000)
     assert.equal(btcProfile.holdings[0].quantity, undefined)
     checks += 3
     forcedTools = [{ id: 'wrong-worth', type: 'function', function: { name: 'add_holding', arguments: JSON.stringify({ type: 'btc', symbol: 'BTC', worth: { amount: 2000, currency: 'USDC' } }) } }]
     const marketAsCost = await ask('I invested $4000 into BTC. Its current market value is $2000 after a 50% fall.')
-    const marketProfile = applyOps(normalizeProfile({ v: 2 }), readOps(marketAsCost.data.ops))
+    const marketProfile = applyOps(normalizeProfile({ v: 3 }), readOps(marketAsCost.data.ops))
     assert.equal(marketProfile.holdings[0]?.value, 4000)
     checks++
     forcedTools = []
@@ -229,7 +229,7 @@ try {
       ['Hai vợ chồng đi làm. Có 100 triệu tiết kiệm ngân hàng, không nợ. Tính giúp quỹ dự phòng?', 100000000, 'VND'], // lang-ok
     ] as const) {
       const result = await ask(text)
-      const p = applyOps(normalizeProfile({ v: 2 }), readOps(result.data.ops))
+      const p = applyOps(normalizeProfile({ v: 3 }), readOps(result.data.ops))
       assert.ok(p.holdings.some(h => h.value === amount && h.currency === currency))
       assert.notEqual(p.ageDeclined, true)
       checks += 2
@@ -257,7 +257,7 @@ try {
     const tools = (name: string, args: Record<string, unknown>) => ({ id: name, type: 'function', function: { name, arguments: JSON.stringify(args) } })
     forcedTools = [tools('update_profile', { income_stable: false, sole_earner: true }), tools('set_income', { name: 'Freelance income', monthly: { amount: 3000, currency: 'USDC' }, kind: 'active' }), tools('set_expense', { name: 'Household spending', monthly: { amount: 1800, currency: 'USDC' }, kind: 'fixed' })]
     const familyFloor = await ask('I am married and 38. I am the only earner supporting my spouse and two children. My income is irregular and averages $3000 per month. Household spending is $1800 monthly. Explain our emergency fund target?')
-    const fp = applyOps(normalizeProfile({ v: 2 }), readOps(familyFloor.data.ops))
+    const fp = applyOps(normalizeProfile({ v: 3 }), readOps(familyFloor.data.ops))
     assert.equal(fp.age, 38)
     assert.equal(fp.dependents, 3)
     assert.match(familyFloor.data.content ?? '', /12 months/)
@@ -265,7 +265,7 @@ try {
     checks += 4
     forcedTools = []
     const tuition = await ask('I need $4000 for tuition in three months. Should this be invested?')
-    const tp = applyOps(normalizeProfile({ v: 2 }), readOps(tuition.data.ops))
+    const tp = applyOps(normalizeProfile({ v: 3 }), readOps(tuition.data.ops))
     assert.equal(tp.nearGoal?.amount, 4000)
     assert.equal(tp.nearGoal?.years, .25)
     checks += 2

@@ -57,7 +57,7 @@ try {
   fakeReply = 'The original invested cost stays separate from the current market value.'
   forcedTools = [tools('add_holding', { type: 'btc', symbol: 'BTC', quantity: 0.02 }), tools('add_holding', { type: 'cash', name: 'Cash', worth: { amount: 300, currency: 'USDC' } })]
   const mixed = await ask('I own 0.02 BTC bought for $1600, plus $300 cash. Please keep the BTC quantity and dollars distinct.')
-  const mixedProfile = applyOps(normalizeProfile({ v: 2 }), readOps(mixed.data.ops))
+  const mixedProfile = applyOps(normalizeProfile({ v: 3 }), readOps(mixed.data.ops))
   const btc = mixedProfile.holdings.find(h => h.type === 'btc')!
   assert.equal(btc.quantity, 0.02)
   assert.equal(btc.value, 1600)
@@ -70,11 +70,11 @@ try {
   checks += 5
   forcedTools = []
   const viCost = await ask('Mình bỏ 60 triệu VND mua Bitcoin, giờ giá trị còn 42 triệu. Đó là vốn đã mua, không phải mình có 60 BTC.') // lang-ok
-  const viProfile = applyOps(normalizeProfile({ v: 2 }), readOps(viCost.data.ops))
+  const viProfile = applyOps(normalizeProfile({ v: 3 }), readOps(viCost.data.ops))
   assert.equal(viProfile.holdings.find(h => h.type === 'btc')?.value, 60_000_000)
   assert.equal(viProfile.holdings.find(h => h.type === 'btc')?.quantity, undefined)
   checks += 2
-  const debtor = normalizeProfile({ v: 2, debts: [{ id: 'relative', name: 'Relative loan', type: 'unknown', balance: 900, currency: 'USDC', ratePct: null, monthlyPayment: 75, updatedAt: 0 }] })
+  const debtor = normalizeProfile({ v: 3, debts: [{ id: 'relative', name: 'Relative loan', type: 'unknown', balance: 900, currency: 'USDC', ratePct: null, monthlyPayment: 75, updatedAt: 0 }] })
   forcedTools = [tools('update_debt', { id: 'relative', type: 'family_no_interest', rate_pct: 0, required: false })]
   const uncertain = await ask('Can you assume it is an interest-free gift because it is family? Explain what we need to confirm.', true, [], { profile: debtor })
   const uncertainProfile = applyOps(debtor, readOps(uncertain.data.ops))
@@ -90,7 +90,7 @@ try {
   assert.equal(actualProfile.debts[0].ratePct, 0)
   assert.equal(actualProfile.debts[0].monthlyPayment, 75)
   checks += 4
-  const shared = normalizeProfile({ v: 2, planningScope: 'household', incomes: [
+  const shared = normalizeProfile({ v: 3, planningScope: 'household', incomes: [
     { id: 'mine', name: 'My salary', monthly: 2400, currency: 'USDC', kind: 'active', updatedAt: 0 },
     { id: 'partner', name: 'Partner contribution', monthly: 800, currency: 'USDC', kind: 'active', updatedAt: 0 },
   ], expenses: [{ id: 'bills', name: 'Shared bills', monthly: 1900, currency: 'USDC', kind: 'fixed', updatedAt: 0 }] })
@@ -106,7 +106,7 @@ try {
   // No model needed for reviewed standalone concepts, even with an existing financial profile.
   const beforeLesson = calls
   for (const query of ['Explain the difference between needs and wants?', 'Phân biệt nhu cầu và mong muốn?']) { // lang-ok
-    const lesson = await ask(query, true, [], { profile: normalizeProfile({ v: 2, age: 38 }) })
+    const lesson = await ask(query, true, [], { profile: normalizeProfile({ v: 3, age: 38 }) })
     assert.equal(lesson.data.education, 'needs-wants')
     assert.deepEqual(lesson.data.ops, [])
     assert.deepEqual(lesson.data.actions, [])
@@ -117,7 +117,7 @@ try {
   checks++
   results.push({ name: 'reviewed needs/wants lesson uses zero model calls', status: 'pass' })
   // Spending alone is insufficient. Unknown dependents must never enter model context as zero.
-  const incomplete = normalizeProfile({ v: 2, age: 38, incomeStable: true, expenses: [{ id: 'rent', name: 'Rent', monthly: 900, currency: 'USDC', kind: 'fixed', updatedAt: 0 }] })
+  const incomplete = normalizeProfile({ v: 3, age: 38, incomeStable: true, expenses: [{ id: 'rent', name: 'Rent', monthly: 900, currency: 'USDC', kind: 'fixed', updatedAt: 0 }] })
   fakeReply = 'The spending is known, but dependents are still unknown. This is not enough to finalize an emergency fund target.'
   const beforeContext = prompts.length
   const incompleteResult = await ask('Explain what is still missing from my planning picture?', true, [], { profile: incomplete, hasVault: true, walletUsdc: 50, vaultUsdc: 0 })
@@ -176,7 +176,7 @@ try {
   // Facts are correctly pending, while the explanation must still be generated.
   forcedTools = [tools('update_profile', { age: 38, income_stable: false, dependents: 3, sole_earner: true })]
   fakeReply = 'An emergency fund covers unexpected costs or a loss of income. Its target is not final until the relevant expenses and household risks are known.'
-  const existing = normalizeProfile({ v: 2, age: 30 })
+  const existing = normalizeProfile({ v: 3, age: 30 })
   const pendingStart = prompts.length
   const pending = await ask('I am 38, the only earner, supporting 3 dependents. My income is irregular. Explain how our emergency fund works?', true, [], { profile: existing, hasVault: true, walletUsdc: 50, vaultUsdc: 0 })
   assert.equal(pending.status, 200)

@@ -1,4 +1,18 @@
-# Balance Sheet v2 — CHỐT HƯỚNG 2026-10-30, chưa code
+# ▶ Balance Sheet v2 — ĐÃ CODE 2026-10-30 (Claude), chờ Hiếu duyệt ảnh rồi deploy
+
+Theo spec v2 + trả lời của Hiếu ("bỏ hết dữ liệu cũ / tính giá hiện tại, dùng tiền chia ra là ra lượng / nguồn giá em tự tìm / quỹ dự phòng tách riêng / sửa agent / sửa Invest"):
+- **Hồ sơ v3:** `normalizeProfile` đọc hồ sơ cũ (v1, v2) thì **bỏ hết tài sản đã khai**, giữ tuổi, thu chi, nợ, mục tiêu… (lần đầu mở app sau deploy, người dùng khai lại tài sản). `src/types.ts` v: 3.
+- **Giá:** dùng `/api/prices` sẵn có (vàng: gold-api.com rồi Yahoo; cổ phiếu: Yahoo; coin: Coinbase rồi Binance; cache 10 phút). Oracle trên Arc (Pyth) cần key Hermes nên chưa dùng. App luôn lấy giá BTC + vàng.
+- **Khai bằng $ → số lượng:** bảng hỏi: Crypto $ ÷ giá BTC (vẫn là loại `crypto`, không gọi là BTC), Vàng $ ÷ giá vàng → oz; Stocks/funds không có mã nên giữ là tiền. Agent: "$2,000 of gold" → oz theo giá hôm nay; "I put $1,000 into BTC" (tiền đã bỏ) → không lưu, hỏi đang giữ bao nhiêu hoặc đáng bao nhiêu bây giờ. Không có giá thì giữ là tiền.
+- **cirBTC:** luôn đọc trên chuỗi theo giá thị trường; bỏ `cirBtcBuyOps` (ghi theo tiền đã trả).
+- **Cách tính (`src/lib/allocation.ts`):** `bucketStanding` = mốc (v/w lớn nhất) → tổng ngụ ý → mục tiêu từng phần; ngưỡng 5/25 → `status` anchor / on_track / under (`full` = không under). Không trừ mục tiêu gần nữa. Tiền chưa xếp (stablecoin, tiền mặt, idle) KHÔNG nằm trong phần nào: là tiền mới để lấp phần thiếu (`placeNew`: theo phần còn thiếu, dư thì theo tỷ lệ). Quỹ dự phòng tách riêng như cũ.
+- **Balance:** chỉ còn ô Emergency fund + "Your split" (thanh từng phần: On track xanh / "$X to go"); bỏ Net worth, Can use now, nút Split/Cash flow/Debts, nợ, nhà xe. `CashflowCard` vẫn dùng trong chat, để dành cho module dòng tiền sau.
+- **Invest:** "Full" → "On track"; nút "To target" dùng phần idle chia cho Crypto.
+- **Agent:** context bỏ Net worth / % of liquid, thêm trạng thái anchor/on track/under, cấm khuyên bán; kế hoạch (plan.ts) nói "phần đi xa nhất là mốc", từng phần "on track" hoặc "$X of $Y, $Z to go", thêm dòng "not placed yet" + gợi ý chia. Bỏ fast path "cost basis".
+- Kiểm: `bun run check:all` qua (thêm test ví dụ mục 8 của spec, v2→v3 bỏ tài sản, vàng 0.5 oz, BTC giảm nửa thì giá trị giảm nửa).
+- **CHƯA làm:** dòng "thấp hơn mục tiêu vì giá giảm" (app không lưu lịch sử giá nên chưa biết phần nào tụt vì giá); trình bày khoản thiếu lớn khi một phần tăng mạnh (rủi ro mục 7 spec).
+
+# Balance Sheet v2 — CHỐT HƯỚNG 2026-10-30 (đã code, xem mục trên)
 
 Spec: [`docs/SPEC-BALANCE-SHEET-v2-2026-10-30.md`](docs/SPEC-BALANCE-SHEET-v2-2026-10-30.md) (bản bàn trước: `docs/SPEC-BALANCE-SHEET-2026-10-30.md`, chỉ còn là tư liệu).
 - **Đảo quyết định 10-29 "đầu tư tính theo tiền đã bỏ vào":** giờ tính theo **giá trị hiện tại** (số lượng × giá oracle); vẫn **không giục mua khi giá giảm**, không khuyên bán.
