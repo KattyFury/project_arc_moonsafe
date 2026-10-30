@@ -5,6 +5,7 @@
 :root {
   /* nguyen0xhieu design system (tokens.json). Old names kept so screens stay unchanged. */
   --bg: #FFFFFF;            /* ground */
+  --chat-bg: #F2F3F5;       /* the chat's own ground, plain grey (Hieu, 2026-10-30); agent bubbles and the message box sit on it in white */
   --page: #FFFFFF;          /* app background (direction 1, 2026-10-30: flat white, cards carry a 1px line instead of a shadow) */
   --surface: #FFFFFF;
   --surface-strong: #FFFFFF;
