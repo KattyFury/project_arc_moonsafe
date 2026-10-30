@@ -75,3 +75,9 @@ body {
 .rise-in { animation: rise-in 320ms cubic-bezier(.2,.8,.2,1) both; }
 .fill-in { transform-origin: left; animation: fill-in 900ms cubic-bezier(.2,.8,.2,1) both; }
 @media (prefers-reduced-motion: reduce) { .rise-in, .fill-in { animation: none; } }
+/* "Before you start": the sheet slides up from the bottom on a phone; on a computer the dialog settles in place. */
+@keyframes sheet-up { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes dialog-in { from { transform: scale(0.97); opacity: 0; } to { transform: none; opacity: 1; } }
+.sheet-in { animation: sheet-up 360ms cubic-bezier(.2,.8,.2,1) both; }
+@media (min-width: 1024px) { .sheet-in { animation-name: dialog-in; animation-duration: 240ms; } }
+@media (prefers-reduced-motion: reduce) { .sheet-in { animation: none; } }
