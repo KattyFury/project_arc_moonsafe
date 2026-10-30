@@ -279,7 +279,7 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
     const sent = JSON.parse(init?.body ?? '{}') as { model: string; system?: string; messages: Array<{ role: string }> }
     // Claude: roles must alternate starting with user, and only user/assistant (system goes in its own field)
     if (sent.messages.some((m, i) => m.role !== (i % 2 ? 'assistant' : 'user'))) return new Response('{"type":"error","error":{"type":"invalid_request_error","message":"bad roles"}}', { status: 400 })
-    if (sent.system !== 'a') return new Response('{"type":"error","error":{"type":"invalid_request_error","message":"system not set"}}', { status: 400 })
+    if (sent.system !== 'a\n\nlate note') return new Response('{"type":"error","error":{"type":"invalid_request_error","message":"system not set"}}', { status: 400 })
     return new Response(JSON.stringify({ id: 'msg_1', type: 'message', role: 'assistant', model: sent.model, content: [{ type: 'text', text: 'from claude' }], stop_reason: 'end_turn', stop_sequence: null, usage: { input_tokens: 10, output_tokens: 5 } }), { status: 200, headers: { 'Content-Type': 'application/json' } })
   }) as typeof fetch
   const body = { model: 'gpt-x', messages: [{ role: 'system', content: 'a' }, { role: 'user', content: 'hi' }, { role: 'system', content: 'late note' }] }
@@ -297,7 +297,7 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
     meter = { tokens: 0 }
     r = await callModel(both, body, meter)
     if (calls.join() !== 'claude') fail('llm: after a key problem OpenAI is skipped for a few minutes')
-    if (text(r) !== 'from claude') fail('llm: a late system note must become a user message for Claude (roles alternate, system set)')
+    if (text(r) !== 'from claude') fail('llm: a late server-owned system note must stay in the system field for Claude (roles alternate, system set)')
     calls.length = 0
     const onlyOpenAi = await callModel({ openai: 'k1', claudeModel: 'c' }, body, { tokens: 0 })
     if (!(onlyOpenAi instanceof Response) || onlyOpenAi.status !== 502) fail('llm: with no standby, an OpenAI failure is an error response')

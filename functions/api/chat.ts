@@ -116,7 +116,7 @@ const DEBT_PAY_NAME = /loan|debt|repay|mortgage|installment|credit card|(?<!\p{L
 // A plain "no" to an offer (real chat 2026-10-29: "no" to the deposit offer got the same offer again). Short answers only, so
 // "no, make it 10" or "no I already have savings" still go through the normal path.
 const SAYS_NO = /^\s*(no+|nope|nah|not (now|yet|today)|maybe later|later|no,? thanks?( you)?|i('?m| am) (good|fine)|i don'?t want( to)?( do (it|that))?|not interested|skip( it)?|không|chưa|thôi|để sau|ko|k)\s*[.!]*\s*$/iu // lang-ok
-// A new amount right after our buy / deposit offer ("make it 1$", "1 đô thôi", "buy $5 instead"; real chat 2026-10-29: "make it 1$" // lang-ok
+// A new amount right after our buy / deposit offer ("make it 1$", "1 đô thôi", "buy $5 instead"; real chat 2026-10-29: "make it 1$" // lang-ok
 // got the same question again). A dollar amount, no question, no VND.
 const OFFERED_BUY = /cirBTC buy of|first buy of|lệnh mua cirBTC|lần mua đầu/i // lang-ok
 const OFFERED_DEPOSIT = /prepare a deposit of|lệnh nạp/i // lang-ok
@@ -770,7 +770,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   // Long whitespace runs are collapsed: they made a regex take seconds (security review 2026-10-29).
   body.messages = (Array.isArray(body.messages) ? body.messages : [])
     .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
-    .map(m => ({ role: m.role, content: (m.role === 'assistant' ? m.content.slice(-MAX_MESSAGE_CHARS) : m.content.slice(0, MAX_MESSAGE_CHARS)).replace(/\s{3,}/g, ' ') }))
+    .map(m => ({ role: m.role, content: (m.role === 'assistant' ? m.content.slice(-MAX_MESSAGE_CHARS) : m.content.slice(0, MAX_MESSAGE_CHARS)).replace(/\s{3,}/g, ' ').replace(/\d{19,}/g, d => d.slice(0, 18)).replace(/([^\p{L}\p{N}\s])\1{7,}/gu, '$1$1$1') }))
 
   // What the admin switched (functions/_lib/config.ts): the agent can be paused, an account can be blocked, the limits can be changed.
   const cfg = await getConfig(context.env)
@@ -864,6 +864,17 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       ops: [], dcaStop: false, actions: [{ type: 'prepare_open_vault' }],
     })
   }
+  // Live prices for everything market-priced (functions/api/prices.ts, cached 10 min).
+  let prices: Prices | null = null
+  const loadPrices = async (p: FinancialProfile, extra: { kind: 'stock' | 'crypto'; sym: string }[] = []) => {
+    const market = p.holdings.filter(h => h.priceSource === 'market' && h.quantity !== undefined)
+    const syms = (k: 'stock' | 'crypto') => [...market.filter(h => priceKindOf(h.type) === k).map(symbolOf).filter((s): s is string => !!s), ...extra.filter(e => e.kind === k).map(e => e.sym)]
+    if (!market.length && !extra.length) return prices
+    prices = await getPrices(syms('stock'), syms('crypto'))
+    return prices
+  }
+  const balanceOf = async (p: FinancialProfile) => computeBalance({ profile: p, walletUsd: wallet, vaultUsd: vault, cirBtcUsd: cir, prices: await loadPrices(p), vndPerUsd: rate })
+
   // The offer a plain yes answers: our last reply, or the one before it when the user only asked a question in between and our
   // answer offered nothing else.
   const lastOffer = (() => {
@@ -876,7 +887,8 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     const o = OFFERED_AMOUNT.exec(lastOffer)
     const amt = o ? Number(o[1].replace(/,/g, '')) : NaN
     const buy = OFFERED_BUY.test(lastOffer)
-    if (amt > 0 && (buy || hasVault)) {
+    // These two fast paths obey the admin's pause switch and the buy lock like every other way of getting a card (review 2026-10-30).
+    if (amt > 0 && (buy || hasVault) && !cardsPaused && (!buy || (await balanceOf(profile)).lock.open)) {
       const a = `**${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(amt)} USDC**`
       return json({
         content: buy ? (vi ? `Lệnh mua cirBTC ${a} ở bên dưới, bạn kiểm rồi ký nhé.` : `Here is the cirBTC buy of ${a}: check it and sign below.`) // lang-ok
@@ -890,7 +902,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     const amt = m ? Number(m[1].replace(',', '.')) : NaN
     if (m && amt > 0 && amt <= 1_000_000) {
       const buy = OFFERED_BUY.test(prevAssistantText)
-      if (buy || hasVault) {
+      if ((buy || hasVault) && !cardsPaused && (!buy || (await balanceOf(profile)).lock.open)) {
         const a = `**${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(amt)} USDC**`
         return json({
           content: buy ? (vi ? `Được: lệnh mua cirBTC ${a} ở bên dưới để bạn ký.` : `Sure: a cirBTC buy of ${a} is below for you to sign.`) // lang-ok
@@ -926,16 +938,6 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   /** A number the user said (within 1%, or ×1000 for "3k"); 0 only when they said none / sold. */
   const stated = (q: unknown, pool = said) => typeof q === 'number' && (q === 0 ? SAYS_NONE.test(lastUserText) || SOLD.test(lastUserText) : pool.some(n => n > 0 && (Math.abs(n - q) / n <= 0.01 || Math.abs(n * 1000 - q) / (n * 1000) <= 0.01 || Math.abs(n * 1e6 - q) / (n * 1e6) <= 0.01)))
 
-  // Live prices for everything market-priced (functions/api/prices.ts, cached 10 min).
-  let prices: Prices | null = null
-  const loadPrices = async (p: FinancialProfile, extra: { kind: 'stock' | 'crypto'; sym: string }[] = []) => {
-    const market = p.holdings.filter(h => h.priceSource === 'market' && h.quantity !== undefined)
-    const syms = (k: 'stock' | 'crypto') => [...market.filter(h => priceKindOf(h.type) === k).map(symbolOf).filter((s): s is string => !!s), ...extra.filter(e => e.kind === k).map(e => e.sym)]
-    if (!market.length && !extra.length) return prices
-    prices = await getPrices(syms('stock'), syms('crypto'))
-    return prices
-  }
-  const balanceOf = async (p: FinancialProfile) => computeBalance({ profile: p, walletUsd: wallet, vaultUsd: vault, cirBtcUsd: cir, prices: await loadPrices(p), vndPerUsd: rate })
   const startBalance = await balanceOf(profile)
   const investUnlocked = startBalance.lock.open
   const wantsInvestLocked = !policy.answerFirst && !investUnlocked && INVEST_INTENT.test(lastUserText) && !NOT_INVESTING.test(lastUserText) && !ASKS_WHY.test(lastUserText) && !DEPOSIT_WORD.test(lastUserText) && (!coach.active || ACTION_VERB.prepare_buy_cirbtc.test(lastUserText))

@@ -21,6 +21,8 @@ const SLIPPAGE_BPS = 300
  * refused, so a thin or broken pool can never sell cirBTC far above Bitcoin (the testnet pool once priced it at ~2.6x).
  */
 const MAX_PREMIUM = 0.03
+/** The quote must be redone when it is older than this (the pool and the market move). */
+const QUOTE_MAX_AGE_MS = 60_000
 const POLL_MS = 30_000
 const DCA_KEY = 'moonsafe_dca_v1'
 
@@ -36,6 +38,8 @@ export interface CirBtcQuote {
   address: string
   /** USD per BTC this quote pays, and how far that is above the market price (0.01 = 1%); null when the market price is unknown. */
   pricePerBtc: number
+  /** When the estimate was made (ms): a quote older than QUOTE_MAX_AGE_MS must be redone before signing. */
+  quotedAt: number
   premium: number | null
 }
 
@@ -146,7 +150,7 @@ export function useCirBtcState(): CirBtcState {
       if (!Number.isFinite(pricePerBtc) || pricePerBtc <= 0) throw new Error('The quote came back empty, please try again')
       if (premium === null) throw new Error('Could not check the BTC price right now, so no purchase. Please try again in a minute.')
       if (premium > MAX_PREMIUM) throw new Error(`This quote prices Bitcoin at ${Math.round(pricePerBtc).toLocaleString('en-US')} USD, ${(premium * 100).toFixed(1)}% above the market (${Math.round(market!).toLocaleString('en-US')} USD). MoonSafe does not buy above ${MAX_PREMIUM * 100}%, please try later.`)
-      setQuote({ amountInUsdc: amountIn, estimate: est, address, pricePerBtc, premium })
+      setQuote({ amountInUsdc: amountIn, estimate: est, address, pricePerBtc, premium, quotedAt: Date.now() })
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not get a quote')
     } finally {
@@ -157,13 +161,22 @@ export function useCirBtcState(): CirBtcState {
   const execute = useCallback(async (): Promise<boolean> => {
     if (!quote) return false
     if (address !== quote.address) { setError('Your wallet changed, please get a new quote'); setQuote(null); return false }
+    if (Date.now() - quote.quotedAt > QUOTE_MAX_AGE_MS) { setError('This quote is more than a minute old. Please get a new one.'); setQuote(null); return false }
     setError(null); setBusy(true)
     try {
+      // The swap asks the pool for its own, fresh price. So the guard is applied again here, on the price that will really be signed:
+      // a minimum cirBTC out computed from the market BTC price (read now) plus the allowed premium. If the pool is worse, the swap
+      // fails instead of selling cirBTC too dear (security review 2026-10-29).
+      let market: number | null = null
+      try { const r = await fetch('/api/price'); const d = await r.json() as { btcUsd?: number }; if (d.btcUsd && d.btcUsd > 0) market = d.btcUsd } catch { /* handled below */ }
+      if (!market) { setError('Could not check the BTC price right now, so no purchase. Please try again in a minute.'); return false }
+      const minOut = Math.floor((Number(quote.amountInUsdc) / (market * (1 + MAX_PREMIUM))) * 1e8) / 1e8
+      if (!(minOut > 0)) { setError('The amount is too small to buy safely.'); return false }
       const adapter = await getAdapter()
       const res = await kit.swap({
         from: { adapter, chain: NET.appKitChain },
         tokenIn: 'USDC', tokenOut: 'cirBTC', amountIn: quote.amountInUsdc,
-        config: { slippageBps: SLIPPAGE_BPS },
+        config: { slippageBps: SLIPPAGE_BPS, stopLimit: minOut.toFixed(8) },
       })
       setLastTxHash(res.txHash ?? null)
       setQuote(null)

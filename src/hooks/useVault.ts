@@ -64,7 +64,8 @@ export interface VaultState {
   fee: bigint | null
   readError: boolean
   busy: boolean
-  createVault: () => Promise<void>
+  /** `shownFee` (USDC, 6 decimals): the fee the screen showed; if the contract now asks for more, nothing is sent. */
+  createVault: (shownFee?: bigint) => Promise<void>
   deposit: (amount: bigint) => Promise<void>
   withdraw: (amount: bigint) => Promise<void>
   refresh: () => Promise<void>
@@ -167,10 +168,12 @@ export function useVaultState(): VaultState {
     }
   }, [publicClient, sendTransactionAsync, refresh, connector, switchChainAsync])
 
-  const createVault = useCallback(async () => {
+  const createVault = useCallback(async (shownFee?: bigint) => {
     if (!address || !publicClient) throw new Error('Wallet not connected')
     // Read the fee right before signing so the value always matches the contract.
     const feeNative = await publicClient.readContract({ address: FACTORY_ADDRESS, abi: VAULT_FACTORY_ABI, functionName: 'fee' })
+    // The card showed a fee; if the contract now asks for more than that, stop and let the user look again (review 2026-10-29).
+    if (shownFee !== undefined && nativeToUsdc6(feeNative) > shownFee) throw new Error('The vault fee changed since this was shown, so nothing was sent. Please look at the new fee and try again.')
     await send({
       to: FACTORY_ADDRESS,
       value: feeNative,

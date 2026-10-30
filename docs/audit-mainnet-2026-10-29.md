@@ -93,3 +93,30 @@ Checked and fine: the payment verification itself (status, exact `to`, exact val
 
 ## Still yours
 Privy sign-up restriction, Cloudflare rate-limit rules (`/api/chat`, `/api/power`, `/api/*`), a paid Workers plan, delete the `GEMINI_API_KEY` secret and the preview `OPENAI_API_KEY`, verify the contracts on explorer.arc.io, and move the purchase ledger and quotas to a Durable Object or D1 before the user count grows.
+
+
+---
+
+# Third round (2026-10-30)
+
+Live: production deployments `884777bb`..`6594e4cf`, all from commit `e170b64` (UI refresh, agent re-evaluation work of PR #32). Contracts: no diff since the first audit; on-chain state re-read and `preflight-mainnet.ts` passes. New code since round 2: `functions/_lib/agentGuards.ts`, `coaching.ts`, `education.ts`, `mutationEvidence.ts` (regex guards and prompt policy only: no network, no env, no secrets), `llm.ts` (server-owned system messages now stay in the Claude `system` field), a larger `chat.ts`, 130 eval/record files under `docs/evals` and `scripts/`.
+
+## Checks
+- Secrets: none in the tracked tree (patterns for OpenAI, Anthropic, Google, Cloudflare, GitHub, private keys); the eval records contain no emails, wallet addresses or Privy ids; `.env`, `.dev.vars` and recovery files are not tracked.
+- **A red test was sitting on main:** `scripts/kb-check.ts` crashed on the Claude adapter case after the `llm.ts` change (the test still expected the old "late system note becomes a user message"). `cf:deploy` does not run tests, so it shipped. Fixed the test to the new behaviour and added `bun run check:all` (language check, typecheck, `kb-check`, `bun run flow`); run it before every deploy. A Vietnamese comment line had also lost its `// lang-ok` marker in a merge (the language check would have refused the deploy): fixed.
+
+## Regex denial of service, round 3
+New heuristic regexes (guards, coaching, education) were tested end to end: 23 adversarial 2,000-character messages (digit runs, spaced digits, thousands separators, dollars, dots, "k", "usdc a month", "maybe", Vietnamese words, long words...) sent as the user message and again as the previous agent reply. Worst case before the fix: 264 ms (a long digit run). Fixed: digit runs over 18 digits are cut and 8+ repeated punctuation marks are collapsed before any regex runs; worst case now ~100 ms, and `bun run flow` fails the build if any message takes 800 ms or more.
+
+## Round 2 leftovers, now closed
+| Finding | Fix |
+|---|---|
+| #6 cirBTC swap re-quoted without a floor | The swap now carries a `stopLimit` = amount / (market BTC price x 1.03), the market price read at signing time, and a quote older than 60 s must be redone |
+| #10 vault fee on the card vs the fee sent | `createVault` refuses if the contract's fee is now higher than the one shown |
+| #11 deposit from another wallet | The deposit card says which wallet's vault receives the money and that only that wallet can withdraw |
+| fast paths ("yes" to an offered amount, a new amount after an offer) | They now obey the pause-transactions switch, need a vault for deposits and need the buy lock to be open for buys (this also fixed a latent use-before-definition that the typechecker caught) |
+
+## Still open
+- Purchase ledger and quotas on KV (not atomic): needs a Durable Object or D1. The Cloudflare token currently has no D1 or Durable Object binding configured on the project; this is a Cloudflare setup step.
+- The model prompts include user-typed names (holding and goal names) inside system-role figures. A user can only influence their own chat, and no tool can move money without a signed card, so this is informational.
+- Your list from before: Privy sign-up restriction, Cloudflare rate-limit rules, paid Workers plan, delete the `GEMINI_API_KEY` secret and the preview `OPENAI_API_KEY`, verify the contracts on explorer.arc.io.
