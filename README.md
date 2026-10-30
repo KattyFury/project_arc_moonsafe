@@ -29,6 +29,8 @@ USDC is the native gas token, so the vault holds plain USDC and users never need
 | VaultProxy (implementation) | [`0xd139b06b1bb5303a4fbA25E2B2297Cf1515cAACE`](https://explorer.arc.io/address/0xd139b06b1bb5303a4fbA25E2B2297Cf1515cAACE) |
 | Owner: Safe 2-of-2 | [`0xC4c428c635913e5937BA0DA6E060E495f5a664b9`](https://explorer.arc.io/address/0xC4c428c635913e5937BA0DA6E060E495f5a664b9) |
 
+Example transaction (opening a vault): [`0xd46987c299d807db1456d1034d2ba438d93cf25c85cec37fce081e7133515bc3`](https://explorer.arc.io/tx/0xd46987c299d807db1456d1034d2ba438d93cf25c85cec37fce081e7133515bc3)
+
 Both contracts are verified on Sourcify (exact match). Each user gets one minimal-proxy vault. Vaults are not upgradeable and have a single permanent owner. Opening a vault costs 1 USDC. The factory owner can only change the fee or pause new vaults; it can never touch vault funds.
 
 ## Tech stack

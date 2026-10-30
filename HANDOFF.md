@@ -53,7 +53,7 @@ Khung tài chính: [`docs/SPEC-FRAMEWORK-2026-10-25.md`](docs/SPEC-FRAMEWORK-202
    - Xoá lịch sử trên điện thoại → mở máy tính (F5) phải xoá theo.
    - Thanh tab: Balance/Invest khoá (màu nhạt + ổ khoá) cho tới khi quỹ đầy; tin agent dài phải cuộn tới DÒNG ĐẦU; biểu mẫu 6 thẻ cùng cỡ (laptop 2 ô/hàng).
 2. **Chạy model thật có trần** cho các luật prompt mới hôm nay (TEACH khi hỏi "what if / do I need", DCA mặc định, quy tắc $/USDC, giá vốn, tôn trọng "no"): chưa chạy lần nào; cần Hiếu duyệt ngân sách (xem §5, `eval:server --budget`).
-3. **Hackathon**: quay video (Arc Studio + giao dịch mainnet; kịch bản đã đưa trong chat 10-29), điền form DoraHacks (nội dung đã soạn: agent dạy tài chính cá nhân là trọng tâm, vault là bước hành động). Ví dụ giao dịch: mở vault `0xd46987c2…5bc3` → vault `0xf067…8886`.
+3. **Hackathon**: quay video (Arc Studio + giao dịch mainnet; kịch bản đã đưa trong chat 10-29), điền form DoraHacks (nội dung đã soạn: agent dạy tài chính cá nhân là trọng tâm, vault là bước hành động). Ví dụ giao dịch: mở vault `0xd46987c299d807db1456d1034d2ba438d93cf25c85cec37fce081e7133515bc3` → vault `0xf067…8886`.
 4. Còn treo từ kiểm toán: trần token toàn hệ thống có thể bị cạn bằng vài tài khoản email (chặn ở `/admin`); 16 cảnh báo thư viện (`bun audit`); Safe 2-of-2 chưa có ví dự phòng.
 5. Sau hackathon: khôi phục vault (`docs/vault-recovery-spec.md`), DCA tự động (keeper + màn hình, hợp đồng đã có), cổ phiếu onchain trên Arc cho phần Traditional.
 
