@@ -6,16 +6,20 @@
  *  - A message that fails on our side is given back. Hidden app events (a card was signed, a box was confirmed) are not
  *    messages the user typed, so they have their own, higher cap that stops anyone using them to skip the limit.
  *
- * Counters live in KV (binding USERDATA), per UTC day. Without the binding (local runs) nothing is limited.
- * KV has no increment: a parallel request can slip through now and then, which is fine for a daily allowance.
+ * Counters and credited payments live in D1 (binding DB, functions/_lib/ledger.ts): one SQL statement per change, so parallel
+ * requests cannot overwrite each other (2026-10-30). The owner flag and failed-check counter stay in KV (binding USERDATA).
+ * Without USERDATA (local runs) nothing is limited.
  */
 
 import { createPublicClient, http, recoverMessageAddress } from 'viem'
 import type { BudgetEnv, Kv } from './budget'
 import { audit } from './admin'
+import { claims, counters, sweep, type D1Like } from './ledger'
 import { DEFAULT_POWER_PAYMENT_ADDRESS, POWER_PER_PURCHASE, POWER_PRICE_NATIVE, powerMemo } from '../../src/lib/power'
 
 export interface PowerEnv extends BudgetEnv {
+  /** D1 ledger (migrations/0001_ledger.sql). Without it the counters fall back to KV. */
+  DB?: D1Like
   FREE_TURNS_PER_DAY?: string
   OWNER_TURNS_PER_DAY?: string
   /** Wallet whose holder gets the bigger allowance. Public value (it is the factory owner). */
@@ -69,8 +73,9 @@ const paymentAddress = (env: PowerEnv) => (env.POWER_PAYMENT_ADDRESS || DEFAULT_
 
 export async function powerState(env: PowerEnv, id: string): Promise<PowerState | null> {
   const kv = env.USERDATA
-  if (!kv) return null
-  const [turns, extra, owner] = await Promise.all([num(kv, kTurns(id)), num(kv, kPower(id)), kv.get(kOwner(id))])
+  const c = counters(env)
+  if (!kv || !c) return null
+  const [turns, extra, owner] = await Promise.all([c.get(kTurns(id)), c.get(kPower(id)), kv.get(kOwner(id))])
   const verified = owner !== null && owner.toLowerCase() === ownerWallet(env)
   const limit = verified ? limitOf(env.OWNER_TURNS_PER_DAY, DEFAULT_OWNER) : limitOf(env.FREE_TURNS_PER_DAY, DEFAULT_FREE)
   return {
@@ -84,27 +89,22 @@ const OUT_OF_POWER = 'You are out of AI power for today. Recharge to keep chatti
 
 /** Takes one message (or one hidden event) from the allowance. Call refund() if the reply could not be produced. */
 export async function takeTurn(env: PowerEnv, id: string, kind: 'message' | 'event'): Promise<Turn> {
-  const kv = env.USERDATA
-  if (!kv) return { ok: true, refund: async () => {} }
-  const put = (key: string, n: number, ttl?: number) => kv.put(key, String(Math.max(0, n)), ttl ? { expirationTtl: ttl } : undefined)
+  const c = counters(env)
+  if (!env.USERDATA || !c) return { ok: true, refund: async () => {} }
+  await sweep(env)
 
   if (kind === 'event') {
-    const n = await num(kv, kEvents(id))
-    if (n >= EVENT_CAP) return { ok: false, message: 'Too many automatic updates today. Try again tomorrow (UTC).' }
-    await put(kEvents(id), n + 1, TTL_SECONDS)
-    return { ok: true, refund: async () => { await put(kEvents(id), (await num(kv, kEvents(id))) - 1, TTL_SECONDS) } }
+    if (!(await c.incrBelow(kEvents(id), EVENT_CAP, TTL_SECONDS))) return { ok: false, message: 'Too many automatic updates today. Try again tomorrow (UTC).' }
+    return { ok: true, refund: async () => { await c.add(kEvents(id), -1, TTL_SECONDS) } }
   }
 
   const state = await powerState(env, id)
   if (!state) return { ok: true, refund: async () => {} }
-  const turns = await num(kv, kTurns(id))
-  if (turns < state.limit) {
-    await put(kTurns(id), turns + 1, TTL_SECONDS)
-    return { ok: true, refund: async () => { await put(kTurns(id), (await num(kv, kTurns(id))) - 1, TTL_SECONDS) } }
+  if (await c.incrBelow(kTurns(id), state.limit, TTL_SECONDS)) {
+    return { ok: true, refund: async () => { await c.add(kTurns(id), -1, TTL_SECONDS) } }
   }
-  if (state.extra > 0) {
-    await put(kPower(id), state.extra - 1)
-    return { ok: true, refund: async () => { await put(kPower(id), (await num(kv, kPower(id))) + 1) } }
+  if (await c.decrIfPositive(kPower(id))) {
+    return { ok: true, refund: async () => { await c.add(kPower(id), 1) } }
   }
   return { ok: false, message: OUT_OF_POWER }
 }
@@ -130,11 +130,12 @@ export async function verifyOwner(env: PowerEnv, id: string, challenge: string, 
 
 /**
  * Credits one purchase: the transaction must have succeeded on Arc, pay exactly 1 USDC to the payment address and carry this
- * account's memo (src/lib/power.ts). Each transaction counts once (KV key powertx:<hash>, kept forever).
+ * account's memo (src/lib/power.ts). Each transaction counts once (D1 table power_tx, kept forever; KV powertx:<hash> without D1).
  */
 export async function buyPower(env: PowerEnv, id: string, txHash: string): Promise<{ ok: boolean; error?: string; retry?: boolean }> {
   const kv = env.USERDATA
-  if (!kv) return { ok: false, error: 'Data storage is not configured' }
+  const c = counters(env), ledger = claims(env)
+  if (!kv || !c || !ledger) return { ok: false, error: 'Data storage is not configured' }
   if (!/^0x[0-9a-fA-F]{64}$/.test(txHash)) return { ok: false, error: 'That is not a transaction hash' }
   const hash = txHash.toLowerCase() as `0x${string}`
   // Fail closed on a bad configuration (security review 2026-10-29): a typo in the payment address or an RPC that is not Arc mainnet
@@ -148,13 +149,10 @@ export async function buyPower(env: PowerEnv, id: string, txHash: string): Promi
   if ((await num(kv, failKey)) >= 10) return { ok: false, error: 'Too many attempts, try again in an hour' }
   const fail = async (error: string, retry = false) => { try { await kv.put(failKey, String((await num(kv, failKey)) + 1), { expirationTtl: 7200 }) } catch { /* advisory */ } return { ok: false, error, retry } }
 
-  // Claim the payment BEFORE the slow onchain check, so a parallel request sees it (KV is not atomic, so this narrows the window,
-  // it does not close it: a Durable Object or D1 is the real fix, see docs/audit-mainnet-2026-10-29.md).
-  const claimKey = `powertx:${hash}`
-  const claim = await kv.get(claimKey)
-  if (claim && claim !== `pending:${id}`) return { ok: false, error: 'This payment was already counted' }
-  await kv.put(claimKey, `pending:${id}`)
-  const release = async () => { try { await kv.delete?.(claimKey) } catch { /* the claim stays pending for this account, which only this account can resume */ } }
+  // Reserve the payment BEFORE the slow onchain check, so another account cannot take it; finalize() below lets only one
+  // request credit it, even two parallel ones from the same account.
+  if (!(await ledger.claim(hash, id))) return { ok: false, error: 'This payment was already counted' }
+  const release = async () => { try { await ledger.release(hash, id) } catch { /* the claim stays pending for this account, which only this account can resume */ } }
 
   const client = createPublicClient({ transport: http(rpc, { retryCount: 1, timeout: 8000 }) })
   let tx, receipt
@@ -171,9 +169,9 @@ export async function buyPower(env: PowerEnv, id: string, txHash: string): Promi
   if (tx.to?.toLowerCase() !== pay) { await release(); return fail('The payment went to a different address') }
   if (tx.value !== POWER_PRICE_NATIVE) { await release(); return fail('The payment must be exactly 1 USDC') }
   if (tx.input.toLowerCase() !== powerMemo(id).toLowerCase()) { await release(); return fail('This payment was not made for your account') }
-  await kv.put(claimKey, id)
+  if (!(await ledger.finalize(hash, id))) return { ok: false, error: 'This payment was already counted' }
   try {
-    await kv.put(kPower(id), String((await num(kv, kPower(id))) + POWER_PER_PURCHASE))
+    await c.add(kPower(id), POWER_PER_PURCHASE)
   } catch {
     // Paid and claimed but the credit did not land: never ask the user to pay again. The log lets MoonSafe fix it by hand.
     await audit(env, 'system', 'power_credit_failed', { hash, id })

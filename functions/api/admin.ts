@@ -17,6 +17,7 @@ import { adminChallenge, adminWallets, audit, readAudit, requireAdmin, type Admi
 import { privyUserId } from '../_lib/privyAuth'
 import { getConfig, saveConfig, setBlocked, isBlocked, effectiveEnv } from '../_lib/config'
 import { DEFAULT_FREE, DEFAULT_OWNER, type PowerEnv } from '../_lib/quota'
+import { counters } from '../_lib/ledger'
 import { DEFAULT_ALL, DEFAULT_USER } from '../_lib/budget'
 import { readStats } from '../_lib/stats'
 import { DEFAULT_CLAUDE_MODEL } from '../_lib/llm'
@@ -85,8 +86,9 @@ export async function onRequestGet({ request, env }: { request: Request; env: En
   if (op === 'user') {
     const id = url.searchParams.get('id')
     if (!isId(id)) return json({ error: 'Bad id' }, 400)
+    const c = counters(env)
     const [turns, events, power, owner, tokens, blocked] = await Promise.all([
-      num(env, `turns:${day()}:${id}`), num(env, `events:${day()}:${id}`), num(env, `power:${id}`), env.USERDATA.get(`owner:${id}`),
+      c?.get(`turns:${day()}:${id}`) ?? 0, c?.get(`events:${day()}:${id}`) ?? 0, c?.get(`power:${id}`) ?? 0, env.USERDATA.get(`owner:${id}`),
       num(env, `budget:${day()}:u:${id}`), isBlocked(env, id),
     ])
     return json({ id, turnsToday: turns, eventsToday: events, extraPower: power, ownerWallet: owner, tokensToday: tokens, blocked })
@@ -129,13 +131,13 @@ export async function onRequestPost({ request, env }: { request: Request; env: E
     if (action === 'grant_power') {
       const n = Math.floor(Number(body.messages))
       if (!Number.isFinite(n) || n < 1 || n > 10_000) return json({ error: 'messages must be 1 to 10000' }, 400)
-      const cur = await num(env, `power:${id}`)
-      await kv.put(`power:${id}`, String(cur + n))
+      const total = await counters(env)!.add(`power:${id}`, n)
       await audit(env, who.address, 'grant_power', { id, messages: n })
-      return json({ ok: true, extraPower: cur + n })
+      return json({ ok: true, extraPower: total })
     }
     if (action === 'reset_today') {
-      await Promise.all([kv.delete?.(`turns:${day()}:${id}`), kv.delete?.(`events:${day()}:${id}`), kv.delete?.(`budget:${day()}:u:${id}`)])
+      const c = counters(env)!
+      await Promise.all([c.del(`turns:${day()}:${id}`), c.del(`events:${day()}:${id}`), kv.delete?.(`budget:${day()}:u:${id}`)])
       await audit(env, who.address, 'reset_today', { id })
       return json({ ok: true })
     }
