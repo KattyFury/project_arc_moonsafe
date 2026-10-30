@@ -363,6 +363,21 @@ expect(safe.calls === 0 && /Safety lives outside the app/.test(safeText) && /You
     expect(has(await yes(depOffer), 'prepare_deposit'), 'fast path: "yes" to a deposit offer makes the deposit card')
     expect(!has(await yes(depOffer, 'yes', { hasVault: false }), 'prepare_deposit'), 'fast path: no deposit card without a vault')
     expect(!has(await yes(buyOffer, 'make it 5$'), 'prepare_buy_cirbtc'), 'fast path: a new amount for a buy offer is refused while buying is locked')
+    // Real chat 2026-10-30: the deposit offer, a "no", a question, then "I have 5$ to put in" and "help me create order" got no card.
+    const later = async (turns: string[], ctx: Record<string, unknown> = { hasVault: true }) => {
+      const msgs = [{ role: 'assistant', content: 'Ready to start? Your wallet can start the fund with **48 USDC** now: shall I prepare a deposit of **48 USDC** for you to sign?' },
+        ...turns.map((c, i) => ({ role: i % 2 === 0 ? 'user' : 'assistant', content: c }))]
+      const r = await onRequestPost({ request: new Request('http://local/api/chat', { method: 'POST', headers: headers(), body: JSON.stringify({ messages: msgs, context: ctx }) }), env: env as unknown as Record<string, string> })
+      return await r.json() as { actions?: Array<{ type: string; amount?: { amount: number } }> }
+    }
+    const amountOf = (r: { actions?: Array<{ type: string; amount?: { amount: number } }> }) => r.actions?.find(a => a.type === 'prepare_deposit')?.amount?.amount
+    const talk = ['no just leave it', 'Understood. Leave it as-is.', 'Why Emergency fund: $3,600?', 'Because it is 6 months of spending.']
+    expect(amountOf(await later([...talk, 'I have 5$ to put in'])) === 5, 'later deposit: "I have 5$ to put in" a few turns after the offer makes a 5 USDC card')
+    expect(amountOf(await later([...talk, 'I have 5$ to put in', 'Yes, $5 is enough to start.', 'help me create order'])) === 5, 'later deposit: "help me create order" uses the amount the user said')
+    expect(amountOf(await later([...talk, 'help me create order'])) === 48, 'later deposit: "help me create order" with no amount said uses the offered amount')
+    expect(amountOf(await later(['help me create order'])) === 48, 'later deposit: "help me create order" right after the offer makes the card')
+    expect(amountOf(await later([...talk, 'I add 5$ to my bank savings each month'])) === undefined, 'later deposit: money talk about the bank is not a deposit')
+    expect(amountOf(await later([...talk, 'I have 5$ to put in'], { hasVault: false })) === undefined, 'later deposit: no card without a vault')
     await post({ op: 'config', patch: { cardsEnabled: false } }, okProof)
     expect(!has(await yes(depOffer), 'prepare_deposit') && !has(await yes(depOffer, 'make it 5$'), 'prepare_deposit'), 'fast path: the pause switch stops deposit cards from both fast paths')
     await post({ op: 'config', patch: { cardsEnabled: true } }, okProof)

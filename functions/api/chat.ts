@@ -122,6 +122,12 @@ const OFFERED_BUY = /cirBTC buy of|first buy of|lệnh mua cirBTC|lần mua đ�
 const OFFERED_DEPOSIT = /prepare a deposit of|lệnh nạp/i // lang-ok
 const NEW_AMOUNT = /^(?:[^?\d]{0,40})\$?\s?(\d+(?:[.,]\d{1,2})?)\s?(?:\$|usd[ct]?|dollars?|bucks|đô|đô la)?(?![\d.,]*\s*(?:k\b|m\b|mil|million|nghìn|ngàn|triệu|tr\b|vnd|₫|%|months?|tháng|years?|năm))[^?\d]{0,40}$/iu // lang-ok
 const OFFERED_AMOUNT = /(?:first buy of|cirBTC buy of|deposit of|lần mua đầu|lệnh mua cirBTC|lệnh nạp)\s*\*\*([\d,]+(?:\.\d+)?) USDC\*\*/i // lang-ok
+// A deposit asked for a few turns after our offer (real chat 2026-10-30: offer of 48, "no just leave it", a question, then "I have 5$ to
+// put in" and "help me create order" got words but no card). PUT_IN names an amount to put in; MAKE_ORDER asks for the card itself.
+const PUT_IN = /(?<!\p{L})(put (it )?in|deposit|add|top up|nạp|bỏ vào|cho vào)(?!\p{L})/iu // lang-ok
+// Money talk that is information, not a deposit ("I add $5 to my bank savings each month").
+const NOT_A_DEPOSIT = /(?<!\p{L})(bank|savings?|salary|income|spend|rent|debt|loan|month|year|week|exchange|binance|lương|ngân hàng|tiết kiệm|tháng|năm|nợ)(?!\p{L})/iu // lang-ok
+const MAKE_ORDER = /^(?:[^?\d]{0,30})(?<!\p{L})(create|make|prepare|place|set up|do|tạo|làm|lên)(?!\p{L})\s+(?:(?:an?|the|my|that|this|me an?|me the)\s+)?(order|card|deposit|lệnh|thẻ)(?!\p{L})[^?\d]{0,30}$/iu // lang-ok
 const OFFERS_ACTION = /(prepare|set up)[^.?!\n]{0,60}(deposit|card|buy|purchase|withdraw)|open it for you to sign/i
 // Our offer to open the vault (openVaultOffer in plan.ts), and a request to open one in the user's words.
 const OPEN_OFFERED = /open it for you to sign|mở nó để bạn ký/i // lang-ok
@@ -908,6 +914,25 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
           content: buy ? (vi ? `Được: lệnh mua cirBTC ${a} ở bên dưới để bạn ký.` : `Sure: a cirBTC buy of ${a} is below for you to sign.`) // lang-ok
             : (vi ? `Được: lệnh nạp ${a} vào quỹ dự phòng ở bên dưới để bạn ký.` : `Sure: a deposit of ${a} into your emergency fund is below for you to sign.`), // lang-ok
           ops: [], dcaStop: false, actions: [{ type: buy ? 'prepare_buy_cirbtc' : 'prepare_deposit', amount: { amount: amt, currency: 'USDC' } }],
+        })
+      }
+    }
+  }
+  // Our deposit offer within the last few replies: an amount to put in, or a plain "create the order", gets the card (a yes or a
+  // bare new amount right after the offer was handled above). The amount is the user's own latest one since the offer, else the offered one.
+  if (!policy.conversationOnly && hasVault && !cardsPaused && !lastUserText.startsWith('[app event]')) {
+    const before = messages.slice(0, lastUserAt)
+    const offerAt = before.map(m => m.role === 'assistant' && OFFERED_DEPOSIT.test(m.content)).lastIndexOf(true)
+    if (offerAt >= 0 && before.slice(offerAt).filter(m => m.role === 'assistant').length <= 4) {
+      const userAmount = (t: string) => { const m = PUT_IN.test(t) && !NOT_A_DEPOSIT.test(t) ? NEW_AMOUNT.exec(t.trim()) : null; const n = m ? Number(m[1].replace(',', '.')) : NaN; return n > 0 && n <= 1_000_000 ? n : null }
+      const offered = OFFERED_AMOUNT.exec(before[offerAt].content)
+      const latest = before.slice(offerAt + 1).filter(m => m.role === 'user').map(m => userAmount(m.content)).filter((n): n is number => n !== null).pop()
+      const amt = userAmount(lastUserText) ?? (MAKE_ORDER.test(lastUserText.trim()) ? latest ?? (offered ? Number(offered[1].replace(/,/g, '')) : null) : null)
+      if (amt) {
+        const a = `**${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(amt)} USDC**`
+        return json({
+          content: vi ? `Được: lệnh nạp ${a} vào quỹ dự phòng ở bên dưới để bạn ký.` : `Sure: a deposit of ${a} into your emergency fund is below for you to sign.`, // lang-ok
+          ops: [], dcaStop: false, actions: [{ type: 'prepare_deposit', amount: { amount: amt, currency: 'USDC' } }],
         })
       }
     }
