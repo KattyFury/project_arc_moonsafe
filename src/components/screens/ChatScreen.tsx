@@ -181,7 +181,7 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
 
   return (
     <div className="flex flex-col flex-1 min-h-0 w-full lg:max-w-[960px] lg:mx-auto lg:px-6 lg:py-4">
-      <div className="flex flex-col flex-1 min-h-0 lg:rounded-[20px] lg:border lg:border-[var(--line)] lg:overflow-hidden" style={{ background: 'var(--bg)' }}>
+      <div className="flex flex-col flex-1 min-h-0 lg:rounded-[20px] lg:border lg:border-[var(--line)] lg:overflow-hidden" style={{ background: 'var(--chat-bg)' }}>
         {/* Messages above the fold fade out under the nav bar, so it reads as "there is more". */}
         <div ref={listRef} className="flex-1 overflow-y-auto no-scrollbar px-4 py-4 lg:p-6 flex flex-col gap-4 [&>*]:flex-shrink-0"
           onScroll={e => setScrolled(e.currentTarget.scrollTop > 0)} style={scrolled ? FADE_TOP : undefined}>
@@ -194,7 +194,7 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
                     ? { background: 'var(--accent)', color: 'white' }
                     : msg.error
                       ? { background: '#FDE8EB', color: 'var(--danger)' }
-                      : { background: 'var(--surface-muted)', color: 'var(--ink)' }}>
+                      : { background: 'var(--bg)', color: 'var(--ink)' }}>
                   {renderContent(msg.timestamp === 0 ? (profile.known ? welcomeBack(math.fundOk) : WELCOME.content) : msg.content)}
                 </div>
               </div>
@@ -220,7 +220,7 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
           {loading && (
             <div className="flex gap-2 items-end justify-start">
               <Avatar />
-              <div className="px-4 py-4 rounded-[20px] rounded-bl-md" style={{ background: 'var(--surface-muted)' }}>
+              <div className="px-4 py-4 rounded-[20px] rounded-bl-md" style={{ background: 'var(--bg)' }}>
                 <div className="dot-typing flex gap-2"><span /><span /><span /></div>
               </div>
             </div>
@@ -237,7 +237,7 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
         {powerOpen && power && <PowerSheet power={power} verifyOwner={verifyOwner} buy={buy} onClose={() => setPowerOpen(false)} />}
 
         {/* Composer */}
-        <div className="flex-shrink-0 flex px-4 pt-2 pb-4 lg:px-6 lg:pb-6" style={{ background: 'var(--bg)' }}>
+        <div className="flex-shrink-0 flex px-4 pt-2 pb-4 lg:px-6 lg:pb-6" style={{ background: 'var(--chat-bg)' }}>
           {/* One rounded box: the Send button sits INSIDE it, at the bottom right, so it stays put as the box grows (Hieu, 2026-10-28).
               The box grows with the text up to COMPOSER_MAX_PX, then scrolls (scrollbar hidden). No JS measuring: an invisible copy of
               the text sits in the same grid cell and gives the cell its height, so the box is always exactly as tall as its text.
@@ -253,8 +253,8 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
                 e.preventDefault(); void handleSend()
               }}
               placeholder={outOfPower ? 'Out of AI power · recharge to keep chatting' : 'Message the agent…'} aria-label="Message"
-              className="col-start-1 row-start-1 w-full h-full min-h-0 py-[15px] pl-5 pr-16 rounded-[28px] text-[16px] leading-6 resize-none overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden outline-none focus-visible:outline-none border border-transparent focus:border-[var(--accent)] focus:shadow-[inset_0_0_0_1px_var(--accent)] placeholder:text-[var(--muted)]"
-              style={{ background: 'var(--surface-muted)', color: 'var(--ink)' }} />
+              className="col-start-1 row-start-1 w-full h-full min-h-0 py-[15px] pl-5 pr-16 rounded-[28px] text-[16px] leading-6 resize-none overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden outline-none focus-visible:outline-none border border-[var(--line)] focus:border-[var(--accent)] focus:shadow-[inset_0_0_0_1px_var(--accent)] placeholder:text-[var(--muted)]"
+              style={{ background: 'var(--bg)', color: 'var(--ink)' }} />
             <button onClick={() => { void handleSend() }} disabled={loading || outOfPower || !input.trim()} aria-label="Send"
               className="col-start-1 row-start-1 self-end justify-self-end m-2 w-10 h-10 rounded-full transition-transform active:scale-95 flex items-center justify-center"
               style={loading || outOfPower || !input.trim()
