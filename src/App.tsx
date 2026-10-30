@@ -42,14 +42,15 @@ export default function App() {
   }
 
   const handleLogout = async () => {
-    try { sessionStorage.removeItem(WARNED_KEY) } catch { /* storage blocked */ }
     // Data stays on the account (server); a shared browser keeps nothing behind.
     await cloudFlush()
     setCloudAuth(null)
     for (const k of ['moonsafe_profile_v1', 'moonsafe_chat_v2']) { try { localStorage.removeItem(k) } catch { /* storage blocked */ } }
     writeOwner(null)
-    setWarned(false)
     await logout()
+    // Reset the warning only once signed out: done before, it showed "Before you start" again while the logout was still running.
+    try { sessionStorage.removeItem(WARNED_KEY) } catch { /* storage blocked */ }
+    setWarned(false)
   }
 
   return (
