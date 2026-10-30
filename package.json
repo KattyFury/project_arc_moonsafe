@@ -17,7 +17,7 @@
     "eval:server": "bun run scripts/eval-server.ts",
     "eval:education": "bun scripts/education-eval.ts",
     "typecheck:education": "tsc --noEmit -p scripts/tsconfig.education.json",
-    "check:all": "node scripts/check-lang.mjs && tsc --noEmit && bun scripts/kb-check.ts && bun scripts/offline-flow.ts"
+    "check:all": "node scripts/check-lang.mjs && tsc --noEmit && bun scripts/kb-check.ts && bun scripts/intake-assets-check.ts && bun scripts/offline-flow.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.3.0",

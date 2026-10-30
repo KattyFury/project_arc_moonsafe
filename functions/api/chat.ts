@@ -653,9 +653,11 @@ function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: nu
   // Three buckets (framework v2, 2026-10-27): Safety, Traditional, Crypto as one; whole % that add to 100.
   const g = b.byGroup
   const cryptoNow = g.btc + g.large_cap + g.altcoin
+  // The intake form asks one Crypto total (2026-10-30): it sits in the btc group for the maths but is never called BTC.
+  const cryptoTotal = b.items.filter(i => i.holding?.type === 'crypto').reduce((n, i) => n + i.usd, 0)
   if (b.liquid > 0) {
     const [s, tr, c, id] = wholeShares([g.safe, g.traditional, cryptoNow, g.idle].map(v => v / b.liquid * 100))
-    lines.push(`- Split now (% of liquid): Safety ${s}% (${show(g.safe)}), Traditional ${tr}% (${show(g.traditional)}), Crypto ${c}% (${show(cryptoNow)}${cryptoNow > 0 ? `: BTC ${show(g.btc)}${g.large_cap + g.altcoin > 0.01 ? `, other coins ${show(g.large_cap + g.altcoin)}` : ''}` : ''}), not placed yet ${id}% (${show(g.idle)})`)
+    lines.push(`- Split now (% of liquid): Safety ${s}% (${show(g.safe)}), Traditional ${tr}% (${show(g.traditional)}), Crypto ${c}% (${show(cryptoNow)}${cryptoNow > 0 ? `: ${[cryptoTotal > 0.01 ? `crypto not split by coin ${show(cryptoTotal)}` : '', g.btc - cryptoTotal > 0.01 ? `BTC ${show(g.btc - cryptoTotal)}` : '', g.large_cap + g.altcoin > 0.01 ? `other coins ${show(g.large_cap + g.altcoin)}` : ''].filter(Boolean).join(', ')}` : ''}), not placed yet ${id}% (${show(g.idle)})`)
   }
   if (b.goalUsd > 0 && p.nearGoal) lines.push(`- Near-term goal: ${p.nearGoal.name} ${show(b.goalUsd)}${p.nearGoal.years ? ` in ${p.nearGoal.years} year${p.nearGoal.years === 1 ? '' : 's'}` : ''}: kept in Safety (savings), NOT invested; it is left out of the money to divide`)
   const parts = b.items.filter(i => i.holding || i.label === 'cirBTC')
@@ -696,7 +698,7 @@ const TOPICS: { key: string; ask: string; asked: RegExp; known: (p: FinancialPro
   { key: 'insurance', ask: 'Do you have health or life insurance that would protect the people who rely on you?', asked: /insurance[^.?!\n]{0,80}\?|bảo hiểm[^.?!\n]{0,80}\?/i, known: p => !((p.dependents ?? 0) > 0 || p.soleEarner === true) || (p.insured !== null && p.insured !== undefined) }, // lang-ok
   { key: 'bank', ask: 'How much do you keep in the bank (savings or checking)?', asked: /bank[^.?!\n]{0,60}\?|ngân hàng[^.?!\n]{0,60}\?/i, known: p => p.holdings.some(h => ['savings', 'term_deposit', 'checking', 'cash'].includes(h.type)) }, // lang-ok
   { key: 'stables', ask: 'Any USDC / USDT on exchanges or in other wallets?', asked: /(stablecoin|USDT|USDC on|exchange)[^.?!\n]{0,60}\?/i, known: p => p.holdings.some(h => ['stable_wallet', 'flexible_earn', 'locked_earn', 'defi_stable'].includes(h.type)) },
-  { key: 'crypto', ask: 'How much do you hold in Bitcoin, and how much in altcoins?', asked: /(coins?|crypto|BTC|ETH|bitcoin|altcoins?)[^.?!\n]{0,60}\?/i, known: p => p.holdings.some(h => ['btc', 'eth', 'top10', 'altcoin', 'staked_large_cap', 'nft'].includes(h.type)) },
+  { key: 'crypto', ask: 'How much do you hold in Bitcoin, and how much in altcoins?', asked: /(coins?|crypto|BTC|ETH|bitcoin|altcoins?)[^.?!\n]{0,60}\?/i, known: p => p.holdings.some(h => ['btc', 'eth', 'top10', 'altcoin', 'crypto', 'staked_large_cap', 'nft'].includes(h.type)) },
   { key: 'traditional', ask: 'Do you hold any gold or stocks?', asked: /(gold|stocks?|ETF|vàng|cổ phiếu)[^.?!\n]{0,60}\?/i, known: p => p.holdings.some(h => ['gold_physical', 'gold_token', 'us_stock', 'vn_stock', 'fund_bond'].includes(h.type)) }, // lang-ok
   { key: 'property', ask: 'Do you own a home, land or a car?', asked: /(home|house|property|land|car|nhà|đất|xe)[^.?!\n]{0,60}\?/i, known: p => p.holdings.some(h => ['home', 'car', 'rental_property'].includes(h.type)) }, // lang-ok
   { key: 'lending', ask: 'Have you lent money to anyone, or put money into a business?', asked: /(lent|lend|business|cho vay|góp vốn|kinh doanh)[^.?!\n]{0,60}\?/i, known: p => p.holdings.some(h => ['loan_given', 'business_stake'].includes(h.type)) }, // lang-ok

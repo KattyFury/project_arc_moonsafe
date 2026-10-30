@@ -10,7 +10,7 @@ export type Currency = 'VND' | 'USDC'
 export type AssetType =
   | 'cash' | 'checking' | 'term_deposit' | 'savings' | 'stable_wallet' | 'flexible_earn' | 'locked_earn' | 'defi_stable'
   | 'moonsafe_fund' | 'gold_physical' | 'gold_token' | 'us_stock' | 'vn_stock' | 'fund_bond' | 'btc' | 'cirbtc' | 'eth'
-  | 'top10' | 'altcoin' | 'staked_large_cap' | 'nft' | 'home' | 'rental_property' | 'car' | 'business_stake' | 'loan_given'
+  | 'top10' | 'altcoin' | 'crypto' | 'staked_large_cap' | 'nft' | 'home' | 'rental_property' | 'car' | 'business_stake' | 'loan_given'
   | 'savings_insurance' | 'other'
 
 export type Category = 'fund' | 'safe' | 'invest' | 'idle' | 'lifestyle'

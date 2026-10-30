@@ -75,6 +75,7 @@
     { "n": 19, "key": "altcoin", "label": "Small altcoins, memecoins", "category": "invest", "subgroup": "altcoin", "net_worth": true, "liquid_base": true, "pricing": "market_or_self" },
     { "n": 20, "key": "staked_large_cap", "label": "Staked ETH / SOL", "category": "invest", "subgroup": "large_cap", "net_worth": true, "liquid_base": true, "pricing": "underlying" },
     { "n": 21, "key": "nft", "label": "NFTs", "category": "invest", "subgroup": "altcoin", "net_worth": true, "liquid_base": true, "pricing": "self" },
+    { "n": 21.5, "key": "crypto", "label": "Crypto, not split by coin (intake form total)", "category": "invest", "subgroup": "btc", "net_worth": true, "liquid_base": true, "pricing": "self" },
     { "n": 22, "key": "home", "label": "Home you live in", "category": "lifestyle", "net_worth": true, "liquid_base": false, "pricing": "self" },
     { "n": 23, "key": "rental_property", "label": "Investment / rental property, land", "category": "invest", "subgroup": "real_estate", "net_worth": true, "liquid_base": false, "rebalanceable": false, "pricing": "self" },
     { "n": 24, "key": "car", "label": "Car", "category": "lifestyle", "net_worth": true, "liquid_base": false, "pricing": "self" },

@@ -28,6 +28,7 @@ export interface FormValues {
   goalName: string
   goalAmount: string
   goalYears: string
+  /** Stablecoins onchain, this wallet and others in one total (Hieu, 2026-10-30). */
   usdcThis: string
   usdcElsewhere: string
   bank: string
@@ -35,6 +36,8 @@ export interface FormValues {
   btc: string
   /** Every coin other than Bitcoin (Hieu, 2026-10-29: ask Bitcoin and altcoins only). */
   coins: string
+  /** All crypto in one total (Hieu, 2026-10-30: one "Crypto" field instead of Bitcoin + Altcoins). */
+  crypto?: string
   gold: string
   stocks: string
   /** Only decides whether the four fields below are shown. */
@@ -55,7 +58,7 @@ export const EMPTY_FORM: FormValues = {
   planningScope: null,
   onlyEarner: null,
   age: '', salary: '', otherIncome: null, passive: '', windfalls: null, windfallsYearly: '', spending: '', steady: null, reliers: null, reliersCount: '1',
-  goal: null, goalName: '', goalAmount: '', goalYears: '', usdcThis: '', usdcElsewhere: '', bank: '', cash: '', btc: '', coins: '', gold: '', stocks: '',
+  goal: null, goalName: '', goalAmount: '', goalYears: '', usdcThis: '', usdcElsewhere: '', bank: '', cash: '', btc: '', coins: '', crypto: '', gold: '', stocks: '',
   otherAssets: null, home: '', car: '', lent: '', business: '', debt: null, debtKind: null, debtOwed: '', debtRate: '', debtMonthly: '',
 }
 
@@ -121,12 +124,15 @@ export function formToItems(v: FormValues, _prices: Prices | null, now = Date.no
       { op: 'update_profile', fields: { nearGoal: { name, amount: goalAmount, currency: 'USDC', years: years !== null && years <= 5 ? years : null } } })
   }
 
-  holding('stable_wallet', 'Stablecoins in this wallet', parseAmount(v.usdcThis), { where: 'app wallet' })
+  // "Stablecoin onchain" (one field since 2026-10-30) keeps where = app wallet, so the app's own deposits and buys still reduce it.
+  holding('stable_wallet', 'Stablecoin onchain', parseAmount(v.usdcThis), { where: 'app wallet' })
   holding('stable_wallet', 'Stablecoins elsewhere', parseAmount(v.usdcElsewhere), { where: 'other wallets and exchanges' })
   holding('savings', 'Bank savings', parseAmount(v.bank))
   holding('cash', 'Cash', parseAmount(v.cash))
   holding('btc', 'Bitcoin', parseAmount(v.btc), { symbol: 'BTC' })
   holding('altcoin', 'Altcoins', parseAmount(v.coins))
+  // One Crypto total (2026-10-30): counted in the Crypto bucket, never called BTC (type 'crypto').
+  holding('crypto', 'Crypto', parseAmount(v.crypto ?? ''))
   holding('gold_physical', 'Gold', parseAmount(v.gold))
   holding('fund_bond', 'Stocks and funds', parseAmount(v.stocks))
   if (v.otherAssets === 'yes') {

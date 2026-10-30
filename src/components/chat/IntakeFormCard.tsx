@@ -1,5 +1,5 @@
-// The first questions inside the chat (Hieu, 2026-10-28), as at most SIX cards of the same size, one topic each (Hieu, 2026-10-29:
-// one question per card made 32 cards). Only what the plan needs is asked: age, salary, spending, income steadiness, dependents, cash
+// The first questions inside the chat (Hieu, 2026-10-28), as at most FOUR steps of the same size (Hieu, 2026-10-30; six cards before):
+// Plan for → About you → Assets → Goals & debt. Only what the plan needs is asked: age, salary, spending, income steadiness, dependents, cash
 // and stablecoins, investments, a big expense within 5 years, debt. Home / car / business, passive income, airdrops, the number of
 // dependents, the goal's name and who a debt is owed to were dropped (the agent can still ask in chat). Skip clears the card,
 // Next keeps it; the last card saves straight away (sending is the user's confirmation). Pure props (no app context).
@@ -83,51 +83,47 @@ export function IntakeFormCard({ keys, seen, values, planningScope, status, save
   const steps: Step[] = []
   const step = (key: string, title: string, fields: (keyof FormValues)[], view: ReactNode) => steps.push({ key, title, fields, view })
 
-  // From 640px wide the fields sit two to a row (debt: three), so a card stays short on a laptop (Hieu, 2026-10-29).
-  if (has('age') || has('income') || has('spending')) step('you', 'About you', ['age', 'salary', 'spending'], (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      {has('age') && <Num label={household ? 'Your age (used for this plan)' : 'Your age'} value={values.age} onChange={set('age')} money={false} />}
-      {has('income') && <Num label={household ? 'Combined monthly salary (both partners)' : 'Salary a month'} value={values.salary} onChange={set('salary')} />}
-      {has('spending') && <div className="sm:col-span-2"><Num label={household ? 'Household spending a month' : 'Spending a month (an estimate is fine)'} value={values.spending} onChange={set('spending')} /></div>}
+  // At most four steps (Hieu, 2026-10-30): Plan for → About you → Assets → Goals & debt. "Plan for" is its own step, asked once.
+  // From 640px wide the fields sit two to a row, so a card stays short on a laptop.
+  step('plan', 'Plan for', ['planningScope'], <>
+    <Toggle value={values.planningScope ?? planningScope ?? 'individual'} options={[{ value: 'individual' as const, label: 'Just me' }, { value: 'household' as const, label: 'Household' }]} onChange={set('planningScope')} />
+    <p className="text-[14px] leading-5" style={{ color: 'var(--muted)' }}>{household
+      ? 'Shared totals count once. The allocation uses your age; a working partner is not automatically a dependent.'
+      : 'One current plan. Changing scope keeps existing entries; review them.'}</p>
+  </>)
+  const you = has('age') || has('income') || has('spending') || has('stability')
+  if (you) step('you', 'About you', ['age', 'salary', 'spending', 'steady', 'reliers', 'reliersCount', 'onlyEarner'], <>
+    <div className="grid grid-cols-2 gap-4">
+      {has('age') && <Num label={household ? 'Your age (for this plan)' : 'Your age'} value={values.age} onChange={set('age')} money={false} />}
+      {has('income') && <Num label={household ? 'Combined salary a month' : 'Salary a month'} value={values.salary} onChange={set('salary')} />}
+      {has('spending') && <div className="col-span-2"><Num label={household ? 'Household spending a month' : 'Spending a month (an estimate is fine)'} value={values.spending} onChange={set('spending')} /></div>}
     </div>
-  ))
-  if (has('stability')) step('income', household ? 'Household income' : 'Your income', ['steady', 'reliers', 'reliersCount', 'onlyEarner'], (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <Ask label={household ? 'Is the combined income steady?' : 'Is your income steady?'} value={values.steady} onChange={set('steady')} />
-      <Ask label={household ? 'Does anyone depend on this income?' : 'Does anyone rely on it?'} value={values.reliers} onChange={set('reliers')} />
+    {has('stability') && <div className="grid grid-cols-2 gap-4">
+      <Ask label={household ? 'Combined income steady?' : 'Is your income steady?'} value={values.steady} onChange={set('steady')} />
+      <Ask label={household ? 'Anyone depends on it?' : 'Does anyone rely on it?'} value={values.reliers} onChange={set('reliers')} />
       {values.reliers === 'yes' && <Num label="How many dependents?" value={values.reliersCount} onChange={set('reliersCount')} money={false} />}
-      {household && <Ask label="Is there only one person earning income?" value={values.onlyEarner ?? null} onChange={set('onlyEarner')} />}
+      {household && <Ask label="Only one person earning?" value={values.onlyEarner ?? null} onChange={set('onlyEarner')} />}
+    </div>}
+  </>)
+  if (has('assets')) step('assets', 'Assets', ['bank', 'usdcThis', 'crypto', 'gold', 'stocks'], <>
+    <Num label="Bank savings and cash" value={values.bank} onChange={set('bank')} />
+    <div className="grid grid-cols-2 gap-4">
+      <Num label="Stablecoin onchain" hint={seenText} value={values.usdcThis} onChange={set('usdcThis')} />
+      <Num label="Crypto" value={values.crypto ?? ''} onChange={set('crypto')} />
+      <Num label="Gold" value={values.gold} onChange={set('gold')} />
+      <Num label="Stocks, funds" value={values.stocks} onChange={set('stocks')} />
     </div>
-  ))
-  if (has('assets')) {
-    step('cash', 'Cash and stablecoins', ['usdcThis', 'usdcElsewhere', 'bank'], (
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Num label="Stablecoins in this wallet" hint={seenText} value={values.usdcThis} onChange={set('usdcThis')} />
-        <Num label="Stablecoins elsewhere" value={values.usdcElsewhere} onChange={set('usdcElsewhere')} />
-        <Num label="Bank savings and cash" value={values.bank} onChange={set('bank')} />
-      </div>
-    ))
-    step('invest', 'Invested so far', ['btc', 'coins', 'gold', 'stocks'], (
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Num label="Bitcoin" value={values.btc} onChange={set('btc')} />
-        <Num label="Altcoins" value={values.coins} onChange={set('coins')} />
-        <Num label="Gold" value={values.gold} onChange={set('gold')} />
-        <Num label="Stocks, funds" value={values.stocks} onChange={set('stocks')} />
-      </div>
-    ))
-  }
-  if (has('goal')) step('goal', 'Big expense ahead', ['goal', 'goalAmount', 'goalYears'], <>
-    <Ask label="A big expense in the next 5 years (car, wedding, school)?" value={values.goal} onChange={set('goal')} />
-    {values.goal === 'yes' && (
+  </>)
+  if (has('goal') || has('debt')) step('later', 'Goals & debt', ['goal', 'goalAmount', 'goalYears', 'debt', 'debtOwed', 'debtRate', 'debtMonthly'], <>
+    {has('goal') && <Ask label="A big expense in the next 5 years (car, wedding, school)?" value={values.goal} onChange={set('goal')} />}
+    {has('goal') && values.goal === 'yes' && (
       <div className="grid grid-cols-2 gap-4">
         <Num label="How much?" value={values.goalAmount} onChange={set('goalAmount')} />
         <Num label="In how many years?" value={values.goalYears} onChange={set('goalYears')} money={false} />
       </div>
     )}
-  </>)
-  if (has('debt')) step('debt', 'Debt', ['debt', 'debtOwed', 'debtRate', 'debtMonthly'], <>
-    <Ask label="Any debt?" value={values.debt} onChange={set('debt')} />
-    {values.debt === 'yes' && (
+    {has('debt') && <Ask label="Any debt, family loans included?" value={values.debt} onChange={set('debt')} />}
+    {has('debt') && values.debt === 'yes' && (
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <div className="col-span-2 sm:col-span-1"><Num label="Total you still owe" value={values.debtOwed} onChange={set('debtOwed')} /></div>
         <Num label="Interest a year" value={values.debtRate} onChange={set('debtRate')} suffix="%" money={false} />
@@ -164,14 +160,8 @@ export function IntakeFormCard({ keys, seen, values, planningScope, status, save
         <div className="h-full rounded-full" style={{ width: `${Math.round(((i + 1) / steps.length) * 100)}%`, background: 'var(--accent)' }} />
       </div>
 
-      {/* Fixed height: room for the biggest card (three amounts with a hint, or debt with its details), so every card is the same size. */}
-      <div className="flex flex-col gap-2">
-        <span className="text-[14px] leading-5 font-semibold" style={{ color: 'var(--subtle)' }}>Plan for</span>
-        <Toggle value={values.planningScope ?? planningScope ?? 'individual'} options={[{ value: 'individual' as const, label: 'Just me' }, { value: 'household' as const, label: 'Household' }]} onChange={set('planningScope')} />
-        {household && <p className="text-[14px] leading-5" style={{ color: 'var(--muted)' }}>Shared totals count once. The allocation uses your age; a working partner is not automatically a dependent.</p>}
-        <p className="text-[14px] leading-5" style={{ color: 'var(--muted)' }}>One current plan. Changing scope keeps existing entries; review them.</p>
-      </div>
-      <div key={cur.key} className="h-[288px] sm:h-[200px] flex flex-col gap-4 overflow-y-auto">{cur.view}</div>
+      {/* Every step starts at the same size; a Yes that opens more fields (dependents, the goal, the debt) lets it grow instead of scrolling. */}
+      <div key={cur.key} className="min-h-[320px] sm:min-h-[288px] flex flex-col gap-4">{cur.view}</div>
 
       <div className="grid grid-cols-2 gap-2">
         <Btn variant="outline" onClick={skip}>Skip</Btn>
