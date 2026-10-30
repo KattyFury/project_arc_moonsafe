@@ -109,8 +109,7 @@ export function LoginScreen() {
   )
   const title = (cls: string) => (
     <h1 className={`display font-bold ${cls}`} style={{ color: 'var(--ink)', letterSpacing: '-0.03em' }}>
-      Your personal finance{' '}
-      <span style={{ color: 'var(--accent)' }}>agent for Web3</span>
+      Your <span style={{ color: 'var(--accent)' }}>personal finance agent</span> for Web3
     </h1>
   )
 
