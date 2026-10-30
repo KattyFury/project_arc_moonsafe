@@ -3,35 +3,51 @@
 // lines, no shadows or gradients. Fits one screen on both (393×852, 1440×900). The only action is "Get started" (Privy sign-in).
 
 import { useLogin } from '@privy-io/react-auth'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Send } from 'lucide-react'
 import { Wordmark } from '@/components/ui/kit'
 
 const PRICE = 'Free: 20 messages a day. Opening your vault: 1 USDC, once.'
 
-/** One exchange with the agent and the fund card it leads to. Figures are an example, not the visitor's money. */
+/**
+ * One exchange with the agent and the fund card it leads to. Figures are an example, not the visitor's money, so it must read as a
+ * demo, apart from the page's own text (Hieu, 2026-10-30): a grey chat panel (Hieu: grey, not tinted blue) with its own top bar marked "Example" and a message box.
+ */
 function ChatDemo({ wide }: { wide: boolean }) {
   const text = wide ? 'text-[16px] leading-6' : 'text-[15px] leading-[22px]'
   return (
-    <div className={`w-full flex flex-col gap-4 rounded-[20px] ${wide ? 'max-w-[560px] p-6' : 'p-4'}`}
-      style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}>
+    <div className={`w-full rounded-[24px] overflow-hidden ${wide ? 'max-w-[560px]' : ''}`} aria-label="Example conversation"
+      style={{ background: 'var(--chat-bg)', border: '1px solid var(--line)' }}>
+      <div className="h-12 px-4 flex items-center gap-2" style={{ background: 'var(--bg)', borderBottom: '1px solid var(--line)' }}>
+        <span className="h-6 px-2 rounded-full flex items-center text-[12px] leading-4 font-semibold" style={{ background: 'var(--surface-muted)', color: 'var(--subtle)' }}>Example</span>
+        <span className="text-[14px] leading-5 font-semibold" style={{ color: 'var(--ink)' }}>MoonSafe</span>
+      </div>
+      <div className={`flex flex-col ${wide ? 'gap-4 p-6' : 'gap-3 p-4'}`}>
       <div className={`rise-in self-end max-w-[85%] px-4 py-3 rounded-[20px] rounded-br-md ${text}`} style={{ background: 'var(--accent)', color: 'white' }}>
         How big should my emergency fund be?
       </div>
       <div className="rise-in flex gap-2 items-end" style={{ animationDelay: '200ms' }}>
         <img src="/logo.svg" alt="" width={28} height={28} className="flex-shrink-0" />
-        <div className={`px-4 py-3 rounded-[20px] rounded-bl-md ${text}`} style={{ background: 'var(--surface-muted)', color: 'var(--ink)' }}>
+        <div className={`px-4 py-3 rounded-[20px] rounded-bl-md ${text}`} style={{ background: 'var(--bg)', color: 'var(--ink)' }}>
           {wide
             ? <>You spend about <strong>$1,000 a month</strong>, so a <strong>3-month floor of $3,000</strong> fits you: steady salary, nobody relying on you.<br /><br />Your vault holds <strong>$2,000</strong>, so <strong>$1,000 more</strong> fills it. After that, Balance and Invest open.</>
             : <>You spend about <strong>$1,000 a month</strong>, so a <strong>3-month floor of $3,000</strong> fits you. Your vault holds <strong>$2,000</strong>: <strong>$1,000 more</strong> fills it.</>}
         </div>
       </div>
-      <div className="rise-in ml-9 px-4 py-3 rounded-2xl flex flex-col gap-2" style={{ background: 'var(--accent-soft)', animationDelay: '400ms' }}>
+      <div className="rise-in ml-9 px-4 py-3 rounded-2xl flex flex-col gap-2" style={{ background: 'var(--bg)', animationDelay: '400ms' }}>
         <div className="flex justify-between text-[14px] leading-5">
           <span style={{ color: 'var(--subtle)' }}>Emergency fund</span>
           <strong className="tabular-nums" style={{ color: 'var(--ink)' }}>$2,000 of $3,000</strong>
         </div>
-        <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--bg)' }}>
+        <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--accent-soft)' }}>
           <div className="fill-in h-full rounded-full" style={{ width: '66.6%', background: 'var(--accent)', animationDelay: '400ms' }} />
+        </div>
+      </div>
+      </div>
+      {/* The message box of the real chat, drawn only (not a field), so the panel reads as a chat at a glance. */}
+      <div aria-hidden className={`flex items-center gap-2 ${wide ? 'px-6 pb-6' : 'px-4 pb-4'}`}>
+        <div className="flex-1 h-11 pl-4 pr-1 rounded-full flex items-center" style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}>
+          <span className="flex-1 text-[15px] leading-5" style={{ color: 'var(--muted)' }}>Message the agent…</span>
+          <span className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: 'var(--accent)', color: 'white' }}><Send size={16} /></span>
         </div>
       </div>
     </div>
