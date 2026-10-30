@@ -52,7 +52,7 @@ export function InvestScreen({ onOpenFund, onOpenChat, onAsk }: { onOpenFund: ()
                 ? <Notice tone="warning">Once your priority debt is paid off, tell the agent.</Notice>
                 : <Btn onClick={onOpenFund}>Add to emergency fund</Btn>}
             <Btn disabled><Lock size={16} />Buy cirBTC</Btn>
-            <GlassCard className="p-4 lg:p-8"><AllocationPies compact /></GlassCard>
+            <GlassCard className="p-4 lg:p-8"><AllocationPies /></GlassCard>
           </Col>
         </Grid>
       </Screen>
@@ -152,9 +152,6 @@ function InvestOpen({ onAsk }: { onAsk: (question: string) => void }) {
               note="Savings you can reach any time, outside the app." />
           </div>
           <p className="text-[14px] leading-5" style={{ color: 'var(--muted)' }}>A suggestion, not investment advice. Prices can fall; only invest what you will not need soon.</p>
-        </Col>
-        <Col span={5} className="hidden lg:flex">
-          <GlassCard className="p-8"><AllocationPies compact /></GlassCard>
         </Col>
       </Grid>
 

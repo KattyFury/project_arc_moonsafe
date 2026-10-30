@@ -349,8 +349,3 @@ export function placeNew(st: Standing[], money: number): Record<Standing['key'],
   for (const x of st) out[x.key] = x.left * k + rest * x.share / shares
   return out
 }
-
-/** Share of liquid assets in %, 0 without any. */
-export const shareOfLiquid = (b: Balance, usd: number) => b.liquid > 0 ? usd / b.liquid * 100 : 0
-/** Share of net worth in %, null when net worth is not positive. */
-export const shareOfNetWorth = (b: Balance, usd: number) => b.netWorth > 0 ? usd / b.netWorth * 100 : null

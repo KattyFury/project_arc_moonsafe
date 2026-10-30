@@ -33,7 +33,7 @@ export function BalanceSheet(_: { onOpenChat: () => void }) {
         </div>
         <GlassCard className="flex flex-col gap-2 p-4 lg:p-8 lg:col-span-8">
           <h3 className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--ink)' }}>Your split</h3>
-          <AllocationPies compact={!known} />
+          <AllocationPies />
         </GlassCard>
       </div>
     </Screen>
