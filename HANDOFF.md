@@ -1,3 +1,7 @@
+# Intake form as a statement (option C) — 2026-10-30
+
+Replaces the 4-step version below: at most 3 steps (Your month with Just me / Household pills at the top → What you hold → Goals & debt), one ruled row per question, answer on the right (dashed line while empty, thousands commas as typed), Yes/No as small pills, one blue Next/Save button, Skip all / Back as text. Phones open the number pad (`inputMode` numeric for age/years/people, decimal for money and rates). Data mapping unchanged (Stablecoin onchain, Crypto).
+
 # Intake form in 4 steps — 2026-10-30
 
 Hiếu asked ChatGPT/Codex for this but its local edits were never pushed; rebuilt here from the same brief. Steps: Plan for (its own step, asked once) → About you (age, salary, spending, steady, dependents) → Assets (bank and cash on top; 2×2 grid Stablecoin onchain · Crypto / Gold · Stocks, funds) → Goals & debt (extra fields only on Yes). "Stablecoin onchain" replaces this-wallet + elsewhere and keeps where = app wallet, so app deposits still reduce it. "Crypto" replaces Bitcoin + Altcoins as a new asset type `crypto` (KB row, subgroup btc for the maths) that the agent context calls "crypto not split by coin", never BTC. Steps start the same size and grow on a Yes instead of scrolling. `bun scripts/intake-assets-check.ts` (in check:all) covers the totals. If Codex's uncommitted copy is still on Hiếu's machine, discard it before pulling.
