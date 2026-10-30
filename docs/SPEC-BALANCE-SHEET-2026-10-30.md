@@ -1,6 +1,6 @@
 # Spec Balance Sheet: tính giá trị thế nào, lệch thì xử lý ra sao (bản bàn, 2026-10-30)
 
-> Trạng thái: **đang bàn, chưa code.** Hiếu chốt từng trục ở mục 5 rồi mới làm.
+> Trạng thái: **đã thay bằng [`SPEC-BALANCE-SHEET-v2-2026-10-30.md`](SPEC-BALANCE-SHEET-v2-2026-10-30.md)** (Hiếu chốt 2026-10-30). Giữ lại làm tư liệu: hiện trạng code và cách thế giới làm.
 
 ## 1. App đang làm gì (code hiện tại)
 

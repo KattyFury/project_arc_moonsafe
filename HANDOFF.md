@@ -1,3 +1,12 @@
+# Balance Sheet v2 — CHỐT HƯỚNG 2026-10-30, chưa code
+
+Spec: [`docs/SPEC-BALANCE-SHEET-v2-2026-10-30.md`](docs/SPEC-BALANCE-SHEET-v2-2026-10-30.md) (bản bàn trước: `docs/SPEC-BALANCE-SHEET-2026-10-30.md`, chỉ còn là tư liệu).
+- **Đảo quyết định 10-29 "đầu tư tính theo tiền đã bỏ vào":** giờ tính theo **giá trị hiện tại** (số lượng × giá oracle); vẫn **không giục mua khi giá giảm**, không khuyên bán.
+- Khai bằng **số lượng**, bỏ khai bằng tiền cho tài sản có giá. Bỏ Net worth, Can use now, cost basis, lãi/lỗ, trừ khoản chi lớn sắp tới.
+- Mốc = mục có v/w lớn nhất; tổng ngụ ý = v_mốc / w_mốc; ngưỡng 5/25 → On track / Under (không có Over).
+- Hoãn: dòng tiền (module riêng), nhắc nới quỹ khi đầu tư vượt 24 tháng chi tiêu.
+- Bước tiếp theo theo spec: mổ xẻ từng màn hình rồi mới viết spec build. Câu hỏi mở cho bước đó nằm ở cuối mục này trong chat 10-30 (dữ liệu cũ khai bằng $, bảng hỏi đang hỏi $, agent đang nói "money put in", nguồn giá vàng/cổ phiếu, quỹ dự phòng có tách khỏi 3 mục không).
+
 # Balance, Invest, step toast — 2026-10-30 (Claude, after Hiếu approved demos: 1b, 2a, roadmap C)
 
 - **Balance (1b):** donuts kept; under them one row per part "have of target" + "X to go"/"Full" (bucketStanding, same totals as the agent), plus "Not placed yet" and "Outside the split" rows when non-zero. Stats: "Can use now" (was Liquid), fund "Full" in green. Toggle Split / Cash flow / Debts; sentence-case headings (no Caps), commas instead of middle dots.
