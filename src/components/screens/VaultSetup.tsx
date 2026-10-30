@@ -9,7 +9,7 @@ import { IS_MAINNET, NET } from '@/lib/network'
 import { useApp } from '@/state/AppState'
 import { GAS_ESTIMATE_USDC6, txErrorMessage } from '@/hooks/useVault'
 import { formatUsdc } from '@/lib/format'
-import { Btn, CopyButton, GlassCard, IconBox, Notice, QrImage, Row, Screen, Spinner, glass } from '@/components/ui/kit'
+import { Btn, CopyButton, GlassCard, HeroRings, IconBox, Notice, QrImage, Row, Screen, Spinner, glass } from '@/components/ui/kit'
 
 const MAX_TRIES = 5
 
@@ -67,6 +67,7 @@ export function VaultSetup() {
   return (
     <Screen>
       <section className="p-4" style={glass.hero}>
+        <HeroRings />
         <p className="text-[14px] font-semibold text-white mb-2">Wallet balance</p>
         <div className="flex items-baseline gap-2">
           <span className="display font-bold tabular-nums text-white" style={{ fontSize: 48, lineHeight: '56px' }}>

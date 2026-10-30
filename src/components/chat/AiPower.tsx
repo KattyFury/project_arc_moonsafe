@@ -31,11 +31,11 @@ export function PowerMeter({ power, onOpen }: { power: AiPower; onOpen: () => vo
       <span className="text-[14px] leading-5 font-semibold" style={{ color }}>
         {out ? 'Out of AI power' : `AI power · ${left} message${left === 1 ? '' : 's'} left today`}
       </span>
-      <span className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: 'var(--line)' }} aria-hidden>
-        <span className="block h-full rounded-full" style={{ width: `${pct}%`, background: out ? 'var(--danger)' : 'var(--accent)' }} />
+      <span className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: 'var(--accent-soft)' }} aria-hidden>
+        <span className="fill-in block h-full rounded-full" style={{ width: `${pct}%`, background: out ? 'var(--danger)' : 'var(--accent)' }} />
       </span>
-      <span className="flex-shrink-0 h-8 px-4 rounded-full flex items-center text-[14px] leading-5 font-semibold"
-        style={out ? { background: 'var(--accent)', color: 'white' } : { background: 'var(--surface-muted)', color: 'var(--accent)' }}>
+      <span className={`flex-shrink-0 h-8 rounded-full flex items-center text-[14px] leading-5 font-semibold ${out ? 'px-4' : ''}`}
+        style={out ? { background: 'var(--accent)', color: 'white' } : { color: 'var(--accent)' }}>
         {out ? 'Recharge' : 'Top up'}
       </span>
     </button>

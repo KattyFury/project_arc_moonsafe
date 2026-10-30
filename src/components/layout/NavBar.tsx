@@ -37,7 +37,7 @@ export function NavBar({ active, onChange, locked: lockedTabs }: NavBarProps) {
               className="relative flex-1 flex flex-col items-center justify-center disabled:cursor-not-allowed">
               {locked && !isActive ? <Lock size={24} style={{ color }} /> : <Icon size={24} style={{ color }} />}
               <span className="text-[14px] leading-5 font-semibold" style={{ color }}>{label}</span>
-              {isActive && <span className="absolute bottom-0 inset-x-0 h-[2px]" style={{ background: 'var(--accent)' }} />}
+              {isActive && <span className="absolute bottom-0 inset-x-4 h-[3px] rounded-t-full" style={{ background: 'var(--accent)' }} />}
             </button>
           )
         })}

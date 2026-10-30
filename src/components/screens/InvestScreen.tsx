@@ -37,7 +37,7 @@ export function InvestScreen({ onOpenFund, onOpenChat }: { onOpenFund: () => voi
               <p className="text-[16px] leading-6" style={{ color: 'var(--ink)' }}>{b.lock.text}</p>
               {math.floorUsdc !== null && (
                 <div className="h-2 rounded-full" style={{ background: 'var(--surface-muted)' }} role="img" aria-label={`Emergency fund at ${Math.round(math.floorPct ?? 0)}% of its floor`}>
-                  <div className="h-full rounded-full" style={{ width: `${Math.min(math.floorPct ?? 0, 100)}%`, background: 'var(--accent)' }} />
+                  <div className="fill-in h-full rounded-full" style={{ width: `${Math.min(math.floorPct ?? 0, 100)}%`, background: 'var(--accent)' }} />
                 </div>
               )}
               <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>Only the in-app cirBTC buy waits. What you buy elsewhere is your call.</p>

@@ -17,7 +17,7 @@ export function WarningModal({ onAcknowledge }: WarningModalProps) {
     >
       <div
         className="w-full max-w-[340px] p-6 flex flex-col gap-6"
-        style={{ background:'white', borderRadius: 16, boxShadow: '0 2px 8px 0 rgba(0,0,0,0.32)' }}
+        style={{ background:'white', borderRadius: 16, boxShadow: 'var(--shadow-y2)' }}
       >
         <div className="flex items-center gap-2">
           <div

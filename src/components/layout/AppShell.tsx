@@ -20,7 +20,7 @@ import { SettingsScreen } from '@/components/screens/SettingsScreen'
 import { Btn, Notice, Wordmark } from '@/components/ui/kit'
 
 function Column({ children, wide }: { children: ReactNode; wide?: boolean }) {
-  return <div className={`h-dvh flex flex-col overflow-hidden mx-auto w-full max-w-[430px] ${wide ? 'lg:max-w-none' : ''}`} style={{ background: 'var(--bg)' }}>{children}</div>
+  return <div className={`h-dvh flex flex-col overflow-hidden mx-auto w-full max-w-[430px] ${wide ? 'lg:max-w-none' : ''}`} style={{ background: 'var(--page)' }}>{children}</div>
 }
 
 function SetupHeader({ onLogout }: { onLogout: () => void }) {

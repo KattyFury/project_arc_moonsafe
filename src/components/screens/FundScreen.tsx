@@ -6,7 +6,7 @@ import { ShieldAlert, Vault } from 'lucide-react'
 import { useApp } from '@/state/AppState'
 import { GAS_ESTIMATE_USDC6, GAS_RESERVE_USDC6, txErrorMessage } from '@/hooks/useVault'
 import { formatNumber, formatUsdc, parseUsdcInput, usdcToInput, formatUsd, formatUsdcNumber } from '@/lib/format'
-import { AmountField, Btn, Chips, Col, GlassCard, Grid, IconBox, Notice, Screen, Sheet, Toggle, glass } from '@/components/ui/kit'
+import { AmountField, Btn, Chips, Col, CountUp, GlassCard, Grid, HeroRings, IconBox, Notice, Screen, Sheet, Toggle, glass } from '@/components/ui/kit'
 
 type Tab = 'deposit' | 'withdraw'
 
@@ -58,12 +58,13 @@ export function FundScreen({ onOpenChat }: { onOpenChat: () => void }) {
         <Col span={5}>
           {/* Hero balance card: the one gradient region on this screen */}
           <section className="p-4 lg:p-8 flex flex-col gap-2" style={glass.hero}>
+            <HeroRings />
             <div className="flex items-center gap-2">
               <Vault size={20} color="white" />
               <span className="text-[14px] leading-5 font-semibold text-white">Emergency fund</span>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="display font-bold tabular-nums text-white text-[48px] leading-[56px] lg:text-[56px] lg:leading-[64px]">{num}</span>
+              <span className="display font-bold tabular-nums text-white text-[48px] leading-[56px] lg:text-[56px] lg:leading-[64px]">{unit === 'USD' && vb !== null ? <CountUp value={vb} format={formatUsdcNumber} /> : num}</span>
               <span className="text-[20px] leading-7 font-semibold text-white">{unitLabel}</span>
             </div>
             {math.floorUsdc !== null ? (
@@ -72,7 +73,7 @@ export function FundScreen({ onOpenChat }: { onOpenChat: () => void }) {
                   {math.floorMonths}-month floor: {formatUsd(math.floorUsdc)} · you have {formatNumber(math.vaultMonths)} months
                 </p>
                 <div className="h-2 rounded-full" style={{ background: 'rgba(255,255,255,0.24)' }}>
-                  <div className="h-full rounded-full transition-all duration-700 bg-white" style={{ width: `${Math.min(pct, 100)}%` }} />
+                  <div className="fill-in h-full rounded-full transition-all duration-700 bg-white" style={{ width: `${Math.min(pct, 100)}%` }} />
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[14px] leading-5 text-white">{formatUsd(vb)} / {formatUsd(math.floorUsdc)}</span>

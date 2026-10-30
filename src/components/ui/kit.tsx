@@ -3,7 +3,7 @@
 // 0x Blue, radius 16, shadow Y2, Apple system font, Web / Web Mobile type styles.
 // Disabled states use the line/muted colors instead of opacity.
 
-import { useEffect, useState, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from 'react'
 import { AlertCircle, AlertTriangle, CheckCircle2, Copy, Info, Loader2, ChevronDown } from 'lucide-react'
 import QRCode from 'qrcode'
 import clsx from 'clsx'
@@ -11,8 +11,33 @@ import { cleanUsdcInput } from '@/lib/format'
 
 export const glass = {
   card: { background: 'var(--bg)', borderRadius: 16, boxShadow: 'var(--shadow-y2)' } as CSSProperties,
-  // The one gradient region per screen.
-  hero: { background: 'linear-gradient(to top right, #0F3DB2, #1E6DF7)', borderRadius: 16, boxShadow: 'var(--shadow-y2)' } as CSSProperties,
+  // The one gradient region per screen (refresh 2026-10-30: the same blue as the landing preview, with faint rings, see HeroRings).
+  hero: { position: 'relative', zIndex: 0, overflow: 'hidden', background: 'linear-gradient(140deg, #2A7BFF, #0F3DB2)', borderRadius: 16, boxShadow: 'var(--shadow-blue)' } as CSSProperties,
+}
+
+/** Faint rings in the top-right corner of a hero card. Put it first inside a `glass.hero` section. */
+export function HeroRings() {
+  return <span aria-hidden className="absolute rounded-full pointer-events-none" style={{ zIndex: -1, width: 320, height: 320, right: -140, top: -160, border: '1px solid rgba(255,255,255,0.18)', boxShadow: '0 0 0 40px rgba(255,255,255,0.04), 0 0 0 80px rgba(255,255,255,0.03)' }} />
+}
+
+/** A 6-decimal amount that counts up from 0 when it first shows (and on later changes, from the last value). */
+export function CountUp({ value, format }: { value: bigint; format: (v: bigint) => string }) {
+  const [shown, setShown] = useState<bigint>(0n)
+  const last = useRef(0n)
+  useEffect(() => {
+    const from = last.current, start = performance.now()
+    const ms = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 0 : 800
+    let raf = 0
+    const step = (t: number) => {
+      const k = ms ? Math.min(1, (t - start) / ms) : 1, e = 1 - Math.pow(1 - k, 3)
+      last.current = from + ((value - from) * BigInt(Math.round(e * 1000))) / 1000n
+      setShown(last.current)
+      if (k < 1) raf = requestAnimationFrame(step)
+    }
+    raf = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf)
+  }, [value])
+  return <>{format(shown)}</>
 }
 
 /**
@@ -31,13 +56,13 @@ export function Wordmark({ size, color = 'var(--accent)' }: { size: number; colo
 
 /**
  * Scrolling page. Mobile: 16 margins. Desktop: content 1200 wide (Grid/Website 1440:
- * 12 columns, gutter 24), 48 from the nav, 96 at the bottom.
+ * 12 columns, gutter 24), 48 from the nav, 64 at the bottom (2026-10-30: 96 pushed Balance 2px past 900).
  */
 export function Screen({ children }: { children: ReactNode }) {
   return (
-    <div className="flex-1 overflow-y-auto no-scrollbar" style={{ background: 'var(--bg)' }}>
+    <div className="flex-1 overflow-y-auto no-scrollbar" style={{ background: 'var(--page)' }}>
       {/* Children never shrink: a long screen scrolls instead of clipping its cards. */}
-      <div className="w-full max-w-[1248px] mx-auto px-4 py-4 flex flex-col gap-4 lg:px-6 lg:pt-12 lg:pb-24 lg:gap-6 [&>*]:flex-shrink-0">
+      <div className="rise-in w-full max-w-[1248px] mx-auto px-4 py-4 flex flex-col gap-4 lg:px-6 lg:pt-12 lg:pb-16 lg:gap-6 [&>*]:flex-shrink-0">
         {children}
       </div>
     </div>
@@ -55,12 +80,12 @@ export function Col({ span, className, children }: { span: keyof typeof SPAN; cl
   return <div className={clsx('flex flex-col gap-4 lg:gap-6 min-w-0', SPAN[span], className)}>{children}</div>
 }
 
-/** Row of small figures on flat Mist tiles (keeps a screen short instead of one list row each). */
+/** Row of small figures on white tiles (keeps a screen short instead of one list row each). */
 export function Stats({ items }: { items: { label: string; value: ReactNode; sub?: string }[] }) {
   return (
     <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}>
       {items.map(i => (
-        <div key={i.label} className="p-2 lg:p-4 rounded-2xl flex flex-col" style={{ background: 'var(--surface-muted)' }}>
+        <div key={i.label} className="p-2 lg:p-4 rounded-2xl flex flex-col" style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-y2)' }}>
           <span className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>{i.label}</span>
           <span className="text-[14px] leading-5 lg:text-[16px] lg:leading-6 font-semibold tabular-nums break-words" style={{ color: 'var(--ink)' }}>{i.value}</span>
           {/* A note on the figure (e.g. "0.2 / 3 months") is its own line, so it wraps inside the tile instead of spilling out of it. */}

@@ -39,7 +39,7 @@ export function CashflowCard({ compact = false }: { compact?: boolean }) {
             <span className="font-semibold tabular-nums" style={{ color: free ? 'var(--success)' : 'var(--ink)' }}>{Math.round(ratio * 100)}%{free ? ' · financial freedom' : ''}</span>
           </div>
           <div className="h-2 rounded-full" style={{ background: 'var(--surface-muted)' }} role="img" aria-label={`Passive income covers ${Math.round(ratio * 100)}% of spending`}>
-            <div className="h-full rounded-full" style={{ width: `${Math.min(100, ratio * 100)}%`, background: free ? 'var(--success)' : 'var(--accent)' }} />
+            <div className="fill-in h-full rounded-full" style={{ width: `${Math.min(100, ratio * 100)}%`, background: free ? 'var(--success)' : 'var(--accent)' }} />
           </div>
         </div>
       )}

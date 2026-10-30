@@ -53,7 +53,7 @@ export default {
         pill: '9999px',
       },
       boxShadow: {
-        'y2': '0 2px 8px 0 rgba(0,0,0,0.32)',
+        'y2': '0 1px 2px 0 rgba(15,23,42,0.06), 0 8px 24px 0 rgba(15,61,178,0.08)',
       },
       spacing: {
         // brand spacing tokens (all multiples of 8)
