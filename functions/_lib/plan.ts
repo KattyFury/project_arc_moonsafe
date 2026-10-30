@@ -272,7 +272,11 @@ export function buildAfterSign({ b, vi, kind, summary, cover = null, partial = n
       : `${what} ${vi ? 'Ví chưa có USDC để nạp, hãy thêm USDC vào ví rồi nói với mình nhé.' : 'The wallet has no USDC to add yet, so add some and tell me.'}` // lang-ok
   }
   if (kind === 'deposit') {
-    if (!fundFull) return null
+    // Not full yet: where the fund stands and that small amounts are fine. Nothing about cirBTC or buying (Hieu, 2026-10-30: after a
+    // $5 deposit the model wrote "Still needed to open cirBTC buying: $3,595" when nobody had asked about Bitcoin).
+    if (!fundFull) return vi
+      ? `Quỹ dự phòng giờ là ${fmt(vault)} trên ${fmt(b.fund.floorUsd)} (${b.fund.floorMonths} tháng chi tiêu). Những lần sau cứ nạp từ từ, lúc nào tiện là được.` // lang-ok
+      : `Your emergency fund is now ${fmt(vault)} of ${fmt(b.fund.floorUsd)} (${b.fund.floorMonths} months of spending). Keep adding a little at a time, whenever it suits you.`
     return vi
       ? `Quỹ dự phòng giờ là ${fmt(vault)} trên ${fmt(b.fund.floorUsd)} (${b.fund.floorMonths} tháng chi tiêu): đã đủ. ${pickQuestion(standing, vi)}` // lang-ok
       : `Your emergency fund is now ${fmt(vault)} of ${fmt(b.fund.floorUsd)} (${b.fund.floorMonths} months of spending): full. ${pickQuestion(standing, vi)}`

@@ -226,6 +226,12 @@ const signedText = signed.body.content ?? ''
 console.log('\nstep 6b: model calls', signed.calls, '\n' + signedText)
 expect(signed.calls === 0 && /emergency fund is now \$900 of \$900/.test(signedText) && /Only Crypto/.test(signedText) && !/Safety|Traditional/.test(signedText.split('Only Crypto')[1] ?? ''), 'after the deposit: the fund status, then only Crypto (the only part with room)')
 
+// 6b2. A small deposit that does not fill the fund (real chat 2026-10-30: $5 got "Still needed to open cirBTC buying"): the fund
+// status and "a little at a time", nothing about cirBTC, no model call.
+const small = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: firstText }, { role: 'user', content: '[app event] The user signed the card: Added 5 USDC to your emergency fund.' }], base, 5)
+const smallText = small.body.content ?? ''
+expect(small.calls === 0 && /emergency fund is now \$5 of \$[\d,]+/.test(smallText) && /a little at a time/.test(smallText) && !/cirBTC|BTC|bitcoin|buy/i.test(smallText), `after a small deposit: "$5 of $X", add a little at a time, no cirBTC (got: ${smallText.slice(0, 160)})`)
+
 // 6c. A saved amount (record box) is acknowledged, with the part it touched, then only the parts that have room.
 const rec = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: firstText }, { role: 'user', content: '[app event] The user confirmed recording: Recorded 500 USDC in Bank savings (Safety), from Binance.' }], base, 900)
 const recText = rec.body.content ?? ''
