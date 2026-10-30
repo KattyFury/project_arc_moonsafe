@@ -115,7 +115,10 @@ const QUESTIONS_US = /\?|(?<!\p{L})(why|you mean|wrong|how come|sao|tại sao|sa
 const DEBT_PAY_NAME = /loan|debt|repay|mortgage|installment|credit card|(?<!\p{L})(mom|dad|mother|father)(?!\p{L})|nợ|trả góp/iu // lang-ok
 // A plain "no" to an offer (real chat 2026-10-29: "no" to the deposit offer got the same offer again). Short answers only, so
 // "no, make it 10" or "no I already have savings" still go through the normal path.
-const SAYS_NO = /^\s*(no+|nope|nah|not (now|yet|today)|maybe later|later|no,? thanks?( you)?|i('?m| am) (good|fine)|i don'?t want( to)?( do (it|that))?|not interested|skip( it)?|không|chưa|thôi|để sau|ko|k)\s*[.!]*\s*$/iu // lang-ok
+// Widened 2026-10-30 (real chat: "no just leave it" was not read as a no): one or more refusal phrases, joined by filler words only.
+const NO_PHRASE = String.raw`no+|nope|nah|not (?:now|yet|today|right now|for now)|maybe later|later|no,? thanks?(?: you)?|i(?:'?m| am) (?:good|fine|ok(?:ay)?)|i don'?t want(?: to)?(?: do (?:it|that))?|not interested|skip(?: it)?|(?:just )?leave it(?: (?:as is|as it is|alone|there|for now))?|let it be|forget (?:it|about it)|never ?mind|no need|(?:i'?ll )?pass|don'?t|không(?: cần)?|chưa|thôi|để sau|để vậy|cứ để (?:vậy|đó|đấy)|bỏ qua|ko|k` // lang-ok
+const NO_FILLER = String.raw`just|it|for now|right now|then|please|pls|ok(?:ay)?|thanks?(?: you)?|bro|man|cứ|đi|nhé|nha|ạ|vậy|đã|mà|đâu` // lang-ok
+const SAYS_NO = new RegExp(String.raw`^\s*(?:${NO_PHRASE})(?:[\s,.!]+(?:${NO_PHRASE}|${NO_FILLER}))*[\s.!]*$`, 'iu') // lang-ok
 // A new amount right after our buy / deposit offer ("make it 1$", "1 đô thôi", "buy $5 instead"; real chat 2026-10-29: "make it 1$" // lang-ok
 // got the same question again). A dollar amount, no question, no VND.
 const OFFERED_BUY = /cirBTC buy of|first buy of|lệnh mua cirBTC|lần mua đầu/i // lang-ok

@@ -200,6 +200,15 @@ const noText = no.body.content ?? ''
 expect(no.calls === 0 && /your call/.test(noText) && !/prepare|deposit/i.test(noText) && !(no.body.actions ?? []).length, `"no" to an offer is respected with no new offer (got: ${noText.slice(0, 80)})`)
 const noMore = await call([{ role: 'assistant', content: offer }, { role: 'user', content: 'no, make it 10' }], base, 0)
 expect(!/your call/.test(noMore.body.content ?? ''), '"no, make it 10" is not a plain no')
+// Refusals in more words (real chat 2026-10-30: "no just leave it" went to the model).
+for (const t of ['no just leave it', 'No, just leave it for now.', 'not now, maybe later', 'forget it', 'never mind', 'no need', 'thôi, cứ để vậy đi']) { // lang-ok
+  const r = await call([{ role: 'assistant', content: offer }, { role: 'user', content: t }], base, 0)
+  expect(r.calls === 0 && /your call|quyết định của bạn/.test(r.body.content ?? '') && !(r.body.actions ?? []).length, `"${t}" to an offer is a no`) // lang-ok
+}
+for (const t of ['no I already have savings', 'not yet, I want to ask about crypto', 'no, why?']) {
+  const r = await call([{ role: 'assistant', content: offer }, { role: 'user', content: t }], base, 0)
+  expect(!/your call/.test(r.body.content ?? ''), `"${t}" is not a plain no`)
+}
 
 const price = await call([{ role: 'user', content: 'are you free to use?' }], base, 900)
 const priceText = price.body.content ?? ''
