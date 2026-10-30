@@ -1,3 +1,16 @@
+# ▶ Handoff — 2026-10-30 (máy Dell, phiên deploy + D1)
+
+**Live = main `078c49f`** (+ commit handoff này), deploy mainnet lúc chiều 10-30 (Cloudflare `aa6d0b8c`). Gồm: giao diện hướng 1 + landing dạng chat (Example bar, nền xám, bong bóng trắng), popup Before you start mới, sửa Log out, bảng hỏi dạng bảng kê 3 bước, các sửa agent (từ chối dài, nạp chưa đủ quỹ "$5 of $3,600", kiểm từ chối ≤120 ký tự). Kiểm sau deploy: trang 200, `/api/chat` không token 401, bundle có `A9A5447a`. CHƯA thử bằng tài khoản thật.
+
+**Sổ AI power chuyển sang D1 (xong 10-30):** database `moonsafe-ledger` (id `202c2a19-f817-49b5-9428-5bcc8d45c189`, binding `DB` trong `wrangler.toml`, đã thấy trên production). Bảng `counters` (turns/events theo ngày, power) + `power_tx` (giao dịch mua, pending→done) theo `migrations/0001_ledger.sql`; code `functions/_lib/ledger.ts` (mỗi thay đổi 1 câu SQL, không đè nhau, 1 giao dịch chỉ cộng 1 lần), `quota.ts` + `/admin` dùng nó. Không có `DB` thì tự quay về KV (chạy local/test). Owner flag + đếm lần kiểm thất bại vẫn ở KV. Lúc chuyển: chưa ai mua, không có `power:`/`powertx:` trong KV; đã chép turns 17 / events 6 hôm nay của 1 tài khoản đang dùng. Kiểm: `bun scripts/ledger-check.ts` (trong `check:all`, chạy SQL thật trên bun:sqlite). Sửa schema = thêm file `migrations/000N_*.sql` rồi `bunx wrangler d1 migrations apply moonsafe-ledger --remote`. Token Cloudflare đã được Hiếu thêm quyền D1 Edit.
+- **Việc đầu tiên phiên sau:** Hiếu chat 1 câu → `bunx wrangler d1 execute moonsafe-ledger --remote --command "SELECT key,n FROM counters"` phải thấy turns tăng (lúc handoff vẫn 17 = chưa có lượt chat nào sau deploy).
+
+**Danh sách việc sau kiểm toán (docs/audit-mainnet-2026-10-29.md):**
+- XONG: xoá secret `GEMINI_API_KEY` (production) + `OPENAI_API_KEY` (preview) — Hiếu tự làm; verify 2 hợp đồng — đã verify đầy đủ trên explorer.arc.io từ 2026-10-29 02:54 UTC (VaultProxy `0xd139…cAACE`, VaultFactory `0xA9A5…E10A`), báo cáo cloud cũ nhầm vì máy nó bị Cloudflare của explorer chặn; sổ D1 ở trên.
+- CÒN (Hiếu tự làm trên dashboard): Privy giới hạn đăng ký; Cloudflare luật giới hạn tần suất `/api/chat`, `/api/power`, `/api/*`; cân nhắc gói Workers trả phí.
+
+**Máy Dell:** bản dở dang ChatGPT/Codex (docs DORA-SUBMISSION, PRESENTATION, CORE…, corePolicy.ts, framework-copy-check.ts) được cất ở `git stash` tên `chatgpt-codex-local-wip-2026-10-30`, chưa xoá — hỏi Hiếu giữ hay bỏ.
+
 # Intake form as a statement (option C) — 2026-10-30
 
 Replaces the 4-step version below: at most 3 steps (Your month with Just me / Household pills at the top → What you hold → Goals & debt), one ruled row per question, answer on the right (dashed line while empty, thousands commas as typed), Yes/No as small pills, one blue Next/Save button, Skip all / Back as text. Phones open the number pad (`inputMode` numeric for age/years/people, decimal for money and rates). Data mapping unchanged (Stablecoin onchain, Crypto).
