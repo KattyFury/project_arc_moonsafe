@@ -10,15 +10,11 @@ import clsx from 'clsx'
 import { cleanUsdcInput } from '@/lib/format'
 
 export const glass = {
-  card: { background: 'var(--bg)', borderRadius: 16, boxShadow: 'var(--shadow-y2)' } as CSSProperties,
-  // The one gradient region per screen (refresh 2026-10-30: the same blue as the landing preview, with faint rings, see HeroRings).
-  hero: { position: 'relative', zIndex: 0, overflow: 'hidden', background: 'linear-gradient(140deg, #2A7BFF, #0F3DB2)', borderRadius: 16, boxShadow: 'var(--shadow-blue)' } as CSSProperties,
+  card: { background: 'var(--bg)', borderRadius: 20, border: '1px solid var(--line)' } as CSSProperties,
+  // The main figure of a screen (direction 1, 2026-10-30): a flat Blue Soft panel, dark text, no gradient.
+  hero: { background: 'var(--accent-soft)', borderRadius: 20 } as CSSProperties,
 }
 
-/** Faint rings in the top-right corner of a hero card. Put it first inside a `glass.hero` section. */
-export function HeroRings() {
-  return <span aria-hidden className="absolute rounded-full pointer-events-none" style={{ zIndex: -1, width: 320, height: 320, right: -140, top: -160, border: '1px solid rgba(255,255,255,0.18)', boxShadow: '0 0 0 40px rgba(255,255,255,0.04), 0 0 0 80px rgba(255,255,255,0.03)' }} />
-}
 
 /** A 6-decimal amount that counts up from 0 when it first shows (and on later changes, from the last value). */
 export function CountUp({ value, format }: { value: bigint; format: (v: bigint) => string }) {
@@ -62,7 +58,7 @@ export function Screen({ children }: { children: ReactNode }) {
   return (
     <div className="flex-1 overflow-y-auto no-scrollbar" style={{ background: 'var(--page)' }}>
       {/* Children never shrink: a long screen scrolls instead of clipping its cards. */}
-      <div className="rise-in w-full max-w-[1248px] mx-auto px-4 py-4 flex flex-col gap-4 lg:px-6 lg:pt-12 lg:pb-16 lg:gap-6 [&>*]:flex-shrink-0">
+      <div className="w-full max-w-[1248px] mx-auto px-4 py-4 flex flex-col gap-4 lg:px-6 lg:pt-12 lg:pb-16 lg:gap-6 [&>*]:flex-shrink-0">
         {children}
       </div>
     </div>
@@ -85,7 +81,7 @@ export function Stats({ items }: { items: { label: string; value: ReactNode; sub
   return (
     <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}>
       {items.map(i => (
-        <div key={i.label} className="p-2 lg:p-4 rounded-2xl flex flex-col" style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-y2)' }}>
+        <div key={i.label} className="p-2 lg:p-4 rounded-2xl flex flex-col" style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}>
           <span className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>{i.label}</span>
           <span className="text-[14px] leading-5 lg:text-[16px] lg:leading-6 font-semibold tabular-nums break-words" style={{ color: 'var(--ink)' }}>{i.value}</span>
           {/* A note on the figure (e.g. "0.2 / 3 months") is its own line, so it wraps inside the tile instead of spilling out of it. */}
@@ -125,7 +121,7 @@ export function Btn({ variant = 'primary', size = 'md', loading, className, chil
     ? { background: 'var(--line)', color: 'var(--muted)' }
     : variant === 'primary' ? { background: 'var(--accent)', color: 'white', boxShadow: 'var(--shadow-y2)' }
     : variant === 'danger' ? { background: 'var(--danger)', color: 'white', boxShadow: 'var(--shadow-y2)' }
-    : { background: 'var(--bg)', color: 'var(--accent)', boxShadow: 'var(--shadow-y2)' }
+    : { background: 'var(--bg)', color: 'var(--accent)', border: '1px solid var(--line)' }
   return (
     <button {...rest} disabled={off} style={style}
       className={clsx('w-full rounded-2xl font-semibold transition-colors flex items-center justify-center gap-2 whitespace-nowrap',

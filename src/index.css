@@ -5,7 +5,7 @@
 :root {
   /* nguyen0xhieu design system (tokens.json). Old names kept so screens stay unchanged. */
   --bg: #FFFFFF;            /* ground */
-  --page: #F6F8FC;          /* app background behind the cards (2026-10-30 refresh) */
+  --page: #FFFFFF;          /* app background (direction 1, 2026-10-30: flat white, cards carry a 1px line instead of a shadow) */
   --surface: #FFFFFF;
   --surface-strong: #FFFFFF;
   --surface-muted: #ECF0F8; /* mist */
@@ -25,8 +25,9 @@
   --danger: #C42B3F;        /* red-text */
   --yellow: #F5B301;
   --border-lock: #B9C2D3;   /* locked tab: lighter than --muted, no opacity */
-  --shadow-y2: 0 1px 2px 0 rgba(15,23,42,0.06), 0 8px 24px 0 rgba(15,61,178,0.08);
-  --shadow-blue: 0 8px 24px 0 rgba(30,109,247,0.32);
+  /* Direction 1 (2026-10-30): surfaces are flat, separated by a 1px line; no drop shadows. */
+  --shadow-y2: none;
+  --shadow-blue: none;
   --font-app: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
 }
 
@@ -68,7 +69,7 @@ body {
 .dot-typing span:nth-child(2) { animation-delay: 0.15s; }
 .dot-typing span:nth-child(3) { animation-delay: 0.30s; }
 
-/* Motion (2026-10-30 refresh): new messages and screens rise in, progress bars fill on open. Off when the user asks for less motion. */
+/* Motion (2026-10-30): one moment, the agent's messages rise in; the fund bar fills on open. Off when the user asks for less motion. */
 @keyframes rise-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @keyframes fill-in { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .rise-in { animation: rise-in 320ms cubic-bezier(.2,.8,.2,1) both; }

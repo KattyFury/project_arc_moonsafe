@@ -47,22 +47,6 @@ const STARTS: Array<{ label: string; icon: LucideIcon }> = [
   { label: 'Investing', icon: TrendingUp },
 ]
 
-/** Who the user is talking to: logo with a green dot, name and role (refresh 2026-10-30). */
-function AgentHeader() {
-  return (
-    <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2 lg:px-6 lg:py-4" style={{ borderBottom: '1px solid var(--line)' }}>
-      <span className="relative flex-shrink-0">
-        <img src="/logo.svg" alt="" width={40} height={40} />
-        <span className="absolute right-0 bottom-0 w-3 h-3 rounded-full" style={{ background: '#0F9D58', border: '2px solid var(--bg)' }} />
-      </span>
-      <div className="flex flex-col">
-        <span className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--ink)' }}>MoonSafe</span>
-        <span className="text-[14px] leading-5" style={{ color: 'var(--muted)' }}>Your personal finance advisor · online</span>
-      </div>
-    </div>
-  )
-}
-
 export function ChatScreen({ onError, onActions }: { onError: (m: string | null) => void; onActions: (a: AgentAction[]) => void }) {
   const { profile, vault, math, cirBtc, vndToUsdc, prices } = useApp()
   // Deposit / withdraw / buy / DCA cards and charts under the agent's replies, by reply timestamp.
@@ -197,8 +181,7 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
 
   return (
     <div className="flex flex-col flex-1 min-h-0 w-full lg:max-w-[960px] lg:mx-auto lg:px-6 lg:py-4">
-      <div className="flex flex-col flex-1 min-h-0 lg:rounded-2xl lg:shadow-y2 lg:overflow-hidden" style={{ background: 'var(--bg)' }}>
-        <AgentHeader />
+      <div className="flex flex-col flex-1 min-h-0 lg:rounded-[20px] lg:border lg:border-[var(--line)] lg:overflow-hidden" style={{ background: 'var(--bg)' }}>
         {/* Messages above the fold fade out under the nav bar, so it reads as "there is more". */}
         <div ref={listRef} className="flex-1 overflow-y-auto no-scrollbar px-4 py-4 lg:p-6 flex flex-col gap-4 [&>*]:flex-shrink-0"
           onScroll={e => setScrolled(e.currentTarget.scrollTop > 0)} style={scrolled ? FADE_TOP : undefined}>
@@ -220,7 +203,7 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
                   {STARTS.map(({ label, icon: Icon }) => (
                     <button key={label} onClick={() => { void handleSend(label) }} disabled={loading || outOfPower}
                       className="h-10 px-4 rounded-full flex items-center gap-2 text-[14px] leading-5 font-semibold transition-transform active:scale-[0.97] disabled:cursor-not-allowed"
-                      style={{ background: 'var(--bg)', color: 'var(--ink)', border: '1px solid var(--line)', boxShadow: 'var(--shadow-y2)' }}>
+                      style={{ background: 'var(--bg)', color: 'var(--ink)', border: '1px solid var(--line)' }}>
                       <Icon size={16} style={{ color: 'var(--accent)' }} />{label}
                     </button>
                   ))}
@@ -270,13 +253,13 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
                 e.preventDefault(); void handleSend()
               }}
               placeholder={outOfPower ? 'Out of AI power · recharge to keep chatting' : 'Message the agent…'} aria-label="Message"
-              className="col-start-1 row-start-1 w-full h-full min-h-0 py-[15px] pl-5 pr-16 rounded-[28px] text-[16px] leading-6 resize-none overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden outline-none focus-visible:outline-none border border-[var(--line)] focus:border-[var(--accent)] focus:shadow-[inset_0_0_0_1px_var(--accent)] placeholder:text-[var(--muted)]"
-              style={{ background: 'var(--bg)', color: 'var(--ink)', boxShadow: 'var(--shadow-y2)' }} />
+              className="col-start-1 row-start-1 w-full h-full min-h-0 py-[15px] pl-5 pr-16 rounded-[28px] text-[16px] leading-6 resize-none overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden outline-none focus-visible:outline-none border border-transparent focus:border-[var(--accent)] focus:shadow-[inset_0_0_0_1px_var(--accent)] placeholder:text-[var(--muted)]"
+              style={{ background: 'var(--surface-muted)', color: 'var(--ink)' }} />
             <button onClick={() => { void handleSend() }} disabled={loading || outOfPower || !input.trim()} aria-label="Send"
               className="col-start-1 row-start-1 self-end justify-self-end m-2 w-10 h-10 rounded-full transition-transform active:scale-95 flex items-center justify-center"
               style={loading || outOfPower || !input.trim()
                 ? { background: 'var(--line)', color: 'var(--muted)' }
-                : { background: 'var(--accent)', color: 'white', boxShadow: 'var(--shadow-blue)' }}>
+                : { background: 'var(--accent)', color: 'white' }}>
               {loading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
             </button>
           </div>

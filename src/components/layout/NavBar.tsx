@@ -31,13 +31,16 @@ export function NavBar({ active, onChange, locked: lockedTabs }: NavBarProps) {
         {tabs.map(({ id, label, icon: Icon }) => {
           const locked = !!lockedTabs[id]
           const isActive = active === id
-          const color = isActive ? 'var(--accent)' : 'var(--muted)'
+          const color = isActive ? 'var(--accent-dark)' : locked ? 'var(--border-lock)' : 'var(--muted)'
           return (
             <button key={id} onClick={() => onChange(id)} aria-pressed={isActive} disabled={locked} title={locked ? 'Opens when your emergency fund is full' : undefined}
               className="relative flex-1 flex flex-col items-center justify-center disabled:cursor-not-allowed">
-              {locked && !isActive ? <Lock size={24} style={{ color }} /> : <Icon size={24} style={{ color }} />}
-              <span className="text-[14px] leading-5 font-semibold" style={{ color }}>{label}</span>
-              {isActive && <span className="absolute bottom-0 inset-x-4 h-[3px] rounded-t-full" style={{ background: 'var(--accent)' }} />}
+              {/* Active tab: a Blue Soft pill behind icon and label (direction 1, 2026-10-30). */}
+              {isActive && <span className="absolute inset-x-1 inset-y-2 rounded-xl" style={{ background: 'var(--accent-soft)' }} />}
+              <span className="relative flex flex-col items-center">
+                {locked && !isActive ? <Lock size={24} style={{ color }} /> : <Icon size={24} style={{ color }} />}
+                <span className="text-[14px] leading-5 font-semibold" style={{ color }}>{label}</span>
+              </span>
             </button>
           )
         })}
