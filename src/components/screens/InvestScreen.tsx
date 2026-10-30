@@ -4,7 +4,7 @@
 
 import { useState, type ReactNode } from 'react'
 import { Bitcoin, ExternalLink, Landmark, Lock, ShieldCheck, X, type LucideIcon } from 'lucide-react'
-import { bucketStanding } from '@/lib/allocation'
+import { bucketStanding, standingLabel, type Standing } from '@/lib/allocation'
 import { useApp } from '@/state/AppState'
 import { explorerTx } from '@/lib/network'
 import { spendable } from '@/lib/invest'
@@ -62,8 +62,8 @@ export function InvestScreen({ onOpenFund, onOpenChat, onAsk }: { onOpenFund: ()
 }
 
 /** One part of the split: what is held of its target, a bar, what is left and the next step (Hieu, 2026-10-30, option 2a). */
-function PartRow({ icon: Icon, color, name, have, target, left, full, note, action }: {
-  icon: LucideIcon; color: string; name: string; have: string; target: string; left: string; full: boolean; note: string; action?: ReactNode
+function PartRow({ icon: Icon, color, name, have, target, status, note, action }: {
+  icon: LucideIcon; color: string; name: string; have: string; target: string; status: { text: string; good: boolean }; note: string; action?: ReactNode
   }) {
   const pct = (() => { const h = Number(have.replace(/[^0-9.]/g, '')), t = Number(target.replace(/[^0-9.]/g, '')); return t > 0 ? Math.min(100, h / t * 100) : 0 })()
   return (
@@ -78,7 +78,7 @@ function PartRow({ icon: Icon, color, name, have, target, left, full, note, acti
       </div>
       <div className="flex items-center justify-between gap-4">
         <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>
-          {full ? <strong style={{ color: 'var(--success)' }}>Full. </strong> : <strong style={{ color: 'var(--ink)' }}>{left} to go. </strong>}{note}
+          <strong style={{ color: status.good ? 'var(--success)' : 'var(--ink)' }}>{status.text}. </strong>{note}
         </p>
         {action}
       </div>
@@ -123,6 +123,11 @@ function InvestOpen({ onAsk }: { onAsk: (question: string) => void }) {
   const part = (key: 'safe' | 'traditional' | 'crypto') => standing?.find(x => x.key === key)
   const crypto = part('crypto'), traditional = part('traditional'), safety = part('safe')
   const money0 = (n: number | undefined) => moneyUsd(n ?? 0)
+  const status = (x: Standing | undefined) => x
+    ? { text: standingLabel(x, moneyUsd), good: x.status === 'on_track' }
+    : { text: `${moneyUsd(0)} to go`, good: false }
+  // No buy button while Crypto is above target or below it only because prices fell (Hieu, 2026-10-29: never push buying a drop).
+  const cryptoBuy = !crypto || (!crypto.priceDrop && crypto.status !== 'over')
 
   return (
     <Screen>
@@ -142,13 +147,13 @@ function InvestOpen({ onAsk }: { onAsk: (question: string) => void }) {
             </Notice>
           )}
           <div className="flex flex-col [&>*:last-child]:border-b-0">
-            <PartRow icon={Bitcoin} color="#eb6834" name="Crypto" have={money0(crypto?.have)} target={money0(crypto?.target)} left={money0(crypto?.left)} full={!!crypto?.full}
-              note="Buy cirBTC here, all at once or a bit each month."
-              action={<Btn size="sm" className="!w-auto" onClick={() => setBuying(true)}>Buy cirBTC</Btn>} />
-            <PartRow icon={Landmark} color="var(--accent)" name="Traditional" have={money0(traditional?.have)} target={money0(traditional?.target)} left={money0(traditional?.left)} full={!!traditional?.full}
+            <PartRow icon={Bitcoin} color="#eb6834" name="Crypto" have={money0(crypto?.have)} target={money0(crypto?.target)} status={status(crypto)}
+              note={cryptoBuy ? 'Buy cirBTC here, all at once or a bit each month.' : 'No need to buy more now; new money can go to the other parts.'}
+              action={cryptoBuy && <Btn size="sm" className="!w-auto" onClick={() => setBuying(true)}>Buy cirBTC</Btn>} />
+            <PartRow icon={Landmark} color="var(--accent)" name="Traditional" have={money0(traditional?.have)} target={money0(traditional?.target)} status={status(traditional)}
               note="An index fund such as VOO, or gold, with your own broker."
               action={<Btn size="sm" variant="outline" className="!w-auto" onClick={() => onAsk('How do I buy an index fund such as VOO, or gold, for the Traditional part of my plan?')}>How <ExternalLink size={14} /></Btn>} />
-            <PartRow icon={ShieldCheck} color="#1baf7a" name="Safety" have={money0(safety?.have)} target={money0(safety?.target)} left={money0(safety?.left)} full={!!safety?.full}
+            <PartRow icon={ShieldCheck} color="#1baf7a" name="Safety" have={money0(safety?.have)} target={money0(safety?.target)} status={status(safety)}
               note="Savings you can reach any time, outside the app." />
           </div>
           <p className="text-[14px] leading-5" style={{ color: 'var(--muted)' }}>A suggestion, not investment advice. Prices can fall; only invest what you will not need soon.</p>

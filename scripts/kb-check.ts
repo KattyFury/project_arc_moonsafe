@@ -7,7 +7,8 @@
 
 import { KB, targetMix, fundFloorMonths, isPriorityDebt, matchPatterns, patternBrief, type Cond, type Facts } from '../src/kb/kb'
 import { computeFacts, displayFacts } from '../src/kb/facts'
-import { computeBalance } from '../src/lib/allocation'
+import { computeBalance, type Standing } from '../src/lib/allocation'
+import { verdict } from '../functions/_lib/plan'
 import { applyOps, normalizeProfile } from '../src/lib/profile'
 import { buildRecordOps, detectPlacement, sourceOptions } from '../src/lib/record'
 import { EMPTY_PROFILE, type Debt, type FinancialProfile, type Holding } from '../src/types'
@@ -410,14 +411,37 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
     const at = (btc: number) => computeBalance({ profile: p, walletUsd: 0, vaultUsd: 0, cirBtcUsd: 0, prices: { goldUsdPerOz: null, usd: { 'crypto:BTC': btc } }, vndPerUsd: 25000 }).byGroup.btc
     if (at(100000) !== 1000 || at(50000) !== 1000) fail(`cost basis: BTC put in stays $1,000 whatever the price (got ${at(100000)} / ${at(50000)})`)
   }
-  // cirBTC bought in the app: recorded at what was paid; the onchain market value is no longer added on top.
+  // Market value (Hieu, 2026-10-30, as statements and wealth apps do): BTC with a known quantity is worth quantity × price; the cost
+  // recorded with it stays apart as money put in. A drop below target only because prices fell asks for no new money.
+  {
+    const { bucketStanding } = await import('../src/lib/allocation')
+    const p = normalizeProfile({ v: 2, age: 30, holdings: [
+      { id: 's', type: 'savings', name: 'Bank', value: 3000, currency: 'USDC', priceSource: 'self', rebalanceable: true },
+      { id: 't', type: 'fund_bond', name: 'Index fund', value: 3500, currency: 'USDC', priceSource: 'self', rebalanceable: true },
+      { id: 'b', type: 'btc', name: 'Bitcoin', symbol: 'BTC', quantity: 0.035, unit: 'coins', value: 3500, currency: 'USDC', priceSource: 'self', rebalanceable: true },
+    ] })
+    const at = (btc: number) => computeBalance({ profile: p, walletUsd: 0, vaultUsd: 0, cirBtcUsd: 0, prices: { goldUsdPerOz: null, usd: { 'crypto:BTC': btc } }, vndPerUsd: 25000 })
+    const up = at(200000), down = at(50000)
+    if (Math.abs(up.byGroup.btc - 7000) > 0.01 || up.putIn.btc !== 3500) fail(`market value: 0.035 BTC at $200k is $7,000, put in $3,500 (got ${up.byGroup.btc} / ${up.putIn.btc})`)
+    const cUp = bucketStanding(up)!.find(x => x.key === 'crypto')!
+    if (cUp.status !== 'over' || !cUp.full) fail(`band: Crypto at 52% of a 35% target is over and asks for nothing (got ${cUp.status})`)
+    const cDown = bucketStanding(down)!.find(x => x.key === 'crypto')!
+    if (cDown.status !== 'under' || !cDown.priceDrop || cDown.left !== 0) fail(`price drop: Crypto below target only because BTC fell asks for no new money (got ${JSON.stringify(cDown)})`)
+    if (!/prices fell/.test(verdict(cDown, false))) fail('price drop: the agent says prices fell, not "to go"')
+    const near = at(102000) // Crypto ~36.7% of 35%: inside 30-40%
+    const cNear = bucketStanding(near)!.find(x => x.key === 'crypto')!
+    if (cNear.status !== 'on_track' || verdict(cNear, false) !== 'on track') fail(`band: Crypto inside 30-40% is on track (got ${cNear.status})`)
+  }
+  // cirBTC bought in the app: valued at the market from the onchain balance; what was paid is the money put in.
   {
     const { cirBtcBuyOps } = await import('../src/lib/profile')
     const p0 = normalizeProfile({ v: 2, age: 30 })
     const p1 = applyOps(p0, cirBtcBuyOps(p0, 10))
     const p2 = applyOps(p1, cirBtcBuyOps(p1, 5))
     const b = computeBalance({ profile: p2, walletUsd: 0, vaultUsd: 0, cirBtcUsd: 7.5, prices: null, vndPerUsd: 25000 })
-    if (b.byGroup.btc !== 15) fail(`cirBTC: two buys of $10 and $5 count as $15 put in, not the $7.50 market value (got ${b.byGroup.btc})`)
+    if (b.byGroup.btc !== 7.5 || b.putIn.btc !== 15) fail(`cirBTC: worth $7.50 onchain, $15 put in over two buys (got ${b.byGroup.btc} / ${b.putIn.btc})`)
+    const before = computeBalance({ profile: p2, walletUsd: 0, vaultUsd: 0, cirBtcUsd: null, prices: null, vndPerUsd: 25000 })
+    if (before.byGroup.btc !== 15) fail(`cirBTC: before the onchain read, what was paid stands in (got ${before.byGroup.btc})`)
   }
   // The plan says WHY for every step, and offers the exact deposit with the wording the "yes" is matched on.
   const shares: [number, number, number] = [31, 35, 34]
@@ -479,14 +503,15 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
     ['Yep', 'Hello there', null], ['safe', 'Ready to start? shall I prepare a deposit of 450 USDC?', null],
   ]
   for (const [text, prev, want] of cases) if (detectPartChoice(text, prev) !== want) fail(`part choice: "${text}" after "${prev.slice(0, 24)}…" should be ${want}`)
-  const rows = [
-    { key: 'safe' as const, name: 'Safety' as const, share: 21, have: 1000, target: 840, left: 0, full: true },
-    { key: 'traditional' as const, name: 'Traditional' as const, share: 45, have: 2000, target: 1800, left: 0, full: true },
-    { key: 'crypto' as const, name: 'Crypto' as const, share: 34, have: 0, target: 1354, left: 1354, full: false },
+  const band = { low: 0, high: 0, putIn: 0, priceDrop: false }
+  const rows: Standing[] = [
+    { ...band, key: 'safe', name: 'Safety', share: 21, have: 1000, target: 840, status: 'over', left: 0, full: true },
+    { ...band, key: 'traditional', name: 'Traditional', share: 45, have: 2000, target: 1800, status: 'on_track', left: 0, full: true },
+    { ...band, key: 'crypto', name: 'Crypto', share: 34, have: 0, target: 1354, status: 'under', left: 1354, full: false },
   ]
   if (!/^Only Crypto \(\$0 of \$1,354\) still has room/.test(pickQuestion(rows, false))) fail('pick: only the part with room is named')
   if (/Safety|Traditional/.test(pickQuestion(rows, false))) fail('pick: full parts are never named')
-  if (!/All three parts are at their targets/.test(pickQuestion(rows.map(r => ({ ...r, left: 0, full: true })), false))) fail('pick: all full')
+  if (!/No part needs new money/.test(pickQuestion(rows.map(r => ({ ...r, left: 0, full: true })), false))) fail('pick: all full')
   if (!/Which part would you like to fill first: Safety \(\$300 of \$840\) or Crypto/.test(pickQuestion([{ ...rows[0], have: 300, left: 540, full: false }, rows[1], rows[2]], false))) fail('pick: two parts with room, each as "X of Y"')
 }
 
@@ -505,7 +530,7 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   const crypto = bucketStanding(b)?.find(x => x.key === 'crypto')
   if (!crypto || crypto.full || crypto.target >= 0.5) fail(`small plan: Crypto 0 of a target under 0.5 USDC must not be full (got ${JSON.stringify(crypto)})`)
   if (!/prepare a cirBTC buy of \*\*0\.\d+ USDC\*\*/.test(buildPartAnswer({ b, vi: false, part: 'crypto', walletUsd: 5 }) ?? '')) fail('small plan: the cirBTC offer is in cents, not "the wallet has no USDC"')
-  if (/All three parts are at their targets/.test(pickQuestion(bucketStanding(b) ?? [], false))) fail('small plan: Crypto with room is not "all full"')
+  if (/No part needs new money/.test(pickQuestion(bucketStanding(b) ?? [], false))) fail('small plan: Crypto with room is not "all full"')
 }
 
 console.log(fails ? `\n${fails} problem(s).` : `\nKB OK: ${KB.patterns.length} patterns, ${personas.length} personas + ${reals.length} real profiles, formula matches the spec table.`)

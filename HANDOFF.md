@@ -1,3 +1,12 @@
+# Balance Sheet theo chuẩn quốc tế — 2026-10-30 (Claude, nhánh `claude/ecstatic-gates-b2r8x4`, CHƯA merge/deploy)
+
+Hiếu chốt "theo thế giới" (spec `docs/SPEC-BALANCE-SHEET-2026-10-30.md`, mục Trạng thái):
+- `src/lib/allocation.ts`: `holdingUsd` = số lượng × giá thị trường khi biết số lượng, kể cả khi đã khai vốn mua; `holdingCostUsd` + `Balance.putIn` giữ tiền bỏ vào. cirBTC = giá trị onchain, vốn = số USDC đã trả (chưa có số onchain thì dùng vốn). `bucketStanding` thêm `putIn`, `low/high` (ngưỡng 5/25, `bandPoints`), `status` under/on_track/over, `priceDrop`; `left` = chỉ khi dưới vùng và tính theo max(giá trị, tiền bỏ vào). Gợi ý chia tiền nhàn rỗi cũng không bù phần giảm giá. `standingLabel` cho màn hình.
+- `functions/_lib/plan.ts`: `verdict()` thay mọi "full / to go" ("on track", "above target…", "below target because prices fell…"); câu "All three parts are at their targets" → "No part needs new money right now…". Ngữ cảnh agent (`chat.ts`) ghi trạng thái + "put in" và cấm giục mua bù/bán.
+- Màn Balance (thanh từng phần) và Invest: chữ trạng thái mới, "put in $X" khi khác; ẩn nút Buy cirBTC khi Crypto trên vùng hoặc thấp vì giá giảm.
+- Kiểm: tsc, kb-check (thêm ca giá thị trường/ngưỡng/giá giảm, sửa ca cirBTC), intake-assets, offline-flow, household, response-quality, claude-adapter, check-lang đều qua. Ảnh 393×852 vừa khung; 1440×900 màn Balance thừa 27px nhưng bản trước cũng vậy (do dòng "This wallet holds $X").
+- **Chờ Hiếu:** duyệt ảnh → merge vào main → deploy.
+
 # Balance, Invest, step toast — 2026-10-30 (Claude, after Hiếu approved demos: 1b, 2a, roadmap C)
 
 - **Balance (1b):** donuts kept; under them one row per part "have of target" + "X to go"/"Full" (bucketStanding, same totals as the agent), plus "Not placed yet" and "Outside the split" rows when non-zero. Stats: "Can use now" (was Liquid), fund "Full" in green. Toggle Split / Cash flow / Debts; sentence-case headings (no Caps), commas instead of middle dots.

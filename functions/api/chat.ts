@@ -33,7 +33,7 @@ import { POWER_PER_PURCHASE } from '../../src/lib/power'
 import { recordStats } from '../_lib/stats'
 import { BATCH_MARK, INTAKE_MIN_UNKNOWN, buildIntake, intakeKeys, unknownBullets } from '../_lib/intake'
 import { getConfig, isBlocked, effectiveEnv } from '../_lib/config'
-import { buildAfterSign, buildPartAnswer, buildPlan, buildStanding, detectPartChoice, openVaultOffer } from '../_lib/plan'
+import { buildAfterSign, buildPartAnswer, buildPlan, buildStanding, detectPartChoice, openVaultOffer, verdict } from '../_lib/plan'
 import { KB, matchPatterns, patternBrief, param } from '../../src/kb/kb'
 import { computeFacts, displayFacts, amountsUsd } from '../../src/kb/facts'
 import { bucketStanding, computeBalance, holdingUsd, priceKey, symbolOf, toUsd, GOLD_UNITS_TO_OZ, GROUP_LABEL, type Balance, type Prices } from '../../src/lib/allocation'
@@ -683,7 +683,7 @@ function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: nu
     lines.push(`- Target by the MoonSafe framework at age ${b.age}${b.ageIsDefault ? ' (DEFAULT age 30: the user declined; say the split is an estimate)' : ''}: Safety ${ts}%, Traditional ${ttr}%, Crypto ${tcr}% (mostly BTC; no target for other coins)`)
     // Totals, not only what is missing (Hieu, 2026-10-28): "X of Y, Z to go" for each part; Safety carries a near-term goal first.
     const st = bucketStanding(b)
-    if (st) lines.push(`- Where they stand in the three parts of the money to divide (${show(Math.max(0, b.liquid - b.goalUsd))}${b.goalUsd > 0 ? `, not counting the near-term goal ${show(b.goalUsd)}` : ''}). Copy "X of Y, Z to go" exactly. Safety = bank savings outside the app, it is NOT the emergency fund: ${st.map(x => `${x.name} ${show(x.have)} of ${show(x.target)}${x.goal ? ` (= goal ${show(x.goal)} + ${x.share}% of the rest ${show(x.rest ?? 0)})` : ''}, ${!x.full ? `${show(x.left)} to go` : 'full'}`).join('; ')}`)
+    if (st) lines.push(`- Where they stand in the three parts of the money to divide (${show(Math.max(0, b.liquid - b.goalUsd))}${b.goalUsd > 0 ? `, not counting the near-term goal ${show(b.goalUsd)}` : ''}). Values are at today's prices. A part inside its band (5/25 rule) is on track: no "to go". Copy each status exactly. Never suggest buying to make up a price drop or selling an overshoot; new money goes to a part with money to go. Safety = bank savings outside the app, it is NOT the emergency fund: ${st.map(x => `${x.name} ${show(x.have)} of ${show(x.target)}${x.goal ? ` (= goal ${show(x.goal)} + ${x.share}% of the rest ${show(x.rest ?? 0)})` : ''}${x.putIn !== x.have ? ` (put in ${show(x.putIn)})` : ''}, ${verdict(x, false)}`).join('; ')}`)
   } else lines.push('- Target: AGE UNKNOWN. Ask the age before talking about any share.')
   if (!b.declared) lines.push('- Nothing is declared yet: the user has not said what they hold (the wallet balance seen onchain does not count until they declare it). If they ask how to split or invest: suggest NO split and NO purchase, turn NO percentage into an amount; ask about the next item of the collection flow instead.')
   else if (b.suggest && fundTargetKnown) {

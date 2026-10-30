@@ -9,7 +9,7 @@
 
 import { useApp } from '@/state/AppState'
 import type { ReactNode } from 'react'
-import { GROUP_LABEL, bucketStanding, shareOfLiquid } from '@/lib/allocation'
+import { GROUP_LABEL, bucketStanding, shareOfLiquid, standingLabel, type Standing } from '@/lib/allocation'
 
 type Segment = 'safe' | 'traditional' | 'crypto' | 'idle' | 'grey'
 
@@ -113,8 +113,10 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
   const color: Record<string, string> = { safe: SEG_COLOR.safe, traditional: SEG_COLOR.traditional, crypto: SEG_COLOR.crypto }
   // The track runs to 150%, so the 100% line sits at two thirds and an overshoot stays visible.
   const MAX = 1.5
-  const bar = (key: string, name: string, have: number, tgt: number, full: boolean, left: number) => {
+  const bar = (x: Standing) => {
+    const { key, name, have, target: tgt } = x
     const p = tgt > 0 ? have / tgt : 0
+    const good = x.status === 'on_track' || (x.status === 'under' && !x.priceDrop && x.full)
     return (
       <li key={key} className="py-3 flex flex-col gap-2 border-b border-[var(--line)]">
         <div className="flex items-baseline justify-between gap-4">
@@ -128,9 +130,10 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
         </div>
         <div className="flex justify-between gap-4 text-[14px] leading-5">
           <span style={{ color: 'var(--subtle)' }}>
-            {full ? <><strong style={{ color: 'var(--success)' }}>Full</strong>{have - tgt >= 0.5 ? `, ${moneyUsd(have - tgt)} above` : ''}</> : `${moneyUsd(left)} to go`}
+            <strong style={{ color: good ? 'var(--success)' : 'var(--ink)' }}>{standingLabel(x, moneyUsd)}</strong>
+            {Math.abs(x.putIn - have) >= 0.5 && `, put in ${moneyUsd(x.putIn)}`}
           </span>
-          <strong className="tabular-nums" style={{ color: full ? 'var(--success)' : 'var(--ink)' }}>{Math.round(p * 100)}%</strong>
+          <strong className="tabular-nums" style={{ color: good ? 'var(--success)' : 'var(--ink)' }}>{Math.round(p * 100)}%</strong>
         </div>
       </li>
     )
@@ -147,7 +150,7 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
       {walletOnly || (
         <ul className="flex flex-col [&>li:last-child]:border-b-0">
           {standing
-            ? standing.map(x => bar(x.key, x.name, x.have, x.target, x.full, x.left))
+            ? standing.map(bar)
             : (['safe', 'traditional', 'crypto'] as const).map(s => line(s, SEG_COLOR[s], SEG_NAME[s], <strong style={{ color: 'var(--ink)' }}>{moneyUsd(held[s])}</strong>))}
           {held.idle > 0.5 && line('idle', SEG_COLOR.idle, 'Not placed yet', <strong style={{ color: 'var(--ink)' }}>{moneyUsd(held.idle)}</strong>)}
           {grey > 0.5 && line('grey', SEG_COLOR.grey, 'Outside the split', <strong style={{ color: 'var(--ink)' }}>{moneyUsd(grey)}</strong>)}

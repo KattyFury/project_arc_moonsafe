@@ -238,7 +238,7 @@ export function walletMoveOps(p: FinancialProfile | null, deltaUsd: number, now 
   return [{ op: 'add_holding', holding: { id: newId('h'), type: 'stable_wallet', name: 'Stablecoins in this wallet', where: 'app wallet', value: cents(deltaUsd), currency: 'USDC', priceSource: 'self', rebalanceable: defaultRebalanceable('stable_wallet'), updatedAt: now } }]
 }
 
-/** Where the app records the cirBTC it bought: one holding, at the USDC paid (cost), never revalued at the market. */
+/** Where the app records the cirBTC it bought: one holding, at the USDC paid (its cost); the Balance values it at the market from the onchain balance. */
 export const CIRBTC_WHERE = 'MoonSafe'
 export const cirBtcHolding = (p: FinancialProfile | null): Holding | undefined =>
   p?.holdings.find(h => h.type === 'btc' && h.where === CIRBTC_WHERE)

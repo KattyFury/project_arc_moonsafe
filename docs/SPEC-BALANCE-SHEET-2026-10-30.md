@@ -1,6 +1,10 @@
 # Spec Balance Sheet: tính giá trị thế nào, lệch thì xử lý ra sao (bản bàn, 2026-10-30)
 
-> Trạng thái: **đang bàn, chưa code.** Hiếu chốt từng trục ở mục 5 rồi mới làm.
+> Trạng thái: **ĐÃ CHỐT + CODE (2026-10-30, chưa deploy).** Hiếu: "Theo thế giới đi". Đã làm:
+> - Định giá theo **giá thị trường** khi biết số lượng (BTC/vàng/cổ phiếu khai kèm số lượng; cirBTC theo số dư onchain). Tiền bỏ vào giữ riêng (`putIn`), hiện "put in $X" khi khác giá trị hiện tại. Khoản chỉ khai bằng tiền giữ số đã khai.
+> - **Ngưỡng 5/25**: trong vùng là "On track"; dưới vùng mới có "$X to go"; trên vùng là "Above target". Không ghép 2c.
+> - Sửa lệch **chỉ bằng tiền mới**. Phần thấp hơn mục tiêu vì giá giảm: "Below target, prices fell", không tính "to go", ẩn nút Buy cirBTC (giữ quyết định 10-29). Không bao giờ khuyên bán.
+> - Net worth giữ nguyên ô, giờ theo giá thị trường; chưa vẽ đường theo thời gian.
 
 ## 1. App đang làm gì (code hiện tại)
 

@@ -47,20 +47,39 @@ export function priceKey(h: Pick<Holding, 'type' | 'symbol'>): string | null {
 export const toUsd = (amount: number, currency: Currency | undefined, vndPerUsd: number | null): number | null =>
   currency === 'VND' ? (vndPerUsd ? amount / vndPerUsd : null) : amount
 
-/** Value in USD, null when its price (or the VND rate) is missing. */
+/**
+ * Value now in USD, null when it cannot be valued. Like statements and wealth apps everywhere (Hieu, 2026-10-30): a holding with a
+ * known quantity is worth quantity × the live price, even when what was paid is recorded too; that cost stays apart (holdingCostUsd)
+ * for gain or loss. Without a quantity or without a price, the declared amount is all there is.
+ */
 export function holdingUsd(h: Holding, prices: Prices | null, vndPerUsd: number | null): number | null {
   const kind = priceKindOf(h.type)
+  const declared = h.value === undefined ? null : toUsd(h.value, h.currency, vndPerUsd)
+  if (h.priceSource === 'self' && h.quantity !== undefined && kind !== 'self' && kind !== 'stable') return marketUsd(h, prices) ?? declared
   if (h.priceSource === 'self' || kind === 'self' || kind === 'stable' || h.quantity === undefined) {
     if (h.value === undefined) return null
     // Stablecoins are priced 1:1 whatever the symbol.
     return toUsd(h.value, kind === 'stable' && STABLECOINS.has((h.symbol ?? '').toUpperCase()) ? 'USDC' : h.currency, vndPerUsd)
   }
-  if (kind === 'gold') return prices?.goldUsdPerOz ? h.quantity * prices.goldUsdPerOz : null
+  return marketUsd(h, prices)
+}
+
+/** Quantity × live price; null without either. */
+function marketUsd(h: Holding, prices: Prices | null): number | null {
+  if (h.quantity === undefined) return null
+  if (priceKindOf(h.type) === 'gold') return prices?.goldUsdPerOz ? h.quantity * prices.goldUsdPerOz : null
   const s = symbolOf(h)
   if (s && STABLECOINS.has(s)) return h.quantity
   const key = priceKey(h)
   const p = key ? prices?.usd[key] : undefined
   return p ? h.quantity * p : null
+}
+
+/** What was paid, in USD: the declared amount of a holding that is also valued at the market by its quantity. Null otherwise. */
+export function holdingCostUsd(h: Holding, vndPerUsd: number | null): number | null {
+  const kind = priceKindOf(h.type)
+  if (h.priceSource !== 'self' || h.quantity === undefined || h.value === undefined || kind === 'self' || kind === 'stable') return null
+  return toUsd(h.value, h.currency, vndPerUsd)
 }
 
 /** Group of a holding on the chart; null = outside the % base (grey, lifestyle, fund). */
@@ -79,6 +98,8 @@ export interface Item {
   group: Group | null
   /** grey = counted in net worth but not rebalanceable; lifestyle = home, car; fund = the vault. */
   place: 'base' | 'grey' | 'lifestyle' | 'fund'
+  /** What was paid, when it is known apart from the value now (usd). */
+  cost?: number
   holding?: Holding
 }
 
@@ -95,7 +116,10 @@ export interface Balance {
   items: Item[]
   /** Holdings that could not be valued (no price yet): left out of every total. */
   unpriced: Holding[]
+  /** Value now per group. */
   byGroup: Record<Group, number>
+  /** Money put in per group: what was paid where it is known, else the value now. */
+  putIn: Record<Group, number>
   /** Base of every %: Safe + rebalanceable Invest + Idle. */
   liquid: number
   grey: number
@@ -174,18 +198,23 @@ export function computeBalance(input: BalanceInput): Balance {
   const unpriced: Holding[] = []
   // The balance SEEN in the connected wallet is not part of the total: people use several wallets, so only what the user
   // declares counts (Hieu, 2026-10-28). The agent reads it to know there is money, and to cap what a card can move.
-  // cirBTC bought in the app counts at what was paid (a profile holding, see cirBtcBuyOps). Only cirBTC from before that record
-  // existed is still valued onchain at the market price.
-  if (!cirBtcHolding(p) && input.cirBtcUsd !== null && input.cirBtcUsd > 0) items.push({ label: 'cirBTC', usd: input.cirBtcUsd, group: 'btc', place: 'base' })
+  // cirBTC is valued at the market from the balance read onchain; what was paid in the app (the profile holding, see cirBtcBuyOps)
+  // is its cost. Before the onchain read arrives, the cost stands in.
+  const cir = cirBtcHolding(p)
+  const cirOnchain = input.cirBtcUsd !== null && input.cirBtcUsd > 0 ? input.cirBtcUsd : null
+  if (!cir && cirOnchain !== null) items.push({ label: 'cirBTC', usd: cirOnchain, group: 'btc', place: 'base' })
   if (input.vaultUsd !== null && input.vaultUsd > 0) items.push({ label: 'Emergency fund', usd: input.vaultUsd, group: null, place: 'fund' })
   for (const h of p?.holdings ?? []) {
-    const usd = holdingUsd(h, input.prices, rate)
+    const isCir = h === cir && cirOnchain !== null
+    const usd = isCir ? cirOnchain : holdingUsd(h, input.prices, rate)
+    const cost = isCir ? (h.value === undefined ? null : toUsd(h.value, h.currency, rate)) : holdingCostUsd(h, rate)
     if (usd === null) { unpriced.push(h); continue }
     const group = groupOf(h)
     const cat = categoryOf(h)
-    items.push({ label: h.name, usd, group, place: group ? 'base' : cat === 'lifestyle' ? 'lifestyle' : cat === 'fund' ? 'fund' : 'grey', holding: h })
+    items.push({ label: h.name, usd, group, place: group ? 'base' : cat === 'lifestyle' ? 'lifestyle' : cat === 'fund' ? 'fund' : 'grey', ...(cost !== null ? { cost } : {}), holding: h })
   }
   const byGroup = Object.fromEntries(GROUPS.map(g => [g, sumBy(items.filter(i => i.group === g), i => i.usd)])) as Record<Group, number>
+  const putIn = Object.fromEntries(GROUPS.map(g => [g, sumBy(items.filter(i => i.group === g), i => i.cost ?? i.usd)])) as Record<Group, number>
   const liquid = sumBy(items.filter(i => i.place === 'base'), i => i.usd)
   const grey = sumBy(items.filter(i => i.place === 'grey'), i => i.usd)
   const lifestyle = sumBy(items.filter(i => i.place === 'lifestyle'), i => i.usd)
@@ -280,8 +309,10 @@ export function computeBalance(input: BalanceInput): Balance {
     const safeFree = Math.max(0, byGroup.safe + toGoal - goalUsd)
     const gap = Object.fromEntries(TARGET_GROUPS.map(g => [g, Math.max(0, base * target[g] / 100 - byGroup[g])])) as Record<MixKey, number>
     gap.safe = Math.max(0, base * target.safe / 100 - safeFree)
+    // A part below its target only because prices fell is not refilled (Hieu, 2026-10-29): the money put in counts when it is higher.
+    gap.traditional = Math.max(0, base * target.traditional / 100 - Math.max(byGroup.traditional, putIn.traditional))
     // Crypto is one bucket: coins already held (ETH, small coins) count toward it, new money goes to BTC.
-    gap.btc = Math.max(0, base * (target.btc + target.large_cap + target.altcoin) / 100 - (byGroup.btc + byGroup.large_cap + byGroup.altcoin))
+    gap.btc = Math.max(0, base * (target.btc + target.large_cap + target.altcoin) / 100 - Math.max(byGroup.btc + byGroup.large_cap + byGroup.altcoin, putIn.btc + putIn.large_cap + putIn.altcoin))
     gap.large_cap = 0
     gap.altcoin = 0
     const to = { safe: take(gap.safe), traditional: 0, btc: 0, large_cap: 0, altcoin: 0 }
@@ -294,7 +325,7 @@ export function computeBalance(input: BalanceInput): Balance {
   }
 
   return {
-    items, unpriced, byGroup, liquid, grey, lifestyle, fundUsd: vault, assets, debtTotal, netWorth: assets - debtTotal,
+    items, unpriced, byGroup, putIn, liquid, grey, lifestyle, fundUsd: vault, assets, debtTotal, netWorth: assets - debtTotal,
     age, ageIsDefault: p?.age === null && !!p?.ageDeclined, target, declared: (p?.holdings.length ?? 0) > 0, walletSeen: input.walletUsd,
     cashflow, fund, debts, lock, suggest, goalUsd,
   }
@@ -306,13 +337,22 @@ export interface Standing {
   name: 'Safety' | 'Traditional' | 'Crypto'
   /** Share of the money to divide, in %. */
   share: number
-  /** What they hold in this part now. */
+  /** What they hold in this part now, at today's prices. */
   have: number
+  /** Money put in: what was paid where it is known, else the value now. */
+  putIn: number
   /** The whole target: for Safety it includes a near-term goal (kept in savings first); otherwise the share of the money to divide. */
   target: number
-  /** target - have, never below 0. */
+  /** The band around the target where nothing needs doing (5/25 rule): low..high. */
+  low: number
+  high: number
+  /** under = below the band, on_track = inside it, over = above it. */
+  status: 'under' | 'on_track' | 'over'
+  /** Below the band only because prices fell: what was put in reaches the band. Never a reason to buy more. */
+  priceDrop: boolean
+  /** New money still to add: target - max(have, putIn) while under the band, else 0. */
   left: number
-  /** At its target: less than 1% of it left (at most 0.5 USDC of rounding). A part with a target and nothing in it is never full. */
+  /** Nothing to add (on track, over, or under only because prices fell). A part with a target and nothing in it is never full. */
   full: boolean
   /** Safety only: the near-term goal inside the target, and the share of the rest on top of it. */
   goal?: number
@@ -320,7 +360,13 @@ export interface Standing {
 }
 
 /**
- * Have / target / left for Safety, Traditional and Crypto. `leaving` = money about to move out of the liquid pool (the deposit that
+ * How far a part may drift before it counts as off target, in points of %: 5 points or a quarter of its target, whichever is smaller
+ * (Larry Swedroe's 5/25 rule; Vanguard finds threshold rebalancing keeps the mix close with few trades). 35% → 30-40%, 10% → 7.5-12.5%.
+ */
+export const bandPoints = (share: number) => Math.min(5, share * 0.25)
+
+/**
+ * Have / target / band / left for Safety, Traditional and Crypto. `leaving` = money about to move out of the liquid pool (the deposit that
  * will fill the emergency fund), so the numbers quoted before the deposit are the ones after it. Safety counts a near-term goal first:
  * target = goal + its share of what remains, so adding savings always lowers what is left (it used to vanish into the goal).
  */
@@ -330,17 +376,31 @@ export function bucketStanding(b: Balance, leaving = 0): Standing[] | null {
   const toDivide = Math.max(0, b.liquid - leaving - b.goalUsd)
   const g = b.byGroup
   const cryptoShare = t.btc + t.large_cap + t.altcoin
-  const part = (key: Standing['key'], name: Standing['name'], share: number, have: number, extra = 0): Standing => {
+  const part = (key: Standing['key'], name: Standing['name'], share: number, have: number, putIn: number, extra = 0): Standing => {
     const rest = toDivide * share / 100
     const target = rest + extra
-    const left = Math.max(0, target - have)
-    return { key, name, share, have, target, left, full: left <= Math.min(0.5, target * 0.01), ...(extra > 0 ? { goal: extra, rest } : {}) }
+    const tol = toDivide * bandPoints(share) / 100
+    // Rounding: within 0.5 USDC (or 1%) of the target is on it, so a tiny plan still gets a band.
+    const slack = Math.max(tol, Math.min(0.5, target * 0.01))
+    const low = target - slack, high = target + slack
+    const status = have < low ? 'under' : have > high ? 'over' : 'on_track'
+    const counted = Math.max(have, putIn)
+    const left = status === 'under' && counted < low ? Math.max(0, target - counted) : 0
+    const priceDrop = status === 'under' && left === 0
+    return { key, name, share, have, putIn, target, low, high, status, priceDrop, left, full: left === 0, ...(extra > 0 ? { goal: extra, rest } : {}) }
   }
+  const pi = b.putIn
   return [
-    part('safe', 'Safety', t.safe, g.safe, b.goalUsd),
-    part('traditional', 'Traditional', t.traditional, g.traditional),
-    part('crypto', 'Crypto', cryptoShare, g.btc + g.large_cap + g.altcoin),
+    part('safe', 'Safety', t.safe, g.safe, pi.safe, b.goalUsd),
+    part('traditional', 'Traditional', t.traditional, g.traditional, pi.traditional),
+    part('crypto', 'Crypto', cryptoShare, g.btc + g.large_cap + g.altcoin, pi.btc + pi.large_cap + pi.altcoin),
   ]
+}
+
+/** Status of a part on the screens: money to go, on track, above target, or below only because prices fell. */
+export function standingLabel(x: Standing, money: (n: number) => string): string {
+  if (!x.full) return `${money(x.left)} to go`
+  return x.priceDrop ? 'Below target, prices fell' : x.status === 'over' ? 'Above target' : 'On track'
 }
 
 /** Share of liquid assets in %, 0 without any. */
