@@ -5,16 +5,19 @@
 // Mobile fits 393×852 with a three-way toggle; desktop shows everything at once (1440×900). The Chat
 // tab is always in the nav, so there is no extra "talk to the agent" button here.
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useApp } from '@/state/AppState'
 import { KB } from '@/kb/kb'
 import { DASH, formatNumber } from '@/lib/format'
 import { appWalletHolding } from '@/lib/profile'
-import { Caps, GlassCard, Notice, Screen, Stats, Title, Toggle } from '@/components/ui/kit'
+import { GlassCard, Notice, Screen, Stats, Title, Toggle } from '@/components/ui/kit'
 import { AllocationPies } from '@/components/ui/AllocationPies'
 import { CashflowCard } from '@/components/ui/CashflowCard'
 
 type View = 'alloc' | 'flow' | 'debt'
+
+/** Section heading: body face, sentence case (no tracked capitals; Hieu, 2026-10-30). */
+const Heading = ({ children }: { children: ReactNode }) => <h3 className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--ink)' }}>{children}</h3>
 
 export function BalanceSheet(_: { onOpenChat: () => void }) {
   const { profile, fx, balance: b, moneyUsd } = useApp()
@@ -22,7 +25,8 @@ export function BalanceSheet(_: { onOpenChat: () => void }) {
   const known = profile.known
   const show = (v: View) => view === v ? 'flex' : 'hidden lg:flex'
   const others = b.items.filter(i => i.place === 'lifestyle' || i.place === 'grey')
-  const fundSub = b.fund.floorUsd !== null ? `${formatNumber(b.fund.months ?? 0)} / ${b.fund.floorMonths} months` : 'floor: needs spending'
+  const fundFull = b.fund.floorUsd !== null && b.fund.met
+  const fundSub = b.fund.floorUsd === null ? 'Needs your spending' : fundFull ? 'Full' : `${formatNumber(b.fund.months ?? 0)} of ${b.fund.floorMonths} months`
   // Long lists fold into "+N more" so the screen still fits one frame; the agent has every item.
   const MAX_ROWS = 4
   const more = (n: number) => n > MAX_ROWS && <li className="text-[14px] leading-5" style={{ color: 'var(--muted)' }}>+{n - MAX_ROWS} more</li>
@@ -42,8 +46,8 @@ export function BalanceSheet(_: { onOpenChat: () => void }) {
 
       <Stats items={[
         { label: 'Net worth', value: moneyUsd(b.netWorth) },
-        { label: 'Liquid', value: moneyUsd(b.liquid) },
-        { label: 'Emergency fund', value: b.fundUsd === null ? DASH : moneyUsd(b.fundUsd), sub: fundSub },
+        { label: 'Can use now', value: moneyUsd(b.liquid) },
+        { label: 'Emergency fund', value: b.fundUsd === null ? DASH : moneyUsd(b.fundUsd), sub: fundSub, good: fundFull },
       ]} />
 
       {b.walletSeen !== null && b.walletSeen >= 1 && (appWalletHolding(profile.profile)?.value ?? 0) < b.walletSeen - 1 && (
@@ -53,40 +57,40 @@ export function BalanceSheet(_: { onOpenChat: () => void }) {
       )}
 
       <div className="lg:hidden">
-        <Toggle value={view} onChange={setView} options={[{ value: 'alloc', label: 'Allocation' }, { value: 'flow', label: 'Cash flow' }, { value: 'debt', label: 'Debts & other' }]} />
+        <Toggle value={view} onChange={setView} options={[{ value: 'alloc', label: 'Split' }, { value: 'flow', label: 'Cash flow' }, { value: 'debt', label: 'Debts' }]} />
       </div>
 
       <div className="flex flex-col gap-4 lg:grid lg:grid-cols-12 lg:gap-6 lg:items-start">
         <GlassCard className={`${show('alloc')} flex-col gap-2 p-4 lg:p-8 lg:col-span-7`}>
-          <div className="hidden lg:block"><Caps>Allocation</Caps></div>
+          <div className="hidden lg:block"><Heading>Split</Heading></div>
           <AllocationPies compact={!known} />
         </GlassCard>
 
         {/* Desktop: one card for cash flow, debts and the rest, so both columns fit 1440×900. */}
         <GlassCard className={`${view === 'alloc' ? 'hidden' : 'flex'} lg:flex flex-col gap-4 p-4 lg:p-6 lg:col-span-5`}>
           <section className={`${show('flow')} flex-col gap-2`}>
-            <div className="hidden lg:block"><Caps>Cash flow</Caps></div>
+            <div className="hidden lg:block"><Heading>Cash flow</Heading></div>
             <CashflowCard />
           </section>
 
           <section className={`${show('debt')} flex-col gap-2`}>
-            <Caps>Debts</Caps>
+            <Heading>Debts</Heading>
             {b.debts.lines.length ? (
               <ul className="flex flex-col gap-1">
                 {b.debts.lines.slice(0, MAX_ROWS).map(l => row(l.debt.id,
-                  `${[l.debt.name, KB.debt_types.find(t => t.key === l.debt.type)?.label ?? 'type not told yet'].filter((x, k, a) => a.findIndex(y => y.toLowerCase() === x.toLowerCase()) === k).join(' · ')}${l.debt.ratePct !== null ? ` · ${l.debt.ratePct}%` : ''}${l.priority ? ' · priority' : ''}`,
-                  `${moneyUsd(l.usd)}${l.monthlyUsd !== null ? ` · ${moneyUsd(l.monthlyUsd)}/mo` : ''}`))}
+                  `${[l.debt.name, KB.debt_types.find(t => t.key === l.debt.type)?.label ?? 'type not told yet'].filter((x, k, a) => a.findIndex(y => y.toLowerCase() === x.toLowerCase()) === k).join(', ')}${l.debt.ratePct !== null ? `, ${l.debt.ratePct}%` : ''}${l.priority ? ', priority' : ''}`,
+                  `${moneyUsd(l.usd)}${l.monthlyUsd !== null ? `, ${moneyUsd(l.monthlyUsd)}/mo` : ''}`))}
                 {more(b.debts.lines.length)}
-                {row('total', 'Total', `${moneyUsd(b.debtTotal)} · ${moneyUsd(b.debts.monthly)}/mo`, true)}
+                {row('total', 'Total', `${moneyUsd(b.debtTotal)}, ${moneyUsd(b.debts.monthly)}/mo`, true)}
               </ul>
             ) : <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>{profile.profile?.debtsComplete ? 'No debt.' : 'No debt told to the agent yet.'}</p>}
           </section>
 
           <section className={`${show('debt')} flex-col gap-2`}>
-            <Caps>Lifestyle & not rebalanced</Caps>
+            <Heading>Home, car and other</Heading>
             {others.length ? (
               <ul className="flex flex-col gap-1">
-                {others.slice(0, MAX_ROWS).map(i => row(i.holding?.id ?? i.label, `${i.label} · ${i.place === 'lifestyle' ? 'lifestyle' : 'outside the split'}${i.holding?.loanStatus === 'overdue' ? ' · overdue' : ''}`, moneyUsd(i.usd)))}
+                {others.slice(0, MAX_ROWS).map(i => row(i.holding?.id ?? i.label, `${i.label}${i.place === 'lifestyle' ? '' : ', outside the split'}${i.holding?.loanStatus === 'overdue' ? ', overdue' : ''}`, moneyUsd(i.usd)))}
                 {more(others.length)}
               </ul>
             ) : <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>Home, car, rental, business stakes, money lent: none told yet.</p>}

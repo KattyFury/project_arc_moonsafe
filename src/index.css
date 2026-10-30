@@ -82,3 +82,7 @@ body {
 .sheet-in { animation: sheet-up 360ms cubic-bezier(.2,.8,.2,1) both; }
 @media (min-width: 1024px) { .sheet-in { animation-name: dialog-in; animation-duration: 240ms; } }
 @media (prefers-reduced-motion: reduce) { .sheet-in { animation: none; } }
+/* Step completed: a few confetti pieces drift down once. */
+@keyframes confetti-fall { from { opacity: 0; transform: translateY(-12px) rotate(0deg); } to { opacity: 1; } }
+.confetti { animation: confetti-fall 600ms cubic-bezier(.2,.8,.2,1) both; }
+@media (prefers-reduced-motion: reduce) { .confetti { animation: none; } }

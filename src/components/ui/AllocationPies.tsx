@@ -8,7 +8,8 @@
 // has a text label + share, so colour is never alone.
 
 import { useApp } from '@/state/AppState'
-import { GROUP_LABEL, bucketStanding, shareOfLiquid, shareOfNetWorth } from '@/lib/allocation'
+import type { ReactNode } from 'react'
+import { GROUP_LABEL, bucketStanding, shareOfLiquid } from '@/lib/allocation'
 
 type Segment = 'safe' | 'traditional' | 'crypto' | 'idle' | 'grey'
 
@@ -60,7 +61,7 @@ function Donut({ slices, size, center, sub, label }: { slices: { seg: Segment; s
 
 /**
  * compact = one row of two small donuts + a share legend (Invest and the chat). The full version
- * (Balance) adds amounts, the share of net worth and what is left to reach the plan.
+ * (Balance) lists each part as "have of target" with what is left.
  */
 export function AllocationPies({ compact = false }: { compact?: boolean }) {
   const { balance: b, moneyUsd, prices } = useApp()
@@ -79,12 +80,9 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
     if (s === 'grey') return '–'
     const n = liquid > 0 ? r(shareOfLiquid(b, held[s])) : null
     const t = goalPct[s]
-    if (compact) return t !== undefined ? `${n ?? '–'}/${r(t)}%` : `${n ?? '–'}%`
-    return `${n !== null ? `${n}%` : '–'}${t !== undefined ? ` / ${r(t)}%` : ''}`
+    return t !== undefined ? `${n ?? '–'}/${r(t)}%` : `${n ?? '–'}%`
   }
-  const ofNetWorth = (s: Segment) => { const v = shareOfNetWorth(b, held[s]); return v === null ? '–' : `${r(v)}%` }
   const rows = ORDER.filter(s => s !== 'grey' || grey > 0)
-  const targetLabel = target ? `Target, age ${b.age}${b.ageIsDefault ? ' (default)' : ''}` : 'Target (needs your age)'
   const walletOnly = !declared && <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>Nothing is counted yet. Tell the agent what you hold, wallets included.</p>
 
   if (compact) return (
@@ -108,46 +106,37 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
     </div>
   )
 
-  // What is still missing to match the plan, per part: the same totals as the agent's (bucketStanding).
+  // Each part as "have of target" with what is left (Hieu, 2026-10-30: one row per part instead of the % table): the same totals as the
+  // agent's (bucketStanding). Money not placed yet and items outside the split follow as plain rows.
   const standing = bucketStanding(b)
-  const missing = (standing ?? []).filter(x => !x.full)
-  const toDivide = Math.max(0, liquid - b.goalUsd)
+  const color: Record<string, string> = { safe: SEG_COLOR.safe, traditional: SEG_COLOR.traditional, crypto: SEG_COLOR.crypto }
+  const line = (key: string, dot: string, name: string, right: ReactNode, note?: ReactNode) => (
+    <li key={key} className="flex items-center justify-between gap-4 py-2 border-b border-[var(--line)]">
+      <span className="flex items-center gap-2 text-[16px] leading-6" style={{ color: 'var(--ink)' }}><span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: dot }} />{name}</span>
+      <span className="text-right tabular-nums">
+        <span className="block text-[16px] leading-6">{right}</span>
+        {note && <span className="block text-[14px] leading-5">{note}</span>}
+      </span>
+    </li>
+  )
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-4">
-        <Donut slices={goal} size={size} label={targetLabel} center={target ? `${r(target.safe)}%` : '–'} sub="safety" />
+        <Donut slices={goal} size={size} label={target ? `Target at ${b.age}${b.ageIsDefault ? ' (default)' : ''}` : 'Target (needs your age)'} center={target ? `${r(target.safe)}%` : '–'} sub="safety" />
         <Donut slices={now} size={size} label="Now" center={liquid > 0 ? `${r(shareOfLiquid(b, byGroup.safe))}%` : '–'} sub="safety" />
       </div>
 
-      {/* Legend: colour + name + amount + % of liquid now / target + % of net worth, so no slice relies on colour alone. */}
-      <table className="w-full text-[14px] leading-5 tabular-nums" style={{ color: 'var(--subtle)' }}>
-        <thead>
-          <tr className="text-left" style={{ color: 'var(--muted)' }}>
-            <th className="font-normal pb-1">Group</th>
-            <th className="font-normal pb-1 text-right">Amount</th>
-            <th className="font-normal pb-1 text-right" title="Share of liquid assets now / MoonSafe target">Liquid / target</th>
-            <th className="font-normal pb-1 text-right" title="Share of net worth">Net worth</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map(s => (
-            <tr key={s}>
-              <td className="py-[2px]"><span className="inline-flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ background: SEG_COLOR[s] }} />{SEG_NAME[s]}</span></td>
-              <td className="text-right whitespace-nowrap">{moneyUsd(held[s])}</td>
-              <td className="text-right font-semibold whitespace-nowrap" style={{ color: 'var(--ink)' }}>{share(s)}</td>
-              <td className="text-right whitespace-nowrap">{ofNetWorth(s)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {walletOnly || (target && (toDivide > 0 || b.goalUsd > 0) && (
-        <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>
-          {missing.length
-            ? <>Left to reach your plan: {missing.map((x, i) => <span key={x.key}>{i > 0 && ' · '}{x.name} <strong style={{ color: 'var(--ink)' }}>{moneyUsd(x.left)}</strong> <span style={{ color: 'var(--muted)' }}>({moneyUsd(x.have)} of {moneyUsd(x.target)})</span></span>)}.</>
-            : 'You match your plan. New money can follow the same split.'}
-        </p>
-      ))}
+      {walletOnly || (
+        <ul className="flex flex-col [&>li:last-child]:border-b-0">
+          {standing
+            ? standing.map(x => line(x.key, color[x.key], x.name,
+              <><strong style={{ color: 'var(--ink)' }}>{moneyUsd(x.have)}</strong> <span style={{ color: 'var(--subtle)' }}>of {moneyUsd(x.target)}</span></>,
+              x.full ? <strong style={{ color: 'var(--success)' }}>Full</strong> : <span style={{ color: 'var(--subtle)' }}>{moneyUsd(x.left)} to go</span>))
+            : (['safe', 'traditional', 'crypto'] as const).map(s => line(s, SEG_COLOR[s], SEG_NAME[s], <strong style={{ color: 'var(--ink)' }}>{moneyUsd(held[s])}</strong>))}
+          {held.idle > 0.5 && line('idle', SEG_COLOR.idle, 'Not placed yet', <strong style={{ color: 'var(--ink)' }}>{moneyUsd(held.idle)}</strong>)}
+          {grey > 0.5 && line('grey', SEG_COLOR.grey, 'Outside the split', <strong style={{ color: 'var(--ink)' }}>{moneyUsd(grey)}</strong>, <span style={{ color: 'var(--subtle)' }}>rental, business, loans given</span>)}
+        </ul>
+      )}
       {unpriced.length > 0 && (
         <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>
           No price yet{prices.error ? ' (price source failing)' : ''}, left out for now: {unpriced.map(h => h.name).join(', ')}.

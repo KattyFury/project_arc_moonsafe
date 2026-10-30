@@ -1,9 +1,10 @@
-// Screens 9 / 9b — Đầu tư (Figma: locked = conditions 6 col + actions 6 col). The allocation
-// chart (target by age vs now) shows in both states; buying cirBTC has no cap, the app only
-// warns when a buy goes above the BTC target (docs/SPEC-FRAMEWORK-2026-10-25.md 5.3, 7).
+// Screens 9 / 9b — Invest. Locked: what is missing (conditions 6 col + actions 6 col). Open (Hieu, 2026-10-30, option 2a): the next
+// step for each part of the split, Crypto (buy cirBTC here), Traditional (with a broker; "How" asks the agent), Safety (savings).
+// Buying cirBTC has no cap; the app only warns when a buy goes above the BTC target (docs/SPEC-FRAMEWORK-2026-10-25.md 5.3, 7).
 
-import { useState } from 'react'
-import { ArrowRight, ExternalLink, Lock } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
+import { ArrowRight, Bitcoin, ExternalLink, Landmark, Lock, ShieldCheck, X, type LucideIcon } from 'lucide-react'
+import { bucketStanding } from '@/lib/allocation'
 import { useApp } from '@/state/AppState'
 import { explorerTx } from '@/lib/network'
 import { overTargetWarning, spendable } from '@/lib/invest'
@@ -11,14 +12,14 @@ import { dcaNextRun, formatCirBtc } from '@/hooks/useCirBtc'
 import { DCA_AVAILABLE } from '@/lib/features'
 import { useNow } from '@/hooks/useNow'
 import { DASH, formatUsdc, parseUsdcInput, usdcToInput } from '@/lib/format'
-import { AmountField, Btn, Chips, Col, GlassCard, Grid, IconBox, Notice, Screen, Sheet, Toggle } from '@/components/ui/kit'
+import { AmountField, Btn, Chips, Col, GlassCard, Grid, IconBox, Notice, Screen, Sheet, Title, Toggle } from '@/components/ui/kit'
 import { AllocationPies } from '@/components/ui/AllocationPies'
 
 const DCA_WEEKS = 12
 const DCA_INTERVAL_DAYS = 7
 const MIN_DCA = 1_000_000n
 
-export function InvestScreen({ onOpenFund, onOpenChat }: { onOpenFund: () => void; onOpenChat: () => void }) {
+export function InvestScreen({ onOpenFund, onOpenChat, onAsk }: { onOpenFund: () => void; onOpenChat: () => void; onAsk: (question: string) => void }) {
   const { math, balance: b, profile } = useApp()
 
   if (!math.investUnlocked) {
@@ -56,14 +57,40 @@ export function InvestScreen({ onOpenFund, onOpenChat }: { onOpenFund: () => voi
       </Screen>
     )
   }
-  return <InvestOpen />
+  return <InvestOpen onAsk={onAsk} />
 }
 
-function InvestOpen() {
-  const { vault, cirBtc, balance, money } = useApp()
+/** One part of the split: what is held of its target, a bar, what is left and the next step (Hieu, 2026-10-30, option 2a). */
+function PartRow({ icon: Icon, color, name, have, target, left, full, note, action }: {
+  icon: LucideIcon; color: string; name: string; have: string; target: string; left: string; full: boolean; note: string; action?: ReactNode
+  }) {
+  const pct = (() => { const h = Number(have.replace(/[^0-9.]/g, '')), t = Number(target.replace(/[^0-9.]/g, '')); return t > 0 ? Math.min(100, h / t * 100) : 0 })()
+  return (
+    <div className="py-4 flex flex-col gap-2 border-b border-[var(--line)]">
+      <div className="flex items-center gap-2">
+        <span className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ border: '1px solid var(--line)', color }}><Icon size={16} /></span>
+        <span className="flex-1 text-[18px] leading-6 font-semibold" style={{ color: 'var(--ink)' }}>{name}</span>
+        <span className="text-[16px] leading-6 tabular-nums"><strong style={{ color: 'var(--ink)' }}>{have}</strong> <span style={{ color: 'var(--subtle)' }}>of {target}</span></span>
+      </div>
+      <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--surface-muted)' }}>
+        <div className="fill-in h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
+      </div>
+      <div className="flex items-center justify-between gap-4">
+        <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>
+          {full ? <strong style={{ color: 'var(--success)' }}>Full. </strong> : <strong style={{ color: 'var(--ink)' }}>{left} to go. </strong>}{note}
+        </p>
+        {action}
+      </div>
+    </div>
+  )
+}
+
+function InvestOpen({ onAsk }: { onAsk: (question: string) => void }) {
+  const { vault, cirBtc, balance, money, moneyUsd } = useApp()
   const now = useNow()
   const [amount, setAmount] = useState('')
   const [mode, setMode] = useState<'once' | 'dca'>('once')
+  const [buying, setBuying] = useState(false)
 
   const room = spendable(vault.walletBalance)
   // What the split suggests putting into BTC (cirBTC is the BTC part buyable here), limited to the wallet.
@@ -88,74 +115,95 @@ function InvestOpen() {
     if (ok) {
       if (due && dcaAmount !== null && parsed === dcaAmount) cirBtc.markDcaRun()
       setAmount('')
+      setBuying(false)
     }
   }
+
+  const standing = bucketStanding(balance)
+  const part = (key: 'safe' | 'traditional' | 'crypto') => standing?.find(x => x.key === key)
+  const crypto = part('crypto'), traditional = part('traditional'), safety = part('safe')
+  const money0 = (n: number | undefined) => moneyUsd(n ?? 0)
 
   return (
     <Screen>
       <Grid>
-        <Col span={5}>
-          <GlassCard className="p-4 lg:p-8"><AllocationPies compact /></GlassCard>
-        </Col>
-
         <Col span={7}>
+          <div className="flex flex-col gap-2">
+            <Title>Invest</Title>
+            <p className="text-[16px] leading-6" style={{ color: 'var(--subtle)' }}>Your emergency fund is full. Fill each part at your own pace; the split follows your age, {balance.age}.</p>
+          </div>
           {cirBtc.valueUsdc6 === null && (cirBtc.balance ?? 0n) > 0n && (
-            <Notice tone="warning">No BTC price yet, so cirBTC is left out of the chart for now. Try again in a few minutes.</Notice>
+            <Notice tone="warning">No BTC price yet, so cirBTC is left out of the totals for now. Try again in a few minutes.</Notice>
           )}
-
-          {/* One card: buy once or set a weekly DCA */}
-          <GlassCard className="p-4 lg:p-8 flex flex-col gap-4">
-            <Toggle value={mode} onChange={setMode}
-              options={[{ value: 'once', label: 'Buy once' }, { value: 'dca', label: !DCA_AVAILABLE ? 'DCA · not available' : due ? 'DCA · due' : 'Recurring (DCA)' }]} />
-
-            {mode === 'once' ? (
-              <>
-                <Chips items={[
-                  { label: 'To target', onClick: () => toTarget && setAmount(usdcToInput(toTarget)), disabled: !toTarget },
-                  { label: '50% wallet', onClick: () => room && setAmount(usdcToInput((room * 50n) / 100n)), disabled: !room },
-                  { label: 'All wallet', onClick: () => room && setAmount(usdcToInput(room)), disabled: !room },
-                ]} />
-                <AmountField value={amount} onChange={v => { setAmount(v); cirBtc.clearQuote() }} disabled={cirBtc.busy} />
-                <p className="text-[14px] leading-5 -mt-2" style={{ color: 'var(--subtle)' }}>Wallet {money(vault.walletBalance)} · holding {formatCirBtc(cirBtc.balance)}</p>
-                <Notice tone="warning">cirBTC can fall sharply. Only invest money you can afford to lose. For information only, not investment advice.</Notice>
-                {overWallet && <Notice tone="danger">More than the USDC in your wallet. Max {money(room)}.</Notice>}
-                {overTarget && <Notice tone="warning">{overTarget}</Notice>}
-                {cirBtc.error && !q && <Notice tone="danger">{cirBtc.error}</Notice>}
-                {cirBtc.lastTxHash && (
-                  <Notice tone="success" title="cirBTC bought">
-                    <a className="inline-flex items-center gap-2 underline" target="_blank" rel="noopener noreferrer"
-                      href={explorerTx(cirBtc.lastTxHash)}>View transaction <ExternalLink size={16} /></a>
-                  </Notice>
-                )}
-                <Btn loading={cirBtc.busy && !q} disabled={parsed <= 0n || overWallet || room === null}
-                  onClick={() => { void cirBtc.estimate(parsed) }}>
-                  {cirBtc.busy && !q ? 'Getting a quote…' : 'Get a quote · Buy cirBTC'}
-                </Btn>
-              </>
-            ) : !DCA_AVAILABLE ? (
-              <Notice tone="info" title="DCA is not available yet">Recurring buys are coming on mainnet. For now you can buy cirBTC once.</Notice>
-            ) : dca && dcaAmount !== null ? (
-              <>
-                <p className="text-[16px] leading-6" style={{ color: 'var(--ink)' }}>
-                  {formatUsdc(dcaAmount)} every {dca.intervalDays} days. {due ? 'A buy is due.' : `Next: ${next ? new Date(next).toLocaleDateString('en-US') : DASH}.`}
-                </p>
-                <div className="flex gap-4">
-                  <Btn variant="outline" onClick={cirBtc.stopDca}>Stop DCA</Btn>
-                  <Btn disabled={!due} onClick={() => { setAmount(usdcToInput(dcaAmount)); setMode('once') }}>Buy this round</Btn>
-                </div>
-                <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>Each round you review the quote and sign. You can say “stop DCA” in the chat.</p>
-              </>
-            ) : suggest !== null && suggest >= MIN_DCA ? (
-              <>
-                <p className="text-[16px] leading-6" style={{ color: 'var(--ink)' }}>Suggestion: buy {formatUsdc(suggest)} of cirBTC every week for {DCA_WEEKS} weeks instead of all at once.</p>
-                <Btn onClick={() => cirBtc.startDca(suggest, DCA_INTERVAL_DAYS)}>Approve DCA</Btn>
-              </>
-            ) : (
-              <p className="text-[16px] leading-6" style={{ color: 'var(--subtle)' }}>No idle money to move into investments for a DCA plan (minimum {formatUsdc(MIN_DCA)} per round). For a different recurring amount, ask the agent.</p>
-            )}
-          </GlassCard>
+          {cirBtc.lastTxHash && (
+            <Notice tone="success" title="cirBTC bought">
+              <a className="inline-flex items-center gap-2 underline" target="_blank" rel="noopener noreferrer"
+                href={explorerTx(cirBtc.lastTxHash)}>View transaction <ExternalLink size={16} /></a>
+            </Notice>
+          )}
+          <div className="flex flex-col [&>*:last-child]:border-b-0">
+            <PartRow icon={Bitcoin} color="#eb6834" name="Crypto" have={money0(crypto?.have)} target={money0(crypto?.target)} left={money0(crypto?.left)} full={!!crypto?.full}
+              note="Buy cirBTC here, all at once or a bit each month."
+              action={<Btn size="sm" className="!w-auto" onClick={() => setBuying(true)}>Buy cirBTC</Btn>} />
+            <PartRow icon={Landmark} color="var(--accent)" name="Traditional" have={money0(traditional?.have)} target={money0(traditional?.target)} left={money0(traditional?.left)} full={!!traditional?.full}
+              note="An index fund such as VOO, or gold, with your own broker."
+              action={<Btn size="sm" variant="outline" className="!w-auto" onClick={() => onAsk('How do I buy an index fund such as VOO, or gold, for the Traditional part of my plan?')}>How <ExternalLink size={14} /></Btn>} />
+            <PartRow icon={ShieldCheck} color="#1baf7a" name="Safety" have={money0(safety?.have)} target={money0(safety?.target)} left={money0(safety?.left)} full={!!safety?.full}
+              note="Savings you can reach any time, outside the app." />
+          </div>
+          <p className="text-[14px] leading-5" style={{ color: 'var(--muted)' }}>A suggestion, not investment advice. Prices can fall; only invest what you will not need soon.</p>
+        </Col>
+        <Col span={5} className="hidden lg:flex">
+          <GlassCard className="p-8"><AllocationPies compact /></GlassCard>
         </Col>
       </Grid>
+
+      {/* The cirBTC buy: opened from the Crypto row. */}
+      {buying && !q && (
+        <Sheet>
+          <div className="flex items-center justify-between">
+            <p className="font-semibold text-[20px] leading-7" style={{ color: 'var(--ink)' }}>Buy cirBTC</p>
+            <button onClick={() => setBuying(false)} aria-label="Close" className="w-8 h-8 flex items-center justify-center rounded-full" style={{ color: 'var(--subtle)' }}><X size={20} /></button>
+          </div>
+          {DCA_AVAILABLE && <Toggle value={mode} onChange={setMode}
+            options={[{ value: 'once', label: 'Buy once' }, { value: 'dca', label: due ? 'DCA · due' : 'Recurring (DCA)' }]} />}
+          {mode === 'once' || !DCA_AVAILABLE ? (
+            <>
+              <Chips items={[
+                { label: 'To target', onClick: () => toTarget && setAmount(usdcToInput(toTarget)), disabled: !toTarget },
+                { label: '50% wallet', onClick: () => room && setAmount(usdcToInput((room * 50n) / 100n)), disabled: !room },
+                { label: 'All wallet', onClick: () => room && setAmount(usdcToInput(room)), disabled: !room },
+              ]} />
+              <AmountField value={amount} onChange={v => { setAmount(v); cirBtc.clearQuote() }} disabled={cirBtc.busy} />
+              <p className="text-[14px] leading-5 -mt-2" style={{ color: 'var(--subtle)' }}>Wallet {money(vault.walletBalance)}, holding {formatCirBtc(cirBtc.balance)}</p>
+              {overWallet && <Notice tone="danger">More than the USDC in your wallet. Max {money(room)}.</Notice>}
+              {overTarget && <Notice tone="warning">{overTarget}</Notice>}
+              {cirBtc.error && <Notice tone="danger">{cirBtc.error}</Notice>}
+              <Btn loading={cirBtc.busy} disabled={parsed <= 0n || overWallet || room === null}
+                onClick={() => { void cirBtc.estimate(parsed) }}>
+                {cirBtc.busy ? 'Getting a quote…' : 'Get a quote'}
+              </Btn>
+            </>
+          ) : dca && dcaAmount !== null ? (
+            <>
+              <p className="text-[16px] leading-6" style={{ color: 'var(--ink)' }}>
+                {formatUsdc(dcaAmount)} every {dca.intervalDays} days. {due ? 'A buy is due.' : `Next: ${next ? new Date(next).toLocaleDateString('en-US') : DASH}.`}
+              </p>
+              <div className="flex gap-4">
+                <Btn variant="outline" onClick={cirBtc.stopDca}>Stop DCA</Btn>
+                <Btn disabled={!due} onClick={() => { setAmount(usdcToInput(dcaAmount)); setMode('once') }}>Buy this round</Btn>
+              </div>
+            </>
+          ) : suggest !== null && suggest >= MIN_DCA ? (
+            <>
+              <p className="text-[16px] leading-6" style={{ color: 'var(--ink)' }}>Suggestion: buy {formatUsdc(suggest)} of cirBTC every week for {DCA_WEEKS} weeks instead of all at once.</p>
+              <Btn onClick={() => cirBtc.startDca(suggest, DCA_INTERVAL_DAYS)}>Approve DCA</Btn>
+            </>
+          ) : (
+            <p className="text-[16px] leading-6" style={{ color: 'var(--subtle)' }}>No idle money for a DCA plan (minimum {formatUsdc(MIN_DCA)} per round).</p>
+          )}
+        </Sheet>
+      )}
 
       {q && (
         <Sheet>

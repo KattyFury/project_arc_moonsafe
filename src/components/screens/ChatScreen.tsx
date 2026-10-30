@@ -11,6 +11,7 @@ import { dcaNextRun } from '@/hooks/useCirBtc'
 import { useNow } from '@/hooks/useNow'
 import { isOutOfPower, useAiPower } from '@/hooks/useAiPower'
 import { PowerMeter, PowerSheet } from '@/components/chat/AiPower'
+import { StepToast } from '@/components/chat/StepToast'
 import { DCA_AVAILABLE } from '@/lib/features'
 import { formatUsdc } from '@/lib/format'
 import { GlassCard } from '@/components/ui/kit'
@@ -47,7 +48,7 @@ const STARTS: Array<{ label: string; icon: LucideIcon }> = [
   { label: 'Investing', icon: TrendingUp },
 ]
 
-export function ChatScreen({ onError, onActions }: { onError: (m: string | null) => void; onActions: (a: AgentAction[]) => void }) {
+export function ChatScreen({ onError, onActions, ask = null, onAsked }: { onError: (m: string | null) => void; onActions: (a: AgentAction[]) => void; ask?: string | null; onAsked?: () => void }) {
   const { profile, vault, math, cirBtc, vndToUsdc, prices } = useApp()
   // Deposit / withdraw / buy / DCA cards and charts under the agent's replies, by reply timestamp.
   // Stored, so a chat remounted mid-signature (wallet switching network) keeps them (real chat 2026-10-27).
@@ -158,6 +159,12 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
     else bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [count, loading]) // eslint-disable-line react-hooks/exhaustive-deps
+  // A question handed over by another screen is sent as the user's message, once.
+  useEffect(() => {
+    if (!ask || loading || outOfPower) return
+    onAsked?.()
+    void sendMessage(ask)
+  }, [ask, loading, outOfPower]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!signed || loading) return
     setSigned(null)
@@ -181,7 +188,8 @@ export function ChatScreen({ onError, onActions }: { onError: (m: string | null)
 
   return (
     <div className="flex flex-col flex-1 min-h-0 w-full lg:max-w-[960px] lg:mx-auto lg:px-6 lg:py-4">
-      <div className="flex flex-col flex-1 min-h-0 lg:rounded-[20px] lg:border lg:border-[var(--line)] lg:overflow-hidden" style={{ background: 'var(--chat-bg)' }}>
+      <div className="relative flex flex-col flex-1 min-h-0 lg:rounded-[20px] lg:border lg:border-[var(--line)] lg:overflow-hidden" style={{ background: 'var(--chat-bg)' }}>
+        <StepToast />
         {/* Messages above the fold fade out under the nav bar, so it reads as "there is more". */}
         <div ref={listRef} className="flex-1 overflow-y-auto no-scrollbar px-4 py-4 lg:p-6 flex flex-col gap-4 [&>*]:flex-shrink-0"
           onScroll={e => setScrolled(e.currentTarget.scrollTop > 0)} style={scrolled ? FADE_TOP : undefined}>

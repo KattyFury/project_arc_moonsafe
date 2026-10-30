@@ -77,7 +77,7 @@ export function Col({ span, className, children }: { span: keyof typeof SPAN; cl
 }
 
 /** Row of small figures on white tiles (keeps a screen short instead of one list row each). */
-export function Stats({ items }: { items: { label: string; value: ReactNode; sub?: string }[] }) {
+export function Stats({ items }: { items: { label: string; value: ReactNode; sub?: string; good?: boolean }[] }) {
   return (
     <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}>
       {items.map(i => (
@@ -85,7 +85,7 @@ export function Stats({ items }: { items: { label: string; value: ReactNode; sub
           <span className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>{i.label}</span>
           <span className="text-[14px] leading-5 lg:text-[16px] lg:leading-6 font-semibold tabular-nums break-words" style={{ color: 'var(--ink)' }}>{i.value}</span>
           {/* A note on the figure (e.g. "0.2 / 3 months") is its own line, so it wraps inside the tile instead of spilling out of it. */}
-          {i.sub && <span className="text-[14px] leading-5 break-words" style={{ color: 'var(--subtle)' }}>{i.sub}</span>}
+          {i.sub && <span className={`text-[14px] leading-5 break-words ${i.good ? 'font-semibold' : ''}`} style={{ color: i.good ? 'var(--success)' : 'var(--subtle)' }}>{i.sub}</span>}
         </div>
       ))}
     </div>

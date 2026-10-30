@@ -1,3 +1,9 @@
+# Balance, Invest, step toast — 2026-10-30 (Claude, after Hiếu approved demos: 1b, 2a, roadmap C)
+
+- **Balance (1b):** donuts kept; under them one row per part "have of target" + "X to go"/"Full" (bucketStanding, same totals as the agent), plus "Not placed yet" and "Outside the split" rows when non-zero. Stats: "Can use now" (was Liquid), fund "Full" in green. Toggle Split / Cash flow / Debts; sentence-case headings (no Caps), commas instead of middle dots.
+- **Invest open (2a):** one row per part with bar and next step: Crypto → "Buy cirBTC" opens the existing buy flow in a sheet (quote + confirm unchanged); Traditional → "How" switches to Chat and sends "How do I buy an index fund such as VOO, or gold, for the Traditional part of my plan?" as the user's message (AppShell `ask` → ChatScreen); Safety → savings outside the app. DCA controls only when DCA_AVAILABLE. Locked view unchanged.
+- **Step toast (C):** `src/components/chat/StepToast.tsx` at the top of the chat when a step completes (1 income+spending known, 2 fund full, 3 Invest unlocked), confetti, auto-hide 8 s; progress per Privy user in localStorage `moonsafe_steps_seen_v1`, first visit not celebrated.
+
 # ▶ Handoff — 2026-10-30 (máy Dell, phiên deploy + D1)
 
 **Live = main `078c49f`** (+ commit handoff này), deploy mainnet lúc chiều 10-30 (Cloudflare `aa6d0b8c`). Gồm: giao diện hướng 1 + landing dạng chat (Example bar, nền xám, bong bóng trắng), popup Before you start mới, sửa Log out, bảng hỏi dạng bảng kê 3 bước, các sửa agent (từ chối dài, nạp chưa đủ quỹ "$5 of $3,600", kiểm từ chối ≤120 ký tự). Kiểm sau deploy: trang 200, `/api/chat` không token 401, bundle có `A9A5447a`. CHƯA thử bằng tài khoản thật.

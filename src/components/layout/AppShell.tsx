@@ -46,6 +46,8 @@ export function AppShell({ onLogout }: { onLogout: () => void }) {
   const { address } = useAccount()
   const [tab, setTab] = useState<NavTab>('chat')
   const [error, setError] = useState<string | null>(null)
+  // A question another screen hands to the agent (Invest → "How"): sent once the chat is open.
+  const [ask, setAsk] = useState<string | null>(null)
   const [syncTimedOut, setSyncTimedOut] = useState(false)
 
   useEffect(() => {
@@ -117,7 +119,7 @@ export function AppShell({ onLogout }: { onLogout: () => void }) {
         </div>
       )}
       <main className="flex-1 overflow-hidden flex flex-col min-h-0">
-        {tab === 'chat'    && <ChatScreen onError={setError} onActions={runActions} />}
+        {tab === 'chat'    && <ChatScreen onError={setError} onActions={runActions} ask={ask} onAsked={() => setAsk(null)} />}
         {tab === 'fund'    && (vault.vaultAddress ? <FundScreen onOpenChat={openChat} />
           : vault.readError ? (
             <div className="flex-1 px-4 py-6 flex flex-col gap-4">
@@ -125,7 +127,7 @@ export function AppShell({ onLogout }: { onLogout: () => void }) {
               <Btn variant="outline" onClick={() => { void vault.refresh() }}>Try again</Btn>
             </div>
           ) : <VaultSetup />)}
-        {tab === 'invest'  && <InvestScreen onOpenFund={() => go('fund')} onOpenChat={openChat} />}
+        {tab === 'invest'  && <InvestScreen onOpenFund={() => go('fund')} onOpenChat={openChat} onAsk={q => { setAsk(q); go('chat') }} />}
         {tab === 'balance' && <BalanceSheet onOpenChat={openChat} />}
         {tab === 'menu'    && <SettingsScreen onLogout={onLogout} />}
       </main>
