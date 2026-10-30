@@ -8,7 +8,7 @@ import { useApp } from '@/state/AppState'
 import { explorerTx } from '@/lib/network'
 import { GAS_ESTIMATE_USDC6, GAS_RESERVE_USDC6, txErrorMessage } from '@/hooks/useVault'
 import { toAppKitAmount } from '@/hooks/useCirBtc'
-import { overTargetWarning, spendable } from '@/lib/invest'
+import { spendable } from '@/lib/invest'
 import { formatUsdc, formatUsd } from '@/lib/format'
 import { Btn, GlassCard, IconBox, Notice } from '@/components/ui/kit'
 
@@ -60,11 +60,8 @@ export function ActionCard({ action, title, onFinished }: { action: ChatAction; 
   } else {
     if (!math.investUnlocked) block = balance.lock.text
     else if (kind === 'buy' && room !== null && amount > room) block = `More than the USDC in your wallet (up to ${formatUsdc(room)}).`
-    else {
-      const over = kind === 'buy' ? overTargetWarning(balance, amount) : null
-      if (over) warnings.push(over)
-      warnings.push('Prices can drop sharply; not investment advice.')
-    }
+    // How much to buy is the user's call: no warning for going above the Crypto target (Hieu, 2026-10-30).
+    else warnings.push('Prices can drop sharply; not investment advice.')
   }
 
   const run = async () => {

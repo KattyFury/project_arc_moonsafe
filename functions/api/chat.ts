@@ -229,6 +229,15 @@ const OFFERED: Record<string, RegExp> = {
 const NOTHING_ELSE = /(?<!\p{L})(nothing( else)?|none|no other|that'?s (all|it)|only (the|this|my) (app )?wallet|just (the|this|my) wallet|không có gì|không còn gì|chỉ có (ví|thế)|hết rồi)(?!\p{L})/iu // lang-ok
 // "Would you like me to prepare a deposit for your savings?" — the app cannot move money to a bank or an exchange.
 const SAFE_IN_APP = /(\bI(['’]ve|['’]ll| have| will| can)?|would you like me to|shall I|let me|want me to)\s[^.?!\n]{0,20}(prepare|prepared|set up|make|arrange|move|moved|transfer|transferred)\b[^.?!\n]{0,40}(to|into|for) (your |the )?(safe )?(savings|bank|safe)|(mình|để mình)[^.?!\n]{0,20}(chuẩn bị|chuyển|nạp)[^.?!\n]{0,40}(tiết kiệm|ngân hàng)/i // lang-ok
+// Offering to prepare or move money for Safety or Traditional, which the user does outside the app (real chat 2026-10-30: "I can
+// prepare the $1 move into gold outside the app").
+const OUTSIDE_IN_APP = /(\bI(['’]ll| will| can)|shall I|let me|want me to|would you like me to)\s[^.?!\n]{0,30}(prepare|set up|arrange|place|make|move|buy)\b[^.?!\n]{0,60}(gold|broker|index fund|VOO|stocks?|ETF)/i
+// "The plan is complete" while a part still has room (real chat 2026-10-30: Crypto was $0 of $10.67).
+const PLAN_DONE = /(plan|everything) is (complete|done|finished)|nothing (is )?left to (do|fill)|all (three )?(parts|buckets) are full|kế hoạch đã (hoàn tất|xong)/i // lang-ok
+// Another asset named in the message ("I will buy gold with 5$ instead"): never read as a cirBTC buy or a fund deposit.
+const OTHER_ASSET = /(?<!\p{L})(gold|stocks?|VOO|ETF|index|vàng|cổ phiếu)(?!\p{L})/iu // lang-ok
+// A cirBTC buy asked in the user's words, with or without an amount ("create an 11$ order for me", "buy 5 dollars of BTC").
+const BUY_ORDER = /(?<!\p{L})(buy|order|purchase|mua|lệnh)(?!\p{L})/iu // lang-ok
 const FUND_WORD = /fund|vault|emergency|quỹ/i // lang-ok
 const ALL_OF_IT = /(?<!\p{L})(all|whole|everything|entire|max|hết|toàn bộ|tất cả)(?!\p{L})/iu // lang-ok
 const ASKS_HOW_MUCH = /how much|bao nhiêu/i // lang-ok
@@ -912,7 +921,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     }
   }
   {
-    const m = !policy.conversationOnly && !lastUserText.startsWith('[app event]') && (OFFERED_BUY.test(prevAssistantText) || OFFERED_DEPOSIT.test(prevAssistantText)) ? NEW_AMOUNT.exec(lastUserText.trim()) : null
+    const m = !policy.conversationOnly && !lastUserText.startsWith('[app event]') && (OFFERED_BUY.test(prevAssistantText) || OFFERED_DEPOSIT.test(prevAssistantText)) && !OTHER_ASSET.test(lastUserText) ? NEW_AMOUNT.exec(lastUserText.trim()) : null
     const amt = m ? Number(m[1].replace(',', '.')) : NaN
     if (m && amt > 0 && amt <= 1_000_000) {
       const buy = OFFERED_BUY.test(prevAssistantText)
@@ -941,6 +950,35 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
         return json({
           content: vi ? `Được: lệnh nạp ${a} vào quỹ dự phòng ở bên dưới để bạn ký.` : `Sure: a deposit of ${a} into your emergency fund is below for you to sign.`, // lang-ok
           ops: [], dcaStop: false, actions: [{ type: 'prepare_deposit', amount: { amount: amt, currency: 'USDC' } }],
+        })
+      }
+    }
+  }
+  // A cirBTC buy asked within a few replies of our buy offer ("create an 11$ order for me"; real chat 2026-10-30: answered "I can't
+  // create that order from here"). With an amount the user's own; "create the order" alone takes the offered one. Above what the
+  // wallet can spend, say so and offer what it can, never a refusal with no reason.
+  if (!policy.conversationOnly && !cardsPaused && !lastUserText.startsWith('[app event]') && !QUESTIONS_US.test(lastUserText) && !SAYS_NO.test(lastUserText)) {
+    const before = messages.slice(0, lastUserAt)
+    const offerAt = before.map(m => m.role === 'assistant' && OFFERED_BUY.test(m.content)).lastIndexOf(true)
+    if (offerAt >= 0 && before.slice(offerAt).filter(m => m.role === 'assistant').length <= 4 && (BUY_ORDER.test(lastUserText) || MAKE_ORDER.test(lastUserText.trim())) && !OTHER_ASSET.test(lastUserText) && !NOT_A_DEPOSIT.test(lastUserText)) {
+      // The one number in the message is the amount ("Create an 11$ order for me"); two numbers or a % are not read as one.
+      const nums = lastUserText.length <= 300 && !/%/.test(lastUserText) ? [...lastUserText.matchAll(/(?<![\d.,])(\d{1,7}(?:[.,]\d{1,2})?)(?![\d.,])/g)] : []
+      const offered = OFFERED_AMOUNT.exec(before[offerAt].content)
+      const amt = nums.length === 1 ? Number(nums[0][1].replace(',', '.')) : nums.length === 0 && MAKE_ORDER.test(lastUserText.trim()) && offered ? Number(offered[1].replace(/,/g, '')) : NaN
+      if (amt > 0 && amt <= 1_000_000 && (await balanceOf(profile)).lock.open) {
+        const fmt = (n: number) => `**${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(n)} USDC**`
+        // What the wallet can spend, keeping 0.02 USDC for fees (src/lib/invest.ts spendable).
+        const room = wallet !== null ? Math.floor(Math.max(0, wallet - 0.02) * 100) / 100 : null
+        if (room === null || amt <= room) return json({
+          content: vi ? `Được: lệnh mua cirBTC ${fmt(amt)} ở bên dưới để bạn ký.` : `Sure: a cirBTC buy of ${fmt(amt)} is below for you to sign.`, // lang-ok
+          ops: [], dcaStop: false, actions: [{ type: 'prepare_buy_cirbtc', amount: { amount: amt, currency: 'USDC' } }],
+        })
+        return json({
+          content: room >= 0.01
+            ? (vi ? `Ví của bạn hiện chỉ có khoảng ${fmt(room)} để mua (giữ lại chút phí mạng). Mình chuẩn bị lệnh mua cirBTC ${fmt(room)} để bạn ký nhé? Muốn mua đủ ${fmt(amt)} thì nạp thêm USDC vào ví rồi nhắn mình.` // lang-ok
+              : `Your wallet can spend about ${fmt(room)} right now (keeping a little for network fees). Shall I prepare a cirBTC buy of ${fmt(room)} for you to sign? For the full ${fmt(amt)}, add USDC to your wallet first and tell me.`)
+            : (vi ? `Ví của bạn chưa có USDC để mua. Nạp USDC vào ví rồi nhắn mình, mình chuẩn bị lệnh mua ${fmt(amt)} ngay.` : `Your wallet has no USDC to spend yet. Add some and tell me, and I will prepare the ${fmt(amt)} buy right away.`), // lang-ok
+          ops: [], dcaStop: false, actions: [],
         })
       }
     }
@@ -1808,6 +1846,8 @@ ${ending}` })
       if (ASKS_OVERVIEW.test(lastUserText) && !GIVES_REASON.test(content)) problems.push('this is a check-up from an advisor: for each point say why it matters for them and one option they could take')
       if (teach && next && content.includes('?') && !GIVES_REASON.test(content)) problems.push('say in a few words why you ask (what the answer lets you work out for them); if something useful is already known from the figures, give that one point before the question')
       if (/Safety[^.?!\n]{0,60}months? of spending|months? of spending[^.?!\n]{0,60}\bSafety\b/i.test(plain)) problems.push('months of spending belong to the EMERGENCY FUND only; Safety is the bank-savings part of the money to divide and has no months: do not mix them')
+      if (OUTSIDE_IN_APP.test(content)) problems.push('Safety and Traditional (bank savings, gold, index funds, stocks) are done by the user outside the app: the app cannot prepare, move or buy them. Say they do it themselves and can tell you after, so you update the numbers')
+      if (PLAN_DONE.test(plain) && (bucketStanding(balance) ?? []).some(x => !x.full)) problems.push(`the plan is NOT complete: ${(bucketStanding(balance) ?? []).filter(x => !x.full).map(x => `${x.name} ${dollars(x.have)} of ${dollars(x.target)}`).join(', ')} still has room; say which part and how much is left`)
       if (SAFE_IN_APP.test(content)) problems.push('the app cannot move money to the user\'s bank or exchange and nothing was moved: the user tops up their own savings themselves; never offer or claim a deposit / transfer to savings')
       if (SAFE_AS_FUND.test(content)) problems.push('if you meant the emergency fund, call it "emergency fund" / "quỹ dự phòng" and add no explanation about the safe part; the safe part is the user\'s own savings, NOT the emergency fund, and cannot be deposited in the app') // lang-ok
       if (!DCA_AVAILABLE && /(set up|prepare|start|approve|propose|offer|want)[^.?!\n]{0,30}DCA|DCA (plan|card)/i.test(plain) && !/not available|isn.t available|unavailable|not yet|coming/i.test(plain)) problems.push('DCA is not available yet: do not offer it or set it up; if the user asked, say it is not available yet')

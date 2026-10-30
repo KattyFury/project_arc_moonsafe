@@ -226,6 +226,17 @@ const signedText = signed.body.content ?? ''
 console.log('\nstep 6b: model calls', signed.calls, '\n' + signedText)
 expect(signed.calls === 0 && /emergency fund is now \$900 of \$900/.test(signedText) && /Only Crypto/.test(signedText) && !/Safety|Traditional/.test(signedText.split('Only Crypto')[1] ?? ''), 'after the deposit: the fund status, then only Crypto (the only part with room)')
 
+// 6b3. A buy asked a few words later (real chat 2026-10-30: "Create an 11$ order for me" got "I can't create that order from here").
+const buyOffer6 = 'cirBTC is Bitcoin you can buy and hold in this app. Shall I prepare the first buy of **1 USDC** for you to sign? If you prefer all **6 USDC** at once, just say so.'
+const buyLater = (text: string, walletUsdc: number) => call([{ role: 'assistant', content: buyOffer6 }, { role: 'user', content: text }], base, 900, { walletUsdc })
+const buyAmt = (r: Awaited<ReturnType<typeof call>>) => (r.body.actions as Array<{ type: string; amount?: { amount: number } }> | undefined)?.find(a => a.type === 'prepare_buy_cirbtc')?.amount?.amount
+const longAsk = 'No this is mainnet we are not lack of liquidity. Create an 11$ order for me'
+const big = await buyLater(longAsk, 50)
+expect(big.calls === 0 && buyAmt(big) === 11, `buy order: "create an 11$ order" makes an 11 USDC buy card when the wallet has enough (got: ${(big.body.content ?? '').slice(0, 100)})`)
+const small6 = await buyLater(longAsk, 6)
+expect(buyAmt(small6) === undefined && /can spend about \*\*5\.98 USDC\*\*/.test(small6.body.content ?? '') && /cirBTC buy of \*\*5\.98 USDC\*\*/.test(small6.body.content ?? ''), `buy order above the wallet: says what it can spend and offers that (got: ${(small6.body.content ?? '').slice(0, 120)})`)
+expect(buyAmt(await buyLater('I will buy gold with 5$ instead', 50)) === undefined, 'buy order: gold is not a cirBTC buy')
+
 // 6b2. A small deposit that does not fill the fund (real chat 2026-10-30: $5 got "Still needed to open cirBTC buying"): the fund
 // status and "a little at a time", nothing about cirBTC, no model call.
 const small = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: firstText }, { role: 'user', content: '[app event] The user signed the card: Added 5 USDC to your emergency fund.' }], base, 5)

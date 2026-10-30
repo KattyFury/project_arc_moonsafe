@@ -1,13 +1,13 @@
 // Screens 9 / 9b — Invest. Locked: what is missing (conditions 6 col + actions 6 col). Open (Hieu, 2026-10-30, option 2a): the next
 // step for each part of the split, Crypto (buy cirBTC here), Traditional (with a broker; "How" asks the agent), Safety (savings).
-// Buying cirBTC has no cap; the app only warns when a buy goes above the BTC target (docs/SPEC-FRAMEWORK-2026-10-25.md 5.3, 7).
+// Buying cirBTC has no cap and no warning above the target: how much is the user's call (Hieu, 2026-10-30).
 
 import { useState, type ReactNode } from 'react'
 import { ArrowRight, Bitcoin, ExternalLink, Landmark, Lock, ShieldCheck, X, type LucideIcon } from 'lucide-react'
 import { bucketStanding } from '@/lib/allocation'
 import { useApp } from '@/state/AppState'
 import { explorerTx } from '@/lib/network'
-import { overTargetWarning, spendable } from '@/lib/invest'
+import { spendable } from '@/lib/invest'
 import { dcaNextRun, formatCirBtc } from '@/hooks/useCirBtc'
 import { DCA_AVAILABLE } from '@/lib/features'
 import { useNow } from '@/hooks/useNow'
@@ -101,7 +101,6 @@ function InvestOpen({ onAsk }: { onAsk: (question: string) => void }) {
 
   const parsed = parseUsdcInput(amount)
   const overWallet = room !== null && parsed > room
-  const overTarget = parsed > 0n && !overWallet ? overTargetWarning(balance, parsed) : null
 
   const dca = cirBtc.dca
   const next = dcaNextRun(dca)
@@ -177,7 +176,6 @@ function InvestOpen({ onAsk }: { onAsk: (question: string) => void }) {
               <AmountField value={amount} onChange={v => { setAmount(v); cirBtc.clearQuote() }} disabled={cirBtc.busy} />
               <p className="text-[14px] leading-5 -mt-2" style={{ color: 'var(--subtle)' }}>Wallet {money(vault.walletBalance)}, holding {formatCirBtc(cirBtc.balance)}</p>
               {overWallet && <Notice tone="danger">More than the USDC in your wallet. Max {money(room)}.</Notice>}
-              {overTarget && <Notice tone="warning">{overTarget}</Notice>}
               {cirBtc.error && <Notice tone="danger">{cirBtc.error}</Notice>}
               <Btn loading={cirBtc.busy} disabled={parsed <= 0n || overWallet || room === null}
                 onClick={() => { void cirBtc.estimate(parsed) }}>
