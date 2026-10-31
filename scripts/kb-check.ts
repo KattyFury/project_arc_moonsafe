@@ -5,6 +5,7 @@
 // computeFacts → matchPatterns, with the buy-lock cases spec 14.6 requires.
 //   bun scripts/kb-check.ts        → exit 1 on any mismatch
 
+import './part-choice-check'
 import { KB, targetMix, fundFloorMonths, isPriorityDebt, matchPatterns, patternBrief, type Cond, type Facts } from '../src/kb/kb'
 import { computeFacts, displayFacts } from '../src/kb/facts'
 import { computeBalance } from '../src/lib/allocation'

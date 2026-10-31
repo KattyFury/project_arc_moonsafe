@@ -1,0 +1,30 @@
+{
+  "model": "claude-haiku-5-5",
+  "commit": "c63508421aa0c0e80d4596ef6525f3f2e7e6f4e4",
+  "sourceDiffSha256": "679cbb8a2c66b54b021de680ed3ff6db9bdcdc7341406a5785a00f5f88278d3b",
+  "budget": 1000000,
+  "input": 961839,
+  "output": 12636,
+  "totalTokens": 974475,
+  "unknownUsage": 0,
+  "remaining": 25525,
+  "calls": 97,
+  "completeTurns": 37,
+  "recordedTurns": 38,
+  "completeConversations": 11,
+  "stopped": "budget-reservation",
+  "paidFollowups": 0,
+  "scope": "Synthetic conversations through the production handler; no real wallet, no confirmation clicks, no deployment.",
+  "audit": {
+    "passed": 23,
+    "total": 26,
+    "pendingConfirmationExpectations": 3
+  },
+  "overallQualityScore": null,
+  "limitations": [
+    "No paired pre-fix live baseline.",
+    "The changed part-choice boundary is covered by 63 offline tests; this live dataset tests wider behavior, not a direct reproduction of that boundary.",
+    "Three legacy audit failures expect immediate persistence, but the handler correctly requested confirmation and the harness did not click it.",
+    "The budget stopped the final hypothetical case mid-turn; later cases were not covered."
+  ]
+}

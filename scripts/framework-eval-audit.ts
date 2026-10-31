@@ -1,7 +1,9 @@
 // Deterministic checks against explicit synthetic facts; this is not the subjective rubric score.
 import { readFileSync, writeFileSync } from 'node:fs'
 import type { FinancialProfile } from '../src/types'
-const report = JSON.parse(readFileSync('docs/evals/framework-1m-2026-10-29.json', 'utf8'))
+const label = process.argv[2]
+if (label && !/^[a-z0-9-]+$/.test(label)) throw new Error('Invalid run label')
+const report = JSON.parse(readFileSync(`docs/evals/${label ?? 'framework-1m-2026-10-29'}.json`, 'utf8'))
 type Turn = { case: string; turn: number; complete: boolean; profile: FinancialProfile; ops: unknown[]; actions: Array<{ type: string }> }
 const rows = report.transcript as Turn[]
 const checks: Array<{ id: string; case: string; turn: number; passed: boolean; expected: string }> = []
@@ -46,5 +48,5 @@ check('unknown-debt', 'unknown-vs-zero', 3, 'unknown debt not saved as complete/
 check('no-consent-card', 'no-consent', 1, 'question does not prepare deposit', t => !t.actions.some(a => /^prepare_/.test(a.type)))
 check('refusal-card', 'no-consent', 2, 'refusal does not prepare any transaction', t => !t.actions.some(a => /^prepare_/.test(a.type)))
 const result = { kind: 'explicit-fixture state/action checks, not an overall accuracy estimate', total: checks.length, passed: checks.filter(c => c.passed).length, failed: checks.filter(c => !c.passed).length, checks }
-writeFileSync('docs/evals/framework-1m-audit-2026-10-29.json', JSON.stringify(result, null, 2))
+writeFileSync(`docs/evals/${label ? `${label}-audit` : 'framework-1m-audit-2026-10-29'}.json`, JSON.stringify(result, null, 2))
 console.log(JSON.stringify(result, null, 2))

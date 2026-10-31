@@ -1,11 +1,19 @@
 # Balance Sheet v2 — CHỐT HƯỚNG 2026-10-30, chưa code
 
+**Deployment (Codex, user requested):** production `aa2af126-c20b-4750-85e4-012449c4d50e`, https://aa2af126.moonsafe.pages.dev and https://moonsafe.app. Before upload, preserved local work in stash `codex-agent-fix-before-deploy-sync-2026-10-30`, fast-forwarded c635084 → 5fc0eb7 (four newer user commits), reapplied the part-choice fix, and resolved HANDOFF by keeping both notes. TypeScript, KB including 63 routing checks, offline-flow, language gate and mainnet build passed after synchronization. Both URLs: homepage 200, unauthenticated chat 401, served asset hashes match the new build. Cloudflare confirms canonical deployment, existing D1 ledger and production KV retained. No extra paid calls, commit or push. The 974,475-token evaluation below predates these four upstream commits; it is not a paid evaluation of the combined deployed tree. Other findings in that review remain follow-ups.
+
 Spec: [`docs/SPEC-BALANCE-SHEET-v2-2026-10-30.md`](docs/SPEC-BALANCE-SHEET-v2-2026-10-30.md) (bản bàn trước: `docs/SPEC-BALANCE-SHEET-2026-10-30.md`, chỉ còn là tư liệu).
 - **Đảo quyết định 10-29 "đầu tư tính theo tiền đã bỏ vào":** giờ tính theo **giá trị hiện tại** (số lượng × giá oracle); vẫn **không giục mua khi giá giảm**, không khuyên bán.
 - Khai bằng **số lượng**, bỏ khai bằng tiền cho tài sản có giá. Bỏ Net worth, Can use now, cost basis, lãi/lỗ, trừ khoản chi lớn sắp tới.
 - Mốc = mục có v/w lớn nhất; tổng ngụ ý = v_mốc / w_mốc; ngưỡng 5/25 → On track / Under (không có Over).
 - Hoãn: dòng tiền (module riêng), nhắc nới quỹ khi đầu tư vượt 24 tháng chi tiêu.
 - Bước tiếp theo theo spec: mổ xẻ từng màn hình rồi mới viết spec build. Câu hỏi mở cho bước đó nằm ở cuối mục này trong chat 10-30 (dữ liệu cũ khai bằng $, bảng hỏi đang hỏi $, agent đang nói "money put in", nguồn giá vàng/cổ phiếu, quỹ dự phòng có tách khỏi 3 mục không).
+
+# Agent choice routing — 2026-10-30 (Codex, local changes only)
+
+User then explicitly authorized 1M Claude Haiku tokens after the repair. Completed capped run `haiku-choice-2026-10-30`: model `claude-haiku-5-5`, 974,475 verified tokens (961,839 input + 12,636 output), 97 calls, 37 complete turns / 11 complete conversations; stopped before a request whose reservation exceeded the remaining 25,525. No unknown usage, extra paid followups or deployment. Runtime hash `679cbb8a2c66b54b021de680ed3ff6db9bdcdc7341406a5785a00f5f88278d3b`. Review and traces: `docs/evals/haiku-choice-2026-10-30-review.md`; raw/summary/audit JSON alongside it. Audit 23/26; the 3 legacy failed assertions expect immediate persistence of pending confirmation items, not actual unauthorized mutations. Actual follow-ups: distinguish pending bank reserves from the app vault gap; answer the VND fund question even when confirmations are pending; avoid claiming a known salary minus a stated transfer is unknown. No overall score or live before/after improvement claim. The paid dataset is broad; the specific routing fix has 63 offline checks.
+
+Read current clean HEAD c635084 before editing; kept the latest UI and three-step statement intact. Reproduced `detectPartChoice('not crypto', previousPickQuestion)` returning `crypto`. Added a conservative EN/VI refusal, postponement, uncertainty and question guard so those messages use the conversational path rather than the deterministic part-choice offer. Explicit choices and the existing `How about the "safe" part` shorthand remain supported. Added 63 routing assertions in `scripts/part-choice-check.ts`, imported by `kb-check.ts` / check:all. TypeScript, KB suite, 93 response checks and offline-flow pass. No paid model calls, commit, push or deployment. This repairs one routing boundary; it is not a new live quality score.
 
 # Balance, Invest, step toast — 2026-10-30 (Claude, after Hiếu approved demos: 1b, 2a, roadmap C)
 

@@ -193,12 +193,17 @@ const PART_WORDS: Array<[Part, RegExp]> = [
 ]
 const YES_SHORT = /^\s*(ok|okay|oke|sure|yes|yeah|yep|yup|go ahead|do it|sounds good|please|let'?s|i will|i'll|start|được|đồng ý|ừ|chốt)(?![\p{L}])/iu // lang-ok
 
+// Naming a part is not consent when the user declines, postpones or asks about it.
+// Defer these messages to the conversational path rather than bypassing the planner.
+const NOT_A_CHOICE = /[?？]|(?<![\p{L}])(no|not|never|don['’]?t|do not|can['’]?t|cannot|won['’]?t|wouldn['’]?t|shouldn['’]?t|avoid|stop|cancel|later|maybe|perhaps|unsure|uncertain|undecided|wait|hold off|but|why|what(?! about)|how(?! about)|should|could|would|không|chưa|đừng|thôi|để sau|có lẽ|phân vân|tại sao|vì sao)(?![\p{L}])/iu // lang-ok
+
 /**
  * Which part the user means when they answer the "which part first?" / "start with X?" question: a single bucket word in a short
  * message, or a plain yes to the "Only X still has room" question. Null for anything else (the model handles it).
  */
 export function detectPartChoice(userText: string, prevAssistant: string): Part | null {
   const t = userText.trim()
+  if (NOT_A_CHOICE.test(t)) return null
   if (!t || t.length > 70 || /\d/.test(t) || /(why|what if|what is|what'?s|explain|how much|don'?t|do not|vì sao|tại sao|nếu không)/i.test(t)) return null // lang-ok
   if (!/(fill first|start with|which part|which bucket|how about|what about|still has room|muốn lấp|bắt đầu với)/i.test(prevAssistant)) return null // lang-ok
   const hit = PART_WORDS.filter(([, re]) => re.test(t)).map(([k]) => k)
