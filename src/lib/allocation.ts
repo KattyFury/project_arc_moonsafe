@@ -52,8 +52,8 @@ export function holdingUsd(h: Holding, prices: Prices | null, vndPerUsd: number 
   const kind = priceKindOf(h.type)
   if (h.priceSource === 'self' || kind === 'self' || kind === 'stable' || h.quantity === undefined) {
     if (h.value === undefined) return null
-    // Stablecoins are priced 1:1 whatever the symbol.
-    return toUsd(h.value, kind === 'stable' && STABLECOINS.has((h.symbol ?? '').toUpperCase()) ? 'USDC' : h.currency, vndPerUsd)
+    // Stablecoins are priced 1:1 whatever the symbol; an amount declared in VND ("5tr USDT") is still VND.
+    return toUsd(h.value, kind === 'stable' && STABLECOINS.has((h.symbol ?? '').toUpperCase()) && h.currency !== 'VND' ? 'USDC' : h.currency, vndPerUsd)
   }
   if (kind === 'gold') return prices?.goldUsdPerOz ? h.quantity * prices.goldUsdPerOz : null
   const s = symbolOf(h)

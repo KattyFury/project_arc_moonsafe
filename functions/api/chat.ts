@@ -168,7 +168,7 @@ const VI_LETTERS = /[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽ
 
 // incomeStable is kept only when the user talked about how their income comes in (or answered
 // the stability question). gpt-4o-mini filled incomeStable=true from "my salary is $2,000" (eval 2026-10-24).
-const STABILITY_WORDS = /(?<!\p{L})(stable|steady|regular|irregular|fixed|employee|employed|full[- ]time|part[- ]time|salaried|freelanc\p{L}*|self[- ]employed|own (a |my )?business|contract|gig|ổn định|cố định|nhân viên|văn phòng|công chức|biên chế|tự do|kinh doanh|bấp bênh|thất thường)(?!\p{L})/iu // lang-ok
+const STABILITY_WORDS = /(?<!\p{L})(stable|steady|regular|irregular|fixed|employee|employed|full[- ]time|part[- ]time|salaried|freelanc\p{L}*|self[- ]employed|own (a |my )?business|contract|gig|ổn định|cố định|nhân viên|văn phòng|công chức|biên chế|tự do|kinh doanh|bấp bênh|thất thường)(?!\p{L})|(?:lương|thu nhập)[^,.;\n]{0,20}(?<!\p{L})(?:đều|không đều)(?!\p{L})/iu // lang-ok — "lương 15tr đều" (Haiku run 2026-10-31)
 const ASKS_STABLE = /(stable|steady|regular)[^.!?\n]*\?|ổn định[^.!?\n]*\?|ổn định[^.!?\n]*(không|chưa)\.\s*[^.!?\n]{0,80}\?/i // lang-ok
 // A zero / "none" is recorded only when the user said so (gpt-4o-mini filled 0 from "fixed salary", eval 2026-10-24).
 const SAYS_NONE = /(?<!\p{L})(no|none|zero|nothing|nobody|no one|don'?t have|do not have|debt[- ]free|paid off|không|chưa có|hết nợ|ko có|không có ai)(?!\p{L})|(?<![\d.,])0(?![\d.,])/iu // lang-ok
@@ -269,7 +269,8 @@ const VI_DEBT_Q = 'Bạn còn khoản nợ nào khác không, kể cả mượn 
 // "You will still need 2,800 USDC after adding 200" was the model doing its own subtraction
 // (eval 2026-10-24); the prompt alone did not stop it.
 const AMOUNT = /\$\s?(\d[\d.,]*\d|\d)|(\d[\d.,]*\d|\d)\s*(M VND|million VND|million|triệu|USDC|USD|VND|₫)/g // lang-ok
-const NUMBER = /(\d[\d.,]*\d|\d)(\s*(triệu|million|M\b))?/g // lang-ok
+// "5tr" is 5 million (VND): read as 5 it let "5tr USDT" pass as 5,000 USDT (Haiku run 2026-10-31).
+const NUMBER = /(\d[\d.,]*\d|\d)(\s*(triệu|tr(?![\p{L}])|million|M\b))?/gu // lang-ok
 /** A token read both ways, "1,160.71" (en) and "1.160,71" (vi); one of them is the meant value. */
 const readings = (t: string) => [Number(t.replace(/,/g, '')), Number(t.replace(/\./g, '').replace(',', '.'))].filter(Number.isFinite)
 const numbersIn = (s: string) => [...s.replace(/ /g, ' ').matchAll(NUMBER)].flatMap(m => readings(m[1]).map(v => v * (m[2] ? 1e6 : 1)))
@@ -1105,6 +1106,13 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     const base = { id: newId('h'), type, name, ...(sym && kind !== 'self' ? { symbol: sym } : {}), ...(typeof a.where === 'string' && a.where.trim() ? { where: a.where.trim() } : kind === 'stable' && APP_WALLET.test(lastUserText) ? { where: 'app wallet' } : {}), updatedAt: Date.now(), rebalanceable: defaultRebalanceable(type, category), ...(category ? { category } : {}), ...(a.loan_status === 'on_time' || a.loan_status === 'overdue' ? { loanStatus: a.loan_status as Holding['loanStatus'] } : {}) }
     if (basis) return { ...base, value: basis.amount, currency: basis.currency, priceSource: 'self', ...(quantity !== undefined && quantityEvidence(evidence.text, quantity, sym, kind) ? { quantity, unit: 'coins' } : {}) }
     if (kind === 'stable') {
+      // "5tr USDT" is 5 million VND worth of USDT, which the model read as 5,000 or 5 coins (Haiku run 2026-10-31).
+      const vndStable = /(\d[\d.,]*)\s*(?:tr|triệu)(?![\p{L}])\s*(?:usdt|usdc|stable)/iu.exec(lastUserText) // lang-ok
+      if (vndStable && !(w && w.currency === 'VND')) {
+        const n = Number(vndStable[1].replace(',', '.'))
+        const got = w?.amount ?? quantity
+        if (Number.isFinite(n) && n > 0 && got !== undefined && [n, n * 1e3, n * 1e6].some(x => Math.abs(x - got) <= x * 0.01)) return { ...base, value: n * 1e6, currency: 'VND', priceSource: 'market' }
+      }
       const amount = w ?? (quantity !== undefined ? { amount: quantity, currency: 'USDC' as Currency } : null)
       if (!amount || !stated(amount.amount)) return 'Not recorded: the amount is not in the user\'s words.'
       return { ...base, value: amount.amount, currency: amount.currency, priceSource: 'market' }
@@ -1648,9 +1656,13 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
 
   // Question 2 of 2 (Hieu, 2026-10-31, option E2): once the month is told, what they hold, in their own words, and the split; before
   // the plan, so the plan is built on what they hold. Asked once; what they declare next goes through the confirm card.
+  // Haiku run 2026-10-31: a cash-flow chart the planner showed, or a loss said in passing ("that money is all lost", which turns the
+  // coach on), kept question 2 from being asked. Only a card waiting for the user, or a question of theirs, holds it back now.
   const holdsDeclared = profile.holdings.some(h => ASSET_TYPES.includes(h.type))
-  if (batchAsked && !holdsDeclared && !assistantTexts.some(a => ASSETS_MARK.test(a)) && !pending && !toAsk.length && !actions.length && !placement && !appEvent && !userAsks && !DECLINES.test(lastUserText)) {
-    return json({ content: assetsAsk(profile, balance.fund, balance.cashflow, vi, wallet), ops, dcaStop, actions })
+  const waitingCard = actions.some(a => /^(confirm_|prepare_|propose_)/.test(String(a.type)))
+  if (batchAsked && !holdsDeclared && !assistantTexts.some(a => ASSETS_MARK.test(a)) && !pending && !toAsk.length && !waitingCard && !placement && !appEvent && !policy.answerFirst && !directQuestion && !correctingFact && !DECLINES.test(lastUserText)) {
+    const heard = coach.active ? (vi ? 'Mình hiểu. Chuyện đã qua thì để lại phía sau, mình lo phần phía trước cùng bạn nhé.\n\n' : 'I hear you. What is behind you stays behind; let\'s look after what comes next together.\n\n') : '' // lang-ok
+    return json({ content: heard + assetsAsk(profile, balance.fund, balance.cashflow, vi, wallet), ops, dcaStop, actions })
   }
 
   // The plan is built here too, so each step says WHY (Hieu, 2026-10-28) and the numbers always match the figures (functions/_lib/plan.ts).

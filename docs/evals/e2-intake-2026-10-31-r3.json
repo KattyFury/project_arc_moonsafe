@@ -1,0 +1,1035 @@
+{
+  "sourceTree": [
+    {
+      "path": "functions/_lib/admin.ts",
+      "sha256": "2e2bcd06e185cf9ef026b305537778a60fe6058142adc3c3d1d9d66bc774d169"
+    },
+    {
+      "path": "functions/_lib/agentGuards.ts",
+      "sha256": "e66485d0da45241d62449a3338452f143fd23d2ea519d5d86b30b6f395718da1"
+    },
+    {
+      "path": "functions/_lib/budget.ts",
+      "sha256": "df173f85a5648cd5ca6eafa6a51a8302870770258675dd0b3781aa89fac775f2"
+    },
+    {
+      "path": "functions/_lib/coaching.ts",
+      "sha256": "b870bf431793da5d70e8cfe1ef2aa35a0c0a3bbfd8e8e309aae1f41c571a6ec9"
+    },
+    {
+      "path": "functions/_lib/config.ts",
+      "sha256": "5326baa048a80bbcaafe6b4605c93f2324851159d24db9bfe7f7874ed4208a01"
+    },
+    {
+      "path": "functions/_lib/confirmationStatus.ts",
+      "sha256": "ebd38239a2a99542bc7da2ea5d83c729774149fe2ec7912e39a5aa87ead02809"
+    },
+    {
+      "path": "functions/_lib/education.ts",
+      "sha256": "b435fe84688d607248fc55d6c87ed016f47efbfd4efbf11919f90692c66297c7"
+    },
+    {
+      "path": "functions/_lib/educationFigures.ts",
+      "sha256": "4ce3da2b8d5e7332d1bbd4acbbeaf1a1d463c823216589d61ff57e3bc7fa1a69"
+    },
+    {
+      "path": "functions/_lib/intake.ts",
+      "sha256": "510d695c71e0b8af62500f284eb79109a9b97b31e56b22ce59aed6a56918a466"
+    },
+    {
+      "path": "functions/_lib/ledger.ts",
+      "sha256": "66dd4d7ce183585c1e8131e935c570c61b4d6d52c37318dd2142a2fceb5ef420"
+    },
+    {
+      "path": "functions/_lib/llm.ts",
+      "sha256": "23546b46741735ad32d5a8960bbfa474dd1cd9a21850105c06d3a8dbe74550d2"
+    },
+    {
+      "path": "functions/_lib/mutationEvidence.ts",
+      "sha256": "b1d34aed306d1b447f9b793ddf49531d2636d24aa582023d5b869a5eae760d5c"
+    },
+    {
+      "path": "functions/_lib/plan.ts",
+      "sha256": "1cfd0dc4863328de0a6ac27cb70603387e27fe617c4c3c94a59765d8212a80a3"
+    },
+    {
+      "path": "functions/_lib/privyAuth.ts",
+      "sha256": "e438bece6391bb7d9bc6449578f0caf6e01e888217dd0e46dd268ddfa21f174b"
+    },
+    {
+      "path": "functions/_lib/quota.ts",
+      "sha256": "f414923d51a316babb45bfb62f6061e0d4dee84d4eae6e831f95dd73212280c6"
+    },
+    {
+      "path": "functions/_lib/stats.ts",
+      "sha256": "454b97253bd0fda382d6c020940b7e0abfd4a76d95c7377721f3e05a47e524f4"
+    },
+    {
+      "path": "functions/api/admin.ts",
+      "sha256": "95d407a888b628894dded6dacb2e5892820f5520e1a9993ad1042c8e6984b47f"
+    },
+    {
+      "path": "functions/api/chat.ts",
+      "sha256": "c2afc858cf48ab97798f78d26275b21d1fb5407999ead1d864349bce97daff36"
+    },
+    {
+      "path": "functions/api/power.ts",
+      "sha256": "28c1f4b6565ac8639b14909e4412083d9d11c467a14fce1ce4a33b38e137e3ab"
+    },
+    {
+      "path": "functions/api/price.ts",
+      "sha256": "d526b1de91d32381468035c17d437714f81dcfecefdccb16ea153590db0da8a7"
+    },
+    {
+      "path": "functions/api/prices.ts",
+      "sha256": "fafa2e9603909ccae6b06b610cdecb0f0e62b5d412ebbd8d4ef7ce5b8ff54b50"
+    },
+    {
+      "path": "functions/api/rates.ts",
+      "sha256": "1f538706bb000f0976e12438406d24d16ae6427295c8eb5cc0bb00d3a24b8073"
+    },
+    {
+      "path": "functions/api/status.ts",
+      "sha256": "0005a15b81333c6f51516c8e3379dd5b70c3f49aeda0b2bc0d934774fbebd94a"
+    },
+    {
+      "path": "functions/api/usage.ts",
+      "sha256": "d5b2dc53ce8746b6f1a070b67d6727e0d260a56e921085e764a4b6148e68a99c"
+    },
+    {
+      "path": "functions/api/userdata.ts",
+      "sha256": "23297cd3b25550a874352b65a6f6129a09b617d471d5e68aba317e3552996d61"
+    },
+    {
+      "path": "src/App.tsx",
+      "sha256": "b4b8e887fe2ec15c3d74b63cc0a84f3457b0b863df53737f26ab27c5d2a6b9d3"
+    },
+    {
+      "path": "src/components/chat/ActionCard.tsx",
+      "sha256": "ccf9060aecd6683e2a83cba643d9280aaad6cfcbf2a5eb3ca035917be9d07368"
+    },
+    {
+      "path": "src/components/chat/AiPower.tsx",
+      "sha256": "f774ca89a5b6cf89ae62cf3129c15db8a0d02f5d29d31d630edcd4a81da9ade5"
+    },
+    {
+      "path": "src/components/chat/IntakeFormCard.tsx",
+      "sha256": "f50dca48769c2c28a0f8836dc55c4396b50ee86403313c78fc5cae9aacc5e130"
+    },
+    {
+      "path": "src/components/chat/ItemsCard.tsx",
+      "sha256": "2ce128d4148b00a7a50f6850ed035fd8a3463437db3a8c9a3411d1f40f74eb5d"
+    },
+    {
+      "path": "src/components/chat/RecordCard.tsx",
+      "sha256": "c4ecef401cfc5416055c398e9b5df535668437a4a51f1b5b45ec3af68fc48d5f"
+    },
+    {
+      "path": "src/components/chat/StepToast.tsx",
+      "sha256": "06a09865d5cfb760e22a0362522c8d7ecff792a5df53f871efd26ada47803f8e"
+    },
+    {
+      "path": "src/components/layout/AppShell.tsx",
+      "sha256": "46db43e5dc6c86a7aa4f7ea3878c21ad74096ff78925dd50362c4cfa853f9902"
+    },
+    {
+      "path": "src/components/layout/NavBar.tsx",
+      "sha256": "7e7cd04ab84650987bf78df099618715b24d57e880857473d2bbbb844fa63c4d"
+    },
+    {
+      "path": "src/components/screens/AdminPage.tsx",
+      "sha256": "cff34997fe5810390485a0a96e70a8742d77d5fe6af7281b1833e34ed921ee15"
+    },
+    {
+      "path": "src/components/screens/BalanceSheet.tsx",
+      "sha256": "dfb5bb946f9207b41f85bd5baf18651d392cbacd846a5b75904016958249e2d8"
+    },
+    {
+      "path": "src/components/screens/ChatScreen.tsx",
+      "sha256": "02a9f598e7184e2463105e54b258aa4c85aa0a223c682497ee9298860efd4b14"
+    },
+    {
+      "path": "src/components/screens/FundScreen.tsx",
+      "sha256": "9da3f13905cf2225a72d8d5303deb72c4970dbbc8783ee37d1f8a0c95b7ac9cc"
+    },
+    {
+      "path": "src/components/screens/InvestScreen.tsx",
+      "sha256": "3edcd40ce2e09ab17e63b448054457a59782f8278dd0fe58284feaa85fe37716"
+    },
+    {
+      "path": "src/components/screens/LoginScreen.tsx",
+      "sha256": "51b1729b93b539a32c3e2ecab5d80fcca3b3fa4ac9d60204453bd59fd13441ba"
+    },
+    {
+      "path": "src/components/screens/SettingsScreen.tsx",
+      "sha256": "c5f9332a0eefd697201ce3da615a87c904cf0ad05d84185cfd190bab6d8ba856"
+    },
+    {
+      "path": "src/components/screens/VaultSetup.tsx",
+      "sha256": "88e4fef09a95d536ede0912acf281ed4945401c3ae86c684701e3adf522d9607"
+    },
+    {
+      "path": "src/components/screens/WarningModal.tsx",
+      "sha256": "bcc46401bb86ad505e0a5212bc4317323e5ccb7b1533ab47981b9f56d0087a46"
+    },
+    {
+      "path": "src/components/ui/AllocationPies.tsx",
+      "sha256": "19b119e5ab7052f1b4147dbd8c075eb3f79838b67526794d30508418cc464646"
+    },
+    {
+      "path": "src/components/ui/CashflowCard.tsx",
+      "sha256": "daa1252336f68b818bace10b97faae9e48ae75c0f4721319d3822697ef0abdb9"
+    },
+    {
+      "path": "src/components/ui/kit.tsx",
+      "sha256": "f7d7227850cbe18388eb338363624abc3fd6b6572e1d04dd3e3887ca47c106a3"
+    },
+    {
+      "path": "src/config.ts",
+      "sha256": "8afa93b4f3933e642887aeb5186aa8e5e34e4e90133fcc929f4c29eb1e519dac"
+    },
+    {
+      "path": "src/console-capture.ts",
+      "sha256": "ab682e27bfb8efb8b1084ab91ff604baee9b2128892a8036dc0584d82733d3ce"
+    },
+    {
+      "path": "src/hooks/useAgent.ts",
+      "sha256": "10d086ed8c002a6390d39b8d2e72b0a8fac20be4bc64c3e6f322584c3e50aece"
+    },
+    {
+      "path": "src/hooks/useAiPower.ts",
+      "sha256": "9561009aaeb229f996a040e570004436819fbba2e338ce95623406060aec205e"
+    },
+    {
+      "path": "src/hooks/useCirBtc.ts",
+      "sha256": "6808ed7e5175042042ad29579c35384a99ca0338940379a0ec17b11e1815addd"
+    },
+    {
+      "path": "src/hooks/useExchangeRate.ts",
+      "sha256": "974bebb4381280b26c3e7e6a6af5443b61befd82b694e96fae002a31c0f46081"
+    },
+    {
+      "path": "src/hooks/useFinancialProfile.ts",
+      "sha256": "a6a70f9c3c7bf62497af46b0a0f905f6dc952e8dc4e9b2fc91ad7b7b3be35fed"
+    },
+    {
+      "path": "src/hooks/useNow.ts",
+      "sha256": "9587e6b0abf4386251cec6d0508b19d9e774fa246b06ead98fa30642bf2c6bf6"
+    },
+    {
+      "path": "src/hooks/usePrices.ts",
+      "sha256": "535cf56b5fdd7ef42c1fa7cac5a27534556ef8628aad17d48a0dd1756ec7fe5a"
+    },
+    {
+      "path": "src/hooks/useServiceStatus.ts",
+      "sha256": "e7f8c3235b5ba0236dab27773eb1382625cf3d6ec679b9333115eb630c2456af"
+    },
+    {
+      "path": "src/hooks/useVault.ts",
+      "sha256": "74390f4d02c0bbe31e3d3c440845a8c4f5a6b1318eb98cfbc6edadb4327fe433"
+    },
+    {
+      "path": "src/index.css",
+      "sha256": "6d1549e4ccd7ea01894a034f828fdc439b7b4ffc52779dd60e6f691a5d61d37c"
+    },
+    {
+      "path": "src/kb/facts.ts",
+      "sha256": "a2bbc6f5e25d9f936e1fbdbc5b7e6e42445e150ebdaa1f49850246337fed9afe"
+    },
+    {
+      "path": "src/kb/kb.ts",
+      "sha256": "19ad2b8f454c6272ad4b45110ce4b4be1b5317ca697ef6c26924f207ed67d5b5"
+    },
+    {
+      "path": "src/kb/moonsafe-kb.json",
+      "sha256": "29e26a23cfc0b0f0b61137d7794603e7e8ea1e034f360dadf164088e2a3bbb44"
+    },
+    {
+      "path": "src/lib/allocation.ts",
+      "sha256": "07066e1739f3cfc133cec23bdb2c8a90851809cb3555a4505fb547a1bbb479b4"
+    },
+    {
+      "path": "src/lib/chain.ts",
+      "sha256": "870b4723b1c64513f38337e5b4bd52b98edfd7d937801c61eaa371e12b6cc413"
+    },
+    {
+      "path": "src/lib/cloud.ts",
+      "sha256": "40620e50c7d042ed4d35534dd9c4851c9f2fe4a72328bebce2477903899a0303"
+    },
+    {
+      "path": "src/lib/features.ts",
+      "sha256": "b166d3275f440298f29345e8f121308148e15d0d1d4b4f72bdaefceda05cbd5e"
+    },
+    {
+      "path": "src/lib/format.ts",
+      "sha256": "f6a9967f750d7d7ded7d855f575c6aac68f64bb5c5c20fb924294205eef0d8aa"
+    },
+    {
+      "path": "src/lib/intakeForm.ts",
+      "sha256": "81e0d37bec8d1fa5a44e7ffed62775116bd401ee9e57caaeb87ea99ca20e2c59"
+    },
+    {
+      "path": "src/lib/invest.ts",
+      "sha256": "75f3a5ef313093b0548df894a33bf8c02397ee08e439367699d0283626a4373f"
+    },
+    {
+      "path": "src/lib/network.ts",
+      "sha256": "c9852302b96b8c0ff032e91fb307b119e591f9d9e3ec2945ad2f7190defe0997"
+    },
+    {
+      "path": "src/lib/planningScope.ts",
+      "sha256": "49109edd2ed9590cc756242c455d0fbc2194dfcc08aea3921a42b9fc7e98e378"
+    },
+    {
+      "path": "src/lib/power.ts",
+      "sha256": "63270bf0af5987c0b2fc724e5f9a60a2676a857b2d03cb445a9384650c127ab2"
+    },
+    {
+      "path": "src/lib/profile.ts",
+      "sha256": "428a80635fef9786ed47703dabd710e8ae48f3d4a856bee480d2a4d720a5f37b"
+    },
+    {
+      "path": "src/lib/record.ts",
+      "sha256": "1bd888f01c3dbdf006c660d0a117f1d1699669228f276ee00ad5e99ef873026f"
+    },
+    {
+      "path": "src/main.tsx",
+      "sha256": "30a2dbb3fa6f5c6b76ab3e041cf641f7f3842432cf7689e111a57066abea0785"
+    },
+    {
+      "path": "src/privyConfig.ts",
+      "sha256": "e03dc694b41fc5dc14c1342f478d99a80fb7325b8a9caa341cde1cffd2456ce9"
+    },
+    {
+      "path": "src/state/AppState.tsx",
+      "sha256": "2343eab7b74a6f2eb30c714041c8a5928afb4af21fb6c1557d1fa9b7ec83c619"
+    },
+    {
+      "path": "src/state/WalletPref.tsx",
+      "sha256": "bf7c97b0d17a8bea93f59698bae810fb9ca23fc73bf87e2316a224273d81a276"
+    },
+    {
+      "path": "src/tracing.ts",
+      "sha256": "3ed5452d5abd6057c818e3362be325c3f1566523927e496e49e0eaf1bafd64b8"
+    },
+    {
+      "path": "src/types.ts",
+      "sha256": "878956e09c3b66dabaf6ef51da04080bafcf9945fe93d28ca10e11bdf014b8ea"
+    },
+    {
+      "path": "src/vite-env.d.ts",
+      "sha256": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5"
+    }
+  ],
+  "sourceDiffSha256": "ed2fb658cdda0c36132e17fb0d640118ead97c42d4dfa591184ca3b27d55313e",
+  "commit": "e824b5330469b0b74b01186c298ee08f78297790",
+  "cases": [
+    {
+      "id": "e2-vnd",
+      "turns": 4
+    }
+  ],
+  "model": "claude-haiku-5-5",
+  "provider": "anthropic",
+  "comparisonLimit": "OpenAI baseline used an older app commit; this is not a paired model-only comparison.",
+  "cap": 150000,
+  "started": "2026-10-31T04:12:48.756Z",
+  "ended": "2026-10-31T04:12:54.836Z",
+  "input": 57185,
+  "output": 739,
+  "cached": 10740,
+  "cacheCreated": 46381,
+  "cacheCreated5m": 46381,
+  "cacheCreated1h": 0,
+  "calls": 5,
+  "conservativeUnknownUsage": 0,
+  "stopped": "dataset-complete",
+  "fixture": {
+    "vndPerUsd": 25000,
+    "walletUsdc": 50,
+    "vaultUsdc": 0,
+    "hasVault": true,
+    "prices": "unavailable"
+  },
+  "apiCalls": [
+    {
+      "case": "e2-vnd",
+      "turn": 2,
+      "status": 200,
+      "ms": 1776,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 10740,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 340,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "update_profile",
+          "arguments": {
+            "age": 25,
+            "income_stable": true,
+            "dependents": 0,
+            "debts_complete": true
+          }
+        },
+        {
+          "name": "set_income",
+          "arguments": {
+            "name": "Lương",
+            "monthly": {
+              "amount": 15000000,
+              "currency": "VND"
+            },
+            "kind": "active"
+          }
+        },
+        {
+          "name": "set_expense",
+          "arguments": {
+            "name": "Chi tiêu hàng tháng",
+            "monthly": {
+              "amount": 9000000,
+              "currency": "VND"
+            },
+            "kind": "variable"
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "e2-vnd",
+      "turn": 2,
+      "status": 200,
+      "ms": 934,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 11495,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 11495,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 19,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "show_cashflow",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "e2-vnd",
+      "turn": 2,
+      "status": 200,
+      "ms": 759,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 11592,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 11592,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "e2-vnd",
+      "turn": 3,
+      "status": 200,
+      "ms": 1716,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 11212,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 11212,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 348,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "savings",
+            "name": "Tiết kiệm ngân hàng",
+            "worth": {
+              "amount": 20000000,
+              "currency": "VND"
+            }
+          }
+        },
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "stable_wallet",
+            "name": "USDT",
+            "worth": {
+              "amount": 5000000,
+              "currency": "VND"
+            }
+          }
+        },
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "gold_physical",
+            "name": "Vàng miếng",
+            "quantity": 3,
+            "unit": "chi"
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "e2-vnd",
+      "turn": 3,
+      "status": 200,
+      "ms": 756,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 12082,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 12082,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    }
+  ],
+  "transcript": [
+    {
+      "case": "e2-vnd",
+      "category": "intake",
+      "turn": 1,
+      "user": "Lập kế hoạch giúp mình",
+      "status": 200,
+      "content": "Để lập kế hoạch cho tiền của bạn, mình cần biết tháng của bạn trông thế nào. Bạn kể tự nhiên trong 1 tin là được:\n- Bạn bao nhiêu tuổi\n- Mỗi tháng kiếm khoảng bao nhiêu, có đều không\n- Có khoản thu lâu lâu mới có không (airdrop, thưởng…)\n- Chi tiêu khoảng bao nhiêu (chưa tính trả nợ)\n- Có ai sống dựa vào thu nhập của bạn không\n- Có khoản nợ nào không: còn nợ bao nhiêu, lãi bao nhiêu, mỗi tháng trả bao nhiêu\n\nƯớc chừng là được. Bạn cứ thoải mái chia sẻ, phần nào không muốn nói thì bỏ qua.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "tokens": 0,
+      "calls": 0,
+      "ms": 26,
+      "complete": true
+    },
+    {
+      "case": "e2-vnd",
+      "category": "intake",
+      "turn": 2,
+      "user": "25 tuổi, lương 15tr đều, tiêu 9tr, chưa vợ con, không nợ",
+      "status": 200,
+      "content": "Mình ghi lại: tuổi 25; thu nhập $600/tháng; chi tiêu $360/tháng; không ai sống dựa vào thu nhập của bạn; không nợ.\n\nQuỹ dự phòng của bạn nên là **$1,080** = 3 tháng chi tiêu. Mỗi tháng bạn còn dư $240, quỹ lấp dần từ phần này.\n\nGiờ tới phần bạn đang có. Bạn kể tự nhiên là được, ví dụ \"3k ngân hàng, 1k USDC, 0.5 oz vàng, 0.02 BTC\". Quỹ dự phòng trong app và cirBTC thì mình tự đọc trên chuỗi; ví này đang có 50 USDC, bạn nói giúp phần nào là của bạn.\n\nThêm 1 câu: ngoài phần an toàn, bạn muốn chia giữa đầu tư truyền thống (cổ phiếu, vàng) và crypto thế nào? MoonSafe mặc định 50/50, bạn chọn khác cũng được.",
+      "ops": [
+        {
+          "op": "update_profile",
+          "fields": {
+            "age": 25
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "incomeStable": true
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "dependents": 0
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "debtsComplete": true
+          }
+        },
+        {
+          "op": "set_income",
+          "income": {
+            "id": "ikst9nt",
+            "name": "Lương",
+            "monthly": 15000000,
+            "currency": "VND",
+            "kind": "active",
+            "updatedAt": 1793419970632
+          }
+        },
+        {
+          "op": "set_expense",
+          "expense": {
+            "id": "e2vy7xa",
+            "name": "Chi tiêu hàng tháng",
+            "monthly": 9000000,
+            "currency": "VND",
+            "kind": "variable",
+            "updatedAt": 1793419970633
+          }
+        }
+      ],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "show_cashflow"
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": 25,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ikst9nt",
+            "name": "Lương",
+            "monthly": 15000000,
+            "currency": "VND",
+            "kind": "active",
+            "updatedAt": 1793419970632
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e2vy7xa",
+            "name": "Chi tiêu hàng tháng",
+            "monthly": 9000000,
+            "currency": "VND",
+            "kind": "variable",
+            "updatedAt": 1793419970633
+          }
+        ]
+      },
+      "tokens": 34240,
+      "calls": 3,
+      "ms": 3498,
+      "complete": true
+    },
+    {
+      "case": "e2-vnd",
+      "category": "intake",
+      "turn": 3,
+      "user": "20tr tiết kiệm ngân hàng, 5tr USDT, 3 chỉ vàng",
+      "status": 200,
+      "content": "Mình nhận được 3 mục. Xác nhận hoặc hủy từng mục bên dưới; chưa có gì được lưu cho đến khi bạn xác nhận.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "confirm_items",
+          "items": [
+            {
+              "text": "Tiết kiệm ngân hàng 20M VND",
+              "ops": [
+                {
+                  "op": "add_holding",
+                  "holding": {
+                    "id": "hbmpqzg",
+                    "type": "savings",
+                    "name": "Tiết kiệm ngân hàng",
+                    "updatedAt": 1793419974063,
+                    "rebalanceable": true,
+                    "value": 20000000,
+                    "currency": "VND",
+                    "priceSource": "self"
+                  }
+                }
+              ]
+            },
+            {
+              "text": "USDT 5M VND",
+              "ops": [
+                {
+                  "op": "add_holding",
+                  "holding": {
+                    "id": "ht6mvwb",
+                    "type": "stable_wallet",
+                    "name": "USDT",
+                    "updatedAt": 1793419974064,
+                    "rebalanceable": true,
+                    "value": 5000000,
+                    "currency": "VND",
+                    "priceSource": "market"
+                  }
+                }
+              ]
+            },
+            {
+              "text": "Vàng miếng 0.3617 oz",
+              "ops": [
+                {
+                  "op": "add_holding",
+                  "holding": {
+                    "id": "h6itqo9",
+                    "type": "gold_physical",
+                    "name": "Vàng miếng",
+                    "updatedAt": 1793419974065,
+                    "rebalanceable": true,
+                    "quantity": 0.36169589889706477,
+                    "unit": "oz",
+                    "priceSource": "market"
+                  }
+                }
+              ]
+            }
+          ],
+          "ask": []
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": 25,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ikst9nt",
+            "name": "Lương",
+            "monthly": 15000000,
+            "currency": "VND",
+            "kind": "active",
+            "updatedAt": 1793419970632
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e2vy7xa",
+            "name": "Chi tiêu hàng tháng",
+            "monthly": 9000000,
+            "currency": "VND",
+            "kind": "variable",
+            "updatedAt": 1793419970633
+          }
+        ]
+      },
+      "profile": {
+        "v": 2,
+        "age": 25,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ikst9nt",
+            "name": "Lương",
+            "monthly": 15000000,
+            "currency": "VND",
+            "kind": "active",
+            "updatedAt": 1793419970632
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e2vy7xa",
+            "name": "Chi tiêu hàng tháng",
+            "monthly": 9000000,
+            "currency": "VND",
+            "kind": "variable",
+            "updatedAt": 1793419970633
+          }
+        ]
+      },
+      "tokens": 23684,
+      "calls": 2,
+      "ms": 2485,
+      "complete": true
+    },
+    {
+      "case": "e2-vnd",
+      "category": "intake",
+      "turn": 4,
+      "user": "[app event] The user reviewed the items: saved: Tiết kiệm ngân hàng 20M VND; USDT 5M VND; Vàng miếng 0.3617 oz. skipped: none.",
+      "status": 200,
+      "content": "Kế hoạch của bạn, theo thứ tự:\n\n1. **Quỹ dự phòng: $1,080** = 3 tháng chi tiêu, vì thu nhập ổn định và không ai phụ thuộc vào bạn, nên vài tháng là đủ để qua lúc gián đoạn mà không phải bán gì. Hiện có $0.\n\n2. Sau đó cân ba phần theo tuổi của bạn, 25. Phần đang đi xa nhất là Safety, nên cả ba được tính theo nó ($4,000):\n- **Safety 25% = $1,000**: tiết kiệm rút được bất cứ lúc nào. Bạn có $1,000: đúng tỷ lệ.\n- **Traditional 37.5% = $1,500**: quỹ chỉ số như VOO và vàng. Bạn có $0, còn $1,500.\n- **Crypto 37.5% = $1,500**: chủ yếu Bitcoin, có lúc giảm một nửa. Bạn có $0, còn $1,500.\n\nTraditional và Crypto chia đôi: chia đôi là mặc định của MoonSafe, không phải quy tắc chuẩn, bạn có thể chọn tỷ lệ khác. Quỹ dự phòng và Safety giữ riêng tiền cho nhu cầu gần. Đây là gợi ý, bạn quyết định.\n\nSẵn sàng bắt đầu chưa? Ví của bạn có thể bắt đầu quỹ với **49 USDC** ngay, phần còn lại thêm dần sau: mình chuẩn bị một lệnh nạp **49 USDC** để bạn ký nhé?",
+      "ops": [],
+      "reviewedOps": [
+        {
+          "op": "add_holding",
+          "holding": {
+            "id": "hbmpqzg",
+            "type": "savings",
+            "name": "Tiết kiệm ngân hàng",
+            "updatedAt": 1793419974063,
+            "rebalanceable": true,
+            "value": 20000000,
+            "currency": "VND",
+            "priceSource": "self"
+          }
+        },
+        {
+          "op": "add_holding",
+          "holding": {
+            "id": "ht6mvwb",
+            "type": "stable_wallet",
+            "name": "USDT",
+            "updatedAt": 1793419974064,
+            "rebalanceable": true,
+            "value": 5000000,
+            "currency": "VND",
+            "priceSource": "market"
+          }
+        },
+        {
+          "op": "add_holding",
+          "holding": {
+            "id": "h6itqo9",
+            "type": "gold_physical",
+            "name": "Vàng miếng",
+            "updatedAt": 1793419974065,
+            "rebalanceable": true,
+            "quantity": 0.36169589889706477,
+            "unit": "oz",
+            "priceSource": "market"
+          }
+        }
+      ],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 25,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hbmpqzg",
+            "type": "savings",
+            "name": "Tiết kiệm ngân hàng",
+            "updatedAt": 1793419974063,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 20000000,
+            "currency": "VND"
+          },
+          {
+            "id": "ht6mvwb",
+            "type": "stable_wallet",
+            "name": "USDT",
+            "updatedAt": 1793419974064,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "value": 5000000,
+            "currency": "VND"
+          },
+          {
+            "id": "h6itqo9",
+            "type": "gold_physical",
+            "name": "Vàng miếng",
+            "updatedAt": 1793419974065,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "quantity": 0.36169589889706477,
+            "unit": "oz"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ikst9nt",
+            "name": "Lương",
+            "monthly": 15000000,
+            "currency": "VND",
+            "kind": "active",
+            "updatedAt": 1793419970632
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e2vy7xa",
+            "name": "Chi tiêu hàng tháng",
+            "monthly": 9000000,
+            "currency": "VND",
+            "kind": "variable",
+            "updatedAt": 1793419970633
+          }
+        ]
+      },
+      "profile": {
+        "v": 2,
+        "age": 25,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hbmpqzg",
+            "type": "savings",
+            "name": "Tiết kiệm ngân hàng",
+            "updatedAt": 1793419974063,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 20000000,
+            "currency": "VND"
+          },
+          {
+            "id": "ht6mvwb",
+            "type": "stable_wallet",
+            "name": "USDT",
+            "updatedAt": 1793419974064,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "value": 5000000,
+            "currency": "VND"
+          },
+          {
+            "id": "h6itqo9",
+            "type": "gold_physical",
+            "name": "Vàng miếng",
+            "updatedAt": 1793419974065,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "quantity": 0.36169589889706477,
+            "unit": "oz"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ikst9nt",
+            "name": "Lương",
+            "monthly": 15000000,
+            "currency": "VND",
+            "kind": "active",
+            "updatedAt": 1793419970632
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e2vy7xa",
+            "name": "Chi tiêu hàng tháng",
+            "monthly": 9000000,
+            "currency": "VND",
+            "kind": "variable",
+            "updatedAt": 1793419970633
+          }
+        ]
+      },
+      "tokens": 0,
+      "calls": 0,
+      "ms": 9,
+      "complete": true
+    }
+  ]
+}
