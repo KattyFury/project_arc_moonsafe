@@ -6,7 +6,8 @@ import { DEFAULT_CLAUDE_MODEL } from '../functions/_lib/llm'
 import { REEVAL_CASES } from './reeval-cases'
 import { CYCLE_FRESH_CASES } from './cycle-fresh-cases'
 import { DAY_EVAL_CASES } from './day-eval-cases'
-import { existsSync, writeFileSync } from 'node:fs'
+import { SESSION_EVAL_CASES } from './session-eval-cases'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { SignJWT, exportJWK, generateKeyPair } from 'jose'
 import { normalizeProfile, applyOps, readOps } from '../src/lib/profile'
@@ -18,7 +19,7 @@ const label = flag('--run') ?? 'claude-reeval-2026-10-29'
 if (!/^[a-z0-9-]+$/.test(label)) throw new Error('Run label must contain only lowercase letters, digits and hyphens.')
 const OUT = 'docs/evals/' + label + '.json'
 const priority = ['cost-basis', 'irregular-family', 'no-consent', 'loss-listening', 'beginner-vi', 'shared-transfers']
-const ordered = [...FRAMEWORK_CASES.filter(c => priority.includes(c.id)), ...FRAMEWORK_CASES.filter(c => !priority.includes(c.id)), ...REEVAL_CASES, ...CYCLE_FRESH_CASES, ...DAY_EVAL_CASES]
+const ordered = [...SESSION_EVAL_CASES, ...FRAMEWORK_CASES.filter(c => priority.includes(c.id)), ...FRAMEWORK_CASES.filter(c => !priority.includes(c.id)), ...REEVAL_CASES, ...CYCLE_FRESH_CASES, ...DAY_EVAL_CASES]
 const selected = flag('--only')?.split(',')
 const cases = selected ? selected.flatMap(id => ordered.filter(c => c.id === id)) : ordered
 if (selected && (new Set(selected).size !== selected.length || cases.length !== selected.length)) throw new Error('Unknown or duplicate case id.')
@@ -45,6 +46,7 @@ const token = await new SignJWT({}).setProtectedHeader({ alg: 'ES256', kid: jwk.
   .setIssuedAt().setExpirationTime('12h').sign(privateKey)
 const realFetch = globalThis.fetch
 const report = {
+  sourceTree: execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', 'functions', 'src'], {encoding:'utf8'}).split('\0').filter(Boolean).sort().map(path=>({path,sha256:createHash('sha256').update(readFileSync(path)).digest('hex')})),
   sourceDiffSha256: createHash('sha256').update(execFileSync('git', ['diff', '--', 'functions', 'src'], { encoding: 'utf8' })).digest('hex'),
   commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), cases: cases.map(c => ({ id: c.id, turns: c.lines.length })), model: DEFAULT_CLAUDE_MODEL, provider: 'anthropic', comparisonLimit: 'OpenAI baseline used an older app commit; this is not a paired model-only comparison.', cap: CAP,
   started: new Date().toISOString(), ended: '', input: 0, output: 0, cached: 0, cacheCreated: 0, cacheCreated5m: 0, cacheCreated1h: 0, calls: 0,
@@ -89,6 +91,7 @@ globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
         report.stopped = 'missing-usage'
       }
       report.apiCalls.push({ case: activeCase, turn: activeTurn, status: res.status, ms: Date.now() - start,
+        corrections: typeof body.system === 'string' ? body.system.split('\n\n').filter((s: string) => s.startsWith('Output only the corrected user-facing answer')) : [],
         phase: body.tool_choice?.type === 'any' ? 'planner' : 'reply', usage,
         tools: data.content?.filter((b: { type: string }) => b.type === 'tool_use').map((b: { name: string; input: unknown }) => ({ name: b.name, arguments: b.input })) ?? [],
         finish: data.stop_reason,
@@ -122,9 +125,27 @@ try {
     if (halted) break
     activeCase = scenario.id
     let profile = normalizeProfile({ v: 2 })
+    let lastActions: Array<{ type?: string; items?: Array<{ text:string; ops:unknown[] }>; ask?:string[] }> = []
     const history: Array<{ role: string; content: string }> = []
-    for (const [i, user] of scenario.lines.entries()) {
+    for (const [i, scriptedUser] of scenario.lines.entries()) {
       if (halted) break
+      let user: string = scriptedUser
+      let reviewedOps: unknown[] = []
+      if (user.startsWith('@review-')) {
+        const card = lastActions.find(a => a.type === 'confirm_items')
+        if (!card?.items?.length) {
+          report.stopped = 'fixture-missing-confirmation-card'
+          halted = true
+          checkpoint()
+          break
+        }
+        const choice = user.slice('@review-'.length)
+        const accepted = card.items.filter((_, index) => choice === 'all' || (choice === 'first' && index === 0))
+        const skipped = card.items.filter(item => !accepted.includes(item))
+        reviewedOps = accepted.flatMap(item => item.ops)
+        profile = applyOps(profile, readOps(reviewedOps))
+        user = `[app event] The user reviewed the items: saved: ${accepted.map(a=>a.text).join('; ') || 'none'}. skipped: ${skipped.map(a=>a.text).join('; ') || 'none'}.${card.ask?.length ? ` Still to ask: ${card.ask.join(' | ')}.` : ''}`
+      }
       activeTurn = i + 1
       const start = Date.now(), before = used(), callsBefore = report.calls
       const beforeProfile = profile
@@ -134,10 +155,11 @@ try {
         body: JSON.stringify({ messages: history.slice(-30), context: { profile, walletUsdc: 50, vaultUsdc: 0, cirBtcUsdc: 0, hasVault: true }, debug: true }),
       }) })
       const data = await res.json() as { content?: string; ops?: unknown[]; actions?: unknown[] }
+      lastActions = (data.actions ?? []) as typeof lastActions
       profile = applyOps(profile, readOps(data.ops ?? []))
       history.push({ role: 'assistant', content: data.content ?? '' })
       report.transcript.push({ case: scenario.id, category: scenario.category, turn: activeTurn, user, status: res.status,
-        content: data.content, ops: data.ops ?? [], actions: data.actions ?? [], beforeProfile, profile,
+        content: data.content, ops: data.ops ?? [], reviewedOps, actions: data.actions ?? [], beforeProfile, profile,
         tokens: used() - before, calls: report.calls - callsBefore, ms: Date.now() - start, complete: !halted && res.status === 200,
       })
       if (res.status !== 200) { halted = true; report.stopped ||= `handler-http-${res.status}` }

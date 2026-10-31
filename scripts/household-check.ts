@@ -36,7 +36,7 @@ export function householdChecks(): number {
     ['Can I plan for my household?', null], ['My wife earns $1500', null],
     ['I am married', null], ['If I use a household budget', null],
     ['Plan for my household. Buy BTC', null], ['I do not want a household plan', null],
-  ] as const) { assert.equal(scopeChoice(text), want); checks++ }
+  ] as const) { assert.equal(scopeChoice(text, true), want); checks++ }
   for (const scope of [undefined, 'individual', 'household', 'invalid', null]) {
     const p = normalizeProfile({ v: 2, planningScope: scope, age: 34 })
     assert.equal(p.age, 34)

@@ -7,6 +7,7 @@
     ]
   },
   "include": [
+    "chat-typecheck.d.ts",
     "../functions/_lib/education.ts",
     "education-eval.ts",
     "framework-eval.ts",
@@ -18,6 +19,8 @@
     "offline-guard-probes.ts",
     "offline-negative-replay.ts",
     "claude-reeval.ts",
+    "session-regression-check.ts",
+    "session-final-replay.ts",
     "claude-eval-summary.ts"
   ]
 }

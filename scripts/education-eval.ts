@@ -250,6 +250,7 @@ try {
     assert.ok(consent.data.actions?.some(a => !!a && typeof a === 'object' && 'type' in a && a.type === 'prepare_deposit'))
     checks += 2
     forcedTools = []
+    fakeReply = 'A deposit moves money into the vault; your emergency target is unknown until spending and household risks are known.'
     const unknownFund = await ask('Explain what a $100 USDC deposit would do. This is a question, not a request to prepare one.')
     assert.match(unknownFund.data.content ?? '', /unknown/)
     assert.deepEqual(unknownFund.data.actions, [])

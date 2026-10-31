@@ -41,6 +41,14 @@ export function investedBasis(text: string, symbol: string | undefined): { amoun
     if (usd) return { amount: Number((usd[1] ?? usd[2] ?? usd[3] ?? usd[4]).replace(/,/g, '')), currency: 'USDC' }
     const vi = s.match(/(?:mình|tôi)\s+(?:đã\s+)?(?:bỏ|đầu tư|chi)\s+([\d,]+(?:\.\d+)?)\s*(triệu|nghìn)?\s*(?:VND|đồng)?\s*(?:để\s+)?(?:mua|vào)\s+(?:BTC|Bitcoin)/iu) // lang-ok
     if (vi) return { amount: Number(vi[1].replace(/,/g, '')) * (vi[2] === 'triệu' ? 1e6 : vi[2] === 'nghìn' ? 1000 : 1), currency: 'VND' } // lang-ok
+    const viQuantity = s.match(/(?:mình|tôi)\s+(?:đã\s+)?mua\s+[\d.]+\s*(?:BTC|Bitcoin)\s+(?:hết|với giá|với vốn)\s+([\d,]+(?:\.\d+)?)\s*(triệu|nghìn)?\s*(?:VND|đồng)/iu) // lang-ok
+    if (viQuantity) return { amount: Number(viQuantity[1].replace(/,/g, '')) * (viQuantity[2] === 'triệu' ? 1e6 : viQuantity[2] === 'nghìn' ? 1000 : 1), currency: 'VND' } // lang-ok
+    // Explicit corrections still name invested cost; today's market value never matches.
+    const correction = /đính chính|sửa|correct(?:ion)?|purchase cost|cost basis/iu.test(s) && /BTC|Bitcoin/iu.test(text) // lang-ok
+    const viCorrection = correction ? s.match(/vốn mua\s*(?:là|thành|:)\s*([\d,]+(?:\.\d+)?)\s*(triệu|nghìn)?\s*(?:VND|đồng)/iu) : null // lang-ok
+    if (viCorrection) return { amount: Number(viCorrection[1].replace(/,/g, '')) * (viCorrection[2] === 'triệu' ? 1e6 : viCorrection[2] === 'nghìn' ? 1000 : 1), currency: 'VND' } // lang-ok
+    const usdCorrection = correction ? s.match(/(?:purchase cost|cost basis)\s*(?:is|was|to|:)\s*\$([\d,]+(?:\.\d+)?)/iu) : null
+    if (usdCorrection) return { amount:Number(usdCorrection[1].replace(/,/g,'')), currency:'USDC' }
   }
   return null
 }

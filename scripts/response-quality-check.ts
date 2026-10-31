@@ -249,5 +249,5 @@ try {
     checks += 4
   }
 } finally { globalThis.fetch = realFetch }
-writeFileSync('docs/evals/response-quality-offline-2026-10-29.json', JSON.stringify({ mode: 'offline', paidCalls: 0, checks, mockCalls: calls, mockedExternal: external, results }, null, 2))
+if (!process.argv.includes('--no-report')) writeFileSync('docs/evals/response-quality-offline-2026-10-29.json', JSON.stringify({ mode: 'offline', paidCalls: 0, checks, mockCalls: calls, mockedExternal: external, results }, null, 2))
 console.log(JSON.stringify({ checks, paidCalls: 0, results }, null, 2))

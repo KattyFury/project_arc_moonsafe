@@ -29,10 +29,19 @@ export function householdDefault(scope: PlanningScope | undefined, text: string)
 }
 
 /** Only explicit scope-setting statements change the saved plan; questions do not. */
-export function scopeChoice(text: string): PlanningScope | null {
+export function scopeChoice(text: string, standalone = false): PlanningScope | null {
   const t = text.trim().replace(/[.!]+$/u, '').trim()
   if (/^(?:plan for (?:my|our|the) (?:household|family)|use (?:a )?household (?:plan|budget)|lập kế hoạch (?:cho )?(?:gia đình|cả nhà)|tính (?:cho |theo )?(?:gia đình|cả nhà)|tính cho cả hai vợ chồng)$/iu.test(t)) return 'household' // lang-ok
   if (/^(?:plan for (?:just )?me|use (?:an? )?(?:individual|personal) (?:plan|budget)|lập kế hoạch (?:cho )?riêng mình|tính (?:cho )?riêng mình)$/iu.test(t)) return 'individual' // lang-ok
+  if (standalone || /\?|\b(?:if|suppose|example|should|would|could)\b|giả sử|ví dụ|có nên|hay là/iu.test(t)) return null // lang-ok
+  const plain = t.replace(/"[^"\n]*"|“[^”\n]*”/gu, '')
+  const choices = new Set<PlanningScope>()
+  for (const clause of plain.split(/[.!;,\n]|\bbut\b|nhưng/iu)) { // lang-ok
+    if (/\b(?:not|don't|do not|no)\b|đừng|không/iu.test(clause)) continue // lang-ok
+    if (/^\s*(?:(?:please|only|just)\s+)*(?:plan for (?:just )?me|use (?:an? )?(?:individual|personal) (?:plan|budget))\s*$|^\s*(?:chỉ\s+)?(?:lập kế hoạch|tính)\s+(?:cho\s+)?riêng\s+(?:mình|tôi)\s*$/iu.test(clause)) choices.add('individual') // lang-ok
+    if (/^\s*(?:please\s+)?(?:plan for (?:my|our|the) (?:household|family)|use (?:a )?household (?:plan|budget)|lập kế hoạch (?:cho )?(?:gia đình|cả nhà)|tính (?:cho |theo )?(?:gia đình|cả nhà))\s*$/iu.test(clause)) choices.add('household') // lang-ok
+  }
+  if (choices.size === 1 && !/\bor\b/iu.test(plain)) return [...choices][0]
   return null
 }
 

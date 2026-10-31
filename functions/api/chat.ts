@@ -21,6 +21,8 @@
 
 import { getPrices } from './prices'
 import { educationAnswer, EDUCATION_POLICY } from '../_lib/education'
+import { salaryRemainder } from '../_lib/educationFigures'
+import { confirmationStatus } from '../_lib/confirmationStatus'
 import { explicitAgeRefusal, factProposals, quantityEvidence, turnPolicy, TURN_POLICY, responseProblems, REPLY_DISCIPLINE, fundMissingInputs } from '../_lib/agentGuards'
 import { coachingBrief, recordingEvidence, COACH_POLICY, ALTCOIN_CHECK } from '../_lib/coaching'
 import { assertions, currentMarketValue, investedBasis, interestRateEvidence, passiveEvidence, zeroInterestEvidence, repaymentEvidence, incompleteExpenses } from '../_lib/mutationEvidence'
@@ -189,7 +191,7 @@ function tidyQuestions(text: string, dropStable: boolean): string {
 
 // Phrases that report an app action as done; only allowed when an action actually ran.
 const CLAIMS_ACTION = /\bI(['’]ve| have| just)\s+(opened|filled|created|set up|shown|prepared)\b|here(['’]s| is) (the|your) card|(đã|vừa)\s+(mở|điền|hiện|tạo)(?!\s*kh(?:oá|óa|oa))\s*(sẵn)?|mở sẵn màn .{0,40} (rồi|cho bạn)/i // lang-ok
-const SAYS_NOTED = /\b(noted|recorded|got it saved)\b|(đã |mình )ghi( nhận)?/i // lang-ok
+const SAYS_NOTED = /^\s*(?:\*\*)?(?:noted|got it saved)\b|\bI (?:have |just )?(?:recorded|saved)\b|(?:mình|tôi) (?:đã |vừa )?(?:ghi(?: nhận)?|lưu)/iu // lang-ok
 // "You need to add 2,301 USDC" / "you can add up to 2,301 USDC" while the floor is unknown.
 const NEEDS_AMOUNT = /((need|have|has) to (add|deposit|put)|can (add|deposit|put) up to|to reach (its|the|your) (required )?floor)[^.?!\n]{0,30}\d|(cần|phải|được tối đa) (nạp|thêm)[^.?!\n]{0,30}\d/i // lang-ok
 const ASKS_USE = /idle|what (should|can) i do with|how (should|do) i (split|invest|use)|nhàn rỗi|làm gì với|chia (tiền|thế nào|sao)/i // lang-ok
@@ -307,7 +309,10 @@ Reply in the language of the user's latest message (default English). ${VI_VOICE
 - Months of spending belong ONLY to the emergency fund. When the emergency fund is full, say "your emergency fund is full"; never "Safety is full" for it.
 - When all three figures are verified, give "X of Y, Z to go" for a part. If any figure is unknown or pending confirmation, say what is known and what remains undetermined; never fill the gap with zero or an illustrative target.
 
-## The advice path (Hieu, 2026-10-27) — the app says which phase you are in
+## Request precedence
+The current request controls the reply. Education, listening, a correction, refusal or a request for one small step takes precedence over the advice path below. A phase, matching situation or missing profile field is context, not permission to onboard. Answer the requested parts, then stop unless a missing fact is necessary for the invited task. Unknown is neither zero nor nonzero; do not invent balances, access, cadence or available money. A confirmation card is a proposal, never a saved fact or completed transaction.
+
+## The advice path (only when personal planning is invited) — the app says which phase you are in
 1. COLLECT: the app has already sent ONE list of what is needed ("Share whatever you're comfortable with"); never send it again. Anything they leave out is "prefer not to say": skip it, never push, never ask it one by one. If monthly spending is still unknown you may ask just that, with why. No advice yet.
 2. PLAN (once you know enough): how big their emergency fund should be and why, then how to divide the rest of their money by age, each group with its amount and its reason.
 3. START: ask whether they want to start; the first step is always the emergency fund, the most important part.
@@ -839,7 +844,9 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   const spendingIncomplete = incompleteExpenses(messages.filter(m => m.role === 'user').map(m => m.content))
   const lesson = educationAnswer(latest, VI_LETTERS.test(latest))
   if (lesson) return json({ content: lesson.content, ops: [], dcaStop: false, actions: [], ...(body.debug ? { education: lesson.id } : {}) })
-  const scope = scopeChoice(latest)
+  const statusAnswer = confirmationStatus(latest, normalizeProfile((ctx.profile && typeof ctx.profile === 'object' ? ctx.profile : null) as Record<string, unknown> | null), VI_LETTERS.test(latest), typeof ctx.vaultUsdc === 'number' && Number.isFinite(ctx.vaultUsdc) ? ctx.vaultUsdc : null)
+  if (statusAnswer) return json({ content: statusAnswer, ops: [], dcaStop: false, actions: [] })
+  const scope = scopeChoice(latest, true)
   if (scope) {
     const previous = normalizeProfile((ctx.profile && typeof ctx.profile === 'object' ? ctx.profile : null) as Record<string, unknown> | null)
     const vi = VI_LETTERS.test(latest)
@@ -855,7 +862,14 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   let profile = startProfile
   const ops: ProfileOp[] = []
   const readback: string[] = []
-  if (householdDefault(startProfile.planningScope, latest)) {
+  const embeddedScope = scopeChoice(latest)
+  if (embeddedScope && embeddedScope !== startProfile.planningScope) {
+    profile = { ...profile, planningScope: embeddedScope }
+    ops.push({ op: 'update_profile', fields: { planningScope: embeddedScope } })
+    readback.push(VI_LETTERS.test(latest)
+      ? (embeddedScope === 'individual' ? 'Kế hoạch riêng của bạn' : 'Kế hoạch gia đình') // lang-ok
+      : (embeddedScope === 'individual' ? 'Individual plan' : 'Household plan'))
+  } else if (!embeddedScope && householdDefault(startProfile.planningScope, latest)) {
     profile = { ...profile, planningScope: 'household' }
     ops.push({ op: 'update_profile', fields: { planningScope: 'household' } })
     readback.push(VI_LETTERS.test(latest)
@@ -1011,7 +1025,8 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
 
   const startBalance = await balanceOf(profile)
   const investUnlocked = startBalance.lock.open
-  const wantsInvestLocked = !policy.answerFirst && !investUnlocked && INVEST_INTENT.test(lastUserText) && !NOT_INVESTING.test(lastUserText) && !ASKS_WHY.test(lastUserText) && !DEPOSIT_WORD.test(lastUserText) && (!coach.active || ACTION_VERB.prepare_buy_cirbtc.test(lastUserText))
+  const correctingFact = /^(?:đính chính|sửa|correction|correct\b|update\b)/iu.test(lastUserText.trim()) // lang-ok
+  const wantsInvestLocked = !correctingFact && !policy.answerFirst && !investUnlocked && INVEST_INTENT.test(lastUserText) && !NOT_INVESTING.test(lastUserText) && !ASKS_WHY.test(lastUserText) && !DEPOSIT_WORD.test(lastUserText) && (!coach.active || ACTION_VERB.prepare_buy_cirbtc.test(lastUserText))
   const paymentNums = [...lastUserText.matchAll(PAYMENT_NUM)].flatMap(m => readings(m[1]))
   const startFacts = computeFacts({ balance: startBalance, profile, prices, vndPerUsd: rate, message: lastUserText })
   // "I put 1,000 in my bank as Safety": the app shows a confirmation box (source + Confirm) and saves it itself;
@@ -1588,7 +1603,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       : (vi ? `Theo framework hiện có: ${show(balance.cashflow.spending!)} chi tiêu tháng × ${balance.fund.floorMonths} tháng = **${show(balance.fund.floorUsd)}** mục tiêu quỹ dự phòng. Đây là mục tiêu theo dữ liệu đã khai; tiền trong vault và tiết kiệm bên ngoài cần phân biệt, không phải toàn bộ gia đình chỉ có số dư vault.` : `Using the existing framework: ${show(balance.cashflow.spending!)} monthly spending × ${balance.fund.floorMonths} months = **${show(balance.fund.floorUsd)}** emergency fund target. This uses the declared expenses. The app vault and savings outside it are separate; a zero vault does not mean the household has no available savings.`) // lang-ok
     return json({ content, ops, dcaStop, actions })
   }
-  if (policy.question && balance.fund.floorUsd === null && /deposit|nạp/iu.test(lastUserText) && !actions.length) { // lang-ok
+  if (policy.question && balance.fund.floorUsd === null && /^(?:how much (?:do i need to|should i|can i) deposit|(?:mình|tôi) (?:cần|nên|có thể) nạp bao nhiêu)[?.!]*$/iu.test(lastUserText.trim()) && !actions.length) { // lang-ok
     return json({ content: vi ? 'Nạp tiền sẽ tăng số dư vault. Mục tiêu quỹ và khoản còn thiếu chưa xác định vì chưa biết đầy đủ chi tiêu tháng; mình chưa chuẩn bị giao dịch nào.' : 'A deposit increases the app vault balance. The fund target and amount still needed are unknown until monthly spending is known. No transaction has been prepared.', ops, dcaStop, actions }) // lang-ok
   }
   const usesVnd = [...profile.incomes, ...profile.expenses, ...profile.debts, ...profile.holdings].some(x => x.currency === 'VND') || vi
@@ -1603,7 +1618,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   const collecting = matched.some(p => p.id === 'collecting' || p.id === 'age_unknown')
   // A question or a doubt from the user is answered first; the collection flow waits a turn.
   const directQuestion = QUESTIONS_US.test(lastUserText) || ASKS_WHY.test(lastUserText) || scopeQuestion(lastUserText) || /^(explain|teach|help me understand|tell me about|giải thích)(?!\p{L})/iu.test(lastUserText.trim()) // lang-ok
-  const userAsks = policy.answerFirst || coach.active || directQuestion
+  const userAsks = policy.answerFirst || coach.active || directQuestion || correctingFact
   // The framework v2 questions (goal, insurance, 50% drop) are not in the KB collecting pattern: they keep collection open too.
   const relies = (profile.dependents ?? 0) > 0 || profile.soleEarner === true
   const v2Missing = (!profile.nearGoal && !profile.noNearGoal) || (relies && (profile.insured === null || profile.insured === undefined)) || profile.cryptoDropOk === null || profile.cryptoDropOk === undefined
@@ -1656,7 +1671,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   }
 
   // BRIEF unless the turn is meant to educate: a plan the model writes, the user asking why / what something means, or an overview.
-  const teach = userAsks || phase === 'plan' || ASKS_WHY.test(lastUserText) || ASKS_OVERVIEW.test(lastUserText)
+  const teach = !correctingFact && (userAsks || phase === 'plan' || ASKS_WHY.test(lastUserText) || ASKS_OVERVIEW.test(lastUserText))
   const replyMessages: Message[] = [
     { role: 'system', content: REPLY_PROMPT },
     // The reply model sees the last 10 messages; the server logic above still reads all 30.
@@ -1732,10 +1747,12 @@ ${ending}` })
   if (coach.active) replyMessages.push({ role: 'system', content: `${COACH_POLICY}\n${coach.text}\nAnswer the concern first. No onboarding or unsolicited transaction offer. At most one optional question only if it helps their immediate concern; respect a refusal to share.` })
 
   replyMessages.push({ role: 'system', content: scopeBrief(profile.planningScope) })
-  replyMessages.push({ role: 'system', content: TURN_POLICY + `\n${REPLY_DISCIPLINE}\nConversation-only: ${policy.conversationOnly}; answer-first: ${policy.answerFirst}. Saved facts this turn: ${JSON.stringify(ops)}. A full plan is not requested merely because enough data exists.` })
-  if (pendingNote) replyMessages.push({ role: 'system', content: 'New facts await confirmation in the card and are NOT saved. Answer the actual question using saved state or general principles. The server appends the confirmation notice; do not repeat it. Do not claim the new facts were recorded or use them for personalized targets. No intake questions.' })
+  replyMessages.push({ role: 'system', content: TURN_POLICY + `\n${REPLY_DISCIPLINE}\nConversation-only: ${policy.conversationOnly}; answer-first: ${policy.answerFirst}. Saved facts this turn: ${JSON.stringify(ops)}. Existing saved profile: ${JSON.stringify(profile)}. Empty operations mean no changes THIS TURN, never that the existing profile is unconfirmed. A full plan is not requested merely because enough data exists. A simple correction needs a brief acknowledgment, no unsolicited buy-lock explanation. A zero vault establishes only the app vault gap, never a zero outside reserve or a full economic reserve gap.` })
+  if (pendingNote) replyMessages.push({ role: 'system', content: `New facts await confirmation in the card and are NOT saved. Saved profile is authoritative: ${JSON.stringify(profile)}. Pending proposals only: ${JSON.stringify(actions.filter(a => a.type === 'confirm_items'))}. Only those proposals are pending; do not call previously saved income, spending or risks pending. A target already computed from saved spending and risks remains valid. Pending savings do not establish current reserve coverage or a remaining gap. The server appends the confirmation notice; do not repeat it. Answer the requested explanation, with no intake questions.` })
 
-  const grounding = [figs, wishLine, brief, usdc(cryptoOffer), ...done, readback.join(', '), ...messages.filter(m => m.role === 'user').map(m => m.content)]
+  const explanatoryArithmetic = salaryRemainder(messages.filter(m => m.role === 'user').map(m => m.content))
+  if (explanatoryArithmetic) replyMessages.push({ role: 'system', content: explanatoryArithmetic })
+  const grounding = [figs, wishLine, brief, usdc(cryptoOffer), ...done, readback.join(', '), ...messages.filter(m => m.role === 'user').map(m => m.content), explanatoryArithmetic ?? '']
   const prevAssistant = assistantTexts[assistantTexts.length - 1] ?? ''
   const recordedStable = ops.some(o => o.op === 'update_profile' && o.fields.incomeStable !== undefined)
   const fundTargetUnknown = spendingIncomplete || fundMissingInputs(profile, balance.cashflow.spending).length > 0
@@ -1798,7 +1815,7 @@ ${ending}` })
         if (/cirBTC/.test(t.plain) && t.term.test(plain) && !/btc|bitcoin|crypto|buy|purchase|invest|mua|đầu tư/i.test(lastTyped)) { problems.push('they did not ask about buying or crypto: do not mention cirBTC or the buy lock at all; answer what they said') ; continue } // lang-ok
         const taughtBefore = assistantTexts.some(a => t.taught.test(a))
         if (t.term.test(plain) && !t.taught.test(plain) && !taughtBefore) problems.push(`first time this chat says it, explain it in plain words: ${t.plain}`)
-        if (taughtBefore && t.taught.test(plain)) problems.push(`${t.plain.split(' = ')[0]} was already explained in this chat: do not explain it again`)
+        if (!policy.question && taughtBefore && t.taught.test(plain)) problems.push(`${t.plain.split(' = ')[0]} was already explained in this chat: do not explain it again`)
       }
       // "do it" showed the deposit card, but the reply offered it again (real chat 2026-10-27).
       if (actions.some(x => String(x.type).startsWith('prepare_') || x.type === 'propose_dca') && /would you like me to prepare|want me to prepare|shall I prepare|(muốn|để) mình chuẩn bị/i.test(plain)) problems.push('the card is ALREADY shown under this reply: say it is ready for them to check and sign, do not offer it again') // lang-ok
