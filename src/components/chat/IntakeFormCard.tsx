@@ -2,8 +2,11 @@
 // is one ruled row, the label on the left and the answer on the right. Balance Sheet v2 (Hieu, 2026-10-31): two steps, each in two
 // frames so a frame never needs scrolling. Step 1 is the cash flow that sizes the emergency fund (Your month, then Debt and big
 // expenses); step 2 is what they hold (Safety and Traditional, then Crypto and the Traditional / Crypto split). Gold, Bitcoin, stocks and
-// coins can be typed as $ or as a quantity. Home / car / business, passive income, airdrops, the goal's name and who a debt is owed to
-// are left to the chat. A blank row is "prefer not to say"; the last frame saves straight away (sending is the user's confirmation).
+// coins can be typed as $ or as a quantity. Home / car / business, passive income, the goal's name and who a debt is owed to are left
+// to the chat. A blank row is "prefer not to say"; the last frame saves straight away (sending is the user's confirmation).
+// 2026-11-01 (Hieu: answering in words was hard to use): the server sends only the cash flow again, as ONE frame that fits a desktop
+// screen: two columns from md up (the month | debt and big expenses), one column on phones, where the card may run tall. Rows are 48px.
+// What they hold is asked in words after it (functions/_lib/intake.ts assetsAsk); its steps below remain for cards saved before.
 // Pure props (no app context).
 
 import { useState, type ReactNode } from 'react'
@@ -15,7 +18,7 @@ import type { Prices } from '@/lib/allocation'
 /** One ruled row: the question on the left, its answer on the right. */
 function Row({ label, hint, under, children }: { label: string; hint?: string; under?: ReactNode; children: ReactNode }) {
   return (
-    <div className="min-h-14 py-2 flex items-center justify-between gap-4" style={{ borderBottom: '1px solid var(--line)' }}>
+    <div className="min-h-12 py-1 flex items-center justify-between gap-4" style={{ borderBottom: '1px solid var(--line)' }}>
       <div className="min-w-0 flex flex-col gap-1">
         <span className="text-[16px] leading-6" style={{ color: 'var(--ink)' }}>{label}</span>
         {hint && <span className="text-[14px] leading-5" style={{ color: 'var(--muted)' }}>{hint}</span>}
@@ -73,8 +76,8 @@ function Pills<T extends string>({ value, options, onChange, label, small = fals
 
 const YES_NO = [{ value: 'yes' as const, label: 'Yes' }, { value: 'no' as const, label: 'No' }]
 
-function YesNoRow({ label, value, onChange }: { label: string; value: YesNo; onChange: (v: 'yes' | 'no') => void }) {
-  return <Row label={label}><Pills label={label} value={value} options={YES_NO} onChange={onChange} /></Row>
+function YesNoRow({ label, hint, value, onChange }: { label: string; hint?: string; value: YesNo; onChange: (v: 'yes' | 'no') => void }) {
+  return <Row label={label} hint={hint}><Pills label={label} value={value} options={YES_NO} onChange={onChange} /></Row>
 }
 
 /** An amount typed in $ or as a quantity (Balance Sheet v2): the switch sits under the label, the unit follows the figures. */
@@ -137,32 +140,39 @@ export function IntakeFormCard({ keys, seen, values, planningScope, status, save
 
   const steps: Step[] = []
   // Who the plan is for is asked once, at the top of the first step.
-  steps.push({ key: 'month', title: 'Your month', note: household ? 'Shared totals count once. The split uses your age.' : undefined, view: <>
-    <div className="pb-2"><Pills label="Plan for" value={scope} options={[{ value: 'individual' as const, label: 'Just me' }, { value: 'household' as const, label: 'Household' }]} onChange={set('planningScope')} /></div>
+  const month = <>
     {has('age') && <Amount label={household ? 'Your age (for this plan)' : 'Age'} value={values.age} onChange={set('age')} prefix="" plain />}
     {has('income') && <Amount label={household ? 'Combined salary a month' : 'Salary a month'} value={values.salary} onChange={set('salary')} />}
     {/* Debt payments are asked with the debt and added to spending for the emergency fund (KB fund_floor), so they are left out here. */}
     {has('spending') && <Amount label={household ? 'Household spending a month' : 'Spending a month'} hint="Not counting debt payments" value={values.spending} onChange={set('spending')} />}
     {has('stability') && <>
       <YesNoRow label={household ? 'Combined income steady?' : 'Income steady?'} value={values.steady} onChange={set('steady')} />
+      <YesNoRow label="Money now and then?" hint="Airdrops, bonuses" value={values.windfalls} onChange={set('windfalls')} />
       <YesNoRow label={household ? 'Anyone depends on it?' : 'Anyone relies on it?'} value={values.reliers} onChange={set('reliers')} />
       {values.reliers === 'yes' && <Amount label="How many people?" value={values.reliersCount} onChange={set('reliersCount')} prefix="" plain />}
       {household && <YesNoRow label="Only one person earning?" value={values.onlyEarner ?? null} onChange={set('onlyEarner')} />}
     </>}
-  </> })
-  // Step 1, second frame: the rest of the cash flow the emergency fund is sized from.
-  if (has('goal') || has('debt')) steps.push({ key: 'debt', title: 'Debt and big expenses', view: <>
-    {has('debt') && <YesNoRow label="Any debt, family loans included?" value={values.debt} onChange={set('debt')} />}
+  </>
+  // The rest of the cash flow the emergency fund is sized from, beside the month on wide screens.
+  const debt = (has('goal') || has('debt')) && <>
+    {has('debt') && <YesNoRow label="Any debt?" hint="Family loans too" value={values.debt} onChange={set('debt')} />}
     {has('debt') && values.debt === 'yes' && <>
       <Amount label="Total you still owe" value={values.debtOwed} onChange={set('debtOwed')} />
       <Amount label="Interest a year" value={values.debtRate} onChange={set('debtRate')} prefix="" suffix="%" />
       <Amount label="You pay a month" value={values.debtMonthly} onChange={set('debtMonthly')} />
     </>}
-    {has('goal') && <YesNoRow label="A big expense within 5 years?" value={values.goal} onChange={set('goal')} />}
+    {has('goal') && <YesNoRow label="Big expense in 5 years?" value={values.goal} onChange={set('goal')} />}
     {has('goal') && values.goal === 'yes' && <>
       <Amount label="How much?" hint="A car, a wedding, school" value={values.goalAmount} onChange={set('goalAmount')} />
       <Amount label="In how many years?" value={values.goalYears} onChange={set('goalYears')} prefix="" plain />
     </>}
+  </>
+  steps.push({ key: 'month', title: 'Your month', note: household ? 'Shared totals count once. The split uses your age.' : undefined, view: <>
+    <div className="pb-2"><Pills label="Plan for" value={scope} options={[{ value: 'individual' as const, label: 'Just me' }, { value: 'household' as const, label: 'Household' }]} onChange={set('planningScope')} /></div>
+    <div className="grid md:grid-cols-2 md:gap-x-8">
+      <div className="flex flex-col md:[&>*:last-child]:border-b-0"><Group>Income and spending</Group>{month}</div>
+      {debt && <div className="flex flex-col [&>*:last-child]:border-b-0"><Group>Debt and big expenses</Group>{debt}</div>}
+    </div>
   </> })
   // Step 2: what they hold, by part (Hieu approved the list 2026-10-31). The emergency fund vault and cirBTC are read onchain.
   if (has('assets')) {
@@ -199,13 +209,13 @@ export function IntakeFormCard({ keys, seen, values, planningScope, status, save
   const next = () => { if (!last) setAt(i + 1); else if (count) onReview(full); else onSkip() }
 
   return (
-    <GlassCard className="ml-10 p-4 flex flex-col gap-2 w-[calc(100%-40px)] max-w-[480px] sm:max-w-[560px]">
+    <GlassCard className="ml-10 p-4 flex flex-col gap-2 w-[calc(100%-40px)] max-w-[480px] sm:max-w-[560px] md:max-w-none">
       {steps.length > 1 && (
         <div className="flex gap-1 pb-2" aria-label={`Step ${i + 1} of ${steps.length}`}>
           {steps.map((s, k) => <span key={s.key} className="flex-1 h-1 rounded-full" style={{ background: k <= i ? 'var(--accent)' : 'var(--line)' }} />)}
         </div>
       )}
-      <h3 className="display text-[20px] leading-7 font-bold" style={{ color: 'var(--ink)', letterSpacing: '-0.02em' }}>{cur.title}</h3>
+      <h3 className="display text-[18px] leading-6 font-bold" style={{ color: 'var(--ink)', letterSpacing: '-0.02em' }}>{cur.title}</h3>
       {cur.note && <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>{cur.note}</p>}
       <div key={cur.key} className="flex flex-col [&>*:last-child]:border-b-0">{cur.view}</div>
 

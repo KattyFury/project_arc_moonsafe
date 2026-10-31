@@ -94,16 +94,17 @@ const expect = (ok: boolean, what: string) => { if (!ok) { bad++; console.log('F
 // 0. A brand-new user's first message: the questions come as a FORM to fill in (server-built, no model call).
 const hello = await call([{ role: 'user', content: 'investing' }], normalizeProfile({ v: 2 }), 0)
 console.log('step 0: model calls', hello.calls)
-// Option E2 (Hieu, 2026-10-31): no form; question 1 of 2 asks the month in words, as one block (occasional income included).
+// Hieu 2026-11-01: question 1 of 2 is the month as a form again (words were hard to use), cash-flow sections only.
 expect(hello.calls === 0, 'the first message costs no model call')
-expect(!hello.body.actions?.some(a => a.type === 'intake_form'), 'no form any more: people tell what they have in words')
-expect(/Share whatever you're comfortable with/.test(hello.body.content ?? '') && /Your age/.test(hello.body.content ?? '') && /airdrops/.test(hello.body.content ?? '') && /not counting debt payments/.test(hello.body.content ?? '') && /how much is left, the interest, what you pay a month/.test(hello.body.content ?? ''), 'question 1 asks the whole month at once')
+const form = hello.body.actions?.find(a => a.type === 'intake_form') as { keys?: string[] } | undefined
+expect(!!form && ['age', 'income', 'spending', 'stability', 'goal', 'debt'].every(k => form.keys?.includes(k)) && !form.keys?.includes('assets'), 'question 1 is the cash-flow form: the whole month, not what they hold')
+expect(/Share whatever you're comfortable with/.test(hello.body.content ?? '') && /fill in your month below/.test(hello.body.content ?? ''), 'question 1 says to fill in the month below')
 
 // 0b. The month question was ignored, then the user asks about the emergency fund with the spending still unknown: the month
 // question comes back as one block, at most once more.
 const skipped = [{ role: 'user' as const, content: 'investing' }, { role: 'assistant' as const, content: hello.body.content ?? '' }, { role: 'user' as const, content: 'later' }, { role: 'assistant' as const, content: 'No problem.' }]
 const fundAsk = await call([...skipped, { role: 'user', content: 'How big should my emergency fund be?' }], normalizeProfile({ v: 2, age: 30 }), 0)
-expect(/To size your emergency fund, I need to know what your month looks like/.test(fundAsk.body.content ?? ''), `the fund question brings the month question back (got: ${(fundAsk.body.content ?? '').slice(0, 80)})`)
+expect(/To size your emergency fund, fill in your month below/.test(fundAsk.body.content ?? '') && !!fundAsk.body.actions?.some(a => a.type === 'intake_form'), `the fund question brings the month question back (got: ${(fundAsk.body.content ?? '').slice(0, 80)})`)
 const again = await call([...skipped, { role: 'user', content: 'How big should my emergency fund be?' }, { role: 'assistant', content: fundAsk.body.content ?? '' }, { role: 'user', content: 'and my emergency fund?' }], normalizeProfile({ v: 2, age: 30 }), 0)
 expect(!/what your month looks like/.test(again.body.content ?? ''), 'the month question is not sent a third time')
 
@@ -120,6 +121,9 @@ expect(/\*\*\$3,600\*\* = 6 months of spending \(debt payments included/.test(q2
 expect(/Now, what you hold, in your own words/.test(q2Text) && /MoonSafe's default is 50\/50/.test(q2Text) && /is your pay about the same every month\?/.test(q2Text) && !/Here is your plan/.test(q2Text), 'then what they hold, the split, and the steadiness left out; no plan yet')
 const q2Again = await call([{ role: 'user', content: 'investing' }, { role: 'assistant', content: hello.body.content ?? '' }, { role: 'user', content: 'ok' }, { role: 'assistant', content: q2Text }, { role: 'user', content: 'nothing else' }], month, 0)
 expect(!/Now, what you hold/.test(q2Again.body.content ?? ''), 'question 2 is asked once')
+// Saving the form (an app event) is what brings question 2 now (Hieu, 2026-11-01).
+const q2Form = await call([{ role: 'user', content: 'investing' }, { role: 'assistant', content: hello.body.content ?? '' }, { role: 'user', content: '[app event] The user reviewed the items: saved: Age 31; Salary $600 a month (active). skipped: none.' }], month, 0)
+expect(/Now, what you hold, in your own words/.test(q2Form.body.content ?? ''), 'question 2 follows a saved form')
 
 // 1. A NEW user types everything in one message: it is saved at once (no confirm card), and the plan follows in the same reply.
 const empty = normalizeProfile({ v: 2 })

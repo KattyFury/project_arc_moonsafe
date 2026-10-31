@@ -48,19 +48,23 @@ function purpose(text: string): { en: string; vi: string } {
 /** The sections the form should show: what is still unknown. */
 export const intakeKeys = (p: FinancialProfile): string[] => unknownBullets(p).map(b => b.key)
 
+/** The form's sections for the month (Hieu, 2026-11-01: back to a form, words were hard to use): what is still unknown of the cash flow. */
+export const CASHFLOW_KEYS = ['age', 'income', 'spending', 'stability', 'goal', 'debt']
+export const cashflowKeys = (p: FinancialProfile): string[] => intakeKeys(p).filter(k => CASHFLOW_KEYS.includes(k))
+
 /**
- * Question 1 of 2, in words (Hieu, 2026-10-31, option E2: no form, people tell what they have): the month, as one block, because
- * together it sizes the emergency fund. Occasional income (airdrops) is asked so the agent knows where money comes from when the
- * salary only covers spending (Hieu's own case). The sentence "Share whatever you're comfortable with" marks it as sent (BATCH_MARK).
+ * Question 1 of 2: the month, as one block, because together it sizes the emergency fund. Sent with the cash-flow form (Hieu,
+ * 2026-11-01: answering in words was hard to use; the form fits one desktop screen). The sentence "Share whatever you're comfortable
+ * with" marks it as sent (BATCH_MARK).
  */
 export function cashflowAsk(vi: boolean, why = purpose('')): string {
   return vi
-    ? `Để ${why.vi}, mình cần biết tháng của bạn trông thế nào. Bạn kể tự nhiên trong 1 tin là được:\n- Bạn bao nhiêu tuổi\n- Mỗi tháng kiếm khoảng bao nhiêu, có đều không\n- Có khoản thu lâu lâu mới có không (airdrop, thưởng…)\n- Chi tiêu khoảng bao nhiêu (chưa tính trả nợ)\n- Có ai sống dựa vào thu nhập của bạn không\n- Có khoản nợ nào không: còn nợ bao nhiêu, lãi bao nhiêu, mỗi tháng trả bao nhiêu\n\nƯớc chừng là được. Bạn cứ thoải mái chia sẻ, phần nào không muốn nói thì bỏ qua.` // lang-ok
-    : `To ${why.en}, I need to know what your month looks like. Tell me in one message, in your own words:\n- Your age\n- What you earn a month, and whether it is steady\n- Any money that comes now and then (airdrops, bonuses)\n- What you spend a month (not counting debt payments)\n- Anyone who relies on your income\n- Any debt: how much is left, the interest, what you pay a month\n\nAn estimate is fine. Share whatever you're comfortable with and skip the rest.`
+    ? `Để ${why.vi}, bạn điền tháng của bạn ở bảng dưới nhé. Ước chừng là được; bạn cứ thoải mái chia sẻ, ô nào không muốn nói thì để trống.` // lang-ok
+    : `To ${why.en}, fill in your month below. An estimate is fine. Share whatever you're comfortable with; leave the rest blank.`
 }
 
 /**
- * The first question, sent once (the month: cashflowAsk). Null when so little is missing that one question is enough.
+ * The first question, sent once (the month: cashflowAsk, with the form). Null when so little is missing that one question is enough.
  * `readback` is what this message already recorded.
  */
 export function buildIntake(p: FinancialProfile, userText: string, vi: boolean, readback: string[], _walletSeen: number | null = null): string | null {

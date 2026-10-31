@@ -9,6 +9,7 @@
 
 import { bucketStanding, type Balance, type Standing } from '../../src/lib/allocation'
 import { appWalletHolding } from '../../src/lib/profile'
+import { param } from '../../src/kb/kb'
 import type { FinancialProfile } from '../../src/types'
 
 /** Monthly buys a part is spread over when the user does not trade by the charts (Hieu, 2026-10-29). */
@@ -153,6 +154,68 @@ export function buildPlan({ p, b, shares, cover, partial = null, vi, hasVault = 
     ]
   const basis = p.planningScope === 'household' ? (vi ? 'Kế hoạch gia đình: dùng thu nhập và chi tiêu chung đã khai, mỗi khoản tính một lần. Tỷ lệ tham khảo vẫn theo tuổi của bạn.' : 'Household plan: uses the shared income and spending you declared, counted once. The reference split still uses your age.') : null // lang-ok
   return [basis, ...lines].filter(Boolean).join('\n\n')
+}
+
+/** Months to clear `balance` at a yearly `ratePct` paying `pay` a month; null when the payment does not beat the interest. */
+function monthsToClear(balance: number, ratePct: number, pay: number): number | null {
+  const r = ratePct / 100 / 12
+  if (pay <= 0 || pay <= balance * r) return null
+  return Math.ceil(r === 0 ? balance / pay : -Math.log(1 - r * balance / pay) / Math.log(1 + r))
+}
+
+/**
+ * The plan when there is expensive debt (Hieu, 2026-10-31: "high-interest debt must be paid first"), in the KB priority order: a starter
+ * fund of one month, then the expensive debt, then the rest of the emergency fund, then the split. Null when a debt is priority only
+ * because its rate is not told (the agent asks the rate first) or when the plain plan applies.
+ */
+export function buildDebtPlan({ p, b, shares, vi, walletUsd, hasVault = true, vaultFee = 1 }: { p: FinancialProfile; b: Balance; shares: [number, number, number]; vi: boolean; walletUsd: number; hasVault?: boolean; vaultFee?: number }): string | null {
+  const pri = b.debts.lines.filter(l => l.priority)
+  if (!pri.length || b.fund.floorUsd === null || b.fund.starterUsd === null || p.incomeStable === null) return null
+  if (pri.some(l => l.debt.ratePct === null || l.usd === null)) return null
+  // A debt of untold type below the priority rate may be a cheap loan, not an expensive one: the agent asks what it is.
+  if (pri.some(l => l.debt.type === 'unknown' && (l.debt.ratePct ?? 0) < param('priority_debt_rate_pct'))) return null
+  const vault = b.fundUsd ?? 0
+  const starter = b.fund.starterUsd
+  const total = pri.reduce((s, l) => s + (l.usd ?? 0), 0)
+  const interest = pri.reduce((s, l) => s + (l.monthlyInterestUsd ?? 0), 0)
+  const topRate = Math.max(...pri.map(l => l.debt.ratePct ?? 0))
+  const each = pri.map(l => `${l.debt.name} ${fmt(l.usd ?? 0)} ${vi ? `lãi ${l.debt.ratePct}%/năm` : `at ${l.debt.ratePct}% a year`}`).join(', ') // lang-ok
+  // What can go to the debt each month: its own payments plus what is left after spending (spending already includes debt payments).
+  const pays = pri.reduce((s, l) => s + (l.monthlyUsd ?? 0), 0)
+  const left = Math.max(0, b.cashflow.surplus ?? 0)
+  const months = monthsToClear(total, topRate, pays + left)
+  const pace = months === null ? '' : vi
+    ? ` Trả ${fmt(pays + left)}/tháng${left > 0.5 ? ` (gồm ${fmt(left)} còn dư mỗi tháng)` : ''} thì khoảng ${months} tháng là hết.` // lang-ok
+    : ` Paying ${fmt(pays + left)} a month${left > 0.5 ? ` (with the ${fmt(left)} left each month)` : ''} clears it in about ${months} months.`
+  const [sSafe, sTrad, sCrypto] = shares
+  const starterGap = Math.max(0, starter - vault)
+  const deposit = Math.floor(Math.min(starterGap, walletUsd))
+  const ask = starterGap <= 0.005
+    ? (vi ? 'Quỹ khởi đầu đã có. Mỗi lần trả bớt nợ, bạn báo số còn lại để mình cập nhật nhé.' : 'Your starter fund is in place. Each time you pay the debt down, tell me what is left and I will update it.') // lang-ok
+    : !hasVault ? openVaultOffer(vi, vaultFee)
+    : deposit >= 1
+      ? (vi ? `Sẵn sàng bắt đầu chưa? Mình chuẩn bị một lệnh nạp **${tok(deposit)}** vào quỹ khởi đầu để bạn ký nhé?` : `Ready to start? Shall I prepare a deposit of **${tok(deposit)}** into the starter fund for you to sign?`) // lang-ok
+      : (vi ? 'Bước đầu là quỹ khởi đầu. Ví chưa có USDC để nạp, nên hãy thêm USDC vào ví rồi nói với mình nhé.' : 'The first step is the starter fund. The wallet has no USDC to add yet, so add some and tell me.') // lang-ok
+  const lines = vi
+    ? [ // lang-ok
+      'Bạn đang có nợ lãi cao, nên kế hoạch đi theo thứ tự này:', // lang-ok
+      `1. **Quỹ khởi đầu: ${fmt(starter)}** = 1 tháng chi tiêu, để một khoản bất ngờ không phải vay thêm. Hiện có ${fmt(vault)}.`, // lang-ok
+      `2. **Trả nợ lãi cao: ${fmt(total)}** (${each}). Nó tốn khoảng ${fmt(interest)} tiền lãi mỗi tháng; trả nợ là khoản lời chắc chắn ${topRate}%/năm, cao hơn mức đầu tư nào hứa được.${pace}`, // lang-ok
+      `3. **Hoàn tất quỹ dự phòng: ${fmt(b.fund.floorUsd)}** = ${b.fund.floorMonths} tháng chi tiêu, vì ${fundWhy(p, b.fund.floorMonths, true)}.`, // lang-ok
+      `4. Sau đó mới đầu tư theo tuổi: Safety ${sSafe}%, Truyền thống ${sTrad}%, Crypto ${sCrypto}%. Mua cirBTC trong app mở khi hết nợ lãi cao và quỹ đã đủ.`, // lang-ok
+      'Đây là gợi ý, bạn quyết định.', // lang-ok
+      ask,
+    ]
+    : [
+      'You have high-interest debt, so the plan goes in this order:',
+      `1. **Starter fund: ${fmt(starter)}** = 1 month of spending, so a surprise bill never means borrowing more. You have ${fmt(vault)}.`,
+      `2. **Pay off the expensive debt: ${fmt(total)}** (${each}). It costs about ${fmt(interest)} a month in interest; paying it off is a sure ${topRate}% a year, more than any investment can promise.${pace}`,
+      `3. **Finish the emergency fund: ${fmt(b.fund.floorUsd)}** = ${b.fund.floorMonths} months of spending, because ${fundWhy(p, b.fund.floorMonths, false)}.`,
+      `4. Then invest by your age: Safety ${sSafe}%, Traditional ${sTrad}%, Crypto ${sCrypto}%. Buying cirBTC in the app opens once the expensive debt is gone and the fund is full.`,
+      'A suggestion, your call.',
+      ask,
+    ]
+  return lines.join('\n\n')
 }
 
 /**

@@ -33,9 +33,9 @@ import { callModel as openai, DEFAULT_CLAUDE_MODEL, type Keys, type ToolCall } f
 import { DEFAULT_FREE, powerState, takeTurn, type PowerEnv } from '../_lib/quota'
 import { POWER_PER_PURCHASE } from '../../src/lib/power'
 import { recordStats } from '../_lib/stats'
-import { ASSET_TYPES, ASSETS_MARK, BATCH_MARK, INTAKE_MIN_UNKNOWN, assetsAsk, buildIntake, cashflowAsk, unknownBullets } from '../_lib/intake'
+import { ASSET_TYPES, ASSETS_MARK, BATCH_MARK, INTAKE_MIN_UNKNOWN, assetsAsk, buildIntake, cashflowAsk, cashflowKeys, unknownBullets } from '../_lib/intake'
 import { getConfig, isBlocked, effectiveEnv } from '../_lib/config'
-import { buildAfterSign, buildPartAnswer, buildPlan, buildStanding, detectPartChoice, openVaultOffer } from '../_lib/plan'
+import { buildAfterSign, buildDebtPlan, buildPartAnswer, buildPlan, buildStanding, detectPartChoice, openVaultOffer } from '../_lib/plan'
 import { KB, matchPatterns, patternBrief, param } from '../../src/kb/kb'
 import { computeFacts, displayFacts, amountsUsd } from '../../src/kb/facts'
 import { bucketStanding, computeBalance, holdingUsd, priceKey, symbolOf, toUsd, GOLD_UNITS_TO_OZ, GROUP_LABEL, type Balance, type Prices } from '../../src/lib/allocation'
@@ -1660,7 +1660,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   // coach on), kept question 2 from being asked. Only a card waiting for the user, or a question of theirs, holds it back now.
   const holdsDeclared = profile.holdings.some(h => ASSET_TYPES.includes(h.type))
   const waitingCard = actions.some(a => /^(confirm_|prepare_|propose_)/.test(String(a.type)))
-  if (batchAsked && !holdsDeclared && !assistantTexts.some(a => ASSETS_MARK.test(a)) && !pending && !toAsk.length && !waitingCard && !placement && !appEvent && !policy.answerFirst && !directQuestion && !correctingFact && !DECLINES.test(lastUserText)) {
+  if (batchAsked && !holdsDeclared && !assistantTexts.some(a => ASSETS_MARK.test(a)) && !pending && !toAsk.length && !waitingCard && !placement && (!appEvent || itemsEvent) && !policy.answerFirst && !directQuestion && !correctingFact && !DECLINES.test(lastUserText)) {
     const heard = coach.active ? (vi ? 'Mình hiểu. Chuyện đã qua thì để lại phía sau, mình lo phần phía trước cùng bạn nhé.\n\n' : 'I hear you. What is behind you stays behind; let\'s look after what comes next together.\n\n') : '' // lang-ok
     return json({ content: heard + assetsAsk(profile, balance.fund, balance.cashflow, vi, wallet), ops, dcaStop, actions })
   }
@@ -1671,6 +1671,8 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     const half = (x: number) => Math.round(x * 2) / 2
     const [ps, pt, pc] = [half(t.safe), half(t.traditional), half(t.btc + t.large_cap + t.altcoin)]
     const built = buildPlan({ p: profile, b: balance, shares: [ps, pt, pc], cover, partial, vi, hasVault, vaultFee })
+      // Expensive debt is paid first (Hieu, 2026-10-31): starter fund, the debt, the rest of the fund, then the split.
+      ?? buildDebtPlan({ p: profile, b: balance, shares: [ps, pt, pc], vi, walletUsd: Math.max(0, (wallet ?? 0) - GAS_RESERVE_USDC), hasVault, vaultFee })
     if (built) return json({ content: built, ops, dcaStop, actions })
   }
 
@@ -1691,18 +1693,18 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     if (next) return json({ content: next, ops, dcaStop, actions })
   }
 
-  // The first question goes out in words, built here (no model call; Hieu 2026-10-31, option E2: no form); what the user leaves out
-  // is taken as "prefer not to say".
+  // The first question goes out with the cash-flow form, built here (no model call; Hieu 2026-11-01: words were hard to use, back to
+  // a compact form); what the user leaves out is taken as "prefer not to say".
   if (!batchAsked && !placement && (!appEvent || itemsEvent) && !userAsks && !toAsk.length && !DECLINES.test(lastUserText) && !KNOWS_NOTHING.test(lastUserText)) {
     const intake = buildIntake(profile, lastUserText, vi, readback, wallet)
-    if (intake) return json({ content: intake, ops, dcaStop, actions })
+    if (intake) return json({ content: intake, ops, dcaStop, actions: [...actions, { type: 'intake_form', keys: cashflowKeys(profile), seen: wallet }] })
   }
 
   // The emergency fund needs the month as one block, not questions one by one (Hieu, 2026-10-31): talking about the fund while the
   // spending is still unknown brings the month question back, at most once more. Not when they only ask how a fund works (the lesson
   // comes first), nor over a card waiting for their confirmation.
   if (profile.expenses.length === 0 && FUND_TALK.test(lastUserText) && !EXPLAIN_ONLY.test(lastUserText) && !actions.length && !placement && !appEvent && !DECLINES.test(lastUserText) && assistantTexts.filter(a => BATCH_MARK.test(a)).length < 2) {
-    return json({ content: cashflowAsk(vi, { en: 'size your emergency fund', vi: 'tính quỹ dự phòng cho đúng' }), ops, dcaStop, actions }) // lang-ok
+    return json({ content: cashflowAsk(vi, { en: 'size your emergency fund', vi: 'tính quỹ dự phòng cho đúng' }), ops, dcaStop, actions: [...actions, { type: 'intake_form', keys: cashflowKeys(profile), seen: wallet }] }) // lang-ok
   }
 
   // BRIEF unless the turn is meant to educate: a plan the model writes, the user asking why / what something means, or an overview.

@@ -457,6 +457,17 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   if (/About airdrops/.test(plan)) fail('plan: no airdrop note without airdrops')
   const debtor = normalizeProfile({ ...base, debts: [{ id: 'd1', name: 'Card', type: 'credit_card', balance: 500, currency: 'USDC', ratePct: 20, monthlyPayment: null, updatedAt: 1 }] })
   if (buildPlan({ p: debtor, b: bal(debtor, 1900, 0), shares, cover: 450, vi: false }) !== null) fail('plan: a priority debt goes to the model')
+  // Expensive debt is paid first (Hieu, 2026-10-31): starter fund, the debt with its interest and pace, the rest of the fund, the split.
+  {
+    const { buildDebtPlan } = await import('../functions/_lib/plan')
+    const dp = buildDebtPlan({ p: debtor, b: bal(debtor, 1900, 0), shares, vi: false, walletUsd: 1900 })
+    if (!dp || !/1\. \*\*Starter fund[^\n]*1 month of spending/.test(dp) || !/2\. \*\*Pay off the expensive debt: \$500\*\* \(Card \$500 at 20% a year\)/.test(dp) || !/3\. \*\*Finish the emergency fund/.test(dp) || !/Traditional 35%/.test(dp) || !/prepare a deposit of \*\*\d[\d,]* USDC\*\* into the starter fund/.test(dp)) fail(`debt plan: order starter fund, debt, fund, split, with the starter deposit (got ${dp})`)
+    const cheap = normalizeProfile({ ...base, debts: [{ id: 'd2', name: 'Loan', type: 'unknown', balance: 500, currency: 'USDC', ratePct: 5, monthlyPayment: null, updatedAt: 1 }] })
+    if (buildDebtPlan({ p: cheap, b: bal(cheap, 1900, 0), shares, vi: false, walletUsd: 1900 }) !== null) fail('debt plan: a loan of untold type at 5% is not called expensive (the agent asks)')
+    const untold = normalizeProfile({ ...base, debts: [{ id: 'd3', name: 'Card', type: 'credit_card', balance: 500, currency: 'USDC', ratePct: null, monthlyPayment: null, updatedAt: 1 }] })
+    if (buildDebtPlan({ p: untold, b: bal(untold, 1900, 0), shares, vi: false, walletUsd: 1900 }) !== null) fail('debt plan: an untold rate is asked first')
+    if (!buildDebtPlan({ p: debtor, b: bal(debtor, 1900, 0), shares, vi: true, walletUsd: 1900 })?.includes('Truyền thống 35%')) fail('debt plan: Vietnamese version, recognised as the plan given') // lang-ok
+  }
   if (!buildPlan({ p: base, b: bal(base, 1900, 0), shares, cover: 450, vi: true })?.includes('Kế hoạch của bạn')) fail('plan: Vietnamese version') // lang-ok
 }
 

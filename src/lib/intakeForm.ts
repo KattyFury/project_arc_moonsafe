@@ -148,7 +148,8 @@ export function formToItems(v: FormValues, prices: Prices | null, now = Date.now
   if (salary !== null) add(`${household ? 'Combined household salary' : 'Salary'} ${usd(salary)} a month (active)`, { op: 'set_income', income: { id: newId('i'), name: household ? 'Combined household salary' : 'Salary', monthly: salary, currency: 'USDC', kind: 'active', updatedAt: now } })
   const passive = v.otherIncome === 'yes' ? parseAmount(v.passive) : null
   if (passive !== null) add(`Passive income ${usd(passive)} a month`, { op: 'set_income', income: { id: newId('i'), name: 'Passive income', monthly: passive, currency: 'USDC', kind: 'passive', updatedAt: now } })
-  if (v.otherIncome === 'yes' && v.windfalls === 'yes') {
+  // Asked on its own row since 2026-11-01 (cash-flow form); older drafts asked it under "other income".
+  if (v.windfalls === 'yes') {
     const yearly = parseAmount(v.windfallsYearly)
     add(`Airdrops and other windfalls: not counted as monthly income${yearly !== null ? ` (about ${usd(yearly)} a year)` : ''}`, { op: 'update_profile', fields: { hasWindfalls: true, ...(yearly !== null ? { windfallsYearly: yearly } : {}) } })
   }

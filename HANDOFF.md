@@ -1,3 +1,10 @@
+# ▶ 2026-11-01 — bảng thu chi quay lại + kế hoạch nợ lãi cao
+
+- **Bảng hỏi thu chi quay lại** (Hiếu: hỏi bằng lời khó dùng). Câu 1 = 1 câu ngắn + bảng `intake_form` chỉ phần dòng tiền (`cashflowKeys`: tuổi, lương, chi, đều không, khoản thu lâu lâu như airdrop, người phụ thuộc, nợ, khoản chi lớn 5 năm). 1 khung: từ md trở lên 2 cột (Income and spending | Debt and big expenses), mobile 1 cột cao được; hàng 48px. Đo: 1440×900 và 1024×900 bảng cao 556px, không cuộn; ảnh ở Desktop `MoonSafe-form-2026-11-01`. Câu 2 (tài sản + tỷ lệ chia) vẫn hỏi bằng lời, gửi ngay sau khi lưu bảng. Hỏi quỹ dự phòng mà chưa biết chi tiêu → gửi lại bảng.
+- **Nợ lãi cao trả trước** (Hiếu chốt): `buildDebtPlan` trong `functions/_lib/plan.ts` theo thứ tự KB: quỹ khởi đầu 1 tháng chi → trả nợ lãi cao (tiền lãi/tháng, bao lâu hết nếu dồn cả phần dư) → hoàn tất quỹ dự phòng → chia theo tuổi. Lời mời nạp quỹ khởi đầu. Nợ chưa rõ lãi, hoặc chưa rõ loại mà lãi dưới 10%, vẫn để agent hỏi trước.
+- Hoãn sang v2 (Hiếu 11-01): bất động sản, bảo hiểm tích luỹ, tiền cho vay, vốn doanh nghiệp, NFT — xem "Để tính ở v2" bên dưới.
+- Ưu tiên hiện tại của Hiếu: app mượt lại như cũ.
+
 # ▶ Balance Sheet v2 — ĐÃ BUILD + DEPLOY 2026-10-31 (Cloudflare `442d5078`, main `c0e6f8c`)
 
 Spec build: `docs/BUILD-BALANCE-v2-2026-10-31.md`. Đã làm: công thức mốc (`bucketStanding`: mục đi xa nhất theo tỷ lệ làm mốc, ngưỡng 5/25, On track / Under), Safety = tiền gửi + tiền mặt + stablecoin + trái phiếu (KB: `cash`/`checking`/`stable_wallet` sang safe, thêm `bond` safe + `junk_bond` traditional), tỷ lệ Traditional/Crypto do người dùng chọn (`profile.cryptoSplit`, tool `crypto_split`, mặc định 50, agent nói rõ là mặc định của MoonSafe), cirBTC tính theo giá trị trên chuỗi, màn Balance bỏ Net worth / Can use now, nút gạt Split | Cash flow (thu, chi, trả nợ, từng khoản nợ, mục tiêu quỹ).
@@ -7,7 +14,7 @@ Spec build: `docs/BUILD-BALANCE-v2-2026-10-31.md`. Đã làm: công thức mốc
 - **Đã thử bằng Claude Haiku thật** (Hiếu nhờ, khỏi test tay): 3 cuộc chat `scripts/e2-intake-cases.ts` (đúng câu Hiếu gõ, 1 người EN, 1 người khai VND), chạy `bun scripts/claude-reeval.ts --live --budget 400000 --run <tên> --only e2-hieu-vi,e2-en,e2-vnd` với ANTHROPIC_API_KEY từ keys.env; kết quả `docs/evals/e2-intake-2026-10-31*.json`. Lượt 1 lộ lỗi, đã sửa + deploy `442d5078` (main `c0e6f8c`): câu 2 bị chặn bởi thẻ biểu đồ / câu nhắc thua lỗ; "25 tuổi … chưa vợ" bị bỏ tuổi; "lương đều" không được hiểu là ổn định; "5tr USDT" đọc thành 5,000 USDT; "nợ Nợ mẹ". Lượt 2–3 đúng hết.
 - Còn ngỏ: người có nợ ưu tiên (thẻ tín dụng 22%) sau khi xác nhận tài sản thì kế hoạch do model viết (buildPlan trả null khi có nợ ưu tiên), Haiku trả lời hơi chung chung "Next, I'll walk you through your plan" — chưa sửa.
 - File CI `.github/workflows/agent-regression.yml` (Codex) chỉ nằm trên máy Dell: token GitHub thiếu quyền `workflow`; muốn đẩy thì `gh auth refresh -s workflow` trên máy tính. Không bắt buộc, app không cần.
-- **Làm tiếp (theo thứ tự):** (1) hỏi Hiếu có sửa ca nợ ưu tiên ở trên không (chưa trả lời); (2) các mục "Để tính ở v2" bên dưới (bất động sản, bảo hiểm tích luỹ, tiền cho vay, vốn doanh nghiệp, NFT) cần tư vấn theo nguồn chuẩn rồi Hiếu chốt trước khi code.
+- **Làm tiếp:** (ca nợ ưu tiên đã làm 11-01, xem ▶ trên cùng) các mục "Để tính ở v2" bên dưới (bất động sản, bảo hiểm tích luỹ, tiền cho vay, vốn doanh nghiệp, NFT) cần tư vấn theo nguồn chuẩn rồi Hiếu chốt trước khi code.
 
 # Balance Sheet v2 — Hiếu chốt thêm 2026-10-31 (quyết định, nền cho bản build ở trên)
 
