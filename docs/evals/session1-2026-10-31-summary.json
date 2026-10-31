@@ -1,0 +1,102 @@
+{
+  "label": "session1-2026-10-31",
+  "model": "claude-haiku-5-5",
+  "commit": "4c8a0b0f836ae8c986c387339f19b1b819a4c34a",
+  "sourceDiffSha256": "8cedddc6762d07bc69f216f175e7bf3f2fe8dffa6b2afd771371245b91cf2c5c",
+  "started": "2026-10-31T00:26:28.001Z",
+  "ended": "2026-10-31T00:28:52.739Z",
+  "cap": 1000000,
+  "input": 965333,
+  "output": 12569,
+  "cached": 76787,
+  "verifiedTokens": 977902,
+  "unknownReserved": 0,
+  "calls": 95,
+  "stop": "budget-reservation",
+  "completeTurns": 38,
+  "completeCases": [
+    "session-unknown-private",
+    "session-essential-first",
+    "session-today-not-future",
+    "session-correction-scope",
+    "session-consent-boundary",
+    "session-pending-target",
+    "session-loss-one-step",
+    "session-injection-quote",
+    "session-cost-units",
+    "session-debt-ambiguity",
+    "loss-listening",
+    "irregular-family"
+  ],
+  "checks": 129,
+  "passed": 118,
+  "failures": [
+    {
+      "case": "session-correction-scope",
+      "turn": 1,
+      "rule": "individual scope",
+      "pass": false
+    },
+    {
+      "case": "session-correction-scope",
+      "turn": 2,
+      "rule": "individual scope",
+      "pass": false
+    },
+    {
+      "case": "session-correction-scope",
+      "turn": 3,
+      "rule": "individual scope",
+      "pass": false
+    },
+    {
+      "case": "session-consent-boundary",
+      "turn": 2,
+      "rule": "requested explanation not replaced by generic deposit response",
+      "pass": false
+    },
+    {
+      "case": "session-consent-boundary",
+      "turn": 3,
+      "rule": "requested explanation not replaced by generic deposit response",
+      "pass": false
+    },
+    {
+      "case": "session-pending-target",
+      "turn": 2,
+      "rule": "does not deny historically saved facts",
+      "pass": false
+    },
+    {
+      "case": "session-pending-target",
+      "turn": 3,
+      "rule": "no whole-reserve gap from unknown outside savings",
+      "pass": false
+    },
+    {
+      "case": "session-loss-one-step",
+      "turn": 2,
+      "rule": "no onboarding or transaction",
+      "pass": false
+    },
+    {
+      "case": "session-cost-units",
+      "turn": 1,
+      "rule": "BTC units and invested cost",
+      "pass": false
+    },
+    {
+      "case": "session-cost-units",
+      "turn": 2,
+      "rule": "BTC units and invested cost",
+      "pass": false
+    },
+    {
+      "case": "session-cost-units",
+      "turn": 3,
+      "rule": "BTC units and invested cost",
+      "pass": false
+    }
+  ],
+  "limitation": "Narrow automated invariants, not a conversational quality score. Confirmation cards are not approved in this run."
+}

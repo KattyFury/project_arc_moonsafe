@@ -1,0 +1,53 @@
+{
+  "label": "session2-2026-10-31",
+  "model": "claude-haiku-5-5",
+  "commit": "4c8a0b0f836ae8c986c387339f19b1b819a4c34a",
+  "sourceDiffSha256": "888ef1bf0cdd704cdc8e75873b1a2ba436dde1cbe044d9eb9aa831428ea86ee3",
+  "started": "2026-10-31T00:30:06.966Z",
+  "ended": "2026-10-31T00:32:17.792Z",
+  "cap": 1000000,
+  "input": 960911,
+  "output": 11305,
+  "cached": 106845,
+  "verifiedTokens": 972216,
+  "unknownReserved": 0,
+  "calls": 93,
+  "stop": "budget-reservation",
+  "completeTurns": 35,
+  "completeCases": [
+    "session-unknown-private",
+    "session-essential-first",
+    "session-today-not-future",
+    "session-correction-scope",
+    "session-consent-boundary",
+    "session-pending-target",
+    "session-loss-one-step",
+    "session-injection-quote",
+    "session-cost-units",
+    "session-debt-ambiguity",
+    "loss-listening"
+  ],
+  "checks": 123,
+  "passed": 120,
+  "failures": [
+    {
+      "case": "session-unknown-private",
+      "turn": 3,
+      "rule": "answers salary subtraction",
+      "pass": false
+    },
+    {
+      "case": "session-pending-target",
+      "turn": 3,
+      "rule": "does not deny historically saved facts",
+      "pass": false
+    },
+    {
+      "case": "session-pending-target",
+      "turn": 3,
+      "rule": "no whole-reserve gap from unknown outside savings",
+      "pass": false
+    }
+  ],
+  "limitation": "Narrow automated invariants, not a conversational quality score. Confirmation cards are not approved in this run."
+}

@@ -1,0 +1,37 @@
+{
+  "time": "2026-10-31T00:44:56.890Z",
+  "checks": [
+    {
+      "url": "https://moonsafe.app",
+      "homepage": 200,
+      "unauthenticatedChat": 401,
+      "asset": "/assets/index-CMry6Irj.js",
+      "productionConfigurationMatches": true,
+      "localHtmlMatches": true
+    },
+    {
+      "url": "https://148f6808.moonsafe.pages.dev",
+      "homepage": 200,
+      "unauthenticatedChat": 401,
+      "asset": "/assets/index-CMry6Irj.js",
+      "productionConfigurationMatches": true,
+      "localHtmlMatches": true
+    }
+  ],
+  "cloudflare": {
+    "id": "148f6808-3e1d-4bcf-96bd-254376ef0ff1",
+    "url": "https://148f6808.moonsafe.pages.dev",
+    "environment": "production",
+    "status": "success",
+    "kv": {
+      "USERDATA": {
+        "namespace_id": "4dca45d1b7c14f3cb1250d78a266d936"
+      }
+    },
+    "d1": {
+      "DB": {
+        "id": "202c2a19-f817-49b5-9428-5bcc8d45c189"
+      }
+    }
+  }
+}

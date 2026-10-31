@@ -1,0 +1,42 @@
+{
+  "label": "session3-2026-10-31",
+  "model": "claude-haiku-5-5",
+  "commit": "4c8a0b0f836ae8c986c387339f19b1b819a4c34a",
+  "sourceDiffSha256": "61b144541826f7942e5b3e11ce01d073b484e003f2e965bc4688c9962eed66bd",
+  "started": "2026-10-31T00:34:12.952Z",
+  "ended": "2026-10-31T00:36:00.872Z",
+  "cap": 1000000,
+  "input": 957228,
+  "output": 8740,
+  "cached": 160402,
+  "verifiedTokens": 965968,
+  "unknownReserved": 0,
+  "calls": 91,
+  "stop": "budget-reservation",
+  "completeTurns": 39,
+  "completeCases": [
+    "session-confirm-all",
+    "session-confirm-none",
+    "session-confirm-first",
+    "session-pending-target",
+    "session-cost-units",
+    "session-correction-scope",
+    "session-consent-boundary",
+    "session-fresh-refusal",
+    "session-fresh-native",
+    "session-unknown-private",
+    "session-loss-one-step",
+    "session-debt-ambiguity"
+  ],
+  "checks": 143,
+  "passed": 142,
+  "failures": [
+    {
+      "case": "session-pending-target",
+      "turn": 3,
+      "rule": "no whole-reserve gap from unknown outside savings",
+      "pass": false
+    }
+  ],
+  "limitation": "Narrow automated invariants, not a conversational quality score. Includes scripted local confirmation/rejection of cards; no wallet execution or browser UI test."
+}

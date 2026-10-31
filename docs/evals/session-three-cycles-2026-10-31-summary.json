@@ -1,0 +1,567 @@
+{
+  "date": "2026-10-31",
+  "provider": "anthropic",
+  "model": "claude-haiku-5-5",
+  "perSessionCap": 1000000,
+  "total": {
+    "verifiedTokens": 2916086,
+    "unknownReserved": 0,
+    "calls": 279,
+    "completeTurns": 112,
+    "completeConversationExecutions": 35
+  },
+  "distinctCompleteCases": 17,
+  "distinctCases": [
+    "session-unknown-private",
+    "session-essential-first",
+    "session-today-not-future",
+    "session-correction-scope",
+    "session-consent-boundary",
+    "session-pending-target",
+    "session-loss-one-step",
+    "session-injection-quote",
+    "session-cost-units",
+    "session-debt-ambiguity",
+    "loss-listening",
+    "irregular-family",
+    "session-confirm-all",
+    "session-confirm-none",
+    "session-confirm-first",
+    "session-fresh-refusal",
+    "session-fresh-native"
+  ],
+  "runs": [
+    {
+      "label": "session1-2026-10-31",
+      "model": "claude-haiku-5-5",
+      "commit": "4c8a0b0f836ae8c986c387339f19b1b819a4c34a",
+      "sourceDiffSha256": "8cedddc6762d07bc69f216f175e7bf3f2fe8dffa6b2afd771371245b91cf2c5c",
+      "started": "2026-10-31T00:26:28.001Z",
+      "ended": "2026-10-31T00:28:52.739Z",
+      "cap": 1000000,
+      "input": 965333,
+      "output": 12569,
+      "cached": 76787,
+      "verifiedTokens": 977902,
+      "unknownReserved": 0,
+      "calls": 95,
+      "stop": "budget-reservation",
+      "completeTurns": 38,
+      "completeCases": [
+        "session-unknown-private",
+        "session-essential-first",
+        "session-today-not-future",
+        "session-correction-scope",
+        "session-consent-boundary",
+        "session-pending-target",
+        "session-loss-one-step",
+        "session-injection-quote",
+        "session-cost-units",
+        "session-debt-ambiguity",
+        "loss-listening",
+        "irregular-family"
+      ],
+      "checks": 129,
+      "passed": 118,
+      "failures": [
+        {
+          "case": "session-correction-scope",
+          "turn": 1,
+          "rule": "individual scope",
+          "pass": false
+        },
+        {
+          "case": "session-correction-scope",
+          "turn": 2,
+          "rule": "individual scope",
+          "pass": false
+        },
+        {
+          "case": "session-correction-scope",
+          "turn": 3,
+          "rule": "individual scope",
+          "pass": false
+        },
+        {
+          "case": "session-consent-boundary",
+          "turn": 2,
+          "rule": "requested explanation not replaced by generic deposit response",
+          "pass": false
+        },
+        {
+          "case": "session-consent-boundary",
+          "turn": 3,
+          "rule": "requested explanation not replaced by generic deposit response",
+          "pass": false
+        },
+        {
+          "case": "session-pending-target",
+          "turn": 2,
+          "rule": "does not deny historically saved facts",
+          "pass": false
+        },
+        {
+          "case": "session-pending-target",
+          "turn": 3,
+          "rule": "no whole-reserve gap from unknown outside savings",
+          "pass": false
+        },
+        {
+          "case": "session-loss-one-step",
+          "turn": 2,
+          "rule": "no onboarding or transaction",
+          "pass": false
+        },
+        {
+          "case": "session-cost-units",
+          "turn": 1,
+          "rule": "BTC units and invested cost",
+          "pass": false
+        },
+        {
+          "case": "session-cost-units",
+          "turn": 2,
+          "rule": "BTC units and invested cost",
+          "pass": false
+        },
+        {
+          "case": "session-cost-units",
+          "turn": 3,
+          "rule": "BTC units and invested cost",
+          "pass": false
+        }
+      ],
+      "limitation": "Narrow automated invariants, not a conversational quality score. Confirmation cards are not approved in this run."
+    },
+    {
+      "label": "session2-2026-10-31",
+      "model": "claude-haiku-5-5",
+      "commit": "4c8a0b0f836ae8c986c387339f19b1b819a4c34a",
+      "sourceDiffSha256": "888ef1bf0cdd704cdc8e75873b1a2ba436dde1cbe044d9eb9aa831428ea86ee3",
+      "started": "2026-10-31T00:30:06.966Z",
+      "ended": "2026-10-31T00:32:17.792Z",
+      "cap": 1000000,
+      "input": 960911,
+      "output": 11305,
+      "cached": 106845,
+      "verifiedTokens": 972216,
+      "unknownReserved": 0,
+      "calls": 93,
+      "stop": "budget-reservation",
+      "completeTurns": 35,
+      "completeCases": [
+        "session-unknown-private",
+        "session-essential-first",
+        "session-today-not-future",
+        "session-correction-scope",
+        "session-consent-boundary",
+        "session-pending-target",
+        "session-loss-one-step",
+        "session-injection-quote",
+        "session-cost-units",
+        "session-debt-ambiguity",
+        "loss-listening"
+      ],
+      "checks": 123,
+      "passed": 120,
+      "failures": [
+        {
+          "case": "session-unknown-private",
+          "turn": 3,
+          "rule": "answers salary subtraction",
+          "pass": false
+        },
+        {
+          "case": "session-pending-target",
+          "turn": 3,
+          "rule": "does not deny historically saved facts",
+          "pass": false
+        },
+        {
+          "case": "session-pending-target",
+          "turn": 3,
+          "rule": "no whole-reserve gap from unknown outside savings",
+          "pass": false
+        }
+      ],
+      "limitation": "Narrow automated invariants, not a conversational quality score. Confirmation cards are not approved in this run."
+    },
+    {
+      "label": "session3-2026-10-31",
+      "model": "claude-haiku-5-5",
+      "commit": "4c8a0b0f836ae8c986c387339f19b1b819a4c34a",
+      "sourceDiffSha256": "61b144541826f7942e5b3e11ce01d073b484e003f2e965bc4688c9962eed66bd",
+      "started": "2026-10-31T00:34:12.952Z",
+      "ended": "2026-10-31T00:36:00.872Z",
+      "cap": 1000000,
+      "input": 957228,
+      "output": 8740,
+      "cached": 160402,
+      "verifiedTokens": 965968,
+      "unknownReserved": 0,
+      "calls": 91,
+      "stop": "budget-reservation",
+      "completeTurns": 39,
+      "completeCases": [
+        "session-confirm-all",
+        "session-confirm-none",
+        "session-confirm-first",
+        "session-pending-target",
+        "session-cost-units",
+        "session-correction-scope",
+        "session-consent-boundary",
+        "session-fresh-refusal",
+        "session-fresh-native",
+        "session-unknown-private",
+        "session-loss-one-step",
+        "session-debt-ambiguity"
+      ],
+      "checks": 143,
+      "passed": 142,
+      "failures": [
+        {
+          "case": "session-pending-target",
+          "turn": 3,
+          "rule": "no whole-reserve gap from unknown outside savings",
+          "pass": false
+        }
+      ],
+      "limitation": "Narrow automated invariants, not a conversational quality score. Includes scripted local confirmation/rejection of cards; no wallet execution or browser UI test."
+    }
+  ],
+  "finalSourceDiffSha256": "39d1d8bf5fc31f38f0259d767ee7163fa275e46f616f7d012a27ce139aa22abf",
+  "finalSourceTree": [
+    {
+      "path": "functions/_lib/admin.ts",
+      "sha256": "2e2bcd06e185cf9ef026b305537778a60fe6058142adc3c3d1d9d66bc774d169"
+    },
+    {
+      "path": "functions/_lib/agentGuards.ts",
+      "sha256": "e66485d0da45241d62449a3338452f143fd23d2ea519d5d86b30b6f395718da1"
+    },
+    {
+      "path": "functions/_lib/budget.ts",
+      "sha256": "df173f85a5648cd5ca6eafa6a51a8302870770258675dd0b3781aa89fac775f2"
+    },
+    {
+      "path": "functions/_lib/coaching.ts",
+      "sha256": "b870bf431793da5d70e8cfe1ef2aa35a0c0a3bbfd8e8e309aae1f41c571a6ec9"
+    },
+    {
+      "path": "functions/_lib/config.ts",
+      "sha256": "5326baa048a80bbcaafe6b4605c93f2324851159d24db9bfe7f7874ed4208a01"
+    },
+    {
+      "path": "functions/_lib/confirmationStatus.ts",
+      "sha256": "ebd38239a2a99542bc7da2ea5d83c729774149fe2ec7912e39a5aa87ead02809"
+    },
+    {
+      "path": "functions/_lib/education.ts",
+      "sha256": "b435fe84688d607248fc55d6c87ed016f47efbfd4efbf11919f90692c66297c7"
+    },
+    {
+      "path": "functions/_lib/educationFigures.ts",
+      "sha256": "4ce3da2b8d5e7332d1bbd4acbbeaf1a1d463c823216589d61ff57e3bc7fa1a69"
+    },
+    {
+      "path": "functions/_lib/intake.ts",
+      "sha256": "8b194042f89436322ae9c64569b98a26a4dd1ad0c63c850bbe4d9028b5f2f9c6"
+    },
+    {
+      "path": "functions/_lib/ledger.ts",
+      "sha256": "66dd4d7ce183585c1e8131e935c570c61b4d6d52c37318dd2142a2fceb5ef420"
+    },
+    {
+      "path": "functions/_lib/llm.ts",
+      "sha256": "23546b46741735ad32d5a8960bbfa474dd1cd9a21850105c06d3a8dbe74550d2"
+    },
+    {
+      "path": "functions/_lib/mutationEvidence.ts",
+      "sha256": "b1d34aed306d1b447f9b793ddf49531d2636d24aa582023d5b869a5eae760d5c"
+    },
+    {
+      "path": "functions/_lib/plan.ts",
+      "sha256": "966be3c6adcab0b177c0620e1b820d7f5b90f8132b7f196e5cd4f7b76f695083"
+    },
+    {
+      "path": "functions/_lib/privyAuth.ts",
+      "sha256": "e438bece6391bb7d9bc6449578f0caf6e01e888217dd0e46dd268ddfa21f174b"
+    },
+    {
+      "path": "functions/_lib/quota.ts",
+      "sha256": "f414923d51a316babb45bfb62f6061e0d4dee84d4eae6e831f95dd73212280c6"
+    },
+    {
+      "path": "functions/_lib/stats.ts",
+      "sha256": "454b97253bd0fda382d6c020940b7e0abfd4a76d95c7377721f3e05a47e524f4"
+    },
+    {
+      "path": "functions/api/admin.ts",
+      "sha256": "95d407a888b628894dded6dacb2e5892820f5520e1a9993ad1042c8e6984b47f"
+    },
+    {
+      "path": "functions/api/chat.ts",
+      "sha256": "65eb67af01f079200cbec3f5d55bd8f54d3026b7872a9a148612e877b6a57039"
+    },
+    {
+      "path": "functions/api/power.ts",
+      "sha256": "28c1f4b6565ac8639b14909e4412083d9d11c467a14fce1ce4a33b38e137e3ab"
+    },
+    {
+      "path": "functions/api/price.ts",
+      "sha256": "d526b1de91d32381468035c17d437714f81dcfecefdccb16ea153590db0da8a7"
+    },
+    {
+      "path": "functions/api/prices.ts",
+      "sha256": "fafa2e9603909ccae6b06b610cdecb0f0e62b5d412ebbd8d4ef7ce5b8ff54b50"
+    },
+    {
+      "path": "functions/api/rates.ts",
+      "sha256": "1f538706bb000f0976e12438406d24d16ae6427295c8eb5cc0bb00d3a24b8073"
+    },
+    {
+      "path": "functions/api/status.ts",
+      "sha256": "0005a15b81333c6f51516c8e3379dd5b70c3f49aeda0b2bc0d934774fbebd94a"
+    },
+    {
+      "path": "functions/api/usage.ts",
+      "sha256": "d5b2dc53ce8746b6f1a070b67d6727e0d260a56e921085e764a4b6148e68a99c"
+    },
+    {
+      "path": "functions/api/userdata.ts",
+      "sha256": "23297cd3b25550a874352b65a6f6129a09b617d471d5e68aba317e3552996d61"
+    },
+    {
+      "path": "src/App.tsx",
+      "sha256": "b4b8e887fe2ec15c3d74b63cc0a84f3457b0b863df53737f26ab27c5d2a6b9d3"
+    },
+    {
+      "path": "src/components/chat/ActionCard.tsx",
+      "sha256": "ccf9060aecd6683e2a83cba643d9280aaad6cfcbf2a5eb3ca035917be9d07368"
+    },
+    {
+      "path": "src/components/chat/AiPower.tsx",
+      "sha256": "f774ca89a5b6cf89ae62cf3129c15db8a0d02f5d29d31d630edcd4a81da9ade5"
+    },
+    {
+      "path": "src/components/chat/IntakeFormCard.tsx",
+      "sha256": "11a3914b0e2b11322e1d2e7ade94b73da2e8a5f04ac12d4b196ac19c05997d5e"
+    },
+    {
+      "path": "src/components/chat/ItemsCard.tsx",
+      "sha256": "2ce128d4148b00a7a50f6850ed035fd8a3463437db3a8c9a3411d1f40f74eb5d"
+    },
+    {
+      "path": "src/components/chat/RecordCard.tsx",
+      "sha256": "c4ecef401cfc5416055c398e9b5df535668437a4a51f1b5b45ec3af68fc48d5f"
+    },
+    {
+      "path": "src/components/chat/StepToast.tsx",
+      "sha256": "06a09865d5cfb760e22a0362522c8d7ecff792a5df53f871efd26ada47803f8e"
+    },
+    {
+      "path": "src/components/layout/AppShell.tsx",
+      "sha256": "46db43e5dc6c86a7aa4f7ea3878c21ad74096ff78925dd50362c4cfa853f9902"
+    },
+    {
+      "path": "src/components/layout/NavBar.tsx",
+      "sha256": "7e7cd04ab84650987bf78df099618715b24d57e880857473d2bbbb844fa63c4d"
+    },
+    {
+      "path": "src/components/screens/AdminPage.tsx",
+      "sha256": "cff34997fe5810390485a0a96e70a8742d77d5fe6af7281b1833e34ed921ee15"
+    },
+    {
+      "path": "src/components/screens/BalanceSheet.tsx",
+      "sha256": "5879d363937bd06cce0f71a4817bdc15dc25d76575c7e00fda27a546fb60ccab"
+    },
+    {
+      "path": "src/components/screens/ChatScreen.tsx",
+      "sha256": "6719cbb04dfd77648485d1dd7b965b08960d37a30195d961d3efa7873bf832e5"
+    },
+    {
+      "path": "src/components/screens/FundScreen.tsx",
+      "sha256": "9da3f13905cf2225a72d8d5303deb72c4970dbbc8783ee37d1f8a0c95b7ac9cc"
+    },
+    {
+      "path": "src/components/screens/InvestScreen.tsx",
+      "sha256": "3edcd40ce2e09ab17e63b448054457a59782f8278dd0fe58284feaa85fe37716"
+    },
+    {
+      "path": "src/components/screens/LoginScreen.tsx",
+      "sha256": "51b1729b93b539a32c3e2ecab5d80fcca3b3fa4ac9d60204453bd59fd13441ba"
+    },
+    {
+      "path": "src/components/screens/SettingsScreen.tsx",
+      "sha256": "c5f9332a0eefd697201ce3da615a87c904cf0ad05d84185cfd190bab6d8ba856"
+    },
+    {
+      "path": "src/components/screens/VaultSetup.tsx",
+      "sha256": "88e4fef09a95d536ede0912acf281ed4945401c3ae86c684701e3adf522d9607"
+    },
+    {
+      "path": "src/components/screens/WarningModal.tsx",
+      "sha256": "bcc46401bb86ad505e0a5212bc4317323e5ccb7b1533ab47981b9f56d0087a46"
+    },
+    {
+      "path": "src/components/ui/AllocationPies.tsx",
+      "sha256": "bf9878b819f76bc52b76a31a72af2c66c3f1d3b4b391972e05bee74f14344e07"
+    },
+    {
+      "path": "src/components/ui/CashflowCard.tsx",
+      "sha256": "61b81276eea62a92c00061e6f0ac6ed593c75c0a978e8b58f1e08b59d13826f1"
+    },
+    {
+      "path": "src/components/ui/kit.tsx",
+      "sha256": "f7d7227850cbe18388eb338363624abc3fd6b6572e1d04dd3e3887ca47c106a3"
+    },
+    {
+      "path": "src/config.ts",
+      "sha256": "8afa93b4f3933e642887aeb5186aa8e5e34e4e90133fcc929f4c29eb1e519dac"
+    },
+    {
+      "path": "src/console-capture.ts",
+      "sha256": "ab682e27bfb8efb8b1084ab91ff604baee9b2128892a8036dc0584d82733d3ce"
+    },
+    {
+      "path": "src/hooks/useAgent.ts",
+      "sha256": "10d086ed8c002a6390d39b8d2e72b0a8fac20be4bc64c3e6f322584c3e50aece"
+    },
+    {
+      "path": "src/hooks/useAiPower.ts",
+      "sha256": "9561009aaeb229f996a040e570004436819fbba2e338ce95623406060aec205e"
+    },
+    {
+      "path": "src/hooks/useCirBtc.ts",
+      "sha256": "6808ed7e5175042042ad29579c35384a99ca0338940379a0ec17b11e1815addd"
+    },
+    {
+      "path": "src/hooks/useExchangeRate.ts",
+      "sha256": "974bebb4381280b26c3e7e6a6af5443b61befd82b694e96fae002a31c0f46081"
+    },
+    {
+      "path": "src/hooks/useFinancialProfile.ts",
+      "sha256": "a6a70f9c3c7bf62497af46b0a0f905f6dc952e8dc4e9b2fc91ad7b7b3be35fed"
+    },
+    {
+      "path": "src/hooks/useNow.ts",
+      "sha256": "9587e6b0abf4386251cec6d0508b19d9e774fa246b06ead98fa30642bf2c6bf6"
+    },
+    {
+      "path": "src/hooks/usePrices.ts",
+      "sha256": "535cf56b5fdd7ef42c1fa7cac5a27534556ef8628aad17d48a0dd1756ec7fe5a"
+    },
+    {
+      "path": "src/hooks/useServiceStatus.ts",
+      "sha256": "e7f8c3235b5ba0236dab27773eb1382625cf3d6ec679b9333115eb630c2456af"
+    },
+    {
+      "path": "src/hooks/useVault.ts",
+      "sha256": "74390f4d02c0bbe31e3d3c440845a8c4f5a6b1318eb98cfbc6edadb4327fe433"
+    },
+    {
+      "path": "src/index.css",
+      "sha256": "6d1549e4ccd7ea01894a034f828fdc439b7b4ffc52779dd60e6f691a5d61d37c"
+    },
+    {
+      "path": "src/kb/facts.ts",
+      "sha256": "a2bbc6f5e25d9f936e1fbdbc5b7e6e42445e150ebdaa1f49850246337fed9afe"
+    },
+    {
+      "path": "src/kb/kb.ts",
+      "sha256": "3c22f48005fcf50f25dfaca84a10ef88280e4f88432685b07b2e1eeecf851a81"
+    },
+    {
+      "path": "src/kb/moonsafe-kb.json",
+      "sha256": "de344b6989a67b905649942e2745a52279990d6c1bf51e24c9a534d9237bc840"
+    },
+    {
+      "path": "src/lib/allocation.ts",
+      "sha256": "950d5c06d8512c780a94903328a00e94dfb42acc04dfa56ccce8060f6e314db4"
+    },
+    {
+      "path": "src/lib/chain.ts",
+      "sha256": "870b4723b1c64513f38337e5b4bd52b98edfd7d937801c61eaa371e12b6cc413"
+    },
+    {
+      "path": "src/lib/cloud.ts",
+      "sha256": "40620e50c7d042ed4d35534dd9c4851c9f2fe4a72328bebce2477903899a0303"
+    },
+    {
+      "path": "src/lib/features.ts",
+      "sha256": "b166d3275f440298f29345e8f121308148e15d0d1d4b4f72bdaefceda05cbd5e"
+    },
+    {
+      "path": "src/lib/format.ts",
+      "sha256": "f6a9967f750d7d7ded7d855f575c6aac68f64bb5c5c20fb924294205eef0d8aa"
+    },
+    {
+      "path": "src/lib/intakeForm.ts",
+      "sha256": "72531f5514bcc72c481de27317c48a7e300a4520bb7511673f96c269132279ed"
+    },
+    {
+      "path": "src/lib/invest.ts",
+      "sha256": "75f3a5ef313093b0548df894a33bf8c02397ee08e439367699d0283626a4373f"
+    },
+    {
+      "path": "src/lib/network.ts",
+      "sha256": "c9852302b96b8c0ff032e91fb307b119e591f9d9e3ec2945ad2f7190defe0997"
+    },
+    {
+      "path": "src/lib/planningScope.ts",
+      "sha256": "5af0f3b056d95943749495571c2dc5f3d7ae1a4432f365ad2e35a9fdfc152778"
+    },
+    {
+      "path": "src/lib/power.ts",
+      "sha256": "63270bf0af5987c0b2fc724e5f9a60a2676a857b2d03cb445a9384650c127ab2"
+    },
+    {
+      "path": "src/lib/profile.ts",
+      "sha256": "98185071b2a8ad1c32d45a11ed0f06c8ac688b7422b883059433d04d3329fc7a"
+    },
+    {
+      "path": "src/lib/record.ts",
+      "sha256": "1bd888f01c3dbdf006c660d0a117f1d1699669228f276ee00ad5e99ef873026f"
+    },
+    {
+      "path": "src/main.tsx",
+      "sha256": "30a2dbb3fa6f5c6b76ab3e041cf641f7f3842432cf7689e111a57066abea0785"
+    },
+    {
+      "path": "src/privyConfig.ts",
+      "sha256": "e03dc694b41fc5dc14c1342f478d99a80fb7325b8a9caa341cde1cffd2456ce9"
+    },
+    {
+      "path": "src/state/AppState.tsx",
+      "sha256": "2343eab7b74a6f2eb30c714041c8a5928afb4af21fb6c1557d1fa9b7ec83c619"
+    },
+    {
+      "path": "src/state/WalletPref.tsx",
+      "sha256": "bf7c97b0d17a8bea93f59698bae810fb9ca23fc73bf87e2316a224273d81a276"
+    },
+    {
+      "path": "src/tracing.ts",
+      "sha256": "3ed5452d5abd6057c818e3362be325c3f1566523927e496e49e0eaf1bafd64b8"
+    },
+    {
+      "path": "src/types.ts",
+      "sha256": "56ea8523c097e1636b010165f809c6d6176ef82afd783083feb20be1c5f1de8c"
+    },
+    {
+      "path": "src/vite-env.d.ts",
+      "sha256": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5"
+    }
+  ],
+  "finalStatusRepair": {
+    "verification": "offline deterministic replay and zero-model handler regression, after the three paid runs",
+    "passed": true
+  },
+  "limitations": [
+    "Development scenarios, not a blinded benchmark.",
+    "Repeated conversations are not independent users.",
+    "Narrow invariant checks are not overall conversational accuracy.",
+    "No wallet transactions, real user data, or production deployment.",
+    "Final deterministic status repair was not followed by another paid Haiku run.",
+    "Historical run diff hashes omit untracked modules; final file manifest includes them. Future runner records a per-file source manifest."
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "mode": "offline deterministic replay",
+  "results": [
+    {
+      "source": "session1-2026-10-31",
+      "case": "session-pending-target",
+      "turn": 3,
+      "passed": true,
+      "paidCalls": 0,
+      "content": "Saved in your profile:\n- Age: 38\n- Income irregular\n- Dependents: 3\n- Sole earner: yes\n- Freelance income: 3,000 USD/month\n- Monthly household spending: 1,800 USD/month\n\nItems absent from the saved profile are not established, not zero. Card proposals count only after confirmation; skipped items do not count.\n\nApp vault: 0 USD. This balance does not establish your emergency reserves outside the app."
+    },
+    {
+      "source": "session2-2026-10-31",
+      "case": "session-pending-target",
+      "turn": 3,
+      "passed": true,
+      "paidCalls": 0,
+      "content": "Saved in your profile:\n- Age: 38\n- Income irregular\n- Dependents: 3\n- Sole earner: yes\n- Freelance income: 3,000 USD/month\n- Household monthly spending: 1,800 USD/month\n\nItems absent from the saved profile are not established, not zero. Card proposals count only after confirmation; skipped items do not count.\n\nApp vault: 0 USD. This balance does not establish your emergency reserves outside the app."
+    },
+    {
+      "source": "session3-2026-10-31",
+      "case": "session-pending-target",
+      "turn": 3,
+      "passed": true,
+      "paidCalls": 0,
+      "content": "Saved in your profile:\n- Age: 38\n- Income irregular\n- Dependents: 3\n- Sole earner: yes\n- Freelance income: 3,000 USD/month\n- Household monthly spending: 1,800 USD/month\n\nItems absent from the saved profile are not established, not zero. Card proposals count only after confirmation; skipped items do not count.\n\nApp vault: 0 USD. This balance does not establish your emergency reserves outside the app."
+    }
+  ]
+}
