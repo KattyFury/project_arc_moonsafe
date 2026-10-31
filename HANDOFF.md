@@ -1,4 +1,13 @@
-# ▶ Balance Sheet v2 — Hiếu chốt thêm 2026-10-31 (chưa code, bước tiếp: viết spec build)
+# ▶ Balance Sheet v2 — ĐÃ BUILD + DEPLOY 2026-10-31 (Cloudflare `a0c4a5f5`, main `67fe661`)
+
+Spec build: `docs/BUILD-BALANCE-v2-2026-10-31.md`. Đã làm: công thức mốc (`bucketStanding`: mục đi xa nhất theo tỷ lệ làm mốc, ngưỡng 5/25, On track / Under), Safety = tiền gửi + tiền mặt + stablecoin + trái phiếu (KB: `cash`/`checking`/`stable_wallet` sang safe, thêm `bond` safe + `junk_bond` traditional), tỷ lệ Traditional/Crypto do người dùng chọn (`profile.cryptoSplit`, tool `crypto_split`, mặc định 50, agent nói rõ là mặc định của MoonSafe), cirBTC tính theo giá trị trên chuỗi, màn Balance bỏ Net worth / Can use now, nút gạt Split | Cash flow (thu, chi, trả nợ, từng khoản nợ, mục tiêu quỹ).
+- **Khai báo = E2 (Hiếu chốt sau khi chê bảng hỏi dài):** KHÔNG còn bảng hỏi. Server tự soạn 2 câu (`functions/_lib/intake.ts`): (1) `cashflowAsk` hỏi cả tháng 1 lần (tuổi, thu nhập + có đều không, khoản thu lâu lâu như airdrop, chi tiêu chưa tính nợ, người phụ thuộc, nợ); (2) `assetsAsk` ghi lại những gì đã nghe + mục tiêu quỹ + tiền quỹ lấy từ đâu (dư tháng / airdrop) + hỏi tài sản bằng lời + tỷ lệ chia + hỏi bù "lương có đều không" nếu bỏ qua. Câu 2 gửi 1 lần trước kế hoạch; khai tài sản sau đó đi qua thẻ xác nhận. Hỏi về quỹ mà chưa biết chi tiêu → gửi lại câu 1 (tối đa 2 lần).
+- Bảng hỏi cũ (`IntakeFormCard`, `formToItems` có $/số lượng) vẫn còn trong code để hiện các thẻ cũ đã lưu trong lịch sử chat; server không gửi nữa.
+- Kiểm: `check:all`, `test:agent`, tsc 3 cấu hình, check-lang, build mainnet đều qua; ảnh 393×852/1440×900 ở Desktop `MoonSafe-balance-v2-2026-10-31` (ảnh bảng hỏi là bản cũ đã bỏ).
+- **Chưa thử bằng model thật**: câu trả lời kiểu "31 / 600 / 400 / có 1 con gái / nợ mẹ 20K…" (số trần, không nhãn) phải để planner hiểu theo thứ tự câu hỏi; Hiếu test trên moonsafe.app rồi sửa theo câu trả lời thật.
+- File CI `.github/workflows/agent-regression.yml` (Codex) chỉ nằm trên máy Dell: token GitHub thiếu quyền `workflow`; muốn đẩy thì `gh auth refresh -s workflow` trên máy tính.
+
+# Balance Sheet v2 — Hiếu chốt thêm 2026-10-31 (quyết định, nền cho bản build ở trên)
 
 Bổ sung/sửa `docs/SPEC-BALANCE-SHEET-v2-2026-10-30.md`. Nguồn chuẩn đã dùng: SEC Investor.gov "Beginners' Guide to Asset Allocation" (3 nhóm stocks/bonds/cash; cash equivalents = savings deposits, CDs, treasury bills, money market deposit accounts, money market funds; real estate/precious metals = nhóm khác) và quy tắc "age in bonds" của Bogle ("crude starting point", không phải luật).
 
