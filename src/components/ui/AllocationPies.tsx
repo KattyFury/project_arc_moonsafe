@@ -1,4 +1,4 @@
-// Two donuts: the target split by the MoonSafe framework (spec 4) and what the user holds now,
+// Two donuts (compact: Invest and the chat) or one bar per part (Balance): the target split by the MoonSafe framework (spec 4) and what the user holds now,
 // in three buckets (Safety, Traditional, Crypto: framework v2, 2026-10-27) plus Idle and a grey slice for items
 // that cannot be rebalanced (spec 3: rental, business, loans given, insurance). Shares are of
 // liquid assets (the base of every %, spec 2); the full version also shows each group's share of
@@ -64,7 +64,7 @@ function Donut({ slices, size, center, sub, label }: { slices: { seg: Segment; s
  * (Balance) shows each part as a bar against its target (100% line) with what is left.
  */
 export function AllocationPies({ compact = false }: { compact?: boolean }) {
-  const { balance: b, moneyUsd, prices } = useApp()
+  const { balance: b, moneyUsd, prices, profile } = useApp()
   const { target, liquid, grey, byGroup, unpriced, declared } = b
   const size = compact ? 72 : 112
   // Crypto is one bucket: BTC plus any other coins held; its target is all of the crypto share.
@@ -106,35 +106,36 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
     </div>
   )
 
-  // Each part as a bar against its target (Hieu, 2026-10-30, option B): the black line is 100% (the target for their age); the bar shows
-  // what is held, so 54% or 167% reads at a glance. Same totals as the agent's (bucketStanding). Money not placed yet and items outside
-  // the split follow as plain rows.
+  // Each part as a bar against its target (Hieu, 2026-10-30, option B), by value (Balance Sheet v2, 2026-10-31): the part furthest ahead
+  // of its share sets the size, so no bar passes its target; the track is the target. On track (inside 5 points / 25% of its share, or
+  // the part that sets the size) or Under with what is left. Same totals as the agent's (bucketStanding). Items outside the split follow
+  // as plain rows.
   const standing = bucketStanding(b)
   const color: Record<string, string> = { safe: SEG_COLOR.safe, traditional: SEG_COLOR.traditional, crypto: SEG_COLOR.crypto }
-  // The track runs to 150%, so the 100% line sits at two thirds and an overshoot stays visible.
-  const MAX = 1.5
-  const bar = (key: string, name: string, have: number, tgt: number, full: boolean, left: number) => {
+  const bar = (key: string, name: string, have: number, tgt: number, full: boolean, left: number, anchor: boolean) => {
     const p = tgt > 0 ? have / tgt : 0
     return (
-      <li key={key} className="py-3 flex flex-col gap-2 border-b border-[var(--line)]">
+      <li key={key} className="py-2 flex flex-col gap-2 border-b border-[var(--line)]">
         <div className="flex items-baseline justify-between gap-4">
           <span className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--ink)' }}>{name}</span>
           <span className="text-[16px] leading-6 tabular-nums"><strong style={{ color: 'var(--ink)' }}>{moneyUsd(have)}</strong> <span style={{ color: 'var(--subtle)' }}>of {moneyUsd(tgt)}</span></span>
         </div>
-        <div className="relative h-7 rounded-lg" style={{ background: 'var(--surface-muted)' }} role="img" aria-label={`${name}: ${Math.round(p * 100)}% of its target`}>
-          <div className="absolute inset-y-0 left-0 rounded-lg" style={{ width: `${100 / MAX}%`, background: `${color[key]}1f` }} />
-          <div className="fill-in absolute top-1 bottom-1 left-0 rounded-md" style={{ width: `${Math.min(p, MAX) / MAX * 100}%`, background: color[key] }} />
-          <div className="absolute -top-1 -bottom-1 w-0.5" style={{ left: `${100 / MAX}%`, background: 'var(--ink)' }} />
+        <div className="relative h-7 rounded-lg" style={{ background: `${color[key]}1f` }} role="img" aria-label={`${name}: ${Math.round(p * 100)}% of its target`}>
+          <div className="fill-in absolute top-1 bottom-1 left-0 rounded-md" style={{ width: `${Math.min(p, 1) * 100}%`, background: color[key] }} />
         </div>
         <div className="flex justify-between gap-4 text-[14px] leading-5">
           <span style={{ color: 'var(--subtle)' }}>
-            {full ? <><strong style={{ color: 'var(--success)' }}>Full</strong>{have - tgt >= 0.5 ? `, ${moneyUsd(have - tgt)} above` : ''}</> : `${moneyUsd(left)} to go`}
+            {full ? <><strong style={{ color: 'var(--success)' }}>On track</strong>{anchor ? ', sets the size' : ''}</> : <><strong style={{ color: 'var(--ink)' }}>Under</strong>, {moneyUsd(left)} to go</>}
           </span>
           <strong className="tabular-nums" style={{ color: full ? 'var(--success)' : 'var(--ink)' }}>{Math.round(p * 100)}%</strong>
         </div>
       </li>
     )
   }
+  const outside = grey + b.lifestyle
+  // The Traditional / Crypto split: the one they chose, or MoonSafe's default 50 / 50 (Hieu, 2026-10-31).
+  const chosen = profile.profile?.cryptoSplit
+  const split = chosen ?? 50
   const line = (key: string, dot: string, name: string, right: ReactNode) => (
     <li key={key} className="flex items-center justify-between gap-4 py-2 border-b border-[var(--line)]">
       <span className="flex items-center gap-2 text-[16px] leading-6" style={{ color: 'var(--ink)' }}><span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: dot }} />{name}</span>
@@ -143,14 +144,16 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
   )
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>{target ? `The black line is 100%: the target for your age, ${b.age}${b.ageIsDefault ? ' (default)' : ''}.` : 'Tell the agent your age to see your targets.'}</p>
+      <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>{target
+        ? `Age ${b.age}${b.ageIsDefault ? ' (default)' : ''}: Safety ${r(target.safe)}%, then Traditional / Crypto ${100 - split} / ${split}${chosen ? '' : ', MoonSafe\'s default'}.`
+        : 'Tell the agent your age to see your targets.'}</p>
       {walletOnly || (
         <ul className="flex flex-col [&>li:last-child]:border-b-0">
           {standing
-            ? standing.map(x => bar(x.key, x.name, x.have, x.target, x.full, x.left))
+            ? standing.map(x => bar(x.key, x.name, x.have, x.target, x.full, x.left, x.anchor))
             : (['safe', 'traditional', 'crypto'] as const).map(s => line(s, SEG_COLOR[s], SEG_NAME[s], <strong style={{ color: 'var(--ink)' }}>{moneyUsd(held[s])}</strong>))}
           {held.idle > 0.5 && line('idle', SEG_COLOR.idle, 'Not placed yet', <strong style={{ color: 'var(--ink)' }}>{moneyUsd(held.idle)}</strong>)}
-          {grey > 0.5 && line('grey', SEG_COLOR.grey, 'Outside the split', <strong style={{ color: 'var(--ink)' }}>{moneyUsd(grey)}</strong>)}
+          {outside > 0.5 && line('grey', SEG_COLOR.grey, 'Outside the three parts', <strong style={{ color: 'var(--ink)' }}>{moneyUsd(outside)}</strong>)}
         </ul>
       )}
       {unpriced.length > 0 && (

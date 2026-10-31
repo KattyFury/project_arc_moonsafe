@@ -81,7 +81,7 @@ function YesNoRow({ label, value, onChange }: { label: string; value: YesNo; onC
 function Priced<U extends string>({ label, value, onChange, unit, units, onUnit }: { label: string; value: string; onChange: (v: string) => void; unit: U; units: [U, U]; onUnit: (u: U) => void }) {
   const byQty = unit !== units[0]
   return (
-    <Amount label={label} value={value} onChange={onChange} prefix={byQty ? '' : '$'} suffix={byQty ? ` ${unit === 'coins' ? '' : unit}`.trimEnd() : ''}
+    <Amount label={label} value={value} onChange={onChange} prefix={byQty ? '' : '$'} suffix={byQty && unit !== 'coins' ? ` ${unit}` : ''}
       under={<Pills small label={`${label} in`} value={unit} options={units.map(u => ({ value: u, label: u === 'usd' ? '$' : u === 'coins' ? 'Coins' : u === 'shares' ? 'Shares' : u }))} onChange={onUnit} />} />
   )
 }
