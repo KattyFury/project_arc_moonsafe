@@ -405,13 +405,24 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   if (formToItems({ ...EMPTY_FORM, home: '50000' }, null).length !== 0 || formToItems({ ...EMPTY_FORM, otherAssets: 'yes', home: '50000' }, null).length !== 1) fail('form: home, car, lent and business count only when the question was answered yes')
   const btcItems = formToItems({ ...EMPTY_FORM, btc: '1000' }, { goldUsdPerOz: null, usd: { 'crypto:BTC': 100000 } })
   const btcH = (btcItems[0]?.ops[0] as { holding?: { value?: number; quantity?: number; priceSource?: string } }).holding
-  if (btcItems.length !== 1 || btcH?.value !== 1000 || btcH?.quantity !== undefined || btcH?.priceSource !== 'self') fail('form: Bitcoin is stored as the money put in ($1,000), not a quantity revalued at the market')
-  // Cost basis (Hieu, 2026-10-29): a BTC price halving must not make the Crypto part look empty, so the plan never pushes to buy more.
+  // Balance Sheet v2 (Hieu, 2026-10-31; replaces cost basis of 2026-10-29): $1,000 of Bitcoin at $100,000 is 0.01 BTC, valued live.
+  if (btcItems.length !== 1 || btcH?.quantity !== 0.01 || btcH?.priceSource !== 'market') fail('form: $1,000 of Bitcoin becomes 0.01 BTC at today\'s price')
   {
     const p = applyOps(normalizeProfile({ v: 2, age: 30 }), btcItems.flatMap(it => it.ops))
     const at = (btc: number) => computeBalance({ profile: p, walletUsd: 0, vaultUsd: 0, cirBtcUsd: 0, prices: { goldUsdPerOz: null, usd: { 'crypto:BTC': btc } }, vndPerUsd: 25000 }).byGroup.btc
-    if (at(100000) !== 1000 || at(50000) !== 1000) fail(`cost basis: BTC put in stays $1,000 whatever the price (got ${at(100000)} / ${at(50000)})`)
+    if (at(100000) !== 1000 || at(50000) !== 500) fail(`value now: 0.01 BTC follows the price (got ${at(100000)} / ${at(50000)})`)
   }
+  // No price when saving: the $ amount is kept as typed. By quantity: kept as typed. A share count without a ticker is not saved as $.
+  const noPrice = (formToItems({ ...EMPTY_FORM, btc: '1000' }, null)[0]?.ops[0] as { holding?: Holding }).holding
+  if (noPrice?.value !== 1000 || noPrice?.priceSource !== 'self') fail('form: without a price the $ amount is kept')
+  const oz = (formToItems({ ...EMPTY_FORM, gold: '2', goldUnit: 'oz' }, null)[0]?.ops[0] as { holding?: Holding }).holding
+  if (oz?.quantity !== 2 || oz?.unit !== 'oz' || oz?.priceSource !== 'market') fail('form: gold typed in oz is 2 oz, priced live')
+  const voo = (formToItems({ ...EMPTY_FORM, stocks: '10', stocksUnit: 'shares', stocksTicker: 'voo' }, null)[0]?.ops[0] as { holding?: Holding }).holding
+  if (voo?.type !== 'us_stock' || voo?.symbol !== 'VOO' || voo?.quantity !== 10) fail('form: 10 shares of VOO')
+  if (formToItems({ ...EMPTY_FORM, stocks: '10', stocksUnit: 'shares' }, null).length !== 0) fail('form: shares without a ticker are not saved as $10')
+  if (formToItems({ ...EMPTY_FORM, bonds: '500', junkBonds: '300' }, null).map(i => (i.ops[0] as { holding?: Holding }).holding?.type).join() !== 'bond,junk_bond') fail('form: bonds (Safety) and high-yield bonds (Traditional)')
+  const split = formToItems({ ...EMPTY_FORM, cryptoSplit: '70' }, null)
+  if ((split[0]?.ops[0] as { fields?: { cryptoSplit?: number } }).fields?.cryptoSplit !== 70) fail('form: the split they pick is saved')
   // cirBTC bought in the app: recorded at what was paid; the onchain market value is no longer added on top.
   {
     const { cirBtcBuyOps } = await import('../src/lib/profile')

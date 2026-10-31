@@ -20,7 +20,7 @@ interface Bullet { key: string; en: string; vi: string; known: (p: FinancialProf
 /** USDC the app sees in the connected wallet: said out loud, but only what the user declares counts (Hieu, 2026-10-28). */
 const seen = (n: number | null | undefined) => n !== null && n !== undefined && n >= 1 ? new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Math.floor(n)) : null
 
-const ASSET_TYPES = ['savings', 'term_deposit', 'checking', 'cash', 'stable_wallet', 'flexible_earn', 'locked_earn', 'defi_stable', 'btc', 'eth', 'top10', 'altcoin', 'crypto', 'staked_large_cap', 'nft', 'gold_physical', 'gold_token', 'us_stock', 'vn_stock', 'fund_bond']
+const ASSET_TYPES = ['savings', 'term_deposit', 'checking', 'cash', 'bond', 'junk_bond', 'stable_wallet', 'flexible_earn', 'locked_earn', 'defi_stable', 'btc', 'eth', 'top10', 'altcoin', 'crypto', 'staked_large_cap', 'nft', 'gold_physical', 'gold_token', 'us_stock', 'vn_stock', 'fund_bond']
 const OTHER_TYPES = ['home', 'car', 'rental_property', 'loan_given', 'business_stake']
 
 const BULLETS: Bullet[] = [

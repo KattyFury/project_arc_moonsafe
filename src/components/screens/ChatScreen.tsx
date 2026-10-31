@@ -19,7 +19,8 @@ import { ActionCard, type ChatAction } from '@/components/chat/ActionCard'
 import { RecordCard } from '@/components/chat/RecordCard'
 import { ItemsCard } from '@/components/chat/ItemsCard'
 import { IntakeFormCard } from '@/components/chat/IntakeFormCard'
-import { EMPTY_FORM, formToItems, type FormValues } from '@/lib/intakeForm'
+import { EMPTY_FORM, formPriceNeeds, formToItems, type FormValues } from '@/lib/intakeForm'
+import type { Prices } from '@/lib/allocation'
 import { readOps } from '@/lib/profile'
 import type { AssetType } from '@/types'
 import { AllocationPies } from '@/components/ui/AllocationPies'
@@ -110,8 +111,21 @@ export function ChatScreen({ onError, onActions, ask = null, onAsked }: { onErro
   // The form: the draft is kept as it is typed. Sending the form IS the user's confirmation, so it is saved straight away (no confirm
   // card; Hieu, 2026-10-28) and the agent is told what was saved. "Skip all" tells the agent nothing was shared.
   const setForm = (id: number, values: FormValues) => setExtras(x => ({ ...x, cards: x.cards.map(c => c.id === id && c.kind === 'form' ? { ...c, values } : c) }))
-  const reviewForm = (card: Extract<StoredCard, { kind: 'form' }>, values: FormValues) => {
-    const items = formToItems(values, prices.prices)
+  const reviewForm = async (card: Extract<StoredCard, { kind: 'form' }>, values: FormValues) => {
+    // A $ amount of gold, Bitcoin or a ticker is turned into a quantity at today's price (Balance Sheet v2), so fetch the prices it
+    // needs first; if that fails the amount is kept in $ as typed (formToItems).
+    const need = formPriceNeeds(values)
+    let at = prices.prices
+    if (need.gold || need.stocks.length || need.crypto.length) {
+      try {
+        const r = await fetch(`/api/prices?stocks=${encodeURIComponent(need.stocks.join(','))}&crypto=${encodeURIComponent(need.crypto.join(','))}`)
+        if (r.ok) {
+          const d = await r.json() as Partial<Prices>
+          at = { goldUsdPerOz: d.goldUsdPerOz ?? at?.goldUsdPerOz ?? null, usd: { ...at?.usd, ...d.usd } }
+        }
+      } catch { /* keep the $ amounts */ }
+    }
+    const items = formToItems(values, at)
     if (!items.length) return
     profile.apply(items.flatMap(i => i.ops))
     setExtras(x => ({ ...x, cards: x.cards.map(c => c.id === card.id ? { ...c, status: 'done' as const, saved: items.length } : c) }))

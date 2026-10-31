@@ -100,6 +100,15 @@ expect(formAction?.keys?.join() === 'age,income,spending,stability,goal,assets,o
 expect(formAction?.seen === 1916, 'the form is told what the app sees in the wallet (a hint)')
 expect(/Share whatever you're comfortable with/.test(hello.body.content ?? '') && !/^• /m.test(hello.body.content ?? ''), 'the message above the form is short, not a bulleted list')
 
+// 0b. Balance Sheet v2 (Hieu, 2026-10-31): the form was skipped, then the user asks about the emergency fund with the spending still
+// unknown: step 1 of the form (the cash flow) comes back as one block, once.
+const skipped = [{ role: 'user' as const, content: 'investing' }, { role: 'assistant' as const, content: hello.body.content ?? '' }, { role: 'user' as const, content: '[app event] The user reviewed the items: saved: none. skipped: everything.' }, { role: 'assistant' as const, content: 'No problem.' }]
+const fundAsk = await call([...skipped, { role: 'user', content: 'How big should my emergency fund be?' }], normalizeProfile({ v: 2, age: 30 }), 0)
+const fundForm = fundAsk.body.actions?.find(a => a.type === 'intake_form') as { keys?: string[] } | undefined
+expect(/To size your emergency fund I need your monthly cash flow/.test(fundAsk.body.content ?? '') && fundForm?.keys?.join() === 'income,spending,stability,goal,debt', `the fund question brings back the cash-flow step of the form (got ${fundForm?.keys?.join()})`)
+const again = await call([...skipped, { role: 'user', content: 'How big should my emergency fund be?' }, { role: 'assistant', content: fundAsk.body.content ?? '' }, { role: 'user', content: 'and my emergency fund?' }], normalizeProfile({ v: 2, age: 30 }), 0)
+expect(!again.body.actions?.some(a => a.type === 'intake_form'), 'the cash-flow form is sent once')
+
 // 1. A NEW user types everything in one message: it is saved at once (no confirm card), and the plan follows in the same reply.
 const empty = normalizeProfile({ v: 2 })
 const first = await call([...history, { role: 'user', content: message }], empty)

@@ -5,7 +5,7 @@
 // Pure module (relative imports only): shared by the app and scripts/kb-check.ts.
 
 import type { Prices } from './allocation'
-import { defaultRebalanceable, newId, type ProfileOp } from './profile'
+import { defaultRebalanceable, newId, TOP10_SYMBOLS, type ProfileOp } from './profile'
 import type { AssetType, Holding } from '../types'
 
 export type YesNo = 'yes' | 'no' | null
@@ -40,6 +40,23 @@ export interface FormValues {
   crypto?: string
   gold: string
   stocks: string
+  // Balance Sheet v2 (Hieu, 2026-10-31): each item by amount ($) or by quantity; a $ amount of something with a market price is turned
+  // into a quantity at today's price, so its value then follows the price. Unset unit = $.
+  /** Bonds, T-bills, bond and money market funds (Safety). */
+  bonds?: string
+  goldUnit?: 'usd' | 'oz'
+  btcUnit?: 'usd' | 'coins'
+  /** US stocks and ETFs: one ticker (VOO) for shares, or a $ total without one. */
+  stocksTicker?: string
+  stocksUnit?: 'usd' | 'shares'
+  vnStocks?: string
+  /** High-yield bonds (Traditional: SEC, risk close to stocks). */
+  junkBonds?: string
+  /** Coins other than Bitcoin: one ticker (ETH) for a quantity, or a $ total without one. */
+  coinsTicker?: string
+  coinsUnit?: 'usd' | 'coins'
+  /** % of the money outside Safety in Crypto: '30' | '50' | '70'; null = not chosen (MoonSafe default 50). */
+  cryptoSplit?: string | null
   /** Only decides whether the four fields below are shown. */
   otherAssets: YesNo
   home: string
@@ -77,17 +94,49 @@ export interface FormItem { text: string; ops: ProfileOp[] }
 
 const usd = (n: number) => `$${new Intl.NumberFormat('en-US', { maximumFractionDigits: n >= 100 ? 0 : 2 }).format(n)}`
 
+const qty = (n: number) => new Intl.NumberFormat('en-US', { maximumFractionDigits: n >= 100 ? 2 : 8 }).format(n)
+
+/** A ticker as typed: letters and digits, upper case; null when empty or not a ticker. */
+export const tickerOf = (t: string | undefined): string | null => {
+  const s = (t ?? '').trim().toUpperCase().replace(/^\$/, '')
+  return /^[A-Z0-9.]{1,10}$/.test(s) ? s : null
+}
+
+/** Coin type by symbol (spec 1): ETH, the other top-10 coins, or an altcoin. */
+const coinType = (s: string): AssetType => s === 'ETH' ? 'eth' : TOP10_SYMBOLS.has(s) ? 'top10' : 'altcoin'
+
+/** The symbols a filled form needs a price for, to turn $ amounts into quantities (Balance Sheet v2). */
+export function formPriceNeeds(v: FormValues): { gold: boolean; stocks: string[]; crypto: string[] } {
+  const usdMode = (unit: string | undefined, amount: string) => (unit ?? 'usd') === 'usd' && parseAmount(amount) !== null
+  const stock = tickerOf(v.stocksTicker), coin = tickerOf(v.coinsTicker)
+  return {
+    gold: usdMode(v.goldUnit, v.gold),
+    stocks: stock && usdMode(v.stocksUnit, v.stocks) ? [stock] : [],
+    crypto: [...(usdMode(v.btcUnit, v.btc) ? ['BTC'] : []), ...(coin && usdMode(v.coinsUnit, v.coins) ? [coin] : [])],
+  }
+}
+
 /**
- * The items a filled form stands for, in the order they are shown. Every amount is kept as typed: investments (Bitcoin, gold,
- * stocks) are the money put in, never turned into a quantity revalued at the market (Hieu, 2026-10-29).
+ * The items a filled form stands for, in the order they are shown. Balance Sheet v2 (Hieu, 2026-10-31): value now, not money put in.
+ * Gold, Bitcoin, stocks and coins with a ticker are kept as a QUANTITY priced live: typed as a quantity, or a $ amount turned into
+ * one at today's price (`prices`). Without a price (or a ticker) the $ amount is kept as typed.
  */
-export function formToItems(v: FormValues, _prices: Prices | null, now = Date.now()): FormItem[] {
+export function formToItems(v: FormValues, prices: Prices | null, now = Date.now()): FormItem[] {
   const items: FormItem[] = []
   const add = (text: string, ...ops: ProfileOp[]) => items.push({ text, ops })
   const holding = (type: AssetType, name: string, amount: number | null, extra: Partial<Holding> = {}) => {
     if (amount === null) return
     const h: Holding = { id: newId('h'), type, name, value: amount, currency: 'USDC', priceSource: 'self', rebalanceable: defaultRebalanceable(type), updatedAt: now, ...extra }
     add(`${name} ${usd(amount)}`, { op: 'add_holding', holding: h })
+  }
+  /** By quantity (`byQty`) or by $ converted at `price`; a $ amount with no price stays a declared value. */
+  const priced = (type: AssetType, name: string, typed: string, byQty: boolean, unit: string, price: number | null | undefined, extra: Partial<Holding> = {}) => {
+    const n = parseAmount(typed)
+    if (n === null) return
+    const market = (quantity: number, text: string) => add(text, { op: 'add_holding', holding: { id: newId('h'), type, name, quantity, unit, priceSource: 'market', rebalanceable: defaultRebalanceable(type), updatedAt: now, ...extra } })
+    if (byQty) market(n, `${name} ${qty(n)} ${unit}`)
+    else if (price && price > 0) market(n / price, `${name} ${usd(n)} (${qty(n / price)} ${unit} at ${usd(price)})`)
+    else holding(type, name, n, extra)
   }
 
   const age = parseAmount(v.age)
@@ -129,12 +178,22 @@ export function formToItems(v: FormValues, _prices: Prices | null, now = Date.no
   holding('stable_wallet', 'Stablecoins elsewhere', parseAmount(v.usdcElsewhere), { where: 'other wallets and exchanges' })
   holding('savings', 'Bank savings', parseAmount(v.bank))
   holding('cash', 'Cash', parseAmount(v.cash))
-  holding('btc', 'Bitcoin', parseAmount(v.btc), { symbol: 'BTC' })
-  holding('altcoin', 'Altcoins', parseAmount(v.coins))
-  // One Crypto total (2026-10-30): counted in the Crypto bucket, never called BTC (type 'crypto').
+  holding('bond', 'Bonds and money market', parseAmount(v.bonds ?? ''))
+  priced('btc', 'Bitcoin', v.btc, v.btcUnit === 'coins', 'BTC', prices?.usd['crypto:BTC'], { symbol: 'BTC' })
+  const coin = tickerOf(v.coinsTicker)
+  if (coin) priced(coinType(coin), coin, v.coins, v.coinsUnit === 'coins', coin, prices?.usd[`crypto:${coin}`], { symbol: coin })
+  // A quantity needs a ticker to be priced; without one only a $ total is kept.
+  else if (v.coinsUnit !== 'coins') holding('crypto', 'Other coins', parseAmount(v.coins))
+  // One Crypto total (2026-10-30 form, kept for drafts saved before 2026-10-31): Crypto bucket, never called BTC (type 'crypto').
   holding('crypto', 'Crypto', parseAmount(v.crypto ?? ''))
-  holding('gold_physical', 'Gold', parseAmount(v.gold))
-  holding('fund_bond', 'Stocks and funds', parseAmount(v.stocks))
+  priced('gold_physical', 'Gold', v.gold, v.goldUnit === 'oz', 'oz', prices?.goldUsdPerOz)
+  const stock = tickerOf(v.stocksTicker)
+  if (stock) priced('us_stock', stock, v.stocks, v.stocksUnit === 'shares', 'shares', prices?.usd[`stock:${stock}`], { symbol: stock })
+  else if (v.stocksUnit !== 'shares') holding('fund_bond', 'US stocks and ETFs', parseAmount(v.stocks))
+  holding('vn_stock', 'Vietnamese stocks', parseAmount(v.vnStocks ?? ''))
+  holding('junk_bond', 'High-yield bonds', parseAmount(v.junkBonds ?? ''))
+  const split = v.cryptoSplit === '30' || v.cryptoSplit === '50' || v.cryptoSplit === '70' ? Number(v.cryptoSplit) : null
+  if (split !== null) add(`Outside Safety: Traditional ${100 - split}%, Crypto ${split}%`, { op: 'update_profile', fields: { cryptoSplit: split } })
   if (v.otherAssets === 'yes') {
     holding('home', 'Home or land', parseAmount(v.home))
     holding('car', 'Car', parseAmount(v.car))

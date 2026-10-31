@@ -1,9 +1,10 @@
 // The first questions inside the chat (Hieu, 2026-10-28), as a short statement to fill in (Hieu, 2026-10-30, option C): each question
-// is one ruled row, the label on the left and the answer on the right, in at most THREE steps: Your month → What you hold → Goals & debt.
-// Only what the plan needs is asked: plan scope, age, salary, spending, income steadiness, dependents, cash and stablecoins, investments,
-// a big expense within 5 years, debt. Home / car / business, passive income, airdrops, the goal's name and who a debt is owed to were
-// dropped (the agent can still ask in chat). A blank row is "prefer not to say"; the last step saves straight away (sending is the
-// user's confirmation). Pure props (no app context).
+// is one ruled row, the label on the left and the answer on the right. Balance Sheet v2 (Hieu, 2026-10-31): two steps, each in two
+// frames so a frame never needs scrolling. Step 1 is the cash flow that sizes the emergency fund (Your month, then Debt and big
+// expenses); step 2 is what they hold (Safety and Traditional, then Crypto and the Traditional / Crypto split). Gold, Bitcoin, stocks and
+// coins can be typed as $ or as a quantity. Home / car / business, passive income, airdrops, the goal's name and who a debt is owed to
+// are left to the chat. A blank row is "prefer not to say"; the last frame saves straight away (sending is the user's confirmation).
+// Pure props (no app context).
 
 import { useState, type ReactNode } from 'react'
 import { ArrowRight, Check, ChevronLeft } from 'lucide-react'
@@ -12,12 +13,13 @@ import { formToItems, type FormValues, type SectionKey, type YesNo } from '@/lib
 import type { Prices } from '@/lib/allocation'
 
 /** One ruled row: the question on the left, its answer on the right. */
-function Row({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+function Row({ label, hint, under, children }: { label: string; hint?: string; under?: ReactNode; children: ReactNode }) {
   return (
     <div className="min-h-14 py-2 flex items-center justify-between gap-4" style={{ borderBottom: '1px solid var(--line)' }}>
-      <div className="min-w-0 flex flex-col">
+      <div className="min-w-0 flex flex-col gap-1">
         <span className="text-[16px] leading-6" style={{ color: 'var(--ink)' }}>{label}</span>
         {hint && <span className="text-[14px] leading-5" style={{ color: 'var(--muted)' }}>{hint}</span>}
+        {under}
       </div>
       {children}
     </div>
@@ -32,11 +34,11 @@ const group = (t: string) => {
 }
 
 /** An amount typed on the right of its row: a dashed line while empty, plain figures (with thousands commas) once filled. */
-function Amount({ label, hint, value, onChange, prefix = '$', suffix = '', plain = false }: { label: string; hint?: string; value: string; onChange: (v: string) => void; prefix?: string; suffix?: string; plain?: boolean }) {
+function Amount({ label, hint, under, value, onChange, prefix = '$', suffix = '', plain = false }: { label: string; hint?: string; under?: ReactNode; value: string; onChange: (v: string) => void; prefix?: string; suffix?: string; plain?: boolean }) {
   const empty = !value.trim()
   const unit = (t: string) => <span className="text-[16px] leading-6 font-semibold" style={{ color: empty ? 'var(--muted)' : 'var(--ink)' }}>{t}</span>
   return (
-    <Row label={label} hint={hint}>
+    <Row label={label} hint={hint} under={under}>
       {/* The symbol sits right against the figures: the input is as wide as what is typed, the whole answer is right-aligned. */}
       <label className="flex-shrink-0 min-w-[96px] max-w-[160px] h-10 flex items-center justify-end border-b border-dashed focus-within:border-solid focus-within:border-[var(--accent)] cursor-text"
         style={{ borderColor: empty ? 'var(--line)' : 'transparent' }}>
@@ -51,15 +53,15 @@ function Amount({ label, hint, value, onChange, prefix = '$', suffix = '', plain
   )
 }
 
-/** Small round choices; the chosen one is filled Blue. */
-function Pills<T extends string>({ value, options, onChange, label }: { value: T | null; options: { value: T; label: string }[]; onChange: (v: T) => void; label: string }) {
+/** Small round choices; the chosen one is filled Blue. `small` = the unit switch under a label ($ / oz). */
+function Pills<T extends string>({ value, options, onChange, label, small = false }: { value: T | null; options: { value: T; label: string }[]; onChange: (v: T) => void; label: string; small?: boolean }) {
   return (
-    <div role="radiogroup" aria-label={label} className="flex-shrink-0 flex gap-2">
+    <div role="radiogroup" aria-label={label} className={`flex-shrink-0 flex ${small ? 'gap-1' : 'gap-2'}`}>
       {options.map(o => {
         const on = value === o.value
         return (
           <button key={o.value} role="radio" aria-checked={on} onClick={() => onChange(o.value)}
-            className="h-8 px-4 rounded-full text-[14px] leading-5 font-semibold transition-colors"
+            className={`${small ? 'h-6 px-2' : 'h-8 px-4'} rounded-full text-[14px] leading-5 font-semibold transition-colors`}
             style={on ? { background: 'var(--accent)', color: 'white', border: '1px solid var(--accent)' } : { background: 'var(--bg)', color: 'var(--ink)', border: '1px solid var(--line)' }}>
             {o.label}
           </button>
@@ -74,6 +76,30 @@ const YES_NO = [{ value: 'yes' as const, label: 'Yes' }, { value: 'no' as const,
 function YesNoRow({ label, value, onChange }: { label: string; value: YesNo; onChange: (v: 'yes' | 'no') => void }) {
   return <Row label={label}><Pills label={label} value={value} options={YES_NO} onChange={onChange} /></Row>
 }
+
+/** An amount typed in $ or as a quantity (Balance Sheet v2): the switch sits under the label, the unit follows the figures. */
+function Priced<U extends string>({ label, value, onChange, unit, units, onUnit }: { label: string; value: string; onChange: (v: string) => void; unit: U; units: [U, U]; onUnit: (u: U) => void }) {
+  const byQty = unit !== units[0]
+  return (
+    <Amount label={label} value={value} onChange={onChange} prefix={byQty ? '' : '$'} suffix={byQty ? ` ${unit === 'coins' ? '' : unit}`.trimEnd() : ''}
+      under={<Pills small label={`${label} in`} value={unit} options={units.map(u => ({ value: u, label: u === 'usd' ? '$' : u === 'coins' ? 'Coins' : u === 'shares' ? 'Shares' : u }))} onChange={onUnit} />} />
+  )
+}
+
+/** A ticker typed on the right (VOO, ETH): letters only, upper case. */
+function Ticker({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <Row label={label}>
+      <input value={value} aria-label={label} placeholder="VOO" autoCapitalize="characters" spellCheck={false}
+        onChange={e => onChange(e.target.value.toUpperCase().replace(/[^A-Z0-9.]/g, '').slice(0, 10))}
+        className="w-24 h-10 bg-transparent text-right text-[16px] leading-6 font-semibold outline-none border-b border-dashed focus:border-solid focus:border-[var(--accent)]"
+        style={{ color: 'var(--ink)', borderColor: value ? 'transparent' : 'var(--line)' }} />
+    </Row>
+  )
+}
+
+/** A small heading inside a frame ("Safety", "Traditional"). */
+const Group = ({ children }: { children: ReactNode }) => <p className="pt-2 text-[14px] leading-5 font-semibold" style={{ color: 'var(--subtle)' }}>{children}</p>
 
 interface Step { key: string; title: string; note?: string; view: ReactNode }
 
@@ -115,7 +141,8 @@ export function IntakeFormCard({ keys, seen, values, planningScope, status, save
     <div className="pb-2"><Pills label="Plan for" value={scope} options={[{ value: 'individual' as const, label: 'Just me' }, { value: 'household' as const, label: 'Household' }]} onChange={set('planningScope')} /></div>
     {has('age') && <Amount label={household ? 'Your age (for this plan)' : 'Age'} value={values.age} onChange={set('age')} prefix="" plain />}
     {has('income') && <Amount label={household ? 'Combined salary a month' : 'Salary a month'} value={values.salary} onChange={set('salary')} />}
-    {has('spending') && <Amount label={household ? 'Household spending a month' : 'Spending a month'} hint="An estimate is fine" value={values.spending} onChange={set('spending')} />}
+    {/* Debt payments are asked with the debt and added to spending for the emergency fund (KB fund_floor), so they are left out here. */}
+    {has('spending') && <Amount label={household ? 'Household spending a month' : 'Spending a month'} hint="Not counting debt payments" value={values.spending} onChange={set('spending')} />}
     {has('stability') && <>
       <YesNoRow label={household ? 'Combined income steady?' : 'Income steady?'} value={values.steady} onChange={set('steady')} />
       <YesNoRow label={household ? 'Anyone depends on it?' : 'Anyone relies on it?'} value={values.reliers} onChange={set('reliers')} />
@@ -123,26 +150,45 @@ export function IntakeFormCard({ keys, seen, values, planningScope, status, save
       {household && <YesNoRow label="Only one person earning?" value={values.onlyEarner ?? null} onChange={set('onlyEarner')} />}
     </>}
   </> })
-  if (has('assets')) steps.push({ key: 'hold', title: 'What you hold', note: 'Tap an amount to fill it in. Blank is fine.', view: <>
-    <Amount label="Bank savings and cash" value={values.bank} onChange={set('bank')} />
-    <Amount label="Stablecoin onchain" hint={seenText} value={values.usdcThis} onChange={set('usdcThis')} />
-    <Amount label="Crypto" value={values.crypto ?? ''} onChange={set('crypto')} />
-    <Amount label="Gold" value={values.gold} onChange={set('gold')} />
-    <Amount label="Stocks, funds" value={values.stocks} onChange={set('stocks')} />
-  </> })
-  if (has('goal') || has('debt')) steps.push({ key: 'later', title: 'Goals & debt', view: <>
-    {has('goal') && <YesNoRow label="A big expense within 5 years?" value={values.goal} onChange={set('goal')} />}
-    {has('goal') && values.goal === 'yes' && <>
-      <Amount label="How much?" hint="A car, a wedding, school" value={values.goalAmount} onChange={set('goalAmount')} />
-      <Amount label="In how many years?" value={values.goalYears} onChange={set('goalYears')} prefix="" plain />
-    </>}
+  // Step 1, second frame: the rest of the cash flow the emergency fund is sized from.
+  if (has('goal') || has('debt')) steps.push({ key: 'debt', title: 'Debt and big expenses', view: <>
     {has('debt') && <YesNoRow label="Any debt, family loans included?" value={values.debt} onChange={set('debt')} />}
     {has('debt') && values.debt === 'yes' && <>
       <Amount label="Total you still owe" value={values.debtOwed} onChange={set('debtOwed')} />
       <Amount label="Interest a year" value={values.debtRate} onChange={set('debtRate')} prefix="" suffix="%" />
       <Amount label="You pay a month" value={values.debtMonthly} onChange={set('debtMonthly')} />
     </>}
+    {has('goal') && <YesNoRow label="A big expense within 5 years?" value={values.goal} onChange={set('goal')} />}
+    {has('goal') && values.goal === 'yes' && <>
+      <Amount label="How much?" hint="A car, a wedding, school" value={values.goalAmount} onChange={set('goalAmount')} />
+      <Amount label="In how many years?" value={values.goalYears} onChange={set('goalYears')} prefix="" plain />
+    </>}
   </> })
+  // Step 2: what they hold, by part (Hieu approved the list 2026-10-31). The emergency fund vault and cirBTC are read onchain.
+  if (has('assets')) {
+    steps.push({ key: 'hold', title: 'What you hold', note: 'Blank is fine. Your emergency fund is counted on its own.', view: <>
+      <Group>Safety</Group>
+      <Amount label="Bank savings and cash" value={values.bank} onChange={set('bank')} />
+      <Amount label="Stablecoins" hint={seenText ?? 'USDC, USDT'} value={values.usdcThis} onChange={set('usdcThis')} />
+      <Amount label="Bonds, T-bills, money market" value={values.bonds ?? ''} onChange={set('bonds')} />
+      <Group>Traditional</Group>
+      <Priced label="Gold" value={values.gold} onChange={set('gold')} unit={values.goldUnit ?? 'usd'} units={['usd', 'oz']} onUnit={set('goldUnit')} />
+      <Priced label="US stocks and ETFs" value={values.stocks} onChange={set('stocks')} unit={values.stocksUnit ?? 'usd'} units={['usd', 'shares']} onUnit={set('stocksUnit')} />
+      {values.stocksUnit === 'shares' && <Ticker label="Ticker" value={values.stocksTicker ?? ''} onChange={set('stocksTicker')} />}
+      <Amount label="Vietnamese stocks" value={values.vnStocks ?? ''} onChange={set('vnStocks')} />
+      <Amount label="High-yield bonds" value={values.junkBonds ?? ''} onChange={set('junkBonds')} />
+    </> })
+    steps.push({ key: 'crypto', title: 'Crypto and your split', view: <>
+      <Priced label="Bitcoin" value={values.btc} onChange={set('btc')} unit={values.btcUnit === 'coins' ? 'BTC' : 'usd'} units={['usd', 'BTC']} onUnit={u => set('btcUnit')(u === 'BTC' ? 'coins' : 'usd')} />
+      <Priced label="Other coins" value={values.coins} onChange={set('coins')} unit={values.coinsUnit ?? 'usd'} units={['usd', 'coins']} onUnit={set('coinsUnit')} />
+      {values.coinsUnit === 'coins' && <Ticker label="Which coin" value={values.coinsTicker ?? ''} onChange={set('coinsTicker')} />}
+      <div className="py-2 flex flex-col gap-2">
+        <span className="text-[16px] leading-6" style={{ color: 'var(--ink)' }}>Outside Safety, Traditional / Crypto</span>
+        <Pills label="Traditional / Crypto split" value={values.cryptoSplit ?? null} options={[{ value: '30', label: '70 / 30' }, { value: '50', label: '50 / 50' }, { value: '70', label: '30 / 70' }]} onChange={set('cryptoSplit')} />
+        <span className="text-[14px] leading-5" style={{ color: 'var(--muted)' }}>50 / 50 is MoonSafe's default, not a fixed rule. Your call.</span>
+      </div>
+    </> })
+  }
 
   const i = Math.min(at, steps.length - 1)
   const cur = steps[i]

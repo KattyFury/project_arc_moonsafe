@@ -214,6 +214,11 @@ const SOLE_WORDS = /(only|sole|single|main)[^.?!\n]{0,20}(earner|income|breadwin
 const NO_DEBT = /(no|not any|zero|without)\s+(other\s+)?(debts?|loans?)|(?:don'?t|do not|doesn'?t) (?:have|owe)\s+(?:any\s+|a\s+)?(?:other\s+)?(?:debts?|loans?)|(?<![\d.,])0\s+(?:debts?|loans?)|(?:have|got)\s+no\s+(?:debts?|loans?)|debt[- ]free|(không|chưa|ko)\s+(còn\s+)?(nợ|vay)|hết nợ/i // lang-ok
 const LOCK_TALK = /(open|unlock|opens)[^.?!\n]{0,30}cirBTC|cirBTC (buying|buy)|buy lock|mở (khóa|khoá)? ?mua cirBTC/i // lang-ok
 const KNOWS_NOTHING = /(don'?t|do not) know (anything|much|where to start|what to do)|no idea|i'?m (lost|confused|new to)|never (managed|done this)|beginner|(không|chả|chẳng) biết (gì|bắt đầu)|mới bắt đầu/i // lang-ok
+// Step 1 of the form (Balance Sheet v2): the cash flow that sizes the emergency fund, sent again as one block when the fund comes up.
+const CASHFLOW_KEYS = ['income', 'spending', 'stability', 'debt', 'goal']
+const FUND_TALK = /emergency|rainy[- ]day|safety net|(my|the|a|build|start|size of|how big)[^.?!\n]{0,20}\bfund\b|quỹ dự phòng|quỹ khẩn cấp/i // lang-ok
+const CASHFLOW_MARK = /To size your emergency fund I need your monthly cash flow|Để tính quỹ dự phòng cho đúng, mình cần dòng tiền/ // lang-ok
+const EXPLAIN_ONLY = /\bexplain\b|how (does|do|would|will) [^?.!\n]{0,40}\bwork|what (is|are|'s) (an? |the )?(emergency|rainy)|why (do|should|would) [^?.!\n]{0,30}(need|have)|giải thích|là gì|hoạt động (thế|như) nào|tại sao|vì sao/i // lang-ok
 const INTERNAL_LABEL = /(?<!\p{L})(floor|surplus|liquid assets?|idle( money| cash)?|priority debt)(?!\p{L})/iu
 const OTHER_SCRIPT = /[\u0400-\u04FF\u0590-\u06FF\u0E00-\u0E7F\u3040-\u30FF\u4E00-\u9FFF\uAC00-\uD7AF]/ // Cyrillic, Hebrew, Arabic, Thai, Japanese, Chinese, Korean
 const RIGHT_Q = /(Right|Đúng chưa)\?/i // lang-ok
@@ -1673,6 +1678,17 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   if (!batchAsked && !placement && (!appEvent || itemsEvent) && !userAsks && !toAsk.length && !DECLINES.test(lastUserText) && !KNOWS_NOTHING.test(lastUserText)) {
     const intake = buildIntake(profile, lastUserText, vi, readback, wallet)
     if (intake) return json({ content: intake, ops, dcaStop, actions: [...actions, { type: 'intake_form', keys: intakeKeys(profile), seen: wallet }] })
+  }
+
+  // The emergency fund needs the cash flow as one block, not questions one by one (Hieu, 2026-10-31): talking about the fund while the
+  // spending is still unknown brings back step 1 of the form (income, spending, steadiness, debt, a big expense), once.
+  const cashflowKeys = intakeKeys(profile).filter(k => CASHFLOW_KEYS.includes(k))
+  // Not when they only ask how a fund works (the lesson comes first), nor over a card waiting for their confirmation.
+  if (balance.cashflow.spending === null && cashflowKeys.includes('spending') && FUND_TALK.test(lastUserText) && !EXPLAIN_ONLY.test(lastUserText) && !actions.length && !placement && !appEvent && !DECLINES.test(lastUserText) && !assistantTexts.some(a => CASHFLOW_MARK.test(a))) {
+    const content = vi
+      ? 'Để tính quỹ dự phòng cho đúng, mình cần dòng tiền mỗi tháng của bạn: thu, chi và các khoản trả nợ. Bạn điền những gì thoải mái ở bên dưới; để trống cũng được.' // lang-ok
+      : 'To size your emergency fund I need your monthly cash flow: what comes in, what goes out and any debt payments. Fill in what you are comfortable with below; blank is fine.'
+    return json({ content, ops, dcaStop, actions: [...actions, { type: 'intake_form', keys: cashflowKeys, seen: wallet }] })
   }
 
   // BRIEF unless the turn is meant to educate: a plan the model writes, the user asking why / what something means, or an overview.
