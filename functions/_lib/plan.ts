@@ -94,9 +94,12 @@ export function buildPlan({ p, b, shares, cover, partial = null, vi, hasVault = 
   const standing = bucketStanding(b, toFund)
   if (!standing || (b.liquid - toFund <= 0 && b.goalUsd <= 0)) return null
   const [safe, trad, crypto] = standing
-  const toDivide = Math.max(0, b.liquid - toFund - b.goalUsd)
+  // Balance Sheet v2: the part furthest ahead of its share sets the size of the split; nothing is "divided" from a total.
+  const anchor = standing.find(x => x.anchor) ?? safe
+  const sized = (safe.rest ?? safe.target) + trad.target + crypto.target
   const [sSafe, sTrad, sCrypto] = shares
-  const line = (x: typeof safe) => `${vi ? 'Bạn có' : 'You have'} ${fmt(x.have)} ${vi ? 'trên' : 'of'} ${fmt(x.target)}; ${!x.full ? `${fmt(x.left)} ${vi ? 'nữa để đủ' : 'to go'}` : vi ? 'đã đủ' : 'already full'}.` // lang-ok
+  const even = sTrad === sCrypto
+  const line = (x: typeof safe) => `${vi ? 'Bạn có' : 'You have'} ${fmt(x.have)} ${vi ? 'trên' : 'of'} ${fmt(x.target)}; ${!x.full ? `${fmt(x.left)} ${vi ? 'nữa để đủ' : 'to go'}` : vi ? 'đúng tỷ lệ' : 'on track'}.` // lang-ok
   const est = b.ageIsDefault ? (vi ? ' (ước tính theo tuổi mặc định 30)' : ' (an estimate: the default age of 30 is used)') : '' // lang-ok
   const vault = b.fundUsd ?? 0
   const fundNow = vault >= b.fund.floorUsd - 0.005
@@ -124,15 +127,15 @@ export function buildPlan({ p, b, shares, cover, partial = null, vi, hasVault = 
   const safeTarget = goal ? (vi ? `mục tiêu ${fmt(b.goalUsd)} + ${sSafe}% của phần còn lại (${fmt(safe.rest ?? 0)})` : `your ${fmt(b.goalUsd)} goal + ${sSafe}% of the rest (${fmt(safe.rest ?? 0)})`) : null // lang-ok
   // Short (Hieu, 2026-10-29: the plan was seven paragraphs): one line per step with one clause of why; the rest comes when they ask "why".
   const have = (x: typeof safe) => vi
-    ? `Bạn có ${fmt(x.have)}${x.full ? ': đã đủ' : `, còn ${fmt(x.left)}`}.` // lang-ok
-    : `You have ${fmt(x.have)}${x.full ? ': full' : `, ${fmt(x.left)} to go`}.`
+    ? `Bạn có ${fmt(x.have)}${x.full ? ': đúng tỷ lệ' : `, còn ${fmt(x.left)}`}.` // lang-ok
+    : `You have ${fmt(x.have)}${x.full ? ': on track' : `, ${fmt(x.left)} to go`}.`
   const lines = vi
     ? [ // lang-ok
       'Kế hoạch của bạn, theo thứ tự:', // lang-ok
       `1. **Quỹ dự phòng: ${fmt(b.fund.floorUsd)}** = ${b.fund.floorMonths} tháng chi tiêu, vì ${fundWhy(p, b.fund.floorMonths, true)}. Hiện có ${fmt(vault)}.`, // lang-ok
       ...(goalLine ? [goalLine] : []),
-      `2. Sau đó chia phần còn lại (${fmt(toDivide)}${toFund > 0 ? ', sau khi nạp quỹ' : ''}) theo tuổi của bạn, ${age}${est}:\n- **Safety ${sSafe}%${safeTarget ? ` (${safeTarget})` : ` = ${fmt(safe.target)}`}**: tiết kiệm rút được bất cứ lúc nào. ${have(safe)}\n- **Traditional ${sTrad}% = ${fmt(trad.target)}**: quỹ chỉ số như VOO và vàng. ${have(trad)}\n- **Crypto ${sCrypto}% = ${fmt(crypto.target)}**: chủ yếu Bitcoin, có lúc giảm một nửa. ${have(crypto)}`, // lang-ok
-      'Traditional và Crypto chia cân bằng để không phụ thuộc vào một thị trường. Cả hai có thể cùng giảm; quỹ dự phòng và Safety giữ riêng tiền cho nhu cầu gần. Đây là gợi ý, bạn quyết định.', // lang-ok
+      `2. Sau đó cân ba phần theo tuổi của bạn, ${age}${est}. Phần đang đi xa nhất là ${anchor.name}, nên cả ba được tính theo nó (${fmt(sized)}${toFund > 0 ? ', sau khi nạp quỹ' : ''}):\n- **Safety ${sSafe}%${safeTarget ? ` (${safeTarget})` : ` = ${fmt(safe.target)}`}**: tiết kiệm rút được bất cứ lúc nào. ${have(safe)}\n- **Traditional ${sTrad}% = ${fmt(trad.target)}**: quỹ chỉ số như VOO và vàng. ${have(trad)}\n- **Crypto ${sCrypto}% = ${fmt(crypto.target)}**: chủ yếu Bitcoin, có lúc giảm một nửa. ${have(crypto)}`, // lang-ok
+      `${even ? 'Traditional và Crypto chia đôi' : `Traditional ${sTrad}% và Crypto ${sCrypto}% theo tỷ lệ bạn chọn`}: chia đôi là mặc định của MoonSafe, không phải quy tắc chuẩn, bạn có thể chọn tỷ lệ khác. Quỹ dự phòng và Safety giữ riêng tiền cho nhu cầu gần. Đây là gợi ý, bạn quyết định.`, // lang-ok
       ...(windfall ? [windfall] : []),
       ask,
     ]
@@ -140,8 +143,8 @@ export function buildPlan({ p, b, shares, cover, partial = null, vi, hasVault = 
       'Here is your plan, in order:',
       `1. **Emergency fund: ${fmt(b.fund.floorUsd)}** = ${b.fund.floorMonths} months of spending, because ${fundWhy(p, b.fund.floorMonths, false)}. You have ${fmt(vault)}.`,
       ...(goalLine ? [goalLine] : []),
-      `2. Then split the rest (${fmt(toDivide)}${toFund > 0 ? ', after the emergency fund' : ''}) by your age, ${age}${est}:\n- **Safety ${sSafe}%${safeTarget ? ` (${safeTarget})` : ` = ${fmt(safe.target)}`}**: savings you can reach any time. ${have(safe)}\n- **Traditional ${sTrad}% = ${fmt(trad.target)}**: index funds such as VOO, and gold. ${have(trad)}\n- **Crypto ${sCrypto}% = ${fmt(crypto.target)}**: mostly Bitcoin, which can halve on the way. ${have(crypto)}`,
-      'Traditional and Crypto are kept even so the plan does not depend on one market. Both can fall together; the emergency fund and Safety keep near-term needs separate. A suggestion, your call.',
+      `2. Then balance three parts by your age, ${age}${est}. ${anchor.name} is furthest ahead, so the other two are sized to match it (${fmt(sized)} in all${toFund > 0 ? ', after the emergency fund' : ''}):\n- **Safety ${sSafe}%${safeTarget ? ` (${safeTarget})` : ` = ${fmt(safe.target)}`}**: savings you can reach any time. ${have(safe)}\n- **Traditional ${sTrad}% = ${fmt(trad.target)}**: index funds such as VOO, and gold. ${have(trad)}\n- **Crypto ${sCrypto}% = ${fmt(crypto.target)}**: mostly Bitcoin, which can halve on the way. ${have(crypto)}`,
+      `${even ? 'Traditional and Crypto are split evenly' : `Traditional ${sTrad}% and Crypto ${sCrypto}% is the split you chose`}: an even split is MoonSafe's default, not a standard rule, and you can pick another. The emergency fund and Safety keep near-term needs separate. A suggestion, your call.`,
       ...(windfall ? [windfall] : []),
       ask,
     ]
@@ -161,8 +164,9 @@ export function buildStanding({ p, b, vi }: { p: FinancialProfile; b: Balance; v
   const fundLine = b.fund.floorUsd !== null
     ? (vi ? `**Quỹ dự phòng:** ${fmt(vault)} trên ${fmt(b.fund.floorUsd)} (${b.fund.floorMonths} tháng chi tiêu)${vault >= b.fund.floorUsd - 0.005 ? ', đã đủ' : `, còn ${fmt(b.fund.floorUsd - vault)}`}.` : `**Emergency fund:** ${fmt(vault)} of ${fmt(b.fund.floorUsd)} (${b.fund.floorMonths} months of spending)${vault >= b.fund.floorUsd - 0.005 ? ', full' : `, ${fmt(b.fund.floorUsd - vault)} to go`}.`) // lang-ok
     : (vi ? `**Quỹ dự phòng:** ${fmt(vault)}; hãy cho mình biết chi tiêu hằng tháng để tính mức cần có.` : `**Emergency fund:** ${fmt(vault)}; tell me your monthly spending to work out how much it should be.`) // lang-ok
-  const bank = p.holdings.filter(h => h.value !== undefined && ['savings', 'term_deposit', 'checking'].includes(h.type)).map(h => `${h.name} ${fmt(h.value!)}`)
-  const row = (x: typeof safe, detail?: string) => `**${x.name}:** ${fmt(x.have)} ${vi ? 'trên' : 'of'} ${fmt(x.target)}${!x.full ? `, ${fmt(x.left)} ${vi ? 'nữa' : 'to go'}` : vi ? ', đã đủ' : ', full'}${detail ? ` (${detail})` : ''}.` // lang-ok
+  // Everything in Safety by name (bank, cash, stablecoins, bonds), so the list adds up to the total shown.
+  const bank = b.items.filter(i => i.group === 'safe').map(i => `${i.label} ${fmt(i.usd)}`)
+  const row = (x: typeof safe, detail?: string) => `**${x.name}:** ${fmt(x.have)} ${vi ? 'trên' : 'of'} ${fmt(x.target)}${!x.full ? `, ${fmt(x.left)} ${vi ? 'nữa' : 'to go'}` : vi ? ', đúng tỷ lệ' : ', on track'}${detail ? ` (${detail})` : ''}.` // lang-ok
   const safeDetail = [bank.length ? bank.join(', ') : null, safe.goal ? (vi ? `gồm mục tiêu ${fmt(safe.goal)} + ${fmt(safe.rest ?? 0)}` : `target = goal ${fmt(safe.goal)} + ${fmt(safe.rest ?? 0)}`) : null].filter(Boolean).join('; ') // lang-ok
   return [p.planningScope === 'household' ? (vi ? 'Tổng quan gia đình:' : 'Household totals:') : null, fundLine, row(safe, safeDetail || undefined), row(trad), row(crypto)].filter(Boolean).join('\n') // lang-ok
 }
@@ -222,7 +226,7 @@ export function buildPartAnswer({ b, vi, part, walletUsd }: { b: Balance; vi: bo
   if (!standing || !row) return null
   const mine = `${vi ? 'Bạn có' : 'You have'} ${fmt(row.have)} ${vi ? 'trên' : 'of'} ${fmt(row.target)}` // lang-ok
   if (row.full) {
-    return vi ? `Phần ${row.name} đã đủ: ${mine}. ${pickQuestion(standing, vi)}` : `${row.name} is already full: ${mine}. ${pickQuestion(standing, vi)}` // lang-ok
+    return vi ? `Phần ${row.name} đang đúng tỷ lệ: ${mine}. ${pickQuestion(standing, vi)}` : `${row.name} is on track: ${mine}. ${pickQuestion(standing, vi)}` // lang-ok
   }
   const toGo = `${fmt(row.left)} ${vi ? 'nữa để đủ' : 'to go'}` // lang-ok
   if (part === 'crypto') {
@@ -287,6 +291,6 @@ export function buildAfterSign({ b, vi, kind, summary, cover = null, partial = n
       : `Your emergency fund is now ${fmt(vault)} of ${fmt(b.fund.floorUsd)} (${b.fund.floorMonths} months of spending): full. ${pickQuestion(standing, vi)}`
   }
   const touched = /\(Safety\)/i.test(summary ?? '') ? standing[0] : /Traditional/i.test(summary ?? '') ? standing[1] : /Crypto/i.test(summary ?? '') ? standing[2] : null
-  const status = touched ? ` ${touched.name} ${vi ? 'giờ là' : 'is now'} ${fmt(touched.have)} ${vi ? 'trên' : 'of'} ${fmt(touched.target)}${!touched.full ? `, ${fmt(touched.left)} ${vi ? 'nữa để đủ' : 'to go'}` : (vi ? ': đã đủ' : ': full')}.` : '' // lang-ok
+  const status = touched ? ` ${touched.name} ${vi ? 'giờ là' : 'is now'} ${fmt(touched.have)} ${vi ? 'trên' : 'of'} ${fmt(touched.target)}${!touched.full ? `, ${fmt(touched.left)} ${vi ? 'nữa để đủ' : 'to go'}` : (vi ? ': đúng tỷ lệ' : ': on track')}.` : '' // lang-ok
   return `${vi ? 'Đã lưu.' : 'Saved.'}${status} ${pickQuestion(standing, vi)}` // lang-ok
 }

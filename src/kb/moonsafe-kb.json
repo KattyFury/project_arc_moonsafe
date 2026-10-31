@@ -54,11 +54,11 @@
   },
 
   "asset_types": [
-    { "n": 1, "key": "cash", "label": "Cash", "category": "idle", "net_worth": true, "liquid_base": true, "pricing": "self" },
-    { "n": 2, "key": "checking", "label": "Bank checking account", "category": "idle", "net_worth": true, "liquid_base": true, "pricing": "self" },
+    { "n": 1, "key": "cash", "label": "Cash", "category": "safe", "net_worth": true, "liquid_base": true, "pricing": "self" },
+    { "n": 2, "key": "checking", "label": "Bank checking account", "category": "safe", "net_worth": true, "liquid_base": true, "pricing": "self" },
     { "n": 3, "key": "term_deposit", "label": "Term savings deposit", "category": "safe", "net_worth": true, "liquid_base": true, "pricing": "self" },
     { "n": 4, "key": "savings", "label": "Savings account (no term)", "category": "safe", "net_worth": true, "liquid_base": true, "pricing": "self" },
-    { "n": 5, "key": "stable_wallet", "label": "USDC/USDT in a wallet, not earning", "category": "idle", "net_worth": true, "liquid_base": true, "pricing": "stable_1" },
+    { "n": 5, "key": "stable_wallet", "label": "USDC/USDT in a wallet, not earning", "category": "safe", "net_worth": true, "liquid_base": true, "pricing": "stable_1" },
     { "n": 6, "key": "flexible_earn", "label": "Flexible earn on an exchange (Binance Simple Earn Flexible…)", "category": "safe", "net_worth": true, "liquid_base": true, "pricing": "stable_1" },
     { "n": 7, "key": "locked_earn", "label": "Fixed / locked earn on an exchange", "category": "safe", "net_worth": true, "liquid_base": true, "pricing": "self" },
     { "n": 8, "key": "defi_stable", "label": "Stablecoins lent in DeFi, yield vaults", "category": "safe", "net_worth": true, "liquid_base": true, "pricing": "market_or_self", "note": "Mention smart-contract risk" },
@@ -67,7 +67,9 @@
     { "n": 11, "key": "gold_token", "label": "Tokenized gold (PAXG, XAUT)", "category": "invest", "subgroup": "traditional", "net_worth": true, "liquid_base": true, "pricing": "market" },
     { "n": 12, "key": "us_stock", "label": "US stocks / ETFs", "category": "invest", "subgroup": "traditional", "net_worth": true, "liquid_base": true, "pricing": "market" },
     { "n": 13, "key": "vn_stock", "label": "Vietnamese stocks", "category": "invest", "subgroup": "traditional", "net_worth": true, "liquid_base": true, "pricing": "self" },
-    { "n": 14, "key": "fund_bond", "label": "Investment funds, bonds", "category": "invest", "subgroup": "traditional", "net_worth": true, "liquid_base": true, "pricing": "self" },
+    { "n": 14, "key": "fund_bond", "label": "Stock funds", "category": "invest", "subgroup": "traditional", "net_worth": true, "liquid_base": true, "pricing": "self" },
+    { "n": 14.1, "key": "bond", "label": "Bonds, T-bills, bond funds, money market funds", "category": "safe", "net_worth": true, "liquid_base": true, "pricing": "self", "note": "SEC Investor.gov: cash equivalents and bonds; high-yield bonds are junk_bond" },
+    { "n": 14.2, "key": "junk_bond", "label": "High-yield (junk) bonds", "category": "invest", "subgroup": "traditional", "net_worth": true, "liquid_base": true, "pricing": "self", "note": "SEC: higher risk, like stocks" },
     { "n": 15, "key": "btc", "label": "BTC (exchange / cold wallet)", "category": "invest", "subgroup": "btc", "net_worth": true, "liquid_base": true, "pricing": "market" },
     { "n": 16, "key": "cirbtc", "label": "cirBTC in the app wallet", "category": "invest", "subgroup": "btc", "net_worth": true, "liquid_base": true, "pricing": "market" },
     { "n": 17, "key": "eth", "label": "ETH", "category": "invest", "subgroup": "large_cap", "net_worth": true, "liquid_base": true, "pricing": "market" },
@@ -87,7 +89,7 @@
   "not_counted": ["State social insurance (BHXH): cannot be withdrawn at will, no set value"],
 
   "allocation": {
-    "formula": "safe (shown as Safety) = age %; rest r = 100 - age; traditional = r / 2; crypto = r / 2 as ONE bucket (even split, Hieu 2026-10-29: if crypto crashes Traditional can carry them, if stocks and gold fall crypto can, if both fall the emergency fund and Safety still stand; framework v2, Hieu 2026-10-27): explained as mostly BTC in words, no target for big caps, low caps or memecoins, so new crypto money is suggested as BTC. Continuous in age, no steps; computed, never looked up.",
+    "formula": "safe (shown as Safety) = age %; rest r = 100 - age; traditional = r / 2; crypto = r / 2 by default, the user may choose another split of r (profile cryptoSplit, % of r in Crypto; Hieu 2026-10-31: MoonSafe default 50/50, say it is the app choice, not a standard rule), crypto as ONE bucket (even split, Hieu 2026-10-29: if crypto crashes Traditional can carry them, if stocks and gold fall crypto can, if both fall the emergency fund and Safety still stand; framework v2, Hieu 2026-10-27): explained as mostly BTC in words, no target for big caps, low caps or memecoins, so new crypto money is suggested as BTC. Continuous in age, no steps; computed, never looked up.",
     "rest_split": { "traditional": [1, 2], "crypto": [1, 2] },
     "crypto_split": { "btc": [1, 1], "large_cap": [0, 1], "altcoin": [0, 1] },
     "anchor": { "age": 30, "safe": 30, "traditional": 35, "btc": 35, "large_cap": 0, "altcoin": 0 },

@@ -9,7 +9,7 @@ export type Currency = 'VND' | 'USDC'
  */
 export type AssetType =
   | 'cash' | 'checking' | 'term_deposit' | 'savings' | 'stable_wallet' | 'flexible_earn' | 'locked_earn' | 'defi_stable'
-  | 'moonsafe_fund' | 'gold_physical' | 'gold_token' | 'us_stock' | 'vn_stock' | 'fund_bond' | 'btc' | 'cirbtc' | 'eth'
+  | 'moonsafe_fund' | 'bond' | 'junk_bond' | 'gold_physical' | 'gold_token' | 'us_stock' | 'vn_stock' | 'fund_bond' | 'btc' | 'cirbtc' | 'eth'
   | 'top10' | 'altcoin' | 'crypto' | 'staked_large_cap' | 'nft' | 'home' | 'rental_property' | 'car' | 'business_stake' | 'loan_given'
   | 'savings_insurance' | 'other'
 
@@ -103,6 +103,8 @@ export interface FinancialProfile {
   windfallsYearly?: number
   /** "If your crypto dropped by half, could you hold it without selling to live?" null = not asked / unsure. */
   cryptoDropOk?: boolean | null
+  /** Share of the money outside Safety that goes to Crypto, in % (the rest is Traditional). Unset = 50, MoonSafe's default (Hieu, 2026-10-31). */
+  cryptoSplit?: number
   /** Health / life cover, asked only when people rely on their income. */
   insured?: boolean | null
   savedAt?: number

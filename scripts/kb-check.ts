@@ -366,8 +366,9 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   const moved = applyOps(base, buildRecordOps(base, req, { kind: 'holding', id: 'hw' }, null))
   const before = bal(base, 1900), after = bal(moved, 1900)
   if (Math.abs(before.liquid - after.liquid) > 0.01) fail('moving declared money between places must not change the total')
-  const toFill = (x: ReturnType<typeof bal>) => x.liquid * x.target!.safe / 100 - x.byGroup.safe
-  if (Math.abs((toFill(before) - toFill(after)) - 500) > 0.01) fail('Safety still-to-fill must fall by exactly what was added to Safety')
+  // Balance Sheet v2 (2026-10-31): stablecoins and the bank are both Safety, so moving between them changes no part.
+  const { bucketStanding: standingOf } = await import('../src/lib/allocation')
+  if (JSON.stringify(standingOf(before)) !== JSON.stringify(standingOf(after))) fail('moving money inside Safety (wallet to bank) changes no part')
   // New money does grow the total, and each target grows by its share of it.
   const fresh = applyOps(base, buildRecordOps(base, req, { kind: 'new' }, null))
   const grown = bal(fresh, 1900)
@@ -418,7 +419,9 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
     const p1 = applyOps(p0, cirBtcBuyOps(p0, 10))
     const p2 = applyOps(p1, cirBtcBuyOps(p1, 5))
     const b = computeBalance({ profile: p2, walletUsd: 0, vaultUsd: 0, cirBtcUsd: 7.5, prices: null, vndPerUsd: 25000 })
-    if (b.byGroup.btc !== 15) fail(`cirBTC: two buys of $10 and $5 count as $15 put in, not the $7.50 market value (got ${b.byGroup.btc})`)
+    // Balance Sheet v2 (2026-10-31): value now, read onchain; the $15 paid only stands in while the onchain value is not loaded.
+    if (b.byGroup.btc !== 7.5) fail(`cirBTC: valued onchain at the market, $7.50, not the $15 paid (got ${b.byGroup.btc})`)
+    if (computeBalance({ profile: p2, walletUsd: 0, vaultUsd: 0, cirBtcUsd: null, prices: null, vndPerUsd: 25000 }).byGroup.btc !== 15) fail('cirBTC: without the onchain value the amount paid stands in')
   }
   // The plan says WHY for every step, and offers the exact deposit with the wording the "yes" is matched on.
   const shares: [number, number, number] = [31, 35, 34]
@@ -431,8 +434,9 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   if (Math.abs(safeInPlan - afterDeposit.liquid * afterDeposit.target!.safe / 100) > 1) fail(`plan: Safety ${safeInPlan} must equal the target after the deposit ${afterDeposit.liquid * afterDeposit.target!.safe / 100}`)
   if (!/Traditional[^\n]{0,80}\d+%/.test(plan)) fail('plan: must be recognised as the plan already given')
   const fullPlan = buildPlan({ p: base, b: bal(base, 1900, 450), shares, cover: null, vi: false })!
-  if (!/Which part would you like to fill first: Safety \([^)]*\) or Crypto \([^)]*\)\?|Only [^.]* still has room/.test(fullPlan)) fail('plan: with the fund full it asks which part to fill, naming only the parts that still have room')
-  if (/Traditional\?|, Traditional/.test(fullPlan.split('\n').pop() ?? '')) fail('plan: a part that is already full is not offered')
+  if (!/Which part would you like to fill first: \w+ \([^)]*\) or \w+ \([^)]*\)\?|Only [^.]* still has room/.test(fullPlan)) fail('plan: with the fund full it asks which part to fill, naming only the parts that still have room')
+  // The anchor (Safety here: 2,400 of bank and stablecoins) is at its target by definition and is never offered.
+  if (/Safety \(/.test(fullPlan.split('\n').pop() ?? '')) fail('plan: the part that sets the size is not offered')
   if (/cirBTC|prepare a|for you to sign/i.test(fullPlan)) fail('plan: never opens with a purchase')
   // The overview at 21 (Hieu, 2026-10-28): safe 21%, at risk 79% = Traditional 45% + Crypto 34%.
   const young = buildPlan({ p: normalizeProfile({ ...base, age: 21 }), b: bal(normalizeProfile({ ...base, age: 21 }), 1900, 0), shares: [21, 45, 34], cover: 450, vi: false })!
@@ -457,15 +461,15 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   const bal = (p: FinancialProfile, vault = 0) => computeBalance({ profile: p, walletUsd: 0, vaultUsd: vault, cirBtcUsd: 0, prices, vndPerUsd: 25000 })
   // The transcript: a 4,000 goal absorbed the savings, so adding 500 left "Safety still needs 218" unchanged. Now it falls by exactly 500.
   const s500 = bucketStanding(bal(goalP(500)))!.find(x => x.key === 'safe')!
-  const s1000 = bucketStanding(bal(goalP(1000, 1500)))!.find(x => x.key === 'safe')! // 500 moved from the declared wallet into the bank
+  const s1000 = bucketStanding(bal(goalP(1000)))!.find(x => x.key === 'safe')! // 500 new money in the bank (wallet to bank is now Safety to Safety)
   if (Math.abs((s500.left - s1000.left) - 500) > 0.01) fail(`Safety left must fall by exactly the 500 added (${s500.left} -> ${s1000.left})`)
   if (Math.abs(s500.target - (4000 + (s500.rest ?? 0))) > 0.01 || s500.goal !== 4000) fail('Safety target = goal + its share of the rest')
   const plan = buildPlan({ p: goalP(500), b: bal(goalP(500), 600), shares: [21, 45, 34], cover: null, vi: false })!
   if (!/Near-term goal: Marriage \$4,000/.test(plan) || !/your \$4,000 goal \+ 21% of the rest/.test(plan)) fail('plan: the near-term goal is explained and added to the Safety target')
-  if (!/Safety[^\n]*\(your \$4,000 goal \+ 21% of the rest[^\n]*You have \$500, \$[\d,]+ to go/.test(plan)) fail('plan: Safety shows its total (goal + share) and what they have and what is left')
+  if (!/Safety[^\n]*\(your \$4,000 goal \+ 21% of the rest[^\n]*You have \$2,500, \$[\d,]+ to go/.test(plan)) fail('plan: Safety shows its total (goal + share) and what they have and what is left')
   if (!/6 months of spending, because/.test(plan)) fail('plan: the months are explained (why this number)')
   const st = buildStanding({ p: goalP(1000, 1500), b: bal(goalP(1000, 1500), 600), vi: false })!
-  if (!/Emergency fund:\*\* \$600 of \$600 \(6 months of spending\), full/.test(st) || !/\*\*Safety:\*\* \$1,000 of \$[\d,]+, \$[\d,]+ to go \(Bank savings \$1,000; target = goal \$4,000/.test(st)) fail(`standing: the emergency fund and Safety are separate lines with totals\n${st}`)
+  if (!/Emergency fund:\*\* \$600 of \$600 \(6 months of spending\), full/.test(st) || !/\*\*Safety:\*\* \$2,500 of \$[\d,]+, \$[\d,]+ to go \(Bank savings \$1,000, USDC in this wallet \$1,500; target = goal \$4,000/.test(st)) fail(`standing: the emergency fund and Safety are separate lines with totals\n${st}`)
   if (/Safety[^\n]*months of spending/.test(st)) fail('standing: Safety never carries months')
 }
 
@@ -481,9 +485,9 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   ]
   for (const [text, prev, want] of cases) if (detectPartChoice(text, prev) !== want) fail(`part choice: "${text}" after "${prev.slice(0, 24)}…" should be ${want}`)
   const rows = [
-    { key: 'safe' as const, name: 'Safety' as const, share: 21, have: 1000, target: 840, left: 0, full: true },
-    { key: 'traditional' as const, name: 'Traditional' as const, share: 45, have: 2000, target: 1800, left: 0, full: true },
-    { key: 'crypto' as const, name: 'Crypto' as const, share: 34, have: 0, target: 1354, left: 1354, full: false },
+    { key: 'safe' as const, name: 'Safety' as const, share: 21, have: 1000, target: 840, left: 0, full: true, anchor: true },
+    { key: 'traditional' as const, name: 'Traditional' as const, share: 45, have: 2000, target: 1800, left: 0, full: true, anchor: false },
+    { key: 'crypto' as const, name: 'Crypto' as const, share: 34, have: 0, target: 1354, left: 1354, full: false, anchor: false },
   ]
   if (!/^Only Crypto \(\$0 of \$1,354\) still has room/.test(pickQuestion(rows, false))) fail('pick: only the part with room is named')
   if (/Safety|Traditional/.test(pickQuestion(rows, false))) fail('pick: full parts are never named')
@@ -504,7 +508,7 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
     ] })
   const b = computeBalance({ profile: p, walletUsd: 5, vaultUsd: 0.6, cirBtcUsd: 0, prices: { goldUsdPerOz: null, usd: {} }, vndPerUsd: 25000 })
   const crypto = bucketStanding(b)?.find(x => x.key === 'crypto')
-  if (!crypto || crypto.full || crypto.target >= 0.5) fail(`small plan: Crypto 0 of a target under 0.5 USDC must not be full (got ${JSON.stringify(crypto)})`)
+  if (!crypto || crypto.full || crypto.target >= 1) fail(`small plan: Crypto 0 of a target under 1 USDC must not be full (got ${JSON.stringify(crypto)})`)
   if (!/prepare a cirBTC buy of \*\*0\.\d+ USDC\*\*/.test(buildPartAnswer({ b, vi: false, part: 'crypto', walletUsd: 5 }) ?? '')) fail('small plan: the cirBTC offer is in cents, not "the wallet has no USDC"')
   if (/All three parts are at their targets/.test(pickQuestion(bucketStanding(b) ?? [], false))) fail('small plan: Crypto with room is not "all full"')
 }

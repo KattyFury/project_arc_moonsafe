@@ -174,12 +174,13 @@ export function computeBalance(input: BalanceInput): Balance {
   const unpriced: Holding[] = []
   // The balance SEEN in the connected wallet is not part of the total: people use several wallets, so only what the user
   // declares counts (Hieu, 2026-10-28). The agent reads it to know there is money, and to cap what a card can move.
-  // cirBTC bought in the app counts at what was paid (a profile holding, see cirBtcBuyOps). Only cirBTC from before that record
-  // existed is still valued onchain at the market price.
-  if (!cirBtcHolding(p) && input.cirBtcUsd !== null && input.cirBtcUsd > 0) items.push({ label: 'cirBTC', usd: input.cirBtcUsd, group: 'btc', place: 'base' })
+  // cirBTC bought in the app is valued onchain at the market price (Balance Sheet v2, 2026-10-31: value now, not money put in).
+  // The profile holding (cirBtcBuyOps) only stands in while the onchain value is not loaded.
+  const cirBtc = cirBtcHolding(p)
+  if (!cirBtc && input.cirBtcUsd !== null && input.cirBtcUsd > 0) items.push({ label: 'cirBTC', usd: input.cirBtcUsd, group: 'btc', place: 'base' })
   if (input.vaultUsd !== null && input.vaultUsd > 0) items.push({ label: 'Emergency fund', usd: input.vaultUsd, group: null, place: 'fund' })
   for (const h of p?.holdings ?? []) {
-    const usd = holdingUsd(h, input.prices, rate)
+    const usd = h === cirBtc && input.cirBtcUsd !== null ? input.cirBtcUsd : holdingUsd(h, input.prices, rate)
     if (usd === null) { unpriced.push(h); continue }
     const group = groupOf(h)
     const cat = categoryOf(h)
@@ -261,7 +262,7 @@ export function computeBalance(input: BalanceInput): Balance {
   // Shares and targets.
   const goalUsd = p?.nearGoal ? toUsd(p.nearGoal.amount, p.nearGoal.currency, rate) ?? 0 : 0
   const age = p?.age ?? (p?.ageDeclined ? param('default_age') : null)
-  const target = age !== null ? targetMix(age) : null
+  const target = age !== null ? targetMix(age, p?.cryptoSplit) : null
 
   // Idle money (spec 5.4).
   let suggest: Balance['suggest'] = null
@@ -312,35 +313,46 @@ export interface Standing {
   target: number
   /** target - have, never below 0. */
   left: number
-  /** At its target: less than 1% of it left (at most 0.5 USDC of rounding). A part with a target and nothing in it is never full. */
+  /** On track: within the 5/25 band of its share, or the anchor itself (Balance Sheet v2). "Under" = !full. */
   full: boolean
+  /** The part that sets the implied total: the one furthest ahead of its share. */
+  anchor: boolean
   /** Safety only: the near-term goal inside the target, and the share of the rest on top of it. */
   goal?: number
   rest?: number
 }
 
+/** 5/25 band (spec Balance Sheet v2 §3): a part is Under when its share falls below target by more than 5 points or 25% of the target, whichever is smaller. */
+export const driftBand = (sharePct: number) => Math.min(5, sharePct * 0.25)
+
 /**
- * Have / target / left for Safety, Traditional and Crypto. `leaving` = money about to move out of the liquid pool (the deposit that
- * will fill the emergency fund), so the numbers quoted before the deposit are the ones after it. Safety counts a near-term goal first:
- * target = goal + its share of what remains, so adding savings always lowers what is left (it used to vanish into the goal).
+ * Have / target / left for Safety, Traditional and Crypto by value (Balance Sheet v2, 2026-10-30/31): no total of what the user owns is
+ * asked. The part furthest ahead of its share (largest value / share) is the anchor; implied total = its value / its share; every target
+ * = implied total × share, so nothing is above target and "left" is the least money that brings all three back to the split without
+ * selling. `leaving` = money about to move from Safety into the emergency fund, so the figures quoted before a deposit are the ones after
+ * it. A near-term goal is held in Safety on top of its share (framework v2). Null without an age or without anything in the three parts.
  */
 export function bucketStanding(b: Balance, leaving = 0): Standing[] | null {
   const t = b.target
   if (!t) return null
-  const toDivide = Math.max(0, b.liquid - leaving - b.goalUsd)
   const g = b.byGroup
-  const cryptoShare = t.btc + t.large_cap + t.altcoin
-  const part = (key: Standing['key'], name: Standing['name'], share: number, have: number, extra = 0): Standing => {
-    const rest = toDivide * share / 100
-    const target = rest + extra
-    const left = Math.max(0, target - have)
-    return { key, name, share, have, target, left, full: left <= Math.min(0.5, target * 0.01), ...(extra > 0 ? { goal: extra, rest } : {}) }
-  }
-  return [
-    part('safe', 'Safety', t.safe, g.safe, b.goalUsd),
-    part('traditional', 'Traditional', t.traditional, g.traditional),
-    part('crypto', 'Crypto', cryptoShare, g.btc + g.large_cap + g.altcoin),
+  const parts = [
+    { key: 'safe' as const, name: 'Safety' as const, share: t.safe, have: g.safe, value: Math.max(0, g.safe - leaving - b.goalUsd), extra: b.goalUsd },
+    { key: 'traditional' as const, name: 'Traditional' as const, share: t.traditional, have: g.traditional, value: g.traditional, extra: 0 },
+    { key: 'crypto' as const, name: 'Crypto' as const, share: t.btc + t.large_cap + t.altcoin, have: g.btc + g.large_cap + g.altcoin, value: g.btc + g.large_cap + g.altcoin, extra: 0 },
   ]
+  const ratios = parts.map(p => p.share > 0 ? p.value / (p.share / 100) : 0)
+  const total = Math.max(...ratios)
+  if (!(total > 0)) return null
+  const anchorAt = ratios.indexOf(total)
+  return parts.map((p, i): Standing => {
+    const rest = total * p.share / 100
+    // Safety's "have" is what sits there now (minus the deposit about to leave); its target carries the goal on top.
+    const have = p.key === 'safe' ? Math.max(0, p.have - leaving) : p.have
+    const target = rest + p.extra
+    const under = i !== anchorAt && (p.value / total * 100 < p.share - driftBand(p.share) || have < p.extra)
+    return { key: p.key, name: p.name, share: p.share, have, target, left: Math.max(0, target - have), full: !under, anchor: i === anchorAt, ...(p.extra > 0 ? { goal: p.extra, rest } : {}) }
+  })
 }
 
 /** Share of liquid assets in %, 0 without any. */

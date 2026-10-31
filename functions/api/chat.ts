@@ -433,6 +433,7 @@ const ALL_PLAN_TOOLS = [
     no_near_goal: { type: 'boolean', description: 'true when they said there is no big expense coming in the next 5 years' },
     crypto_drop_ok: { type: 'boolean', description: 'Answer to "if your crypto dropped by half, could you hold it without selling to live?": yes = true, no = false; unsure = leave out' },
     insured: { type: 'boolean', description: 'They have health or life insurance protecting the people who rely on them' },
+    crypto_split: { type: 'number', description: 'How they want the money outside Safety split, as the % that goes to Crypto (the rest is Traditional): "30/70 traditional/crypto" = 70, "half and half" = 50. Only when they chose it.' },
   }),
   fn('add_holding', 'Record one thing the user holds (the app prices it live or keeps the declared value).', {
     type: { type: 'string', enum: ASSET_TYPE_KEYS },
@@ -665,8 +666,9 @@ function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: nu
     lines.push(`- Total debt ${show(b.debtTotal)}; priority debt ${show(b.debts.priorityTotal)}`)
   } else lines.push(p.debtsComplete ? '- Debts: none (the user said so)' : '- Debts: not asked yet')
 
-  // Totals (spec 2) and the split (spec 4).
-  lines.push(`- Liquid assets (base of every %): ${show(b.liquid)} · Net worth: ${show(b.netWorth)} (all assets ${show(b.assets)} incl. fund, lifestyle ${show(b.lifestyle)}, not rebalanceable ${show(b.grey)}; minus debt ${show(b.debtTotal)})`)
+  // The split (spec 4). Balance Sheet v2 (2026-10-31): no net worth, no "total to divide"; the part furthest ahead sizes the others.
+  lines.push(`- In the three parts now: ${show(b.liquid)}. Outside them: emergency fund (vault), home, car, rental, business, money lent${b.lifestyle + b.grey > 0 ? ` (${show(b.lifestyle + b.grey)})` : ''}. Never quote a net worth or a "total to divide".`)
+  lines.push('- Safety = bank deposits and cash, stablecoins (USDC, USDT), bonds, T-bills, bond and money market funds; high-yield bonds are Traditional (SEC Investor.gov). The emergency fund is separate, never part of Safety.')
   // Three buckets (framework v2, 2026-10-27): Safety, Traditional, Crypto as one; whole % that add to 100.
   const g = b.byGroup
   const cryptoNow = g.btc + g.large_cap + g.altcoin
@@ -685,10 +687,10 @@ function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: nu
     const tc = t.btc + t.large_cap + t.altcoin
     // Half percents, the same as the plan, so an even split never reads 35% / 34% (2026-10-29).
     const [ts, ttr, tcr] = [t.safe, t.traditional, tc].map(x => Math.round(x * 2) / 2)
-    lines.push(`- Target by the MoonSafe framework at age ${b.age}${b.ageIsDefault ? ' (DEFAULT age 30: the user declined; say the split is an estimate)' : ''}: Safety ${ts}%, Traditional ${ttr}%, Crypto ${tcr}% (mostly BTC; no target for other coins)`)
+    lines.push(`- Target by the MoonSafe framework at age ${b.age}${b.ageIsDefault ? ' (DEFAULT age 30: the user declined; say the split is an estimate)' : ''}: Safety ${ts}%, Traditional ${ttr}%, Crypto ${tcr}% (mostly BTC; no target for other coins). Safety = age is the "age in bonds" rule of thumb. ${p.cryptoSplit === undefined ? 'Traditional / Crypto is MoonSafe\'s default even split, NOT a standard rule: say so, and that they can choose another split (record it with update_profile crypto_split); when you first give the split, ask once how they want it.' : `Traditional / Crypto is the split they chose (${100 - p.cryptoSplit}/${p.cryptoSplit}).`}`)
     // Totals, not only what is missing (Hieu, 2026-10-28): "X of Y, Z to go" for each part; Safety carries a near-term goal first.
     const st = bucketStanding(b)
-    if (st) lines.push(`- Where they stand in the three parts of the money to divide (${show(Math.max(0, b.liquid - b.goalUsd))}${b.goalUsd > 0 ? `, not counting the near-term goal ${show(b.goalUsd)}` : ''}). Copy "X of Y, Z to go" exactly. Safety = bank savings outside the app, it is NOT the emergency fund: ${st.map(x => `${x.name} ${show(x.have)} of ${show(x.target)}${x.goal ? ` (= goal ${show(x.goal)} + ${x.share}% of the rest ${show(x.rest ?? 0)})` : ''}, ${!x.full ? `${show(x.left)} to go` : 'full'}`).join('; ')}`)
+    if (st) lines.push(`- Where they stand in the three parts, by value: ${st.find(x => x.anchor)?.name} is furthest ahead of its share, so it sets the size and the other two are measured against it (no total is asked; a part inside 5 points or 25% of its share is "on track"). Copy "X of Y, Z to go" exactly${b.goalUsd > 0 ? `; Safety carries the near-term goal ${show(b.goalUsd)} on top` : ''}. Safety is NOT the emergency fund: ${st.map(x => `${x.name} ${show(x.have)} of ${show(x.target)}${x.goal ? ` (= goal ${show(x.goal)} + ${x.share}% share ${show(x.rest ?? 0)})` : ''}, ${!x.full ? `under, ${show(x.left)} to go` : 'on track'}`).join('; ')}`)
   } else lines.push('- Target: AGE UNKNOWN. Ask the age before talking about any share.')
   if (!b.declared) lines.push('- Nothing is declared yet: the user has not said what they hold (the wallet balance seen onchain does not count until they declare it). If they ask how to split or invest: suggest NO split and NO purchase, turn NO percentage into an amount; ask about the next item of the collection flow instead.')
   else if (b.suggest && fundTargetKnown) {
@@ -1168,6 +1170,8 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       if (a.no_near_goal === true && !profile.nearGoal && SAYS_NONE.test(lastUserText)) f.noNearGoal = true
       if (a.has_windfalls === true && !profile.hasWindfalls && WINDFALL.test(lastUserText)) f.hasWindfalls = true
       if (typeof a.crypto_drop_ok === 'boolean' && a.crypto_drop_ok !== profile.cryptoDropOk && (YES_NO.test(lastUserText) || /drop|half|giảm|một nửa/i.test(prevAssistantText))) f.cryptoDropOk = a.crypto_drop_ok // lang-ok
+      // The Traditional / Crypto split is the user's to choose (Hieu, 2026-10-31); only from a split they stated (a figure or "half").
+      if (typeof a.crypto_split === 'number' && a.crypto_split >= 0 && a.crypto_split <= 100 && Math.round(a.crypto_split) !== (profile.cryptoSplit ?? 50) && ((/\d/.test(lastUserText) && (stated(a.crypto_split) || stated(100 - a.crypto_split))) || /half|even|chia đôi|một nửa/i.test(lastUserText))) f.cryptoSplit = Math.round(a.crypto_split) // lang-ok
       if (typeof a.insured === 'boolean' && a.insured !== profile.insured && (YES_NO.test(lastUserText) || /insur|bảo hiểm/i.test(lastUserText + prevAssistantText))) f.insured = a.insured // lang-ok
       if (!Object.keys(f).length) { console.log(`dropped update_profile ${call.function.arguments}: not stated or unchanged`); return 'Nothing changed (not stated in the latest message, or already known).' }
       const parts: Array<[Record<string, unknown>, string]> = []
@@ -1182,6 +1186,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       if (f.hasWindfalls) parts.push([{ hasWindfalls: true }, 'airdrops and other windfalls: not counted as monthly income'])
       if (f.cryptoDropOk !== undefined) parts.push([{ cryptoDropOk: f.cryptoDropOk }, f.cryptoDropOk ? 'could hold through a 50% crypto drop' : 'could not hold through a 50% crypto drop'])
       if (f.insured !== undefined) parts.push([{ insured: f.insured }, f.insured ? 'insured' : 'no insurance yet'])
+      if (f.cryptoSplit !== undefined) parts.push([{ cryptoSplit: f.cryptoSplit }, `outside Safety: Traditional ${100 - (f.cryptoSplit as number)}%, Crypto ${f.cryptoSplit}%`])
       for (const [fields, text] of parts) record({ op: 'update_profile', fields }, text)
       done.push(`Recorded: ${parts.map(x => x[1]).join(', ')}.`)
     } else if (name === 'add_holding') {
@@ -1633,8 +1638,8 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   const planGiven = assistantTexts.some(a => PLAN_GIVEN.test(a)) || (balance.fund.met && !batchAsked)
   const phase: 'collect' | 'plan' | 'start' = pending || toAsk.length ? 'collect' : !planGiven && balance.target ? 'plan' : 'start'
   // Crypto to buy now: the smaller of what the Crypto bucket still needs and what the wallet can spend.
-  const tCrypto = balance.target ? balance.target.btc + balance.target.large_cap + balance.target.altcoin : 0
-  const cryptoFill = Math.max(0, (balance.liquid - balance.goalUsd) * tCrypto / 100 - (balance.byGroup.btc + balance.byGroup.large_cap + balance.byGroup.altcoin))
+  // Balance Sheet v2: what Crypto still needs against the part furthest ahead.
+  const cryptoFill = bucketStanding(balance)?.find(x => x.key === 'crypto')?.left ?? 0
   // Spec 5.4: idle money keeps 1 month of spending for daily life before any purchase.
   const cryptoOffer = Math.floor(Math.min(cryptoFill, Math.max(0, (wallet ?? 0) - GAS_RESERVE_USDC), balance.suggest ? Math.max(0, balance.suggest.idle - balance.suggest.keep) : Infinity))
 

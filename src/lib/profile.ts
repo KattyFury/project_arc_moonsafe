@@ -176,6 +176,9 @@ function migrateV1(raw: Record<string, unknown>, now: number): FinancialProfile 
 }
 
 /** Any stored shape (v2, v1, Arc Studio's) → v2. */
+/** Crypto share of the money outside Safety, 0 to 100 %. */
+const split = (v: unknown): number | null => { const n = num(v); return n !== null && n >= 0 && n <= 100 ? n : null }
+
 export function normalizeProfile(raw: Record<string, unknown> | null | undefined, now = Date.now()): FinancialProfile {
   if (!raw) return { ...EMPTY_PROFILE }
   if (raw.v !== 2) return migrateV1(raw, now)
@@ -198,6 +201,7 @@ export function normalizeProfile(raw: Record<string, unknown> | null | undefined
     ...(num(raw.windfallsYearly) !== null && num(raw.windfallsYearly)! > 0 ? { windfallsYearly: num(raw.windfallsYearly)! } : {}),
     ...(bool(raw.cryptoDropOk) !== null ? { cryptoDropOk: bool(raw.cryptoDropOk) } : {}),
     ...(bool(raw.insured) !== null ? { insured: bool(raw.insured) } : {}),
+    ...(split(raw.cryptoSplit) !== null ? { cryptoSplit: split(raw.cryptoSplit)! } : {}),
     ...(num(raw.savedAt) !== null ? { savedAt: num(raw.savedAt)! } : {}),
   }
 }
@@ -217,7 +221,7 @@ export const hasAnyData = (p: FinancialProfile | null | undefined): boolean =>
 
 // ---- operations (what the agent's tools become) ---------------------------------------------
 
-export type ProfileFields = Partial<Pick<FinancialProfile, 'planningScope' | 'age' | 'ageDeclined' | 'incomeStable' | 'dependents' | 'soleEarner' | 'debtsComplete' | 'nearGoal' | 'noNearGoal' | 'hasWindfalls' | 'windfallsYearly' | 'cryptoDropOk' | 'insured'>>
+export type ProfileFields = Partial<Pick<FinancialProfile, 'planningScope' | 'age' | 'ageDeclined' | 'incomeStable' | 'dependents' | 'soleEarner' | 'debtsComplete' | 'nearGoal' | 'noNearGoal' | 'hasWindfalls' | 'windfallsYearly' | 'cryptoDropOk' | 'insured' | 'cryptoSplit'>>
 
 /** The holding the user declared for the USDC in THIS (connected) wallet, if there is one. */
 export function appWalletHolding(p: FinancialProfile | null): Holding | undefined {
@@ -317,6 +321,7 @@ export function readOps(raw: unknown, now = Date.now()): ProfileOp[] {
         if (num(f.age) !== null) fields.age = num(f.age)!
         for (const k of ['ageDeclined', 'incomeStable', 'soleEarner', 'debtsComplete', 'noNearGoal', 'hasWindfalls', 'cryptoDropOk', 'insured'] as const) if (typeof f[k] === 'boolean') fields[k] = f[k] as boolean
         if (num(f.dependents) !== null) fields.dependents = num(f.dependents)!
+        if (split(f.cryptoSplit) !== null) fields.cryptoSplit = split(f.cryptoSplit)!
         if (num(f.windfallsYearly) !== null && num(f.windfallsYearly)! > 0) fields.windfallsYearly = num(f.windfallsYearly)!
         const goal = readNearGoal(f.nearGoal)
         if (goal) fields.nearGoal = goal

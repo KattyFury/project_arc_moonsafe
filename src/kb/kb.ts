@@ -67,15 +67,20 @@ export const param = (name: string): number => {
 
 export type MixKey = 'safe' | 'traditional' | 'btc' | 'large_cap' | 'altcoin'
 
-/** Target shares in % of liquid assets (spec 4): safe = age; the rest split evenly, traditional and crypto as one bucket (Hieu, 2026-10-29), all of it BTC (framework v2: no big-cap / low-cap target). */
-export function targetMix(age: number): Record<MixKey, number> {
+/**
+ * Target shares in % (spec 4): safe = age; the rest split evenly between traditional and crypto as one bucket (Hieu, 2026-10-29),
+ * or by `cryptoSplit` (% of the rest in Crypto) when the user chose another split (Hieu, 2026-10-31); all of crypto is BTC
+ * (framework v2: no big-cap / low-cap target).
+ */
+export function targetMix(age: number, cryptoSplit?: number | null): Record<MixKey, number> {
   const a = Math.min(param('age_max'), Math.max(param('age_min'), age))
   const r = 100 - a
   const { rest_split: rs, crypto_split: cs } = KB.allocation
-  const crypto = r * rs.crypto[0] / rs.crypto[1]
+  const c = typeof cryptoSplit === 'number' && Number.isFinite(cryptoSplit) ? Math.min(100, Math.max(0, cryptoSplit)) / 100 : rs.crypto[0] / rs.crypto[1]
+  const crypto = r * c
   return {
     safe: a,
-    traditional: r * rs.traditional[0] / rs.traditional[1],
+    traditional: r - crypto,
     btc: crypto * cs.btc[0] / cs.btc[1],
     large_cap: crypto * cs.large_cap[0] / cs.large_cap[1],
     altcoin: crypto * cs.altcoin[0] / cs.altcoin[1],
