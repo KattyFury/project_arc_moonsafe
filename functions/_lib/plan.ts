@@ -79,10 +79,13 @@ export function openVaultOffer(vi: boolean, fee = 1): string {
     : `Ready to start? Your emergency fund lives in your own vault on Arc: a small contract that only your wallet can withdraw from. Opening it is **${f}, once** per account; after that, adding or withdrawing only costs a network fee of a few cents. Shall I open it for you to sign?`
 }
 
-/** Start the fund with what the wallet has; the wording keeps "prepare a deposit of", which a "yes" is matched on. */
-export const partialOffer = (vi: boolean, amount: number) => vi
-  ? `Sẵn sàng bắt đầu chưa? Ví của bạn có thể bắt đầu quỹ với **${tok(amount)}** ngay, phần còn lại thêm dần sau: mình chuẩn bị một lệnh nạp **${tok(amount)}** để bạn ký nhé?` // lang-ok
-  : `Ready to start? Your wallet can start the fund with **${tok(amount)}** now and the rest can follow: shall I prepare a deposit of **${tok(amount)}** for you to sign?`
+/**
+ * Start the fund with what the wallet has; the wording keeps "prepare a deposit of", which a "yes" is matched on. `windfalls`: the pay
+ * only covers the month, so the rest comes from the money that arrives now and then (airdrops; Hieu, 2026-10-31).
+ */
+export const partialOffer = (vi: boolean, amount: number, windfalls = false) => vi
+  ? `Sẵn sàng bắt đầu chưa? Ví của bạn có thể bắt đầu quỹ với **${tok(amount)}** ngay, phần còn lại ${windfalls ? 'thêm khi có airdrop hay khoản thu lâu lâu' : 'thêm dần sau'}: mình chuẩn bị một lệnh nạp **${tok(amount)}** để bạn ký nhé?` // lang-ok
+  : `Ready to start? Your wallet can start the fund with **${tok(amount)}** now and the rest can follow${windfalls ? ' when an airdrop or other occasional money comes in' : ''}: shall I prepare a deposit of **${tok(amount)}** for you to sign?`
 
 export function buildPlan({ p, b, shares, cover, partial = null, vi, hasVault = true, vaultFee = 1 }: PlanInput): string | null {
   if (!b.target || b.fund.floorUsd === null || p.incomeStable === null) return null
@@ -114,7 +117,7 @@ export function buildPlan({ p, b, shares, cover, partial = null, vi, hasVault = 
       ? openVaultOffer(vi, vaultFee)
     : cover !== null
       ? (vi ? `Sẵn sàng bắt đầu chưa? Bước đầu là quỹ dự phòng: mình chuẩn bị một lệnh nạp **${tok(cover)}** từ ví để bạn ký nhé?` : `Ready to start? The first step is your emergency fund: shall I prepare a deposit of **${tok(cover)}** from your wallet for you to sign?`) // lang-ok
-      : partial !== null ? partialOffer(vi, partial)
+      : partial !== null ? partialOffer(vi, partial, !!p.hasWindfalls && (b.cashflow.surplus ?? 0) <= 0.5)
       : (vi ? 'Bước đầu là quỹ dự phòng. Ví chưa có USDC để nạp, nên hãy thêm USDC vào ví rồi nói với mình nhé.' : 'The first step is your emergency fund. The wallet has no USDC to add yet, so add some and tell me.') // lang-ok
   // Airdrops and other bursts are not a job: said once, here, because the plan is built only on steady income.
   const windfall = p.hasWindfalls
