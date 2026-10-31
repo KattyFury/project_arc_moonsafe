@@ -6,7 +6,8 @@ Spec build: `docs/BUILD-BALANCE-v2-2026-10-31.md`. Đã làm: công thức mốc
 - Kiểm: `check:all`, `test:agent`, tsc 3 cấu hình, check-lang, build mainnet đều qua; ảnh 393×852/1440×900 ở Desktop `MoonSafe-balance-v2-2026-10-31` (ảnh bảng hỏi là bản cũ đã bỏ).
 - **Đã thử bằng Claude Haiku thật** (Hiếu nhờ, khỏi test tay): 3 cuộc chat `scripts/e2-intake-cases.ts` (đúng câu Hiếu gõ, 1 người EN, 1 người khai VND), chạy `bun scripts/claude-reeval.ts --live --budget 400000 --run <tên> --only e2-hieu-vi,e2-en,e2-vnd` với ANTHROPIC_API_KEY từ keys.env; kết quả `docs/evals/e2-intake-2026-10-31*.json`. Lượt 1 lộ lỗi, đã sửa + deploy `442d5078` (main `c0e6f8c`): câu 2 bị chặn bởi thẻ biểu đồ / câu nhắc thua lỗ; "25 tuổi … chưa vợ" bị bỏ tuổi; "lương đều" không được hiểu là ổn định; "5tr USDT" đọc thành 5,000 USDT; "nợ Nợ mẹ". Lượt 2–3 đúng hết.
 - Còn ngỏ: người có nợ ưu tiên (thẻ tín dụng 22%) sau khi xác nhận tài sản thì kế hoạch do model viết (buildPlan trả null khi có nợ ưu tiên), Haiku trả lời hơi chung chung "Next, I'll walk you through your plan" — chưa sửa.
-- File CI `.github/workflows/agent-regression.yml` (Codex) chỉ nằm trên máy Dell: token GitHub thiếu quyền `workflow`; muốn đẩy thì `gh auth refresh -s workflow` trên máy tính.
+- File CI `.github/workflows/agent-regression.yml` (Codex) chỉ nằm trên máy Dell: token GitHub thiếu quyền `workflow`; muốn đẩy thì `gh auth refresh -s workflow` trên máy tính. Không bắt buộc, app không cần.
+- **Làm tiếp (theo thứ tự):** (1) hỏi Hiếu có sửa ca nợ ưu tiên ở trên không (chưa trả lời); (2) các mục "Để tính ở v2" bên dưới (bất động sản, bảo hiểm tích luỹ, tiền cho vay, vốn doanh nghiệp, NFT) cần tư vấn theo nguồn chuẩn rồi Hiếu chốt trước khi code.
 
 # Balance Sheet v2 — Hiếu chốt thêm 2026-10-31 (quyết định, nền cho bản build ở trên)
 
