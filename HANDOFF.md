@@ -1,3 +1,28 @@
+# ▶ Balance Sheet v2 — Hiếu chốt thêm 2026-10-31 (chưa code, bước tiếp: viết spec build)
+
+Bổ sung/sửa `docs/SPEC-BALANCE-SHEET-v2-2026-10-30.md`. Nguồn chuẩn đã dùng: SEC Investor.gov "Beginners' Guide to Asset Allocation" (3 nhóm stocks/bonds/cash; cash equivalents = savings deposits, CDs, treasury bills, money market deposit accounts, money market funds; real estate/precious metals = nhóm khác) và quy tắc "age in bonds" của Bogle ("crude starting point", không phải luật).
+
+**Dòng tiền + nợ = 1 cụm (đảo mục "hoãn dòng tiền" của spec v2):**
+- Bảng hỏi 2 bước: (1) dòng tiền: lương, chi tiêu (KHÔNG gồm trả nợ), thu nhập đều?, người phụ thuộc, nợ (còn nợ / lãi / trả mỗi tháng), khoản chi lớn trong 5 năm; (2) tài sản. Bước nào không vừa 393×852 thì tách thành 2 khung, không cuộn.
+- Quỹ dự phòng = (chi tiêu + trả nợ/tháng) × số tháng (khớp `fund_floor.spending_basis` trong KB; code `allocation.ts` hiện chỉ nhân chi tiêu).
+- Agent cần số liệu làm quỹ → gửi lại thẻ bảng hỏi bước 1, không hỏi lẻ.
+- Màn Balance: 2 tab. "Split" = 3 thanh ngang On track / Under + số còn thiếu (công thức mốc của spec v2). "Cash flow" = 1 bảng thu, chi, trả nợ, còn dư, danh sách nợ, mục tiêu quỹ. Bỏ Net worth, Can use now.
+
+**3 nhóm tài sản:**
+- **Safety** = tiền gửi ngân hàng + tiền mặt; stablecoin (Hiếu chốt tính vào Safety); trái phiếu, tín phiếu, quỹ trái phiếu, quỹ thị trường tiền tệ. Trái phiếu lãi cao (junk) KHÔNG ở Safety → Traditional (SEC: rủi ro gần cổ phiếu).
+- **Quỹ dự phòng (vault MoonSafe) tách riêng, không nằm trong Safety.**
+- **Traditional / Crypto:** phần ngoài Safety mặc định 50/50; ở bước tài sản app/agent hỏi người dùng muốn chia thế nào (VD 30/70), không chọn thì 50/50. Agent nói rõ cách chia đôi là lựa chọn của MoonSafe, không phải quy tắc chuẩn.
+- Khai bằng số lượng HOẶC số tiền. Số lượng → giá trị = số lượng × giá hiện tại; số tiền → đổi ra số lượng theo giá lúc khai rồi lưu số lượng (sau đó giá trị đi theo giá). Món không có giá thị trường (tiền gửi, trái phiếu, quỹ không mã, cổ phiếu VN chưa có nguồn) giữ số $.
+- Danh sách món đề xuất cho bước 2 (Hiếu đang duyệt): Safety: tiền gửi+tiền mặt ($), stablecoin (số lượng 1=$1, không gồm vault), trái phiếu/tín phiếu/quỹ trái phiếu/quỹ thị trường tiền tệ ($). Traditional: vàng (oz/$, gold-api), cổ phiếu/ETF Mỹ (mã + số cp/$, Yahoo), cổ phiếu VN ($), trái phiếu lãi cao ($). Crypto: BTC (số lượng/$, Coinbase→Binance), cirBTC đọc trên chuỗi, coin khác (mã + số lượng/$).
+
+**Để tính ở v2 (chưa chốt, cần tư vấn theo kiến thức chuẩn):**
+- **Bất động sản đầu tư (nhà cho thuê, đất):** đang để ngoài 3 nhóm; nếu sinh thu nhập thụ động thì tiền thuê vào dòng tiền. Tra 10-31: chưa thấy nguồn chính thống thống nhất — SEC chỉ xếp vào "nhóm khác, rủi ro riêng"; CFA Institute nêu khó định giá (giá thẩm định ≠ giá bán); một số người coi là nhóm riêng hoặc dòng thu nhập giống trái phiếu. Cần tìm nguồn tốt hơn trước khi đề xuất.
+- **Món KB có nhưng không vào 3 nhóm:** bảo hiểm có tích luỹ / hưu trí tự nguyện, tiền cho người khác vay, phần vốn doanh nghiệp, NFT — xếp thế nào.
+
+# Agent three-cycle improvements — deployed 2026-10-31
+
+User requested deployment after the three Haiku improvement sessions. Current working tree (HEAD `4c8a0b0` plus local agent changes, including the final deterministic confirmation-status repair) deployed successfully to Cloudflare production `148f6808-3e1d-4bcf-96bd-254376ef0ff1`: https://148f6808.moonsafe.pages.dev and https://moonsafe.app. Verified mainnet factory `0xA9A5447a1Dd9874c25238d69E285249Fa1c9E10A`, RPC, cirBTC and Privy against the prior live bundle and the new build. Cloudflare canonical deployment is production/success; production KV and D1 IDs are unchanged. Both URLs: homepage 200, HTML matches local production build, unauthenticated POST `/api/chat` 401. Six agent suites, `check:all` (including ledger), handler/eval TypeScript and mainnet build pass. No paid model call or transaction during deployment; no Git commit or push. Evaluation limits remain in `docs/evals/session-three-cycles-2026-10-31.md`; deployment receipt is `docs/deployment-2026-10-31.json`.
+
 # Balance Sheet v2 — CHỐT HƯỚNG 2026-10-30, chưa code
 
 **Deployment (Codex, user requested):** production `aa2af126-c20b-4750-85e4-012449c4d50e`, https://aa2af126.moonsafe.pages.dev and https://moonsafe.app. Before upload, preserved local work in stash `codex-agent-fix-before-deploy-sync-2026-10-30`, fast-forwarded c635084 → 5fc0eb7 (four newer user commits), reapplied the part-choice fix, and resolved HANDOFF by keeping both notes. TypeScript, KB including 63 routing checks, offline-flow, language gate and mainnet build passed after synchronization. Both URLs: homepage 200, unauthenticated chat 401, served asset hashes match the new build. Cloudflare confirms canonical deployment, existing D1 ledger and production KV retained. No extra paid calls, commit or push. The 974,475-token evaluation below predates these four upstream commits; it is not a paid evaluation of the combined deployed tree. Other findings in that review remain follow-ups.
