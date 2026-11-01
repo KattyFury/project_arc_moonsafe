@@ -38,11 +38,11 @@ MoonSafe là **người giữ quỹ dự phòng**, rồi là **người tư vấ
 
 - **Vì sao:** tổng tiền thay đổi liên tục theo giá. Thứ cần theo dõi là tỷ lệ Safety / Traditional / Crypto so với mục tiêu.
 - Mục tiêu theo tuổi: Safety = tuổi %, phần còn lại chia Traditional / Crypto (MoonSafe mặc định 50/50, người dùng chọn khác được; agent nói rõ 50/50 là mặc định của app, không phải quy tắc chuẩn). Ví dụ 63 tuổi: 63% / 18,5% / 18,5%.
-- **Hiển thị:** tỷ lệ là thước đo chính ("Safety 36%, mục tiêu 63%: thiếu"). Số $ chỉ nói khi người dùng hỏi "cần bao nhiêu".
+- **Hiển thị:** tỷ lệ là thước đo chính, **số tiền hiện song song** ("Safety 36% ($200,000), mục tiêu 63%: thiếu"). Cân bằng được đánh giá bằng %, không bằng việc tổng tiền tăng hay giảm.
 - Gốc tính là phần đầu tư: Safety cần = (Traditional + Crypto) × Safety% / (100 − Safety%). Tiền chưa xếp lấp Safety trước, phần dư chia theo tỷ lệ; trong phần đầu tư, tiền mới vào bên đang thiếu trước.
 - **Không bao giờ khuyên bán** để cân lại. Phần vượt tỷ lệ là "trên tỷ lệ, không cần bán, tiền mới vào phần khác". Giá giảm không phải lý do để giục mua thêm.
 - Giá trị tài sản tính theo **giá hiện tại** (số lượng × giá), không theo giá vốn; không hỏi "đã mua bao nhiêu tiền".
-- *Code hiện vẫn lấy $ làm chính ("$X of $Y, $Z to go") → **phải sửa**: màn Balance + lời agent chuyển sang %.*
+- *Code hiện chỉ có $ ("$X of $Y, $Z to go") → **phải sửa**: màn Balance + lời agent đưa % lên làm chính, $ đi kèm.*
 
 ## 4. Ghi dữ liệu
 
@@ -59,19 +59,27 @@ MoonSafe là **người giữ quỹ dự phòng**, rồi là **người tư vấ
 - Tài sản có 2 mức tin cậy: **đã kiểm onchain** (đọc số dư từ chuỗi) và **tự khai**. Hiển thị rõ món nào là món nào.
 - *Phải xây khi có tài sản onchain mới.*
 
-## 6. Bảo mật: đây là tiền thật
+## 6. Bảo mật: đây là tiền thật, bảo vệ cả 2 mặt
 
-- Server không bao giờ giữ khoá rút tiền của người dùng. Mọi giao dịch do người dùng tự ký.
-- Hợp đồng hiện tại (`VaultProxy`): 1 chủ, rút **toàn bộ, ngay, tới bất kỳ địa chỉ nào**. Lộ khoá ví = mất cả quỹ. Spec khôi phục qua email (`docs/vault-recovery-spec.md`) chỉ xử lý **mất ví**, không xử lý **bị trộm khoá**.
-- **Vault v3 (Hiếu chốt hướng 2026-11-01, chưa xây):**
-  - Rút ngay tối đa khoảng **1 tháng chi tiêu mỗi ngày**: tiền khẩn cấp vẫn lấy được ngay.
-  - Khoản lớn hơn phải **chờ 48 giờ**. Trong lúc chờ, **ví dự phòng** hoặc email huỷ hoặc đóng băng được. Kẻ trộm có khoá cũng chỉ lấy được tối đa 1 ngày hạn mức.
-  - Gộp với khôi phục khi mất ví (spec email + chờ 7 ngày).
-  - Hạn mức và độ trễ là hằng số trong hợp đồng hoặc chỉ đổi được kèm độ trễ. Phải test kỹ + kiểm toán trước khi lên mainnet. Vault cũ không nâng cấp được, người dùng tự chuyển tiền sang vault mới.
-- Việc khác còn mở (từ `docs/audit-mainnet-2026-10-29.md`): giới hạn đăng ký Privy, giới hạn tần suất `/api/*` trên Cloudflare, gói Workers trả phí, Safe 2-of-2 chưa có ví dự phòng.
+**Mặt 1: bản thân vault an toàn.** Hợp đồng đơn giản, không ai ngoài người dùng chạm được tiền, test kỹ, kiểm toán trước mainnet.
+
+**Mặt 2: mất ví (bị hack) cũng không bị rút tiền.** Rút tiền cần **2 chìa tách rời: ví + email**, như multisig 2-of-2. Có ví mà không có email thì không rút được; có email mà không có ví cũng không rút được.
+
+Sự thật kỹ thuật phải giữ khi xây:
+- Hợp đồng onchain không đọc được email. "Chìa email" thực chất là **khoá của MoonSafe trên server, chỉ ký sau khi người dùng bấm link xác nhận trong mail** (link ghi rõ số tiền và địa chỉ nhận). Khoá này **đứng một mình không rút được gì**: không có chữ ký ví thì hợp đồng từ chối.
+- Server không bao giờ giữ khoá ví của người dùng.
+- **Đường thoát khi MoonSafe sập hoặc đóng cửa:** chỉ dùng ví vẫn rút được nhưng phải **chờ 7 ngày**, trong lúc đó email (và app) báo và **huỷ được**. Tiền không bao giờ bị kẹt vì server; kẻ trộm ví thì bị email chặn trong 7 ngày đó.
+- **Mất ví:** email + ví mới → đổi chủ sau 7 ngày chờ; ví cũ huỷ được trong lúc chờ (spec `docs/vault-recovery-spec.md`).
+- **Mất email:** ví → đổi email sau 7 ngày chờ; email cũ huỷ được trong lúc chờ.
+- Mất cả 2 chìa = mất quyền rút. Phải nói rõ với người dùng lúc mở vault.
+
+Hiện trạng: hợp đồng hiện tại (`VaultProxy`) chỉ có 1 chìa là ví, rút toàn bộ ngay tới bất kỳ địa chỉ nào → lộ khoá ví = mất cả quỹ. **Vault v3 chưa xây.** Vault cũ không nâng cấp được, người dùng tự chuyển tiền sang vault mới.
+
+Việc khác còn mở (từ `docs/audit-mainnet-2026-10-29.md`): giới hạn đăng ký Privy, giới hạn tần suất `/api/*` trên Cloudflare, gói Workers trả phí, Safe 2-of-2 chưa có ví dự phòng.
 
 ## Chưa chốt
 
-- Hạn mức rút nhanh tính theo chi tiêu khai (đổi được → kẻ trộm khai chi tiêu cao?) hay đặt cố định lúc mở vault (đổi phải chờ)?
-- Ví dự phòng: ví thứ 2 của chính người dùng, người thân, hay email?
+- Rút trong lúc khẩn cấp: mỗi lần rút đều chờ bấm mail (vài phút), hay vẫn cho rút ngay một khoản nhỏ (ví dụ 1 tháng chi tiêu/ngày) chỉ bằng ví?
+- Email nhận link: email đăng nhập Privy, hay một email riêng người dùng tự khai (tách khỏi tài khoản đăng nhập để mất một bên không mất cả hai)?
+- Tiền rút được gửi tới đâu: bất kỳ địa chỉ nào (đã ghi trong link mail), hay chỉ về ví chủ?
 - Bất động sản cho thuê, bảo hiểm tích luỹ, tiền cho vay, vốn doanh nghiệp, NFT xếp ở đâu.
