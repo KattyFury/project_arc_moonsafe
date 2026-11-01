@@ -48,7 +48,8 @@ export function recordingEvidence(text: string): { text: string; excluded: boole
     if (/^(?:i (?:have|hold|own|keep|owe|earn|spend|pay|put|invested|bought|borrowed|am)|my (?:salary|income|spending|savings|debt)|(?:mình|tôi) (?:có|giữ|nợ|kiếm|tiêu|trả|gửi))/iu.test(clause)) excludedContext = false // lang-ok
     // Keep a hypothetical chain out of recording; ask for a separate actual declaration if ambiguous.
     const deniedQuantity = /\d/u.test(clause) && /\b(?:i|we)\s+(?:do not|don't|never)\s+(?:have|hold|own|keep)\b|\b(?:not mine|not me|belongs? to (?:my |a |the )?(?:brother|sister|friend|colleague))\b|(?:không phải|không có|không sở hữu)/iu.test(clause) // lang-ok
-    const uncertain = /\b(?:not sure|unsure|maybe|perhaps)\b|không chắc|có lẽ/iu.test(clause) // lang-ok
+    // "avg maybe 2500" is an estimate, which the intake asks for ("an estimate is fine"); "maybe I have some savings" is not a fact.
+    const uncertain = /\b(?:not sure|unsure|perhaps)\b|không chắc|có lẽ/iu.test(clause) || (/\bmaybe\b/iu.test(clause) && !/\bmaybe\s+(?:around\s+|about\s+|like\s+)?\$?\d/iu.test(clause)) // lang-ok
     if (hypothetical || excludedContext || deniedQuantity || uncertain || /\b(lost|loss(?:es)?)\b|\bdown\s+\d[^;]*%|(?:thua|lỗ|mất tiền)/iu.test(clause) // lang-ok
       || /^(?:my friend|a friend|someone|they|bạn tôi|bạn mình)\s+(?:has|have|earns?|owes?|có|kiếm|nợ)/iu.test(clause)) { // lang-ok
       excluded = true

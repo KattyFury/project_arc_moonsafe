@@ -1,0 +1,3186 @@
+{
+  "sourceTree": [
+    {
+      "path": "functions/_lib/admin.ts",
+      "sha256": "2e2bcd06e185cf9ef026b305537778a60fe6058142adc3c3d1d9d66bc774d169"
+    },
+    {
+      "path": "functions/_lib/agentGuards.ts",
+      "sha256": "c2d54ffa0b9a1000100cb60367c903300baccb1b0ab801ab17b616fcd0ec5875"
+    },
+    {
+      "path": "functions/_lib/budget.ts",
+      "sha256": "df173f85a5648cd5ca6eafa6a51a8302870770258675dd0b3781aa89fac775f2"
+    },
+    {
+      "path": "functions/_lib/coaching.ts",
+      "sha256": "5aeab5b8fb5768b6d6abc83f34c6134be37289610271f029f680cc9cb76f0d29"
+    },
+    {
+      "path": "functions/_lib/config.ts",
+      "sha256": "5326baa048a80bbcaafe6b4605c93f2324851159d24db9bfe7f7874ed4208a01"
+    },
+    {
+      "path": "functions/_lib/confirmationStatus.ts",
+      "sha256": "ebd38239a2a99542bc7da2ea5d83c729774149fe2ec7912e39a5aa87ead02809"
+    },
+    {
+      "path": "functions/_lib/education.ts",
+      "sha256": "b435fe84688d607248fc55d6c87ed016f47efbfd4efbf11919f90692c66297c7"
+    },
+    {
+      "path": "functions/_lib/educationFigures.ts",
+      "sha256": "4ce3da2b8d5e7332d1bbd4acbbeaf1a1d463c823216589d61ff57e3bc7fa1a69"
+    },
+    {
+      "path": "functions/_lib/intake.ts",
+      "sha256": "a4cacadb650d01578894c7296d84172d664ba9ff46b658b10433481c323ff0b8"
+    },
+    {
+      "path": "functions/_lib/ledger.ts",
+      "sha256": "66dd4d7ce183585c1e8131e935c570c61b4d6d52c37318dd2142a2fceb5ef420"
+    },
+    {
+      "path": "functions/_lib/llm.ts",
+      "sha256": "e58cf9867a97b8c4095ef04206c0eb0c74a82c89e83bb93aabf68f2bb99cdec9"
+    },
+    {
+      "path": "functions/_lib/mutationEvidence.ts",
+      "sha256": "b1d34aed306d1b447f9b793ddf49531d2636d24aa582023d5b869a5eae760d5c"
+    },
+    {
+      "path": "functions/_lib/plan.ts",
+      "sha256": "519cbdd34c7b43f78a88d66e4424ba79d2c28e71decf16f6863b01a1db7941ed"
+    },
+    {
+      "path": "functions/_lib/privyAuth.ts",
+      "sha256": "e438bece6391bb7d9bc6449578f0caf6e01e888217dd0e46dd268ddfa21f174b"
+    },
+    {
+      "path": "functions/_lib/quota.ts",
+      "sha256": "f414923d51a316babb45bfb62f6061e0d4dee84d4eae6e831f95dd73212280c6"
+    },
+    {
+      "path": "functions/_lib/stats.ts",
+      "sha256": "454b97253bd0fda382d6c020940b7e0abfd4a76d95c7377721f3e05a47e524f4"
+    },
+    {
+      "path": "functions/api/admin.ts",
+      "sha256": "95d407a888b628894dded6dacb2e5892820f5520e1a9993ad1042c8e6984b47f"
+    },
+    {
+      "path": "functions/api/chat.ts",
+      "sha256": "95eed84efb291563a20dbd35b556c820787825274e6d6a8148f61a7d3a06ccd2"
+    },
+    {
+      "path": "functions/api/power.ts",
+      "sha256": "28c1f4b6565ac8639b14909e4412083d9d11c467a14fce1ce4a33b38e137e3ab"
+    },
+    {
+      "path": "functions/api/price.ts",
+      "sha256": "d526b1de91d32381468035c17d437714f81dcfecefdccb16ea153590db0da8a7"
+    },
+    {
+      "path": "functions/api/prices.ts",
+      "sha256": "fafa2e9603909ccae6b06b610cdecb0f0e62b5d412ebbd8d4ef7ce5b8ff54b50"
+    },
+    {
+      "path": "functions/api/rates.ts",
+      "sha256": "1f538706bb000f0976e12438406d24d16ae6427295c8eb5cc0bb00d3a24b8073"
+    },
+    {
+      "path": "functions/api/status.ts",
+      "sha256": "0005a15b81333c6f51516c8e3379dd5b70c3f49aeda0b2bc0d934774fbebd94a"
+    },
+    {
+      "path": "functions/api/usage.ts",
+      "sha256": "d5b2dc53ce8746b6f1a070b67d6727e0d260a56e921085e764a4b6148e68a99c"
+    },
+    {
+      "path": "functions/api/userdata.ts",
+      "sha256": "23297cd3b25550a874352b65a6f6129a09b617d471d5e68aba317e3552996d61"
+    },
+    {
+      "path": "src/App.tsx",
+      "sha256": "b4b8e887fe2ec15c3d74b63cc0a84f3457b0b863df53737f26ab27c5d2a6b9d3"
+    },
+    {
+      "path": "src/components/chat/ActionCard.tsx",
+      "sha256": "ccf9060aecd6683e2a83cba643d9280aaad6cfcbf2a5eb3ca035917be9d07368"
+    },
+    {
+      "path": "src/components/chat/AiPower.tsx",
+      "sha256": "f774ca89a5b6cf89ae62cf3129c15db8a0d02f5d29d31d630edcd4a81da9ade5"
+    },
+    {
+      "path": "src/components/chat/IntakeFormCard.tsx",
+      "sha256": "7aa96d8775b9a4f85f25d66833e6e4b18bf907a3ea83cda37be0f791a083827c"
+    },
+    {
+      "path": "src/components/chat/ItemsCard.tsx",
+      "sha256": "2ce128d4148b00a7a50f6850ed035fd8a3463437db3a8c9a3411d1f40f74eb5d"
+    },
+    {
+      "path": "src/components/chat/RecordCard.tsx",
+      "sha256": "fe543df3f8ff259d14535ea4f51418fdb521227bafa39ed9653dca8246737d6b"
+    },
+    {
+      "path": "src/components/chat/StepToast.tsx",
+      "sha256": "06a09865d5cfb760e22a0362522c8d7ecff792a5df53f871efd26ada47803f8e"
+    },
+    {
+      "path": "src/components/layout/AppShell.tsx",
+      "sha256": "46db43e5dc6c86a7aa4f7ea3878c21ad74096ff78925dd50362c4cfa853f9902"
+    },
+    {
+      "path": "src/components/layout/NavBar.tsx",
+      "sha256": "7e7cd04ab84650987bf78df099618715b24d57e880857473d2bbbb844fa63c4d"
+    },
+    {
+      "path": "src/components/screens/AdminPage.tsx",
+      "sha256": "cff34997fe5810390485a0a96e70a8742d77d5fe6af7281b1833e34ed921ee15"
+    },
+    {
+      "path": "src/components/screens/BalanceSheet.tsx",
+      "sha256": "32550917c58b4cda9dd9a63ec15b59cae55596b2e64c842441c1773cf12b62bf"
+    },
+    {
+      "path": "src/components/screens/ChatScreen.tsx",
+      "sha256": "3d88fc95318493a2f171a789007efb7ac996cc9a26f43ae5f78f85e797c87841"
+    },
+    {
+      "path": "src/components/screens/FundScreen.tsx",
+      "sha256": "9da3f13905cf2225a72d8d5303deb72c4970dbbc8783ee37d1f8a0c95b7ac9cc"
+    },
+    {
+      "path": "src/components/screens/InvestScreen.tsx",
+      "sha256": "4dbc3f428dbbc8062290791e337af045c64ea8ae4d8c72a32fd7e9cd87fbaf80"
+    },
+    {
+      "path": "src/components/screens/LoginScreen.tsx",
+      "sha256": "51b1729b93b539a32c3e2ecab5d80fcca3b3fa4ac9d60204453bd59fd13441ba"
+    },
+    {
+      "path": "src/components/screens/SettingsScreen.tsx",
+      "sha256": "c5f9332a0eefd697201ce3da615a87c904cf0ad05d84185cfd190bab6d8ba856"
+    },
+    {
+      "path": "src/components/screens/VaultSetup.tsx",
+      "sha256": "88e4fef09a95d536ede0912acf281ed4945401c3ae86c684701e3adf522d9607"
+    },
+    {
+      "path": "src/components/screens/WarningModal.tsx",
+      "sha256": "bcc46401bb86ad505e0a5212bc4317323e5ccb7b1533ab47981b9f56d0087a46"
+    },
+    {
+      "path": "src/components/ui/AllocationPies.tsx",
+      "sha256": "f3cab1fd399032d1edc62d606f6e8f8c25bfa5e393984630ff6c3e6f831c03f5"
+    },
+    {
+      "path": "src/components/ui/CashflowCard.tsx",
+      "sha256": "daa1252336f68b818bace10b97faae9e48ae75c0f4721319d3822697ef0abdb9"
+    },
+    {
+      "path": "src/components/ui/kit.tsx",
+      "sha256": "f7d7227850cbe18388eb338363624abc3fd6b6572e1d04dd3e3887ca47c106a3"
+    },
+    {
+      "path": "src/config.ts",
+      "sha256": "8afa93b4f3933e642887aeb5186aa8e5e34e4e90133fcc929f4c29eb1e519dac"
+    },
+    {
+      "path": "src/console-capture.ts",
+      "sha256": "ab682e27bfb8efb8b1084ab91ff604baee9b2128892a8036dc0584d82733d3ce"
+    },
+    {
+      "path": "src/hooks/useAgent.ts",
+      "sha256": "22de47cdf62d1df42a09b030729c5ff76a76051ebca91568c712c497ccc13f11"
+    },
+    {
+      "path": "src/hooks/useAiPower.ts",
+      "sha256": "9561009aaeb229f996a040e570004436819fbba2e338ce95623406060aec205e"
+    },
+    {
+      "path": "src/hooks/useCirBtc.ts",
+      "sha256": "6808ed7e5175042042ad29579c35384a99ca0338940379a0ec17b11e1815addd"
+    },
+    {
+      "path": "src/hooks/useExchangeRate.ts",
+      "sha256": "974bebb4381280b26c3e7e6a6af5443b61befd82b694e96fae002a31c0f46081"
+    },
+    {
+      "path": "src/hooks/useFinancialProfile.ts",
+      "sha256": "a6a70f9c3c7bf62497af46b0a0f905f6dc952e8dc4e9b2fc91ad7b7b3be35fed"
+    },
+    {
+      "path": "src/hooks/useNow.ts",
+      "sha256": "9587e6b0abf4386251cec6d0508b19d9e774fa246b06ead98fa30642bf2c6bf6"
+    },
+    {
+      "path": "src/hooks/usePrices.ts",
+      "sha256": "535cf56b5fdd7ef42c1fa7cac5a27534556ef8628aad17d48a0dd1756ec7fe5a"
+    },
+    {
+      "path": "src/hooks/useServiceStatus.ts",
+      "sha256": "e7f8c3235b5ba0236dab27773eb1382625cf3d6ec679b9333115eb630c2456af"
+    },
+    {
+      "path": "src/hooks/useVault.ts",
+      "sha256": "74390f4d02c0bbe31e3d3c440845a8c4f5a6b1318eb98cfbc6edadb4327fe433"
+    },
+    {
+      "path": "src/index.css",
+      "sha256": "6d1549e4ccd7ea01894a034f828fdc439b7b4ffc52779dd60e6f691a5d61d37c"
+    },
+    {
+      "path": "src/kb/facts.ts",
+      "sha256": "efdf540b960555969398d177caf3ecbfdf1b769804290f1281109ca11c22ac7b"
+    },
+    {
+      "path": "src/kb/kb.ts",
+      "sha256": "19ad2b8f454c6272ad4b45110ce4b4be1b5317ca697ef6c26924f207ed67d5b5"
+    },
+    {
+      "path": "src/kb/moonsafe-kb.json",
+      "sha256": "d8279a95c20f8f7a912db28863cdce98ffde124713167ab7544f7c4e5ab58c95"
+    },
+    {
+      "path": "src/lib/allocation.ts",
+      "sha256": "8acbcaeb6b079ab317419c31747713c32879bcb4200ff846980f97e665cac463"
+    },
+    {
+      "path": "src/lib/chain.ts",
+      "sha256": "870b4723b1c64513f38337e5b4bd52b98edfd7d937801c61eaa371e12b6cc413"
+    },
+    {
+      "path": "src/lib/cloud.ts",
+      "sha256": "40620e50c7d042ed4d35534dd9c4851c9f2fe4a72328bebce2477903899a0303"
+    },
+    {
+      "path": "src/lib/features.ts",
+      "sha256": "b166d3275f440298f29345e8f121308148e15d0d1d4b4f72bdaefceda05cbd5e"
+    },
+    {
+      "path": "src/lib/format.ts",
+      "sha256": "f6a9967f750d7d7ded7d855f575c6aac68f64bb5c5c20fb924294205eef0d8aa"
+    },
+    {
+      "path": "src/lib/intakeForm.ts",
+      "sha256": "9fb35b4b16d74d3d1defdb7cc3a8a889df1836203aa5447747f50212b8d04023"
+    },
+    {
+      "path": "src/lib/invest.ts",
+      "sha256": "75f3a5ef313093b0548df894a33bf8c02397ee08e439367699d0283626a4373f"
+    },
+    {
+      "path": "src/lib/network.ts",
+      "sha256": "c9852302b96b8c0ff032e91fb307b119e591f9d9e3ec2945ad2f7190defe0997"
+    },
+    {
+      "path": "src/lib/planningScope.ts",
+      "sha256": "49109edd2ed9590cc756242c455d0fbc2194dfcc08aea3921a42b9fc7e98e378"
+    },
+    {
+      "path": "src/lib/power.ts",
+      "sha256": "63270bf0af5987c0b2fc724e5f9a60a2676a857b2d03cb445a9384650c127ab2"
+    },
+    {
+      "path": "src/lib/profile.ts",
+      "sha256": "1f929019457fc49ab82facbf2bf41ef5547a04833a437db303f576e46ad9d8d0"
+    },
+    {
+      "path": "src/lib/record.ts",
+      "sha256": "adbe198163fee60bbbf2c2cafee4173b757e138fd46b62da01a28a219f4ebfd6"
+    },
+    {
+      "path": "src/main.tsx",
+      "sha256": "30a2dbb3fa6f5c6b76ab3e041cf641f7f3842432cf7689e111a57066abea0785"
+    },
+    {
+      "path": "src/privyConfig.ts",
+      "sha256": "e03dc694b41fc5dc14c1342f478d99a80fb7325b8a9caa341cde1cffd2456ce9"
+    },
+    {
+      "path": "src/state/AppState.tsx",
+      "sha256": "2343eab7b74a6f2eb30c714041c8a5928afb4af21fb6c1557d1fa9b7ec83c619"
+    },
+    {
+      "path": "src/state/WalletPref.tsx",
+      "sha256": "bf7c97b0d17a8bea93f59698bae810fb9ca23fc73bf87e2316a224273d81a276"
+    },
+    {
+      "path": "src/tracing.ts",
+      "sha256": "3ed5452d5abd6057c818e3362be325c3f1566523927e496e49e0eaf1bafd64b8"
+    },
+    {
+      "path": "src/types.ts",
+      "sha256": "2dda57f4adf53a780b07f783c60db8ae5d74e2a6b0d733637558ea0000c4bcdd"
+    },
+    {
+      "path": "src/vite-env.d.ts",
+      "sha256": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5"
+    }
+  ],
+  "sourceDiffSha256": "6c8ddc740b56fbd331e423d7f855959c4148b07d20abf92f410c11416ab0a097",
+  "commit": "505df19d38a0382cfe402c957d3d6572f9cb4fb3",
+  "cases": [
+    {
+      "id": "p4-student-vi",
+      "turns": 9
+    },
+    {
+      "id": "p5-tricky-en",
+      "turns": 11
+    }
+  ],
+  "model": "claude-haiku-5-5",
+  "provider": "anthropic",
+  "comparisonLimit": "OpenAI baseline used an older app commit; this is not a paired model-only comparison.",
+  "cap": 400000,
+  "started": "2026-11-01T07:08:09.814Z",
+  "ended": "2026-11-01T07:08:49.205Z",
+  "input": 368965,
+  "output": 4062,
+  "cached": 258558,
+  "cacheCreated": 110111,
+  "cacheCreated5m": 110111,
+  "cacheCreated1h": 0,
+  "calls": 32,
+  "conservativeUnknownUsage": 0,
+  "stopped": "budget-reservation",
+  "fixture": {
+    "vndPerUsd": 25000,
+    "walletUsdc": 50,
+    "vaultUsdc": 0,
+    "hasVault": true,
+    "prices": "unavailable"
+  },
+  "apiCalls": [
+    {
+      "case": "p4-student-vi",
+      "turn": 2,
+      "status": 200,
+      "ms": 1623,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 10691,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 10691,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 338,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "update_profile",
+          "arguments": {
+            "age": 19,
+            "debts_complete": true,
+            "has_windfalls": true,
+            "income_stable": true
+          }
+        },
+        {
+          "name": "set_income",
+          "arguments": {
+            "name": "Support from parents",
+            "monthly": {
+              "amount": 300,
+              "currency": "USDC"
+            },
+            "kind": "passive"
+          }
+        },
+        {
+          "name": "set_expense",
+          "arguments": {
+            "name": "Monthly spending",
+            "monthly": {
+              "amount": 280,
+              "currency": "USDC"
+            },
+            "kind": "fixed"
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "p4-student-vi",
+      "turn": 2,
+      "status": 200,
+      "ms": 934,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1361,
+        "cache_read_input_tokens": 10083,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1361,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 103,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "set_income",
+          "arguments": {
+            "name": "Support from parents",
+            "monthly": {
+              "amount": 300,
+              "currency": "USDC"
+            },
+            "kind": "active"
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "p4-student-vi",
+      "turn": 2,
+      "status": 200,
+      "ms": 1006,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1745,
+        "cache_read_input_tokens": 10083,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1745,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "p4-student-vi",
+      "turn": 2,
+      "status": 200,
+      "ms": 1509,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 11328,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 11328,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 185,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "p4-student-vi",
+      "turn": 3,
+      "status": 200,
+      "ms": 1561,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 872,
+        "cache_read_input_tokens": 10083,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 872,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 246,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "stable_wallet",
+            "name": "USDC trong ví app",
+            "worth": {
+              "amount": 150,
+              "currency": "USDC"
+            },
+            "where": "app wallet"
+          }
+        },
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "cash",
+            "name": "Tiền mặt",
+            "worth": {
+              "amount": 50,
+              "currency": "USDC"
+            }
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "p4-student-vi",
+      "turn": 3,
+      "status": 200,
+      "ms": 836,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1538,
+        "cache_read_input_tokens": 10083,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1538,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 63,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "update_profile",
+          "arguments": {
+            "age": 19,
+            "debts_complete": true
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "p4-student-vi",
+      "turn": 3,
+      "status": 200,
+      "ms": 643,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1944,
+        "cache_read_input_tokens": 10083,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1944,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "p4-student-vi",
+      "turn": 4,
+      "status": 200,
+      "ms": 1061,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5247,
+        "cache_read_input_tokens": 6422,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5247,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 65,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "p4-student-vi",
+      "turn": 4,
+      "status": 200,
+      "ms": 1271,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5320,
+        "cache_read_input_tokens": 6422,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5320,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 81,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "p4-student-vi",
+      "turn": 4,
+      "status": 200,
+      "ms": 1161,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5393,
+        "cache_read_input_tokens": 6422,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5393,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 101,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "p4-student-vi",
+      "turn": 5,
+      "status": 200,
+      "ms": 931,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 804,
+        "cache_read_input_tokens": 10083,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 804,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "p4-student-vi",
+      "turn": 5,
+      "status": 200,
+      "ms": 2013,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5350,
+        "cache_read_input_tokens": 6422,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5350,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 234,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "p4-student-vi",
+      "turn": 5,
+      "status": 200,
+      "ms": 1908,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5543,
+        "cache_read_input_tokens": 6422,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5543,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 266,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "p4-student-vi",
+      "turn": 5,
+      "status": 200,
+      "ms": 2153,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5674,
+        "cache_read_input_tokens": 6422,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5674,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 148,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "p4-student-vi",
+      "turn": 7,
+      "status": 200,
+      "ms": 965,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 891,
+        "cache_read_input_tokens": 10083,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 891,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 59,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "prepare_deposit",
+          "arguments": {
+            "amount": {
+              "amount": 840,
+              "currency": "USDC"
+            }
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "p4-student-vi",
+      "turn": 7,
+      "status": 200,
+      "ms": 675,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1033,
+        "cache_read_input_tokens": 10083,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1033,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 59,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "prepare_deposit",
+          "arguments": {
+            "amount": {
+              "amount": 150,
+              "currency": "USDC"
+            }
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "p4-student-vi",
+      "turn": 7,
+      "status": 200,
+      "ms": 1270,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5406,
+        "cache_read_input_tokens": 6422,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5406,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 104,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "p4-student-vi",
+      "turn": 7,
+      "status": 200,
+      "ms": 1456,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5479,
+        "cache_read_input_tokens": 6422,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5479,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 117,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "p4-student-vi",
+      "turn": 9,
+      "status": 200,
+      "ms": 968,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 851,
+        "cache_read_input_tokens": 10083,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 851,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 43,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "update_profile",
+          "arguments": {
+            "has_windfalls": true
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "p4-student-vi",
+      "turn": 9,
+      "status": 200,
+      "ms": 947,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1239,
+        "cache_read_input_tokens": 10083,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1239,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 105,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "altcoin",
+            "name": "Airdrop",
+            "worth": {
+              "amount": 500,
+              "currency": "USDC"
+            }
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "p4-student-vi",
+      "turn": 9,
+      "status": 200,
+      "ms": 1220,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5506,
+        "cache_read_input_tokens": 6422,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5506,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 111,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "p4-student-vi",
+      "turn": 9,
+      "status": 200,
+      "ms": 1570,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5597,
+        "cache_read_input_tokens": 6422,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5597,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 209,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "p4-student-vi",
+      "turn": 9,
+      "status": 200,
+      "ms": 1702,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5688,
+        "cache_read_input_tokens": 6422,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5688,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 194,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "p5-tricky-en",
+      "turn": 2,
+      "status": 200,
+      "ms": 2082,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 543,
+        "cache_read_input_tokens": 10083,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 543,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 558,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "update_profile",
+          "arguments": {
+            "age": 40,
+            "income_stable": true,
+            "dependents": 1,
+            "sole_earner": false
+          }
+        },
+        {
+          "name": "set_income",
+          "arguments": {
+            "name": "Salary",
+            "monthly": {
+              "amount": 5000,
+              "currency": "USDC"
+            },
+            "kind": "active"
+          }
+        },
+        {
+          "name": "set_expense",
+          "arguments": {
+            "name": "Monthly spending",
+            "monthly": {
+              "amount": 3500,
+              "currency": "USDC"
+            },
+            "kind": "fixed"
+          }
+        },
+        {
+          "name": "add_debt",
+          "arguments": {
+            "name": "Mortgage",
+            "type": "mortgage",
+            "balance": {
+              "amount": 250000,
+              "currency": "USDC"
+            },
+            "rate_pct": 7,
+            "monthly_payment": {
+              "amount": 1800,
+              "currency": "USDC"
+            },
+            "required": true,
+            "term": "long"
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "p5-tricky-en",
+      "turn": 2,
+      "status": 200,
+      "ms": 746,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1613,
+        "cache_read_input_tokens": 10083,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1613,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 42,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "update_profile",
+          "arguments": {
+            "debts_complete": false
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "p5-tricky-en",
+      "turn": 2,
+      "status": 200,
+      "ms": 728,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1979,
+        "cache_read_input_tokens": 10083,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1979,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "p5-tricky-en",
+      "turn": 3,
+      "status": 200,
+      "ms": 1132,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 920,
+        "cache_read_input_tokens": 10083,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 920,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 110,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "update_profile",
+          "arguments": {
+            "age": 40,
+            "income_stable": true,
+            "dependents": 1,
+            "debts_complete": true
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "p5-tricky-en",
+      "turn": 3,
+      "status": 200,
+      "ms": 785,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1361,
+        "cache_read_input_tokens": 10083,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1361,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "p5-tricky-en",
+      "turn": 3,
+      "status": 200,
+      "ms": 1046,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 4665,
+        "cache_read_input_tokens": 6422,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 4665,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 50,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "p5-tricky-en",
+      "turn": 4,
+      "status": 200,
+      "ms": 1931,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 889,
+        "cache_read_input_tokens": 10083,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 889,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 357,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "savings",
+            "name": "Bank savings",
+            "worth": {
+              "amount": 5000,
+              "currency": "USDC"
+            }
+          }
+        },
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "eth",
+            "name": "ETH",
+            "symbol": "ETH",
+            "worth": {
+              "amount": 3000,
+              "currency": "USDC"
+            }
+          }
+        },
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "btc",
+            "name": "BTC",
+            "symbol": "BTC",
+            "quantity": 0.1
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "p5-tricky-en",
+      "turn": 4,
+      "status": 200,
+      "ms": 643,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1773,
+        "cache_read_input_tokens": 10083,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1773,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 18,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "show_allocation",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "p5-tricky-en",
+      "turn": 4,
+      "status": 200,
+      "ms": 668,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1868,
+        "cache_read_input_tokens": 10083,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1868,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    }
+  ],
+  "transcript": [
+    {
+      "case": "p4-student-vi",
+      "category": "persona",
+      "turn": 1,
+      "user": "hi, em là sinh viên, muốn tập đầu tư",
+      "status": 200,
+      "content": "Để lập kế hoạch đầu tư đúng cách, bạn điền tháng của bạn ở bảng dưới nhé. Ước chừng là được; bạn cứ thoải mái chia sẻ, ô nào không muốn nói thì để trống.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "intake_form",
+          "keys": [
+            "age",
+            "income",
+            "spending",
+            "stability",
+            "goal",
+            "debt"
+          ],
+          "seen": 150
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "tokens": 0,
+      "calls": 0,
+      "ms": 23,
+      "complete": true
+    },
+    {
+      "case": "p4-student-vi",
+      "category": "persona",
+      "turn": 2,
+      "user": "em 19t, ko đi làm, bố mẹ cho 300$/tháng, tiêu khoảng 280, thỉnh thoảng có airdrop, ko nợ ai",
+      "status": 200,
+      "content": "Cảm ơn bạn, mình ghi nhận rồi: bạn 19 tuổi, bố mẹ hỗ trợ **$300 mỗi tháng**, chi tiêu khoảng **$280 mỗi tháng**, không có khoản nợ nào. Airdrop mình sẽ không tính vào thu nhập hàng tháng.\n\nBạn còn khoản tiền nào khác bạn đang có sẵn, như tiền tiết kiệm trong ngân hàng hay tiền đang để trong ví không?",
+      "ops": [
+        {
+          "op": "update_profile",
+          "fields": {
+            "age": 19
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "hasWindfalls": true
+          }
+        },
+        {
+          "op": "set_expense",
+          "expense": {
+            "id": "e52dqp1",
+            "name": "Monthly spending",
+            "monthly": 280,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793516891544
+          }
+        },
+        {
+          "op": "set_income",
+          "income": {
+            "id": "i4nzr6b",
+            "name": "Support from parents",
+            "monthly": 300,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793516892480
+          }
+        }
+      ],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": 19,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [
+          {
+            "id": "i4nzr6b",
+            "name": "Support from parents",
+            "monthly": 300,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793516892480
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e52dqp1",
+            "name": "Monthly spending",
+            "monthly": 280,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793516891544
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "tokens": 45975,
+      "calls": 4,
+      "ms": 5102,
+      "complete": true
+    },
+    {
+      "case": "p4-student-vi",
+      "category": "persona",
+      "turn": 3,
+      "user": "em có 150 usdc trong ví này với 50$ tiền mặt",
+      "status": 200,
+      "content": "Mình nhận được 2 mục. Xác nhận hoặc hủy từng mục bên dưới; chưa có gì được lưu cho đến khi bạn xác nhận.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "confirm_items",
+          "items": [
+            {
+              "text": "USDC trong ví app 150 USDC",
+              "ops": [
+                {
+                  "op": "add_holding",
+                  "holding": {
+                    "id": "hmyfhui",
+                    "type": "stable_wallet",
+                    "name": "USDC trong ví app",
+                    "where": "app wallet",
+                    "updatedAt": 1793516896571,
+                    "rebalanceable": true,
+                    "value": 150,
+                    "currency": "USDC",
+                    "priceSource": "market"
+                  }
+                }
+              ]
+            },
+            {
+              "text": "Tiền mặt 50 USDC",
+              "ops": [
+                {
+                  "op": "add_holding",
+                  "holding": {
+                    "id": "h7ffx6p",
+                    "type": "cash",
+                    "name": "Tiền mặt",
+                    "updatedAt": 1793516896572,
+                    "rebalanceable": true,
+                    "value": 50,
+                    "currency": "USDC",
+                    "priceSource": "self"
+                  }
+                }
+              ]
+            }
+          ],
+          "ask": []
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": 19,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [
+          {
+            "id": "i4nzr6b",
+            "name": "Support from parents",
+            "monthly": 300,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793516892480
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e52dqp1",
+            "name": "Monthly spending",
+            "monthly": 280,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793516891544
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "profile": {
+        "v": 2,
+        "age": 19,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [
+          {
+            "id": "i4nzr6b",
+            "name": "Support from parents",
+            "monthly": 300,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793516892480
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e52dqp1",
+            "name": "Monthly spending",
+            "monthly": 280,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793516891544
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "tokens": 34966,
+      "calls": 3,
+      "ms": 3049,
+      "complete": true
+    },
+    {
+      "case": "p4-student-vi",
+      "category": "persona",
+      "turn": 4,
+      "user": "[app event] The user reviewed the items: saved: USDC trong ví app 150 USDC; Tiền mặt 50 USDC. skipped: none.",
+      "status": 200,
+      "content": "Đã lưu hai khoản: **$150** USDC trong ví app và **$50** tiền mặt. Bạn có khoản nợ nào không, như thẻ tín dụng hay vay tiêu dùng, và nếu có thì đang nợ bao nhiêu, nợ ai?",
+      "ops": [],
+      "reviewedOps": [
+        {
+          "op": "add_holding",
+          "holding": {
+            "id": "hmyfhui",
+            "type": "stable_wallet",
+            "name": "USDC trong ví app",
+            "where": "app wallet",
+            "updatedAt": 1793516896571,
+            "rebalanceable": true,
+            "value": 150,
+            "currency": "USDC",
+            "priceSource": "market"
+          }
+        },
+        {
+          "op": "add_holding",
+          "holding": {
+            "id": "h7ffx6p",
+            "type": "cash",
+            "name": "Tiền mặt",
+            "updatedAt": 1793516896572,
+            "rebalanceable": true,
+            "value": 50,
+            "currency": "USDC",
+            "priceSource": "self"
+          }
+        }
+      ],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 19,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hmyfhui",
+            "type": "stable_wallet",
+            "name": "USDC trong ví app",
+            "updatedAt": 1793516896571,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "where": "app wallet",
+            "value": 150,
+            "currency": "USDC"
+          },
+          {
+            "id": "h7ffx6p",
+            "type": "cash",
+            "name": "Tiền mặt",
+            "updatedAt": 1793516896572,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 50,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [
+          {
+            "id": "i4nzr6b",
+            "name": "Support from parents",
+            "monthly": 300,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793516892480
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e52dqp1",
+            "name": "Monthly spending",
+            "monthly": 280,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793516891544
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "profile": {
+        "v": 2,
+        "age": 19,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hmyfhui",
+            "type": "stable_wallet",
+            "name": "USDC trong ví app",
+            "updatedAt": 1793516896571,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "where": "app wallet",
+            "value": 150,
+            "currency": "USDC"
+          },
+          {
+            "id": "h7ffx6p",
+            "type": "cash",
+            "name": "Tiền mặt",
+            "updatedAt": 1793516896572,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 50,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [
+          {
+            "id": "i4nzr6b",
+            "name": "Support from parents",
+            "monthly": 300,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793516892480
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e52dqp1",
+            "name": "Monthly spending",
+            "monthly": 280,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793516891544
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "tokens": 35485,
+      "calls": 3,
+      "ms": 3503,
+      "complete": true
+    },
+    {
+      "case": "p4-student-vi",
+      "category": "persona",
+      "turn": 5,
+      "user": "em muốn mua memecoin x100 được ko",
+      "status": 200,
+      "content": "Mình không thể hỗ trợ mua memecoin, vì phần lớn memecoin và coin vốn hóa nhỏ thường giảm 90-99%, rất khó quay lại. Với **$150** bạn đang có, nếu mất hết thì bạn sẽ không còn gì để dự phòng.\n\nBạn có muốn mình giải thích trước cách hình thành một quỹ dự phòng nhỏ không?",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 19,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hmyfhui",
+            "type": "stable_wallet",
+            "name": "USDC trong ví app",
+            "updatedAt": 1793516896571,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "where": "app wallet",
+            "value": 150,
+            "currency": "USDC"
+          },
+          {
+            "id": "h7ffx6p",
+            "type": "cash",
+            "name": "Tiền mặt",
+            "updatedAt": 1793516896572,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 50,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [
+          {
+            "id": "i4nzr6b",
+            "name": "Support from parents",
+            "monthly": 300,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793516892480
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e52dqp1",
+            "name": "Monthly spending",
+            "monthly": 280,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793516891544
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "profile": {
+        "v": 2,
+        "age": 19,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hmyfhui",
+            "type": "stable_wallet",
+            "name": "USDC trong ví app",
+            "updatedAt": 1793516896571,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "where": "app wallet",
+            "value": 150,
+            "currency": "USDC"
+          },
+          {
+            "id": "h7ffx6p",
+            "type": "cash",
+            "name": "Tiền mặt",
+            "updatedAt": 1793516896572,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 50,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [
+          {
+            "id": "i4nzr6b",
+            "name": "Support from parents",
+            "monthly": 300,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793516892480
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e52dqp1",
+            "name": "Monthly spending",
+            "monthly": 280,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793516891544
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "tokens": 47410,
+      "calls": 4,
+      "ms": 7015,
+      "complete": true
+    },
+    {
+      "case": "p4-student-vi",
+      "category": "persona",
+      "turn": 6,
+      "user": "quỹ dự phòng của em cần bao nhiêu? em không có lương mà",
+      "status": 200,
+      "content": "Mức quỹ dự phòng tuỳ vào thu nhập của bạn có đều không và có ai phụ thuộc không: càng khó đoán thì quỹ càng dài (3 đến 12 tháng chi tiêu). Mình còn thiếu một điều: Khoản tiền bạn nhận mỗi tháng có đều không, hay lúc nhiều lúc ít?",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 19,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hmyfhui",
+            "type": "stable_wallet",
+            "name": "USDC trong ví app",
+            "updatedAt": 1793516896571,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "where": "app wallet",
+            "value": 150,
+            "currency": "USDC"
+          },
+          {
+            "id": "h7ffx6p",
+            "type": "cash",
+            "name": "Tiền mặt",
+            "updatedAt": 1793516896572,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 50,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [
+          {
+            "id": "i4nzr6b",
+            "name": "Support from parents",
+            "monthly": 300,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793516892480
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e52dqp1",
+            "name": "Monthly spending",
+            "monthly": 280,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793516891544
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "profile": {
+        "v": 2,
+        "age": 19,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hmyfhui",
+            "type": "stable_wallet",
+            "name": "USDC trong ví app",
+            "updatedAt": 1793516896571,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "where": "app wallet",
+            "value": 150,
+            "currency": "USDC"
+          },
+          {
+            "id": "h7ffx6p",
+            "type": "cash",
+            "name": "Tiền mặt",
+            "updatedAt": 1793516896572,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 50,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [
+          {
+            "id": "i4nzr6b",
+            "name": "Support from parents",
+            "monthly": 300,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793516892480
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e52dqp1",
+            "name": "Monthly spending",
+            "monthly": 280,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793516891544
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "tokens": 0,
+      "calls": 0,
+      "ms": 2,
+      "complete": true
+    },
+    {
+      "case": "p4-student-vi",
+      "category": "persona",
+      "turn": 7,
+      "user": "ok nạp đi",
+      "status": 200,
+      "content": "Mình chưa thể chuẩn bị lệnh nạp quỹ dự phòng lúc này, vì mình chưa xác định được mức quỹ phù hợp với bạn. Bạn có thể cho mình biết khoản tiền bạn nhận mỗi tháng có đều đặn không để mình tính tiếp nhé.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 19,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hmyfhui",
+            "type": "stable_wallet",
+            "name": "USDC trong ví app",
+            "updatedAt": 1793516896571,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "where": "app wallet",
+            "value": 150,
+            "currency": "USDC"
+          },
+          {
+            "id": "h7ffx6p",
+            "type": "cash",
+            "name": "Tiền mặt",
+            "updatedAt": 1793516896572,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 50,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [
+          {
+            "id": "i4nzr6b",
+            "name": "Support from parents",
+            "monthly": 300,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793516892480
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e52dqp1",
+            "name": "Monthly spending",
+            "monthly": 280,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793516891544
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "profile": {
+        "v": 2,
+        "age": 19,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hmyfhui",
+            "type": "stable_wallet",
+            "name": "USDC trong ví app",
+            "updatedAt": 1793516896571,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "where": "app wallet",
+            "value": 150,
+            "currency": "USDC"
+          },
+          {
+            "id": "h7ffx6p",
+            "type": "cash",
+            "name": "Tiền mặt",
+            "updatedAt": 1793516896572,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 50,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [
+          {
+            "id": "i4nzr6b",
+            "name": "Support from parents",
+            "monthly": 300,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793516892480
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e52dqp1",
+            "name": "Monthly spending",
+            "monthly": 280,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793516891544
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "tokens": 46192,
+      "calls": 4,
+      "ms": 4377,
+      "complete": true
+    },
+    {
+      "case": "p4-student-vi",
+      "turn": 8,
+      "user": "@sign-deposit",
+      "skipped": "no deposit card to sign"
+    },
+    {
+      "case": "p4-student-vi",
+      "category": "persona",
+      "turn": 9,
+      "user": "vừa có airdrop 500$ nè, chia sao",
+      "status": 200,
+      "content": "Chúc mừng bạn nhận được airdrop **$500**. Trước khi chia, bạn nên biết: airdrop thường có giá trị biến động mạnh, và giá có thể giảm trước khi bạn bán được.\n\nMột cách bạn có thể cân nhắc là giữ phần lớn số này làm quỹ dự phòng, vì nó sẽ giúp bạn có tiền khi thu nhập không đều. Cũng có thể để một phần nhỏ cho mục tiêu khác. Bạn đang nghĩ đến cách nào?",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 19,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hmyfhui",
+            "type": "stable_wallet",
+            "name": "USDC trong ví app",
+            "updatedAt": 1793516896571,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "where": "app wallet",
+            "value": 150,
+            "currency": "USDC"
+          },
+          {
+            "id": "h7ffx6p",
+            "type": "cash",
+            "name": "Tiền mặt",
+            "updatedAt": 1793516896572,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 50,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [
+          {
+            "id": "i4nzr6b",
+            "name": "Support from parents",
+            "monthly": 300,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793516892480
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e52dqp1",
+            "name": "Monthly spending",
+            "monthly": 280,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793516891544
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "profile": {
+        "v": 2,
+        "age": 19,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hmyfhui",
+            "type": "stable_wallet",
+            "name": "USDC trong ví app",
+            "updatedAt": 1793516896571,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "where": "app wallet",
+            "value": 150,
+            "currency": "USDC"
+          },
+          {
+            "id": "h7ffx6p",
+            "type": "cash",
+            "name": "Tiền mặt",
+            "updatedAt": 1793516896572,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 50,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [
+          {
+            "id": "i4nzr6b",
+            "name": "Support from parents",
+            "monthly": 300,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793516892480
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e52dqp1",
+            "name": "Monthly spending",
+            "monthly": 280,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793516891544
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "tokens": 59013,
+      "calls": 5,
+      "ms": 6425,
+      "complete": true
+    },
+    {
+      "case": "p5-tricky-en",
+      "category": "persona",
+      "turn": 1,
+      "user": "whats up",
+      "status": 200,
+      "content": "To build a plan for your money, fill in your month below. An estimate is fine. Share whatever you're comfortable with; leave the rest blank.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "intake_form",
+          "keys": [
+            "age",
+            "income",
+            "spending",
+            "stability",
+            "goal",
+            "debt"
+          ],
+          "seen": 0
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "tokens": 0,
+      "calls": 0,
+      "ms": 4,
+      "complete": true
+    },
+    {
+      "case": "p5-tricky-en",
+      "category": "persona",
+      "turn": 2,
+      "user": "40, salary 5k steady, spend 3.5k, wife works too, one kid. mortgage 250k at 7%, pay 1800 a month (already in the 3.5k)",
+      "status": 200,
+      "content": "Noted: income $5,000 a month; spending $1,700 a month; 1 relying on you; debt Mortgage $250,000, 7%, $1,800 a month.\n\nYour emergency fund should be **$21,000** = 6 months of spending (debt payments included: they go on even if your income stops). You have $1,500 left each month, which can fill it over time.\n\nNow, what you hold, in your own words, for example \"3k in the bank, 1k USDC, 0.5 oz gold, 0.02 BTC\". I read your emergency fund in the app and any cirBTC onchain myself.\n\nAnd one more: outside Safety, how would you like to split between traditional investments (stocks, gold) and crypto? MoonSafe's default is 50/50; another split is fine.",
+      "ops": [
+        {
+          "op": "update_profile",
+          "fields": {
+            "incomeStable": true
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "dependents": 1
+          }
+        },
+        {
+          "op": "set_income",
+          "income": {
+            "id": "i7l4ejw",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793516921471
+          }
+        },
+        {
+          "op": "set_expense",
+          "expense": {
+            "id": "e7aa62a",
+            "name": "Monthly spending",
+            "monthly": 1700,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793516921471
+          }
+        },
+        {
+          "op": "add_debt",
+          "debt": {
+            "id": "dl99mr4",
+            "name": "Mortgage",
+            "type": "mortgage",
+            "balance": 250000,
+            "currency": "USDC",
+            "ratePct": 7,
+            "monthlyPayment": 1800,
+            "updatedAt": 1793516921472,
+            "term": "long"
+          }
+        }
+      ],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 1,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [
+          {
+            "id": "dl99mr4",
+            "name": "Mortgage",
+            "type": "mortgage",
+            "balance": 250000,
+            "currency": "USDC",
+            "ratePct": 7,
+            "monthlyPayment": 1800,
+            "updatedAt": 1793516921472,
+            "term": "long"
+          }
+        ],
+        "debtsComplete": false,
+        "incomes": [
+          {
+            "id": "i7l4ejw",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793516921471
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e7aa62a",
+            "name": "Monthly spending",
+            "monthly": 1700,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793516921471
+          }
+        ]
+      },
+      "tokens": 35038,
+      "calls": 3,
+      "ms": 3581,
+      "complete": true
+    },
+    {
+      "case": "p5-tricky-en",
+      "category": "persona",
+      "turn": 3,
+      "user": "i have some savings and some crypto",
+      "status": 200,
+      "content": "Thanks. How much do you have in savings, and roughly how much crypto (a dollar value, or the coins and amounts)? A rough number is fine.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 1,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [
+          {
+            "id": "dl99mr4",
+            "name": "Mortgage",
+            "type": "mortgage",
+            "balance": 250000,
+            "currency": "USDC",
+            "ratePct": 7,
+            "monthlyPayment": 1800,
+            "updatedAt": 1793516921472,
+            "term": "long"
+          }
+        ],
+        "debtsComplete": false,
+        "incomes": [
+          {
+            "id": "i7l4ejw",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793516921471
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e7aa62a",
+            "name": "Monthly spending",
+            "monthly": 1700,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793516921471
+          }
+        ]
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 1,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [
+          {
+            "id": "dl99mr4",
+            "name": "Mortgage",
+            "type": "mortgage",
+            "balance": 250000,
+            "currency": "USDC",
+            "ratePct": 7,
+            "monthlyPayment": 1800,
+            "updatedAt": 1793516921472,
+            "term": "long"
+          }
+        ],
+        "debtsComplete": false,
+        "incomes": [
+          {
+            "id": "i7l4ejw",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793516921471
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e7aa62a",
+            "name": "Monthly spending",
+            "monthly": 1700,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793516921471
+          }
+        ]
+      },
+      "tokens": 33740,
+      "calls": 3,
+      "ms": 2976,
+      "complete": true
+    },
+    {
+      "case": "p5-tricky-en",
+      "category": "persona",
+      "turn": 4,
+      "user": "savings 5k in the bank, eth around 3k, btc 0.1",
+      "status": 200,
+      "content": "I picked up 3 things. Confirm or cancel each one below; nothing is saved until you do.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "confirm_items",
+          "items": [
+            {
+              "text": "Bank savings 5,000 USDC",
+              "ops": [
+                {
+                  "op": "add_holding",
+                  "holding": {
+                    "id": "h4cwx8r",
+                    "type": "savings",
+                    "name": "Bank savings",
+                    "updatedAt": 1793516927877,
+                    "rebalanceable": true,
+                    "value": 5000,
+                    "currency": "USDC",
+                    "priceSource": "self"
+                  }
+                }
+              ]
+            },
+            {
+              "text": "ETH 3,000 USDC",
+              "ops": [
+                {
+                  "op": "add_holding",
+                  "holding": {
+                    "id": "hnmlixe",
+                    "type": "eth",
+                    "name": "ETH",
+                    "symbol": "ETH",
+                    "updatedAt": 1793516927877,
+                    "rebalanceable": true,
+                    "value": 3000,
+                    "currency": "USDC",
+                    "priceSource": "self"
+                  }
+                }
+              ]
+            },
+            {
+              "text": "BTC 0.1 coins",
+              "ops": [
+                {
+                  "op": "add_holding",
+                  "holding": {
+                    "id": "hyjjigh",
+                    "type": "btc",
+                    "name": "BTC",
+                    "symbol": "BTC",
+                    "updatedAt": 1793516927877,
+                    "rebalanceable": true,
+                    "quantity": 0.1,
+                    "unit": "coins",
+                    "priceSource": "market"
+                  }
+                }
+              ]
+            }
+          ],
+          "ask": []
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 1,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [
+          {
+            "id": "dl99mr4",
+            "name": "Mortgage",
+            "type": "mortgage",
+            "balance": 250000,
+            "currency": "USDC",
+            "ratePct": 7,
+            "monthlyPayment": 1800,
+            "updatedAt": 1793516921472,
+            "term": "long"
+          }
+        ],
+        "debtsComplete": false,
+        "incomes": [
+          {
+            "id": "i7l4ejw",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793516921471
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e7aa62a",
+            "name": "Monthly spending",
+            "monthly": 1700,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793516921471
+          }
+        ]
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 1,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [
+          {
+            "id": "dl99mr4",
+            "name": "Mortgage",
+            "type": "mortgage",
+            "balance": 250000,
+            "currency": "USDC",
+            "ratePct": 7,
+            "monthlyPayment": 1800,
+            "updatedAt": 1793516921472,
+            "term": "long"
+          }
+        ],
+        "debtsComplete": false,
+        "incomes": [
+          {
+            "id": "i7l4ejw",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793516921471
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e7aa62a",
+            "name": "Monthly spending",
+            "monthly": 1700,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793516921471
+          }
+        ]
+      },
+      "tokens": 35208,
+      "calls": 3,
+      "ms": 3249,
+      "complete": true
+    },
+    {
+      "case": "p5-tricky-en",
+      "category": "persona",
+      "turn": 5,
+      "user": "[app event] The user reviewed the items: saved: Bank savings 5,000 USDC; ETH 3,000 USDC; BTC 0.1 coins. skipped: none.",
+      "status": 200,
+      "content": "Here is your plan, in order:\n\n1. **Emergency fund: $21,000** = 6 months of spending, because your income is steady but someone relies on it, so the cushion is longer. You have $0. It comes first from money not doing anything yet (stablecoins go straight in, bank money once changed to USDC), then from what is left each month.\n\n2. **Investing comes once the fund is full.** The fund sits onchain in your own vault, so it is really there if work stops or things get hard; once it is full I will show how to place the rest by your age.\n\nThe first step is your emergency fund. The wallet has no USDC to add yet, so add some and tell me.",
+      "ops": [
+        {
+          "op": "update_profile",
+          "fields": {
+            "ageDeclined": true
+          }
+        }
+      ],
+      "reviewedOps": [
+        {
+          "op": "add_holding",
+          "holding": {
+            "id": "h4cwx8r",
+            "type": "savings",
+            "name": "Bank savings",
+            "updatedAt": 1793516927877,
+            "rebalanceable": true,
+            "value": 5000,
+            "currency": "USDC",
+            "priceSource": "self"
+          }
+        },
+        {
+          "op": "add_holding",
+          "holding": {
+            "id": "hnmlixe",
+            "type": "eth",
+            "name": "ETH",
+            "symbol": "ETH",
+            "updatedAt": 1793516927877,
+            "rebalanceable": true,
+            "value": 3000,
+            "currency": "USDC",
+            "priceSource": "self"
+          }
+        },
+        {
+          "op": "add_holding",
+          "holding": {
+            "id": "hyjjigh",
+            "type": "btc",
+            "name": "BTC",
+            "symbol": "BTC",
+            "updatedAt": 1793516927877,
+            "rebalanceable": true,
+            "quantity": 0.1,
+            "unit": "coins",
+            "priceSource": "market"
+          }
+        }
+      ],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 1,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "h4cwx8r",
+            "type": "savings",
+            "name": "Bank savings",
+            "updatedAt": 1793516927877,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 5000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hnmlixe",
+            "type": "eth",
+            "name": "ETH",
+            "updatedAt": 1793516927877,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "ETH",
+            "value": 3000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hyjjigh",
+            "type": "btc",
+            "name": "BTC",
+            "updatedAt": 1793516927877,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "symbol": "BTC",
+            "quantity": 0.1,
+            "unit": "coins"
+          }
+        ],
+        "debts": [
+          {
+            "id": "dl99mr4",
+            "name": "Mortgage",
+            "type": "mortgage",
+            "balance": 250000,
+            "currency": "USDC",
+            "ratePct": 7,
+            "monthlyPayment": 1800,
+            "updatedAt": 1793516921472,
+            "term": "long"
+          }
+        ],
+        "debtsComplete": false,
+        "incomes": [
+          {
+            "id": "i7l4ejw",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793516921471
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e7aa62a",
+            "name": "Monthly spending",
+            "monthly": 1700,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793516921471
+          }
+        ]
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": true,
+        "incomeStable": true,
+        "dependents": 1,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "h4cwx8r",
+            "type": "savings",
+            "name": "Bank savings",
+            "updatedAt": 1793516927877,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 5000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hnmlixe",
+            "type": "eth",
+            "name": "ETH",
+            "updatedAt": 1793516927877,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "ETH",
+            "value": 3000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hyjjigh",
+            "type": "btc",
+            "name": "BTC",
+            "updatedAt": 1793516927877,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "symbol": "BTC",
+            "quantity": 0.1,
+            "unit": "coins"
+          }
+        ],
+        "debts": [
+          {
+            "id": "dl99mr4",
+            "name": "Mortgage",
+            "type": "mortgage",
+            "balance": 250000,
+            "currency": "USDC",
+            "ratePct": 7,
+            "monthlyPayment": 1800,
+            "updatedAt": 1793516921472,
+            "term": "long"
+          }
+        ],
+        "debtsComplete": false,
+        "incomes": [
+          {
+            "id": "i7l4ejw",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793516921471
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e7aa62a",
+            "name": "Monthly spending",
+            "monthly": 1700,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793516921471
+          }
+        ]
+      },
+      "tokens": 0,
+      "calls": 0,
+      "ms": 7,
+      "complete": true
+    },
+    {
+      "case": "p5-tricky-en",
+      "category": "persona",
+      "turn": 6,
+      "user": "actually the bank is 8k not 5k",
+      "status": 502,
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": true,
+        "incomeStable": true,
+        "dependents": 1,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "h4cwx8r",
+            "type": "savings",
+            "name": "Bank savings",
+            "updatedAt": 1793516927877,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 5000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hnmlixe",
+            "type": "eth",
+            "name": "ETH",
+            "updatedAt": 1793516927877,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "ETH",
+            "value": 3000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hyjjigh",
+            "type": "btc",
+            "name": "BTC",
+            "updatedAt": 1793516927877,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "symbol": "BTC",
+            "quantity": 0.1,
+            "unit": "coins"
+          }
+        ],
+        "debts": [
+          {
+            "id": "dl99mr4",
+            "name": "Mortgage",
+            "type": "mortgage",
+            "balance": 250000,
+            "currency": "USDC",
+            "ratePct": 7,
+            "monthlyPayment": 1800,
+            "updatedAt": 1793516921472,
+            "term": "long"
+          }
+        ],
+        "debtsComplete": false,
+        "incomes": [
+          {
+            "id": "i7l4ejw",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793516921471
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e7aa62a",
+            "name": "Monthly spending",
+            "monthly": 1700,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793516921471
+          }
+        ]
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": true,
+        "incomeStable": true,
+        "dependents": 1,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "h4cwx8r",
+            "type": "savings",
+            "name": "Bank savings",
+            "updatedAt": 1793516927877,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 5000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hnmlixe",
+            "type": "eth",
+            "name": "ETH",
+            "updatedAt": 1793516927877,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "ETH",
+            "value": 3000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hyjjigh",
+            "type": "btc",
+            "name": "BTC",
+            "updatedAt": 1793516927877,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "symbol": "BTC",
+            "quantity": 0.1,
+            "unit": "coins"
+          }
+        ],
+        "debts": [
+          {
+            "id": "dl99mr4",
+            "name": "Mortgage",
+            "type": "mortgage",
+            "balance": 250000,
+            "currency": "USDC",
+            "ratePct": 7,
+            "monthlyPayment": 1800,
+            "updatedAt": 1793516921472,
+            "term": "long"
+          }
+        ],
+        "debtsComplete": false,
+        "incomes": [
+          {
+            "id": "i7l4ejw",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793516921471
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e7aa62a",
+            "name": "Monthly spending",
+            "monthly": 1700,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793516921471
+          }
+        ]
+      },
+      "tokens": 0,
+      "calls": 0,
+      "ms": 4,
+      "complete": false
+    }
+  ]
+}

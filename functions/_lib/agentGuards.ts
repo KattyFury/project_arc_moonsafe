@@ -34,6 +34,10 @@ export function quantityEvidence(text: string, quantity: number, symbol: string 
     : kind === 'stock' ? 'shares?|cổ phiếu' // lang-ok
       : [symbol?.replace(/[^A-Z0-9]/gi, ''), 'coins?', 'tokens?'].filter(Boolean).join('|')
   const re = new RegExp(`(?<![\\d$])([\\d,]+(?:\\.\\d+)?)\\s*(k|m)?\\s*(?:${units})(?![\\p{L}])`, 'giu')
+  // "btc 0.1", "eth 2.5": the coin named first (persona run 2026-11-01: "btc 0.1" was never recorded). Not "BTC $500" or "BTC worth 500".
+  const before = symbol && kind === 'crypto' ? new RegExp(`(?<![\\p{L}])(?:${units})\\s+([\\d,]*\\.?\\d+)(?![\\d.,]*\\s*(?:\\$|usd|usdc|dollars?|k\\b))`, 'giu') : null
+  // Only a decimal or a small count reads as coins this way ("BTC 500" is far more likely dollars).
+  if (before && [...text.matchAll(before)].some(m => (m[1].includes('.') || Number(m[1].replace(/,/g, '')) < 100) && Math.abs(Number(m[1].replace(/,/g, '')) - quantity) <= Math.max(1e-9, quantity * .000001))) return true
   return [...text.matchAll(re)].some(m => {
     if (/(?:\$|USD|VND|USDC)\s*$/iu.test(text.slice(Math.max(0, m.index! - 8), m.index))) return false
     const n = Number(m[1].replace(/,/g, '')) * (m[2]?.toLowerCase() === 'k' ? 1000 : m[2]?.toLowerCase() === 'm' ? 1e6 : 1)
@@ -106,7 +110,7 @@ export const TURN_POLICY = `WORKFLOW GUARD: Answer the user's actual question/co
 /** Detect observable response failures; never treat model self-review as authoritative. */
 export function responseProblems(content: string, answerOnly: boolean, fundTargetUnknown = false, vi?: boolean): string[] {
   const problems: string[] = []
-  if (vi === true && /[a-z]{3}/iu.test(content) && !/[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]/iu.test(content)) problems.push('The real user wrote Vietnamese. Answer in Vietnamese, not English; keep technical symbols unchanged.') // lang-ok
+  if (vi === true && /[a-z]{3}/iu.test(content) && !/[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]/iu.test(content)) problems.push('The real user wrote Vietnamese. Answer in Vietnamese, not English; keep technical symbols unchanged.') // lang-ok
   if (vi === false && /\bmình\b|\bbạn\b/iu.test(content)) problems.push('The real user wrote English. Remove Vietnamese conversational words.') // lang-ok
   if (/your latest (?:request|question)|the latest request|(?:already|have) answered|not going to repeat it|my last (?:draft|reply)|I shouldn.t have added/iu.test(content)) problems.push('Answer the actual question directly. Private drafts were never shown to the user; remove commentary claiming the answer was already given.')
   if (fundTargetUnknown && content.split(/(?<=[.!?])\s+/u).some(s => /fund|quỹ/iu.test(s) && /target|need|aim|cover|mục tiêu|cần|đủ/iu.test(s) && /your|our|you need|bạn|nhà mình/iu.test(s) && /\$\s*\d|\d[\d,.]*\s*(?:USD|USDC|VND|months?|tháng|triệu)/iu.test(s))) problems.push('The personalized fund target is unknown. Remove personal target amounts, months and gaps derived from defaults; explain which inputs remain unknown.') // lang-ok

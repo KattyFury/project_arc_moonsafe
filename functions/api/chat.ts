@@ -127,7 +127,11 @@ const SAYS_NO = { test: (t: string) => t.length <= 120 && SAYS_NO_RE.test(t) }
 // A new amount right after our buy / deposit offer ("make it 1$", "1 đô thôi", "buy $5 instead"; real chat 2026-10-29: "make it 1$" // lang-ok
 // got the same question again). A dollar amount, no question, no VND.
 const OFFERED_BUY = /cirBTC buy of|first buy of|lệnh mua cirBTC|lần mua đầu/i // lang-ok
-const OFFERED_DEPOSIT = /prepare a deposit of|lệnh nạp/i // lang-ok
+// "vừa có airdrop 500$ nè, chia sao": money that arrived and a question about splitting it, never a deposit to prepare (persona run 2026-11-01). // lang-ok
+// The debt payment is part of the spending figure the user gave ("already in the 3.5k", "included", "đã tính trong"). // lang-ok
+const INCLUDED_IN_SPENDING = /(?<!\p{L})(already (in|included|counted)|included in|is in (the|my) (spending|\d)|part of (the|my) spending|đã (tính|gồm|bao gồm|nằm) (trong|vào)|đã gồm)(?!\p{L})/iu // lang-ok
+const SPLIT_QUESTION = /[?？]|(?<!\p{L})(chia|sao|thế nào|như nào|how|split|divide|what should|should i|nên)(?!\p{L})/iu // lang-ok
+const OFFERED_DEPOSIT = /prepare a deposit of \*\*|lệnh nạp \*\*/i // lang-ok
 const NEW_AMOUNT = /^(?:[^?\d]{0,40})\$?\s?(\d+(?:[.,]\d{1,2})?)\s?(?:\$|usd[ct]?|dollars?|bucks|đô|đô la)?(?![\d.,]*\s*(?:k\b|m\b|mil|million|nghìn|ngàn|triệu|tr\b|vnd|₫|%|months?|tháng|years?|năm))[^?\d]{0,40}$/iu // lang-ok
 const OFFERED_AMOUNT = /(?:first buy of|cirBTC buy of|deposit of|lần mua đầu|lệnh mua cirBTC|lệnh nạp)\s*\*\*([\d,]+(?:\.\d+)?) USDC\*\*/i // lang-ok
 // A deposit asked for a few turns after our offer (real chat 2026-10-30: offer of 48, "no just leave it", a question, then "I have 5$ to
@@ -135,7 +139,7 @@ const OFFERED_AMOUNT = /(?:first buy of|cirBTC buy of|deposit of|lần mua đầ
 const PUT_IN = /(?<!\p{L})(put (it )?in|deposit|add|top up|nạp|bỏ vào|cho vào)(?!\p{L})/iu // lang-ok
 // Money talk that is information, not a deposit ("I add $5 to my bank savings each month").
 const NOT_A_DEPOSIT = /(?<!\p{L})(bank|savings?|salary|income|spend|rent|debt|loan|month|year|week|exchange|binance|lương|ngân hàng|tiết kiệm|tháng|năm|nợ)(?!\p{L})/iu // lang-ok
-const MAKE_ORDER = /^(?:[^?\d]{0,30})(?<!\p{L})(create|make|prepare|place|set up|do|tạo|làm|lên)(?!\p{L})\s+(?:(?:an?|the|my|that|this|me an?|me the)\s+)?(order|card|deposit|lệnh|thẻ)(?!\p{L})[^?\d]{0,30}$/iu // lang-ok
+const MAKE_ORDER = /^(?:[^?\d]{0,30})(?<!\p{L})(create|make|prepare|place|set up|do|tạo|làm|lên)(?!\p{L})\s+(?:(?:an?|the|my|that|this|me an?|me the)\s+)?(order|card|deposit|lệnh|thẻ)(?!\p{L})[^?\d]{0,30}$|^(?:ok(?:ay)?|yes|sure|fine|alright|được|ok luôn)?[\s,.!]*(?:let'?s|lets|let us|i'?ll|go ahead and)\s+(?:start|begin|do it|go|fill)(?!\p{L})[^?\d]{0,40}$|^(?:ok(?:ay)?\s+)?(?:nạp|bắt đầu|làm)\s+(?:đi|luôn|thôi)[^?\d]{0,20}$/iu // lang-ok
 const OFFERS_ACTION = /(prepare|set up)[^.?!\n]{0,60}(deposit|card|buy|purchase|withdraw)|open it for you to sign/i
 // Our offer to open the vault (openVaultOffer in plan.ts), and a request to open one in the user's words.
 const OPEN_OFFERED = /open it for you to sign|mở nó để bạn ký/i // lang-ok
@@ -246,6 +250,8 @@ const BUY_ORDER = /(?<!\p{L})(buy|order|purchase|mua|lệnh)(?!\p{L})/iu // lang
 const FUND_WORD = /fund|vault|emergency|quỹ/i // lang-ok
 // A change to a holding: a buy / sale / move verb and something they hold (Hieu, 2026-11-01: ask one question when the amount is missing).
 const HOLDING_CHANGE = /(?<!\p{L})(bought|buy more|sold|sell(?:ing)? some|added|topped up|withdrew|took out|moved|cashed out|mua thêm|mua|bán|rút|chuyển|nạp thêm)(?!\p{L})[^.?!\n]{0,40}(?<!\p{L})(gold|btc|bitcoin|eth|crypto|coins?|stocks?|shares|voo|etfs?|usdc|usdt|stablecoins?|savings|bank|term deposit|bonds?|vàng|cổ phiếu|ngân hàng|tiết kiệm|trái phiếu)(?!\p{L})/iu // lang-ok
+// The user named Vietnamese dong: vnd, ₫, đồng, triệu / tr, nghìn / ngàn, or "k" after a number in a Vietnamese message.
+const SAYS_VND = /(?<!\p{L})(vnd|đồng|triệu|tr|nghìn|ngàn|củ)(?!\p{L})|₫/iu // lang-ok
 const SAFETY_WORD = /(?<!\p{L})(safety|safe part|an toàn)(?!\p{L})/iu // lang-ok
 const ALL_OF_IT = /(?<!\p{L})(all|whole|everything|entire|max|hết|toàn bộ|tất cả)(?!\p{L})/iu // lang-ok
 const ASKS_HOW_MUCH = /how much|bao nhiêu/i // lang-ok
@@ -354,7 +360,7 @@ ${DCA_AVAILABLE ? '' : '- AUTOMATIC recurring buys in the app are NOT available 
 - Never end with a question of your own about their life (age group, country, job…): the only personal question you may ask is the "Next question" when one is given. Answering a question about the app, trust or safety needs no question at the end.
 - Do not bring up cirBTC or buying unless they talk about buying, crypto or investing now.
 - They said no to an offer (a deposit, a buy, a withdrawal) → respect it: do not offer it again or push it in later replies until THEY bring it up; answer what they ask.
-- Investments count at the money put in (Hieu, 2026-10-29): "I put $1,000 into BTC" is recorded as $1,000 (value, priceSource self), never revalued at today's price. If they only give a quantity ("0.1 BTC"), ask how much they put in. A price drop never means a part needs more money: never suggest buying more because prices fell.
+- Investments count at their value NOW (Balance Sheet v2, Hieu 2026-10-31, replaces "money put in" of 10-29): a quantity ("0.1 BTC", "btc 0.1", "2 oz gold") is recorded as the quantity and priced live; a dollar amount ("eth around 3k", "$1,000 of BTC") is recorded as that value. Never ask what they paid for it. A price drop never means a part needs more money: never suggest buying more because prices fell.
 - Money (Hieu, 2026-10-29): write values in dollars with a $ sign ($500, $0.43): savings, cash, gold, stocks, crypto value, targets, totals, spending, income. Write "USDC" only for the token that moves onchain: a deposit into or a withdrawal from the emergency fund, the amount paid for cirBTC, the vault fee. USDC, USDT and other dollar coins together are "stablecoins".
 - Only describe what the "Actions just taken" note lists. Cards (add to the fund, withdraw, buy cirBTC, DCA) are confirmation CARDS the user signs: never say deposited / bought / done. To offer one: "Would you like me to prepare … for you to sign?".
 - Something recorded → acknowledge the saved fact briefly and naturally when useful, then answer their request. No mandatory "Noted" or "Right?". Pending confirmations are not saved facts. Ask the supplied Next question only when the user has invited personal planning; do not let recording replace the explanation.
@@ -869,6 +875,8 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   const rate = await vndPerUsd()
   const num = (v: unknown) => typeof v === 'number' && Number.isFinite(v) ? v : null
   const wallet = num(ctx.walletUsdc), vault = num(ctx.vaultUsdc), cir = num(ctx.cirBtcUsdc) ?? 0
+  // What a deposit card can move: the wallet minus gas. A card above it fails at signing (persona run: 500 USDC asked of a 150 wallet).
+  const spendable = wallet === null ? Infinity : Math.max(0, wallet - GAS_RESERVE_USDC)
   const startProfile = normalizeProfile((ctx.profile && typeof ctx.profile === 'object' ? ctx.profile : null) as Record<string, unknown> | null)
   let profile = startProfile
   const ops: ProfileOp[] = []
@@ -892,6 +900,8 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   const done: string[] = []
 
   const lastUserText = [...messages].reverse().find(m => m.role === 'user')?.content ?? ''
+  // The last few user messages: an amount can be told one message before the planner records it.
+  const recentUserText = messages.filter(m => m.role === 'user').slice(-3).map(m => m.content).join(' | ')
   const coach = coachingBrief(lastUserText)
   const lastUserAt = messages.map(m => m.role).lastIndexOf('user')
   const prevAssistantText = [...messages.slice(0, lastUserAt)].reverse().find(m => m.role === 'assistant')?.content ?? ''
@@ -936,7 +946,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     const amt = o ? Number(o[1].replace(/,/g, '')) : NaN
     const buy = OFFERED_BUY.test(lastOffer)
     // These two fast paths obey the admin's pause switch and the buy lock like every other way of getting a card (review 2026-10-30).
-    if (amt > 0 && (buy || hasVault) && !cardsPaused && (!buy || (await balanceOf(profile)).lock.open)) {
+    if (amt > 0 && (buy || (hasVault && amt <= spendable + 0.005)) && !cardsPaused && (!buy || (await balanceOf(profile)).lock.open)) {
       const a = `**${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(amt)} USDC**`
       return json({
         content: buy ? (vi ? `Lệnh mua cirBTC ${a} ở bên dưới, bạn kiểm rồi ký nhé.` : `Here is the cirBTC buy of ${a}: check it and sign below.`) // lang-ok
@@ -946,11 +956,11 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     }
   }
   {
-    const m = !policy.conversationOnly && !lastUserText.startsWith('[app event]') && (OFFERED_BUY.test(prevAssistantText) || OFFERED_DEPOSIT.test(prevAssistantText)) && !OTHER_ASSET.test(lastUserText) ? NEW_AMOUNT.exec(lastUserText.trim()) : null
+    const m = !policy.conversationOnly && !lastUserText.startsWith('[app event]') && (OFFERED_BUY.test(prevAssistantText) || OFFERED_DEPOSIT.test(prevAssistantText)) && !OTHER_ASSET.test(lastUserText) && !SPLIT_QUESTION.test(lastUserText) ? NEW_AMOUNT.exec(lastUserText.trim()) : null
     const amt = m ? Number(m[1].replace(',', '.')) : NaN
     if (m && amt > 0 && amt <= 1_000_000) {
       const buy = OFFERED_BUY.test(prevAssistantText)
-      if ((buy || hasVault) && !cardsPaused && (!buy || (await balanceOf(profile)).lock.open)) {
+      if ((buy || (hasVault && amt <= spendable + 0.005)) && !cardsPaused && (!buy || (await balanceOf(profile)).lock.open)) {
         const a = `**${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(amt)} USDC**`
         return json({
           content: buy ? (vi ? `Được: lệnh mua cirBTC ${a} ở bên dưới để bạn ký.` : `Sure: a cirBTC buy of ${a} is below for you to sign.`) // lang-ok
@@ -970,7 +980,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       const offered = OFFERED_AMOUNT.exec(before[offerAt].content)
       const latest = before.slice(offerAt + 1).filter(m => m.role === 'user').map(m => userAmount(m.content)).filter((n): n is number => n !== null).pop()
       const amt = userAmount(lastUserText) ?? (MAKE_ORDER.test(lastUserText.trim()) ? latest ?? (offered ? Number(offered[1].replace(/,/g, '')) : null) : null)
-      if (amt) {
+      if (amt && amt <= spendable + 0.005 && !SPLIT_QUESTION.test(lastUserText)) {
         const a = `**${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(amt)} USDC**`
         return json({
           content: vi ? `Được: lệnh nạp ${a} vào quỹ dự phòng ở bên dưới để bạn ký.` : `Sure: a deposit of ${a} into your emergency fund is below for you to sign.`, // lang-ok
@@ -1150,6 +1160,11 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   const handle = async (call: ToolCall): Promise<string> => {
     let a: Record<string, unknown> = {}
     try { a = JSON.parse(call.function.arguments || '{}') as Record<string, unknown> } catch { return 'Could not read the arguments.' }
+    // "Term deposits 200,000" in English was saved as 200,000 VND (Haiku persona run 2026-11-01): VND only when the user said so.
+    if (!SAYS_VND.test(recentUserText)) for (const k of Object.keys(a)) {
+      const v = a[k] as { currency?: unknown } | null
+      if (v && typeof v === 'object' && v.currency === 'VND') a[k] = { ...v, currency: 'USDC' }
+    }
     const name = call.function.name
     if (RECORDING.has(name) && evidence.excluded && !evidence.text.trim()) return 'Not recorded: this is a loss, quotation, third-party or hypothetical example, not a personal fact. Ask for the current personal fact only if needed.'
     if (policy.answerFirst && (String(name).startsWith('prepare_') || name === 'propose_dca')) return 'Not done: this turn is a question or conversation-only, not transaction consent.'
@@ -1157,6 +1172,8 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     const findH = (id: unknown) => profile.holdings.find(h => h.id === id)
     const findD = (id: unknown) => profile.debts.find(d => d.id === id)
     // A reported placement is saved by the confirmation box, never by a tool: the amount would be counted twice.
+    // "Keep 10,000 of the current account as Safety" moved all 20,000 (Haiku persona run 2026-11-01): the record box splits the amount.
+    if (placement && name === 'set_holding' && a.box) return 'Not recorded: a confirmation box is shown for this amount; the app moves exactly that much when the user confirms. Record nothing for it.'
     if (placement && (name === 'add_holding' || name === 'move' || name === 'set_holding')) {
       const amts = [moneyArg(a.worth), moneyArg(a.amount), typeof a.quantity === 'number' ? { amount: a.quantity, currency: 'USDC' as Currency } : null]
       if (amts.some(m => m && Math.abs((toUsd(m.amount, m.currency, rate) ?? -1) - placement.amountUsd) <= Math.max(1, placement.amountUsd * 0.01))) {
@@ -1441,6 +1458,11 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       }
       const amt0 = moneyArg(a.amount)
       const amtUsd = amt0 ? toUsd(amt0.amount, amt0.currency, rate) : null
+      if (name === 'prepare_deposit' && amtUsd !== null && wallet !== null && amtUsd > spendable + 0.005) {
+        console.log(`dropped prepare_deposit: ${amtUsd} is more than the wallet holds (${wallet})`)
+        return `Not done: the wallet has only ${usdc(spendable)} to add; say so, and offer at most that if they want to add now.`
+      }
+      if (name === 'prepare_deposit' && SPLIT_QUESTION.test(lastUserText) && !DEPOSIT_WORD.test(lastUserText)) return 'Not done: the user asked how to split money, not for a deposit; answer the question.'
       const gapNow = startBalance.fund.gap
       if (name === 'prepare_deposit' && amtUsd !== null && gapNow !== null && amtUsd > gapNow + 0.5 && !DEPOSIT_WORD.test(lastUserText)) {
         console.log(`dropped prepare_deposit: ${amtUsd} is more than the fund still needs (${gapNow})`)
@@ -1548,6 +1570,17 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     planMessages.push({ role: 'system', content: `${recorded ? `${stateText()}\n` : ''}Anything else the user's latest message asked for or told that is not done yet? If not, call no_action.` })
   }
   console.log(`plan steps=${planSteps} tokens in=${planIn} out=${planOut} ops=${ops.length}`)
+  // "mortgage, pay 1800 a month (already in the 3.5k)": spending is kept WITHOUT debt payments (they are added once, from the debt), so a
+  // payment the user says is inside the spending figure comes out of it (persona run 2026-11-01: 3,500 + 1,800 = 5,300, fund $31,800).
+  if (INCLUDED_IN_SPENDING.test(evidence.text)) {
+    const pay = ops.reduce((s, o) => s + (o.op === 'add_debt' ? o.debt.monthlyPayment ?? 0 : o.op === 'update_debt' ? o.patch.monthlyPayment ?? 0 : 0), 0)
+    const ex = ops.filter((o): o is Extract<ProfileOp, { op: 'set_expense' }> => o.op === 'set_expense').sort((x, y) => y.expense.monthly - x.expense.monthly)[0]
+    if (pay > 0 && ex && ex.expense.monthly > pay) {
+      ex.expense = { ...ex.expense, monthly: ex.expense.monthly - pay }
+      profile = { ...profile, expenses: profile.expenses.map(e => e.id === ex.expense.id ? ex.expense : e) }
+      done.push(`Spending recorded without the debt payments the user said were already in it: ${usdc(ex.expense.monthly)} + ${usdc(pay)} of debt payments.`)
+    }
+  }
 
   if (wantsInvestLocked && !done.some(d => d.startsWith('BLOCKED'))) {
     done.push(`The user wants to invest but cirBTC buying is LOCKED: what is missing and how much ("${startBalance.lock.text}"), why the lock protects them (no forced selling at a loss if BTC drops when they need cash), then the option they have.`)
@@ -1584,7 +1617,8 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       : items.length === 1 ? `I picked up 1 change. Confirm or cancel it below; nothing is saved until you do.` : `I picked up ${items.length} things. Confirm or cancel each one below; nothing is saved until you do.`
     // Answer questions from saved state while new declarations await confirmation.
     // Cards computed from provisional data must not accompany the pending records.
-    actions.splice(0, actions.length, { type: 'confirm_items', items, ask: [...toAsk] })
+    // A record box already shown stays (it carries the source choice); the other cards are replaced by the confirm card.
+    actions.splice(0, actions.length, ...actions.filter(x => x.type === 'confirm_record'), { type: 'confirm_items', items, ask: [...toAsk] })
     ops.splice(0)
     if (!policy.answerFirst && !coach.active) return json({ content, ops, dcaStop, actions })
     pendingNote = content
@@ -1641,9 +1675,18 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   // Critical financial targets come from code, never a model's guessed X-of-Y.
   if (policy.question && !actions.length && !placement && /fund|quỹ/iu.test(lastUserText) && /target|how much|mục tiêu|tính|bao nhiêu/iu.test(lastUserText)) { // lang-ok
     const show = (n: number) => vi && rate ? moneyText({ amount: n * rate, currency: 'VND' }) : usdc(n)
-    const content = balance.fund.floorUsd === null || spendingIncomplete || fundMissingInputs(profile, balance.cashflow.spending).length > 0
-      ? (vi ? 'Chưa đủ dữ liệu về chi tiêu tháng và rủi ro thu nhập gia đình để chốt mục tiêu quỹ, gồm độ ổn định, người phụ thuộc và nguồn thu của cả nhà khi có liên quan. Số dư vault và tiền tiết kiệm bên ngoài là hai khoản riêng; khoản chưa khai không được coi là bằng 0.' : 'The fund target is not final until monthly spending and relevant household income risks are known: income stability, dependents and whether there is another earner when that changes the target. The vault balance and savings outside the app are separate; undeclared amounts are not zero.') // lang-ok
-      : (vi ? `Theo framework hiện có: ${show(balance.cashflow.spending!)} chi tiêu tháng × ${balance.fund.floorMonths} tháng = **${show(balance.fund.floorUsd)}** mục tiêu quỹ dự phòng. Đây là mục tiêu theo dữ liệu đã khai; tiền trong vault và tiết kiệm bên ngoài cần phân biệt, không phải toàn bộ gia đình chỉ có số dư vault.` : `Using the existing framework: ${show(balance.cashflow.spending!)} monthly spending × ${balance.fund.floorMonths} months = **${show(balance.fund.floorUsd)}** emergency fund target. This uses the declared expenses. The app vault and savings outside it are separate; a zero vault does not mean the household has no available savings.`) // lang-ok
+    const missing = spendingIncomplete ? ['monthly spending'] : fundMissingInputs(profile, balance.cashflow.spending)
+    const ask: Record<string, [string, string]> = {
+      'monthly spending': ['How much do you spend in a usual month, all in?', 'Một tháng bình thường bạn tiêu khoảng bao nhiêu, tính hết?'], // lang-ok
+      'income stability': ['Is the money you get each month about the same every month?', 'Khoản tiền bạn nhận mỗi tháng có đều không, hay lúc nhiều lúc ít?'], // lang-ok
+      dependents: ['Does anyone rely on your income?', 'Có ai sống dựa vào thu nhập của bạn không?'], // lang-ok
+      'whether this is the only household income': ['Are you the only one earning at home?', 'Bạn có phải người duy nhất kiếm tiền trong nhà không?'], // lang-ok
+    }
+    const first = missing[0]
+    const vault = balance.fundUsd ?? 0
+    const content = balance.fund.floorUsd === null || first
+      ? (vi ? `Mức quỹ dự phòng tuỳ vào thu nhập của bạn có đều không và có ai phụ thuộc không: càng khó đoán thì quỹ càng dài (3 đến 12 tháng chi tiêu). Mình còn thiếu một điều: ${ask[first ?? 'monthly spending'][1]}` : `How big the fund should be depends on how steady your income is and whether anyone relies on you: the less certain, the longer it is (3 to 12 months of spending). One thing is missing: ${ask[first ?? 'monthly spending'][0]}`) // lang-ok
+      : (vi ? `Quỹ dự phòng của bạn nên là **${show(balance.fund.floorUsd)}** = ${balance.fund.floorMonths} tháng × ${show(balance.cashflow.spending!)} chi tiêu${balance.cashflow.debtPayments > 0 ? ' (gồm cả tiền trả nợ, vì nó vẫn phải trả khi mất thu nhập)' : ''}. Hiện vault có ${show(vault)}.` : `Your emergency fund should be **${show(balance.fund.floorUsd)}** = ${balance.fund.floorMonths} months × ${show(balance.cashflow.spending!)} of spending${balance.cashflow.debtPayments > 0 ? ' (debt payments included: they go on if income stops)' : ''}. The vault has ${show(vault)} now.`) // lang-ok
     return json({ content, ops, dcaStop, actions })
   }
   if (policy.question && balance.fund.floorUsd === null && /^(?:how much (?:do i need to|should i|can i) deposit|(?:mình|tôi) (?:cần|nên|có thể) nạp bao nhiêu)[?.!]*$/iu.test(lastUserText.trim()) && !actions.length) { // lang-ok

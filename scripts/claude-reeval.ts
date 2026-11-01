@@ -14,6 +14,7 @@ import { normalizeProfile, applyOps, readOps } from '../src/lib/profile'
 import { FRAMEWORK_CASES } from './framework-eval-cases'
 import { E2_INTAKE_CASES } from './e2-intake-cases'
 import { SAFETY_CASES, SAFETY_SEEDED_CASES } from './safety-cases'
+import { PERSONA_CASES } from './persona-cases'
 import { walletMoveOps } from '../src/lib/profile'
 import { buildRecordOps, presetSource, recordSummary, sourceOptions, type RecordRequest, type RecordSource } from '../src/lib/record'
 import type { AssetType } from '../src/types'
@@ -24,7 +25,7 @@ const label = flag('--run') ?? 'claude-reeval-2026-10-29'
 if (!/^[a-z0-9-]+$/.test(label)) throw new Error('Run label must contain only lowercase letters, digits and hyphens.')
 const OUT = 'docs/evals/' + label + '.json'
 const priority = ['cost-basis', 'irregular-family', 'no-consent', 'loss-listening', 'beginner-vi', 'shared-transfers']
-const ordered = [...SAFETY_CASES, ...SAFETY_SEEDED_CASES, ...E2_INTAKE_CASES, ...SESSION_EVAL_CASES, ...FRAMEWORK_CASES.filter(c => priority.includes(c.id)), ...FRAMEWORK_CASES.filter(c => !priority.includes(c.id)), ...REEVAL_CASES, ...CYCLE_FRESH_CASES, ...DAY_EVAL_CASES]
+const ordered = [...PERSONA_CASES, ...SAFETY_CASES, ...SAFETY_SEEDED_CASES, ...E2_INTAKE_CASES, ...SESSION_EVAL_CASES, ...FRAMEWORK_CASES.filter(c => priority.includes(c.id)), ...FRAMEWORK_CASES.filter(c => !priority.includes(c.id)), ...REEVAL_CASES, ...CYCLE_FRESH_CASES, ...DAY_EVAL_CASES]
 const selected = flag('--only')?.split(',')
 const cases = selected ? selected.flatMap(id => ordered.filter(c => c.id === id)) : ordered
 if (selected && (new Set(selected).size !== selected.length || cases.length !== selected.length)) throw new Error('Unknown or duplicate case id.')

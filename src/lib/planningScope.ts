@@ -12,7 +12,9 @@ export function profileAgeAllowed(message: string, age: number): boolean {
   if (!/wife|husband|spouse|partner|vợ|chồng/iu.test(message)) return true // lang-ok
   const explicit = [...message.matchAll(/(?:\bi(?:['’]m| am)(?: married and)?|\bmy age(?: is)?|(?:mình|tôi)(?:\s+năm nay)?)(?:\s+|:\s*)(\d{1,3})(?!\d)/giu), // lang-ok
     // "25 tuổi, … chưa vợ con" (Haiku run 2026-10-31): an age written with its unit is the user's own. // lang-ok
-    ...message.matchAll(/(?<!(?:wife|husband|spouse|partner|vợ|chồng)[^,.;\n]{0,12})(?<!\d)(\d{1,3})\s*(?:tuổi|years? old|yo\b)/giu)] // lang-ok
+    ...message.matchAll(/(?<!(?:wife|husband|spouse|partner|vợ|chồng)[^,.;\n]{0,12})(?<!\d)(\d{1,3})\s*(?:tuổi|years? old|yo\b)/giu), // lang-ok
+    // "40, salary 5k steady, … wife works too" (persona run 2026-11-01): a bare number opening the message is the writer's own age.
+    ...message.matchAll(/^\s*(\d{1,3})\s*[,;\n]/gu)]
   return explicit.some(m => Number(m[1]) === age)
 }
 

@@ -79,7 +79,9 @@ function forClaude(body: Record<string, unknown>, model: string): Anthropic.Mess
   const params: Anthropic.MessageCreateParamsNonStreaming = {
     model,
     max_tokens: Number(body.max_completion_tokens) || 1500,
-    system: system.join('\n\n'),
+    // The first system message is the fixed prompt: cached on its own, so the facts that change every turn (later system messages)
+    // no longer break the cache (2026-11-01: every call paid the full ~11k input tokens).
+    system: system.map((s, i): Anthropic.TextBlockParam => ({ type: 'text', text: i ? `\n\n${s}` : s, ...(i === 0 ? { cache_control: { type: 'ephemeral' as const } } : {}) })),
     messages,
     thinking: { type: 'disabled' },
     cache_control: { type: 'ephemeral' },

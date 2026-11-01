@@ -125,6 +125,29 @@ try {
     forcedTools = []
     checks += 5
   }
+  // Persona run 2026-11-01 (Haiku): the holes it found, offline.
+  {
+    // "Keep 10,000 of the current account as Safety" moves exactly 10,000 through the record box, not the whole account.
+    const acct = normalizeProfile({ v: 2, holdings: [{ id: 'cur', type: 'checking', name: 'Current account', value: 20000, currency: 'USDC', priceSource: 'self', rebalanceable: true, updatedAt: 1 }] })
+    forcedTools = [tools('set_holding', { id: 'cur', box: 'safety' })]
+    const split = await ask('I will keep 10,000 of the current account as Safety.', true, [], { profile: acct })
+    const acts = split.data.actions as Array<{ type: string; amount?: { amount: number }; safety?: boolean }>
+    assert.ok(acts.some(a => a.type === 'confirm_record' && a.amount?.amount === 10000 && a.safety), 'the record box moves exactly 10,000 as Safety')
+    assert.ok(!readOps(proposed(split.data)).some(o => o.op === 'set_holding'), 'the whole account is not moved')
+    // "Term deposits 200,000" in English is dollars, whatever currency the model guessed.
+    forcedTools = [tools('add_holding', { type: 'term_deposit', name: 'Term deposits', worth: { amount: 200000, currency: 'VND' } })]
+    const dollars = readOps(proposed((await ask('Term deposits 200,000 at my bank.')).data)).find(o => o.op === 'add_holding') as { holding?: { currency?: string } } | undefined
+    assert.equal(dollars?.holding?.currency, 'USDC', 'no VND unless the user names it')
+    forcedTools = [tools('add_holding', { type: 'savings', name: 'Tiết kiệm', worth: { amount: 20000000, currency: 'VND' } })]
+    const dong = readOps(proposed((await ask('Mình có 20 triệu tiết kiệm.')).data)).find(o => o.op === 'add_holding') as { holding?: { currency?: string } } | undefined // lang-ok
+    assert.equal(dong?.holding?.currency, 'VND', 'VND stays when the user says triệu') // lang-ok
+    // A debt payment the user says is inside their spending comes out of it (3,500 − 1,800 = 1,700), so it counts once.
+    forcedTools = [tools('set_expense', { name: 'Spending', monthly: { amount: 3500, currency: 'USDC' }, kind: 'fixed' }), tools('add_debt', { name: 'Mortgage', type: 'mortgage', balance: { amount: 250000, currency: 'USDC' }, rate_pct: 7, monthly_payment: { amount: 1800, currency: 'USDC' } })]
+    const once = readOps(proposed((await ask('I spend 3.5k. Mortgage 250k at 7%, I pay 1800 a month (already in the 3.5k).')).data)).find(o => o.op === 'set_expense') as { expense?: { monthly: number } } | undefined
+    assert.equal(once?.expense?.monthly, 1700, 'the payment already in spending is not counted twice')
+    forcedTools = []
+    checks += 6
+  }
   forcedTools = []
   // No model needed for reviewed standalone concepts, even with an existing financial profile.
   const beforeLesson = calls

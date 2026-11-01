@@ -299,7 +299,9 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
     const u = String(url)
     calls.push(u.includes('openai.com') ? 'openai' : u.includes('anthropic.com') ? 'claude' : 'other')
     if (u.includes('openai.com')) return openaiStatus === 200 ? ok('from openai') : new Response(JSON.stringify({ error: { code: openaiStatus === 429 ? 'insufficient_quota' : 'x' } }), { status: openaiStatus })
-    const sent = JSON.parse(init?.body ?? '{}') as { model: string; system?: string; messages: Array<{ role: string }> }
+    const raw = JSON.parse(init?.body ?? '{}') as { model: string; system?: string | Array<{ text: string }>; messages: Array<{ role: string }> }
+    // The system prompt goes as blocks (the fixed first block is cached, 2026-11-01); same text joined.
+    const sent = { ...raw, system: Array.isArray(raw.system) ? raw.system.map(b => b.text).join('') : raw.system }
     // Claude: roles must alternate starting with user, and only user/assistant (system goes in its own field)
     if (sent.messages.some((m, i) => m.role !== (i % 2 ? 'assistant' : 'user'))) return new Response('{"type":"error","error":{"type":"invalid_request_error","message":"bad roles"}}', { status: 400 })
     if (sent.system !== 'a\n\nlate note') return new Response('{"type":"error","error":{"type":"invalid_request_error","message":"system not set"}}', { status: 400 })
