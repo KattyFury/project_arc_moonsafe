@@ -2,7 +2,7 @@
 
 > How to work with me. Read this before every session.
 
-Khi tôi bảo "login dự án": đọc file này → `git pull` → đọc mục **▶ Làm tiếp từ đây** trong `HANDOFF.md`. Làm xong thì commit + push. Địa chỉ contract, cách deploy, kiến trúc: xem `HANDOFF.md` và `AGENTS.md`, không chép lại ở đây.
+Khi tôi bảo "login dự án": đọc file này → `git pull` → đọc `docs/CORE.md` (core đã chốt, đúng hơn mọi spec cũ) → đọc mục **▶** mới nhất trong `HANDOFF.md`. Làm xong thì commit + push. Địa chỉ contract, cách deploy, kiến trúc: xem `HANDOFF.md` và `AGENTS.md`, không chép lại ở đây.
 
 ---
 
