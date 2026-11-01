@@ -73,7 +73,7 @@ Sự thật kỹ thuật phải giữ khi xây:
 - **Mất email:** ví → đổi email sau 7 ngày chờ; email cũ huỷ được trong lúc chờ.
 - Mất cả 2 chìa = mất quyền rút. Phải nói rõ với người dùng lúc mở vault.
 
-Hiện trạng: hợp đồng hiện tại (`VaultProxy`) chỉ có 1 chìa là ví, rút toàn bộ ngay tới bất kỳ địa chỉ nào → lộ khoá ví = mất cả quỹ. **Vault v3 chưa xây.** Vault cũ không nâng cấp được, người dùng tự chuyển tiền sang vault mới.
+Hiện trạng: hợp đồng hiện tại (`VaultProxy`) chỉ có 1 chìa là ví, rút toàn bộ ngay tới bất kỳ địa chỉ nào → lộ khoá ví = mất cả quỹ. **Vault v3 chưa xây: làm SAU hackathon, khi có mini grant (Hiếu chốt 2026-11-01).** Trước đó không đổi hợp đồng. Vault cũ không nâng cấp được, người dùng tự chuyển tiền sang vault mới.
 
 Việc khác còn mở (từ `docs/audit-mainnet-2026-10-29.md`): giới hạn đăng ký Privy, giới hạn tần suất `/api/*` trên Cloudflare, gói Workers trả phí, Safe 2-of-2 chưa có ví dự phòng.
 
