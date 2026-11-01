@@ -107,9 +107,15 @@ const personas: [string, Facts, string[]][] = [
 ]
 
 // 7. "I put 1,000 in my bank": a confirmation box, saved only with the source the user picks (real chat 2026-10-27).
-const placed: [string, { amountUsd: number; holdingType: string; source: string | null } | null][] = [
-  ['Imma put 1000$ in my bank account as Safety', { amountUsd: 1000, holdingType: 'term_deposit', source: null }], // "as Safety" = a term deposit; a plain bank account is idle (Hieu, 2026-11-01)
+// The user decides what their Safety is (Hieu, 2026-11-01): "as Safety" keeps the form they name, marked as Safety; never gold, stocks or coins.
+const placed: [string, { amountUsd: number; holdingType: string; source: string | null; safety?: boolean } | null][] = [
+  ['Imma put 1000$ in my bank account as Safety', { amountUsd: 1000, holdingType: 'savings', source: null, safety: true }],
   ['I just put 1,000 into safe', { amountUsd: 1000, holdingType: 'savings', source: null }],
+  ['I keep 5 USDC as Safety', { amountUsd: 5, holdingType: 'stable_wallet', source: null, safety: true }],
+  ['I will keep 200 cash for safety', { amountUsd: 200, holdingType: 'cash', source: null, safety: true }],
+  ['I put 2000 in a term deposit as Safety', { amountUsd: 2000, holdingType: 'term_deposit', source: null }],
+  ['I keep 1 oz of gold as Safety', null],
+  ['I keep 500 of BTC as Safety', null],
   ['I moved 500 USDC from my wallet into savings', { amountUsd: 500, holdingType: 'savings', source: 'wallet' }],
   ['I deposited 2,000 in a term deposit', { amountUsd: 2000, holdingType: 'term_deposit', source: null }],
   ['I put 300 in flexible earn from my salary', { amountUsd: 300, holdingType: 'flexible_earn', source: 'new' }],
@@ -125,7 +131,16 @@ const placed: [string, { amountUsd: number; holdingType: string; source: string 
 ]
 for (const [msg, want] of placed) {
   const got = detectPlacement(msg, 25000)
-  if (JSON.stringify(got && { amountUsd: got.amountUsd, holdingType: got.holdingType, source: got.source }) !== JSON.stringify(want)) fail(`placement "${msg}": ${JSON.stringify(got)}`)
+  if (JSON.stringify(got && { amountUsd: got.amountUsd, holdingType: got.holdingType, source: got.source, ...(got.safety ? { safety: true } : {}) }) !== JSON.stringify(want)) fail(`placement "${msg}": ${JSON.stringify(got)}`)
+}
+{
+  const { categoryOf } = await import('../src/lib/profile')
+  const p0 = normalizeProfile({ v: 2, holdings: [{ id: 'u', type: 'stable_wallet', name: 'USDC', value: 10, currency: 'USDC', priceSource: 'self', rebalanceable: true, updatedAt: 1 }] })
+  const keep = detectPlacement('I keep 5 USDC as Safety', null)!
+  const p1 = applyOps(p0, buildRecordOps(p0, keep, { kind: 'holding', id: 'u' }, null))
+  const safe = p1.holdings.find(h => h.id !== 'u')
+  if (p1.holdings.find(h => h.id === 'u')?.value !== 5 || safe?.value !== 5 || categoryOf(safe) !== 'safe' || safe.name !== 'Stablecoins kept as Safety') fail(`chosen Safety: 5 of the 10 USDC move to "Stablecoins kept as Safety" (got ${JSON.stringify(p1.holdings)})`)
+  if (!sourceOptions(p0, keep, null).some(h => h.id === 'u')) fail('chosen Safety: the idle USDC of the same type is offered as the source')
 }
 const cashP = normalizeProfile({ v: 2, holdings: [{ id: 'h1', type: 'cash', name: 'Cash', value: 1500, currency: 'USDC', priceSource: 'self', rebalanceable: true, updatedAt: 1 }] })
 const req = detectPlacement('I put 1000$ in my bank', null)!
@@ -445,14 +460,16 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   if (!/Here is your plan, in order/.test(plan)) fail('plan: must be recognised as the plan already given')
   // Fund full: gold $2,000 invested needs 2,000 x 31 / 69 = $898.55 of Safety; bank $500 + USDC $1,900 are idle, never "your Safety".
   const fullPlan = buildPlan({ p: base, b: bal(base, 1900, 450), shares, cover: null, vi: false })!
-  for (const [what, re] of [['safety', /Safety 31%\*\* \(term deposit, government bonds\)/], ['traditional', /Traditional 34\.5%\*\* \(index funds/], ['crypto', /Crypto 34\.5%\*\* \(mostly Bitcoin, which can halve/]] as const) if (!re.test(fullPlan)) fail(`plan: the reason for the ${what} is missing\n${fullPlan}`)
-  if (!/You have \$2,000 invested[^\n]*you need \$899 in Safety/.test(fullPlan)) fail(`plan: the investments set the Safety they need\n${fullPlan}`)
-  if (!/Money not doing anything yet: Bank savings \$500, USDC in this wallet \$1,900; keep \$150[^\n]*Put \$899 into Safety first, then split the other \$1,351 /.test(fullPlan)) fail(`plan: idle money fills Safety first, then the shares\n${fullPlan}`)
+  for (const [what, re] of [['safety', /Safety 31%\*\* \(set aside, low-volatility\)/], ['traditional', /Traditional 34\.5%\*\* \(index funds/], ['crypto', /Crypto 34\.5%\*\* \(mostly Bitcoin, which can halve/]] as const) if (!re.test(fullPlan)) fail(`plan: the reason for the ${what} is missing\n${fullPlan}`)
+  if (!/You have \$2,000 invested[^\n]*so it needs \$899 of Safety/.test(fullPlan)) fail(`plan: the investments set the Safety they need\n${fullPlan}`)
+  if (!/\*\*Safety\*\* is money you set aside and do not invest[^\n]*never forces you to sell/.test(fullPlan)) fail('plan: why Safety, before any number')
+  if (!/Money not doing anything yet: Bank savings \$500, USDC in this wallet \$1,900; keep \$150[^\n]*You decide which of it goes where/.test(fullPlan) || /Put \$|add \$/.test(fullPlan)) fail(`plan: target and what is missing only; the user places the money (Hieu, 2026-11-01)\n${fullPlan}`)
+  if (!/You choose where your Safety sits, as long as it is low-volatility/.test(fullPlan)) fail('plan: the user chooses the form of Safety')
   if (/your Safety is|You have \$2,400 in Safety/i.test(fullPlan)) fail('plan: bank and stablecoins are never called Safety')
   if (!/Which part would you like to fill first|Only [^.]* still has room/.test(fullPlan)) fail('plan: with the fund full it asks which part to fill')
   if (/cirBTC|prepare a|for you to sign/i.test(fullPlan)) fail('plan: never opens with a purchase')
   // Traditional is above its share (gold $2,000): never sold, the idle money goes to Crypto.
-  if (!/Traditional 34\.5%[^\n]*above its share; no need to sell/.test(fullPlan) || !/Crypto 34\.5%[^\n]*add \$933, to \$933; \$534 more from new money/.test(fullPlan)) fail(`plan: a part above its share is not sold, new money goes to the other\n${fullPlan}`)
+  if (!/Traditional 34\.5%[^\n]*above its share; no need to sell/.test(fullPlan) || !/Crypto 34\.5%[^\n]*\$0 of \$1,466, \$1,466 to go/.test(fullPlan)) fail(`plan: a part above its share is not sold, new money goes to the other\n${fullPlan}`)
   // The overview at 21 (Hieu, 2026-10-28): safe 21%, at risk 79%.
   const young = buildPlan({ p: normalizeProfile({ ...base, age: 21 }), b: bal(normalizeProfile({ ...base, age: 21 }), 1900, 450), shares: [21, 45, 34], cover: null, vi: false })!
   if (!/by your age, 21/.test(young) || !/Safety 21%/.test(young)) fail(`plan: at 21 the split reads Safety 21%\n${young}`)
@@ -500,7 +517,7 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   if (Math.abs(s500.target - (4000 + (s500.rest ?? 0))) > 0.01 || s500.goal !== 4000) fail('Safety target = goal + its share of the rest')
   const plan = buildPlan({ p: goalP(500), b: bal(goalP(500), 600), shares: [21, 45, 34], cover: null, vi: false })!
   if (!/Near-term goal: Marriage \$4,000\*\* stays in Safety/.test(plan)) fail(`plan: the near-term goal is explained\n${plan}`)
-  if (!/Safety 21%\*\*[^\n]*add \$2,400, to \$2,400; \$[\d,.]+ more from new money/.test(plan)) fail(`plan: Safety takes the idle money for the goal first, and says what new money still has to add\n${plan}`)
+  if (!/Safety 21%\*\*[^\n]*\$0 of \$[\d,]+, \$[\d,]+ to go/.test(plan)) fail(`plan: Safety shows its target (goal included) and what is missing\n${plan}`)
   if (!/6 months of spending, because/.test(plan)) fail('plan: the months are explained (why this number)')
   const st = buildStanding({ p: goalP(1000, 1500), b: bal(goalP(1000, 1500), 600), vi: false })!
   if (!/Emergency fund:\*\* \$600 of \$600 \(6 months of spending\), full/.test(st) || !/\*\*Money not doing anything yet:\*\* Bank savings \$1,000, USDC in this wallet \$1,500\./.test(st) || !/\*\*Safety:\*\* \$0 of \$[\d,]+, \$[\d,]+ to go \(target = goal \$4,000/.test(st)) fail(`standing: the emergency fund and Safety are separate lines with totals\n${st}`)

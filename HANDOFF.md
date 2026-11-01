@@ -1,3 +1,10 @@
+# ▶ 2026-11-01 (khuya) — NGƯỜI DÙNG QUYẾT SAFETY (Hiếu chốt, ĐÃ DEPLOY Cloudflare `2f962d5e`) — sửa mục ngay dưới
+
+- **User tự chia, app không chia hộ**: kế hoạch chỉ ghi mỗi phần "$X of $Y, $Z to go" (hoặc on track / above its share), KHÔNG còn "Put $X into Safety first" hay "add $X". User đặt tiền rồi báo lại để ghi.
+- **Một khoản chỉ là Safety khi user hiểu vì sao cần và tự chọn** tiền nào, dạng nào. Kế hoạch giải thích Safety trước mọi con số. Dạng được chọn: chỉ loại ít biến động (bank, tiền mặt, stablecoin, tiền gửi có kỳ hạn, trái phiếu); vàng/cổ phiếu/coin làm Safety → agent giải thích vì sao không và KHÔNG ghi (`detectPlacement` trả null).
+- Tiền gửi có kỳ hạn / trái phiếu đã có: vẫn tính thẳng Safety nhưng phải giải thích vì sao ("Already Safety: … which is exactly Safety's job").
+- Code: `Holding.category = 'safe'` trên món nhàn rỗi = user chọn làm Safety (`categoryOf`, `canBeSafety` trong `src/lib/profile.ts`); "I keep 5 USDC as Safety" → thẻ xác nhận tách 5 USDC sang món "Stablecoins kept as Safety" (`RecordRequest.safety`, `src/lib/record.ts`); `splitSection` viết lại.
+
 # ▶ 2026-11-01 (tối) — LUẬT CHIA TIỀN MỚI (Hiếu chốt, ĐÃ DEPLOY Cloudflare `a6d60f54`)
 
 Lỗi gốc (chat thật): khai "$10 bank, $10 stablecoin, $10 vàng" → agent nói "Safety $20 = on track" và lấy Safety làm mốc ("phần đi xa nhất"); rồi "Ok. But who said my safety is 20$" sinh lệnh nạp 20 USDC. Luật Hiếu chốt (thay quy tắc "mốc" của Balance Sheet v2):

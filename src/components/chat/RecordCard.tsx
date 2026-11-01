@@ -43,7 +43,7 @@ export function RecordCard({ record, status: saved, onFinished }: { record: Reco
         <div className="min-w-0 min-h-[92px]">
           <p className="text-[14px] leading-5 font-semibold" style={{ color: 'var(--subtle)' }}>Save to your balance?</p>
           <p className="display font-bold text-[24px] leading-8 tabular-nums" style={{ color: 'var(--ink)' }}>{amountText}</p>
-          <p className="text-[14px] leading-5 line-clamp-2" style={{ color: 'var(--subtle)' }}>In {record.name} · {bucketLabel(record.holdingType)}</p>
+          <p className="text-[14px] leading-5 line-clamp-2" style={{ color: 'var(--subtle)' }}>In {record.name} · {bucketLabel(record.holdingType, record.safety)}</p>
         </div>
       </div>
 

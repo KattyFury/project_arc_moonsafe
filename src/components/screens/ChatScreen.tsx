@@ -67,7 +67,7 @@ export function ChatScreen({ onError, onActions, ask = null, onAsked }: { onErro
     for (const a of actions) {
       // "I put 1,000 in my bank": a box to confirm the source, then the app saves it.
       if (a.type === 'confirm_record') {
-        if (a.amount && a.holdingType && a.name) next.push({ id: Date.now() + next.length, at, kind: 'record', record: { amountUsd: a.amount.amount, holdingType: a.holdingType as AssetType, name: a.name, source: a.source ?? null } })
+        if (a.amount && a.holdingType && a.name) next.push({ id: Date.now() + next.length, at, kind: 'record', record: { amountUsd: a.amount.amount, holdingType: a.holdingType as AssetType, name: a.name, source: a.source ?? null, ...(a.safety ? { safety: true } : {}) } })
         continue
       }
       // The first questions as a form to fill in.

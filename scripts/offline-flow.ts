@@ -164,8 +164,8 @@ expect(/Here is your plan, in order/.test(fullText), 'fund already full: the pla
 expect(!/cirBTC|prepare a|for you to sign/i.test(fullText), 'fund already full: no purchase is offered before they pick a part')
 expect(/Which part would you like to fill first|Only [^.]* still has room/.test(fullText), 'fund already full: it asks which part to fill')
 expect(/by your age, 31/.test(fullText) && /An even Traditional \/ Crypto split is MoonSafe's default, not a standard rule/.test(fullText), 'fund already full: the split by age, the even split said to be MoonSafe\'s default')
-for (const [what, re] of [['Safety', /Safety 31%\*\* \(term deposit, government bonds\)/], ['Traditional', /Traditional 34\.5%\*\* \(index funds/], ['Crypto', /Crypto 34\.5%\*\* \(mostly Bitcoin/]] as const) expect(re.test(fullText), `the plan says what goes in ${what}`)
-expect(/You have \$2,000 invested[^\n]*you need \$899 in Safety/.test(fullText), 'the investments (gold $2,000) set how much Safety they need')
+for (const [what, re] of [['Safety', /Safety 31%\*\* \(set aside, low-volatility\)/], ['Traditional', /Traditional 34\.5%\*\* \(index funds/], ['Crypto', /Crypto 34\.5%\*\* \(mostly Bitcoin/]] as const) expect(re.test(fullText), `the plan says what goes in ${what}`)
+expect(/You have \$2,000 invested[^\n]*so it needs \$899 of Safety/.test(fullText), 'the investments (gold $2,000) set how much Safety they need')
 
 // 3. The user cancels everything: nothing saved, the agent does not run the plan.
 const none = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: crafted }, { role: 'user', content: '[app event] The user reviewed the items: saved: none. skipped: everything.' }], empty)
@@ -283,7 +283,7 @@ expect(rec.calls === 0 && /^Saved\. Safety is now \$[\d,]+ of \$[\d,]+/.test(rec
 const safe = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: firstText }, { role: 'user', content: '[app event] The user signed the card: Added 900 USDC to your emergency fund.' }, { role: 'assistant', content: 'Which part would you like to fill first: Safety (300 USDC of 840 USDC) or Crypto (0 USDC of 1,354 USDC)?' }, { role: 'user', content: 'How about the "safe" part' }], { ...base, holdings: base.holdings.map(h => h.id === 'h2' ? { ...h, type: 'term_deposit' as const, name: 'Term deposit', value: 300 } : h.id === 'h1' ? { ...h, value: 0 } : h) }, 900)
 const safeText = safe.body.content ?? ''
 console.log('\nstep 6d: model calls', safe.calls, '\n' + safeText)
-expect(safe.calls === 0 && /Safety lives outside the app/.test(safeText) && /You have \$300 of/.test(safeText), 'naming Safety explains it lives outside the app, with the totals')
+expect(safe.calls === 0 && /Safety is money you set aside and do not invest/.test(safeText) && /You choose where it sits, as long as it is low-volatility/.test(safeText) && /You have \$300 of/.test(safeText), 'naming Safety explains why it is needed, that the user chooses its form, with the totals')
 
 
 // 7. The admin page's API: who may call it, what it changes, and that it never shows a secret.

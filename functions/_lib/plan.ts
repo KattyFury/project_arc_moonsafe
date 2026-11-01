@@ -109,34 +109,43 @@ export function splitSection(b: Balance, vi: boolean, n = 2): string | null {
   const age = b.age ?? 30
   const est = b.ageIsDefault ? (vi ? ' (ước tính theo tuổi mặc định 30)' : ' (an estimate: the default age of 30 is used)') : '' // lang-ok
   const even = sTrad === sCrypto
-  const idleItems = b.items.filter(i => i.group === 'idle' && i.usd >= 0.005).map(i => `${i.label} ${fmt(i.usd)}`)
+  const list = (g: 'idle' | 'safe') => b.items.filter(i => i.group === g && i.usd >= 0.005).map(i => `${i.label} ${fmt(i.usd)}`)
+  const idleItems = list('idle'), safeItems = list('safe')
   const keep = b.suggest?.keep ?? 0
   const head = vi
     ? `${n}. **Đầu tư theo tuổi của bạn, ${age}${est}:** Safety ${sSafe}%, Traditional ${sTrad}%, Crypto ${sCrypto}%. ${even ? 'Traditional và Crypto chia đôi là mặc định của MoonSafe, không phải quy tắc chuẩn; bạn có thể chọn tỷ lệ khác.' : `Traditional ${sTrad}% và Crypto ${sCrypto}% là tỷ lệ bạn chọn.`}` // lang-ok
     : `${n}. **Investing, by your age, ${age}${est}:** Safety ${sSafe}%, Traditional ${sTrad}%, Crypto ${sCrypto}%. ${even ? 'An even Traditional / Crypto split is MoonSafe\'s default, not a standard rule; you can pick another.' : `Traditional ${sTrad}% and Crypto ${sCrypto}% is the split you chose.`}`
+  // Why Safety, in plain words, before any number (Hieu, 2026-11-01: the user must understand why they need it and decide it themselves).
+  const why = vi
+    ? '- **Safety** là tiền bạn để riêng, không dùng để đầu tư: giá trị của nó đứng yên khi thị trường giảm, nên một năm xấu không buộc bạn bán đầu tư lúc lỗ. Đầu tư càng nhiều thì Safety cần càng lớn.' // lang-ok
+    : '- **Safety** is money you set aside and do not invest: its value stays put when markets fall, so a bad year never forces you to sell investments at a loss. The more you invest, the more Safety you need.'
   const investLine = x.invest > 0.005
     ? (vi
-      ? `- Bạn đang đầu tư ${fmt(x.invest)} (Traditional ${fmt(x.g.traditional)}, Crypto ${fmt(x.crypto)}). Để giữ khoản này, bạn cần ${fmt(x.need)} Safety: tiền gửi có kỳ hạn hoặc trái phiếu chính phủ, để một năm xấu không buộc bạn bán đầu tư. Hiện có ${fmt(x.safeFree)}.` // lang-ok
-      : `- You have ${fmt(x.invest)} invested (Traditional ${fmt(x.g.traditional)}, Crypto ${fmt(x.crypto)}). To hold it safely you need ${fmt(x.need)} in Safety: a term deposit at your bank or government bonds, so a bad year never forces you to sell. You have ${fmt(x.safeFree)}.`)
+      ? `- Bạn đang đầu tư ${fmt(x.invest)} (Traditional ${fmt(x.g.traditional)}, Crypto ${fmt(x.crypto)}), nên cần ${fmt(x.need)} Safety.` // lang-ok
+      : `- You have ${fmt(x.invest)} invested (Traditional ${fmt(x.g.traditional)}, Crypto ${fmt(x.crypto)}), so it needs ${fmt(x.need)} of Safety.`)
     : (vi ? '- Bạn chưa đầu tư gì.' : '- Nothing is invested yet.') // lang-ok
-  const free = x.idle
+  // What already counts as Safety, and why (a term deposit or bonds count as they are; bank, cash or stablecoins only when chosen).
+  const safeLine = safeItems.length
+    ? (vi
+      ? `- Đã là Safety: ${safeItems.join(', ')}. Đây là tiền đã để riêng, giá không chạy theo thị trường và lấy ra được khi cần, nên nó làm đúng việc của Safety.` // lang-ok
+      : `- Already Safety: ${safeItems.join(', ')}. It is set aside, its value does not swing with the markets and you can take it out when needed, which is exactly Safety's job.`)
+    : null
   const keepNote = keep >= 0.005 ? (vi ? `; giữ ${fmt(keep)} (1 tháng chi tiêu) trong tài khoản để tiêu` : `; keep ${fmt(keep)} (a month of spending) in your account for bills`) : '' // lang-ok
   const idleLine = idleItems.length
-    ? (vi
-      ? `- Tiền chưa làm gì: ${idleItems.join(', ')}${keepNote}. ${free < 0.005 ? 'Không còn gì để chia lúc này.' : x.toSafeFirst >= 0.005 ? `Đưa ${fmt(x.toSafeFirst)} vào Safety trước, rồi chia ${fmt(x.rest)} còn lại theo cùng tỷ lệ:` : `Chia ${fmt(free)} theo tỷ lệ:`}` // lang-ok
-      : `- Money not doing anything yet: ${idleItems.join(', ')}${keepNote}. ${free < 0.005 ? 'Nothing to place right now.' : x.toSafeFirst >= 0.005 ? `Put ${fmt(x.toSafeFirst)} into Safety first, then split the other ${fmt(x.rest)} by the same shares:` : `Split ${fmt(free)} by the shares:`}`)
+    ? (vi ? `- Tiền chưa làm gì: ${idleItems.join(', ')}${keepNote}. Bạn quyết định tiền nào vào phần nào.` : `- Money not doing anything yet: ${idleItems.join(', ')}${keepNote}. You decide which of it goes where.`) // lang-ok
     : (vi ? '- Không có tiền nào đang nằm yên, nên tiền mới (phần dư mỗi tháng, airdrop) sẽ vào phần còn thiếu.' : '- No money is sitting idle, so new money (what is left each month, airdrops) goes to the parts still short.') // lang-ok
-  const what = { safe: vi ? 'tiền gửi có kỳ hạn, trái phiếu chính phủ' : 'term deposit, government bonds', traditional: vi ? 'quỹ chỉ số như VOO, vàng' : 'index funds such as VOO, gold', crypto: vi ? 'chủ yếu Bitcoin, có lúc giảm một nửa' : 'mostly Bitcoin, which can halve on the way' } // lang-ok
+  const what = { safe: vi ? 'để riêng, ít biến động' : 'set aside, low-volatility', traditional: vi ? 'quỹ chỉ số như VOO, vàng' : 'index funds such as VOO, gold', crypto: vi ? 'chủ yếu Bitcoin, có lúc giảm một nửa' : 'mostly Bitcoin, which can halve on the way' } // lang-ok
+  // Target and what is missing only (Hieu, 2026-11-01): the user places the money, then tells the app.
   const part = (r: Standing, share: number) => {
-    const now = r.add >= 0.005
-      ? (vi ? `thêm ${fmt(r.add)}, thành ${fmt(r.have + r.add)}` : `add ${fmt(r.add)}, to ${fmt(r.have + r.add)}`) // lang-ok
-      : r.over ? (vi ? `${fmt(r.have)}, trên tỷ lệ; không cần bán, tiền mới vào phần khác` : `${fmt(r.have)}, above its share; no need to sell, new money goes to the others`) // lang-ok
-      : r.full ? (vi ? `${fmt(r.have)}, đúng tỷ lệ` : `${fmt(r.have)}, on track`) : fmt(r.have) // lang-ok
-    const later = r.left - r.add >= 0.005 ? (vi ? `; còn ${fmt(r.left - r.add)} từ tiền mới` : `; ${fmt(r.left - r.add)} more from new money`) : '' // lang-ok
-    return `  - **${r.name} ${share}%** (${what[r.key]}): ${now}${later}.`
+    const where = r.over ? (vi ? `${fmt(r.have)}, trên tỷ lệ; không cần bán, tiền mới vào phần khác` : `${fmt(r.have)}, above its share; no need to sell, new money goes to the others`) // lang-ok
+      : `${fmt(r.have)} ${vi ? 'trên' : 'of'} ${fmt(r.target)}${r.full ? (vi ? ', đúng tỷ lệ' : ', on track') : `, ${fmt(r.left)} ${vi ? 'còn thiếu' : 'to go'}`}` // lang-ok
+    return `  - **${r.name} ${share}%** (${what[r.key]}): ${where}.`
   }
+  const how = vi
+    ? 'Safety bạn chọn để ở đâu cũng được, miễn ít biến động: tiền gửi có kỳ hạn, trái phiếu chính phủ, hoặc stablecoin hay tiền mặt bạn để riêng. Khi đã chia xong, hãy nói với mình (ví dụ "I keep 5 USDC as Safety") để mình ghi lại.' // lang-ok
+    : 'You choose where your Safety sits, as long as it is low-volatility: a term deposit, government bonds, or stablecoins or cash you keep apart. When you have placed money, tell me (for example "I keep 5 USDC as Safety") and I will record it.'
   const [safe, trad, crypto] = standing
-  return [head, investLine, idleLine, part(safe, sSafe), part(trad, sTrad), part(crypto, sCrypto)].join('\n')
+  return [head, why, investLine, safeLine, idleLine, part(safe, sSafe), part(trad, sTrad), part(crypto, sCrypto), how].filter(Boolean).join('\n')
 }
 
 export function buildPlan({ p, b, cover, partial = null, vi, hasVault = true, vaultFee = 1 }: PlanInput): string | null {
@@ -359,8 +368,8 @@ export function buildPartAnswer({ b, vi, part, walletUsd }: { b: Balance; vi: bo
   }
   if (part === 'safe') {
     return vi
-      ? `Safety nằm ngoài app: tiền gửi có kỳ hạn ở ngân hàng hoặc trái phiếu chính phủ, lấy từ tiền đang để không. ${mine}, ${toGo}. Khi đã gửi, hãy nói với mình (ví dụ "I put 400 in a term deposit") để mình ghi lại.` // lang-ok
-      : `Safety lives outside the app: a term deposit at your bank or government bonds, from money not doing anything yet. ${mine}, ${toGo}. When you have put it there, tell me (for example "I put 400 in a term deposit") and I will record it.`
+      ? `Safety là tiền bạn để riêng, không đầu tư, để một năm xấu không buộc bạn bán đầu tư. ${mine}, ${toGo}. Bạn chọn để ở đâu cũng được, miễn ít biến động: tiền gửi có kỳ hạn, trái phiếu chính phủ, hoặc stablecoin hay tiền mặt để riêng. Khi đã để xong, hãy nói với mình (ví dụ "I keep 400 USDC as Safety") để mình ghi lại.` // lang-ok
+      : `Safety is money you set aside and do not invest, so a bad year never forces you to sell. ${mine}, ${toGo}. You choose where it sits, as long as it is low-volatility: a term deposit, government bonds, or stablecoins or cash you keep apart. When you have placed it, tell me (for example "I keep 400 USDC as Safety") and I will record it.`
   }
   const tSlice = Math.floor(row.left / DCA_MONTHS)
   const spread = tSlice >= 1

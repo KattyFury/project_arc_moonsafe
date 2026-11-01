@@ -103,6 +103,8 @@ export interface AgentAction {
   ask?: string[]
   /** confirm_record: where the money went and what the user already said about its source. */
   holdingType?: string
+  /** confirm_record: the user keeps this money as Safety. */
+  safety?: boolean
   name?: string
   source?: 'wallet' | 'new' | null
   amount?: { amount: number; currency: 'VND' | 'USDC' }

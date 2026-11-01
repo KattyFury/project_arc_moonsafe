@@ -37,7 +37,7 @@ export interface Holding {
   priceSource: 'market' | 'self'
   /** false = counted in net worth, outside the % base (grey slice): rental, business, loans given, insurance. */
   rebalanceable: boolean
-  /** Type "other" only: what it is by nature. */
+  /** Type "other": what it is by nature. Idle money (cash, bank, stablecoins): "safe" when the user chose to keep it as Safety (Hieu, 2026-11-01). */
   category?: Category
   /** loan_given only. */
   loanStatus?: 'on_time' | 'overdue'

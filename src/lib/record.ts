@@ -7,7 +7,7 @@
 
 import { amountsUsd } from '../kb/facts'
 import type { AssetType, FinancialProfile, Holding } from '../types'
-import { appWalletHolding, categoryOf, defaultRebalanceable, newId, priceKindOf, type ProfileOp } from './profile'
+import { appWalletHolding, canBeSafety, categoryOf, defaultRebalanceable, newId, priceKindOf, type ProfileOp } from './profile'
 
 /** What the user said they placed, and where. */
 export interface RecordRequest {
@@ -18,6 +18,8 @@ export interface RecordRequest {
   name: string
   /** A source named in the same message; null = the user picks in the box. */
   source: 'wallet' | 'new' | null
+  /** The user chose to keep this money as Safety ("keep 400 USDC as Safety"; Hieu, 2026-11-01): it is saved apart from idle money. */
+  safety?: boolean
 }
 
 /** Where the money came from, as chosen in the box. */
@@ -31,12 +33,18 @@ export const presetSource = (req: RecordRequest, p: FinancialProfile): RecordSou
 
 const DEST_NAME: Partial<Record<AssetType, string>> = {
   savings: 'Bank savings', term_deposit: 'Term deposit', bond: 'Bonds', flexible_earn: 'Flexible earn', checking: 'Bank checking account',
+  stable_wallet: 'Stablecoins', cash: 'Cash',
 }
 
-export const bucketLabel = (type: AssetType): string => categoryOf({ type }) === 'safe' ? 'Safety' : 'Idle money'
+export const bucketLabel = (type: AssetType, safety = false): string => categoryOf({ type, category: safety ? 'safe' : undefined }) === 'safe' ? 'Safety' : 'Idle money'
+
+/** Is this holding the user's Safety place of that type (a term deposit always is; bank, cash or stablecoins only when chosen as Safety)? */
+const isSafe = (h: Pick<Holding, 'type' | 'category'>) => categoryOf(h) === 'safe'
 
 // "put / moved / deposited … 1000 … in my bank". "Imma put" and "I'm going to put" count: the box says what will be saved.
 const PLACE = /(?<!\p{L})(put|putting|add|added|move|moved|moving|deposit|deposited|transfer|transferred|place|placed|save|saved|sent|wired|send)\s[^.?!\n]{0,40}?\d[^.?!\n]{0,40}?(?<!\p{L})(into|in|to|on)\s+(my\s+|the\s+|a\s+|an\s+)?(safe|safety|savings?|bank|term deposit|fixed deposit|flexible|simple earn|earn|checking)/iu
+// "keep 400 USDC as Safety", "set aside 1000 of my bank money for Safety" (Hieu, 2026-11-01: the user decides what their Safety is).
+const PLACE_AS = /(?<!\p{L})(put|keep|keeping|set aside|use|using|hold|holding|leave|move|moved|save|saved|mark)\s[^.?!\n]{0,40}?\d[^.?!\n]{0,50}?(?<!\p{L})(as|for|into|in|to)\s+(my\s+|the\s+)?(safety|safe part)(?!\p{L})/iu
 const PLACE_VI = /(vừa|đã|mới)\s+(bỏ|gửi|chuyển|cho|nạp|để)[^.?!\n]{0,30}\d[^.?!\n]{0,30}(vào|sang)\s+(phần\s+|quỹ\s+)?(an toàn|safe|tiết kiệm|ngân hàng)/iu // lang-ok
 const QUESTION = /\?|^\s*(should|shall|can|could|would|how|what|is|do|does|if)\b/i
 const FROM_WALLET = /(from|out of)\s+(my\s+|the\s+|this\s+)?(app\s+|moonsafe\s+)?wallet|(this|the app|my app)\s+wallet/i
@@ -64,20 +72,28 @@ function firstAmount(t: string, from: number, vndPerUsd: number | null): number 
 export function detectPlacement(text: string, vndPerUsd: number | null): RecordRequest | null {
   const t = text.trim()
   if (!t || t.startsWith('[app event]') || QUESTION.test(t)) return null
-  const hit = PLACE.exec(t) ?? PLACE_AFTER.exec(t) ?? PLACE_NEW_AFTER.exec(t) ?? PLACE_NEW_BEFORE.exec(t)
+  const hit = PLACE.exec(t) ?? PLACE_AS.exec(t) ?? PLACE_AFTER.exec(t) ?? PLACE_NEW_AFTER.exec(t) ?? PLACE_NEW_BEFORE.exec(t)
   const viaIt = !hit && PLACE_IT.test(t)
   if (!hit && !viaIt && !PLACE_VI.test(t)) return null
   // "put 1000 in my bank" has no currency word: read the first number after the verb as USD.
   const amount = firstAmount(t, hit && !viaIt ? hit.index : 0, vndPerUsd) || firstAmount(t, 0, vndPerUsd)
   if (!amount || !(amount > 0)) return null
-  // Safety is a term deposit or bonds; a plain bank account is idle money (Hieu, 2026-11-01), so "as Safety" means a term deposit.
-  const holdingType: AssetType = /term deposit|fixed deposit|(?<!\p{L})(safety|safe part)(?!\p{L})/iu.test(t) ? 'term_deposit'
+  // The user decides what their Safety is (Hieu, 2026-11-01), in a low-volatility form: the form they name is kept, marked as Safety.
+  // Gold, stocks or coins are never recorded as Safety (the agent explains why instead).
+  const safety = /(?<!\p{L})(safety|safe part|an toàn)(?!\p{L})/iu.test(t) // lang-ok
+  if (safety && /(?<!\p{L})(gold|stocks?|shares|etfs?|voo|btc|bitcoin|eth|crypto|coins?|vàng|cổ phiếu)(?!\p{L})/iu.test(t)) return null // lang-ok
+  const holdingType: AssetType = /term deposit|fixed deposit/i.test(t) ? 'term_deposit'
     : /(?<!\p{L})(government bonds?|bonds?|t-bills?|treasur(y|ies))(?!\p{L})/iu.test(t) ? 'bond'
     : /flexible|simple earn|(?<!\p{L})earn(?!\p{L})/iu.test(t) ? 'flexible_earn'
     : /checking|current account/i.test(t) ? 'checking'
+    : /(?<!\p{L})(savings?|bank)(?!\p{L})/iu.test(t) ? 'savings'
+    : /(?<!\p{L})(usdc|usdt|stablecoins?|stables?)(?!\p{L})/iu.test(t) ? 'stable_wallet'
+    : /(?<!\p{L})cash(?!\p{L})/iu.test(t) ? 'cash'
     : 'savings'
   const source = FROM_WALLET.test(t) ? 'wallet' : NEW_MONEY.test(t) || /outside|extra/i.test(t) ? 'new' : null
-  return { amountUsd: Math.round(amount * 100) / 100, holdingType, name: DEST_NAME[holdingType] ?? 'Savings', source }
+  const keep = safety && canBeSafety(holdingType) && categoryOf({ type: holdingType }) === 'idle'
+  const name = DEST_NAME[holdingType] ?? 'Savings'
+  return { amountUsd: Math.round(amount * 100) / 100, holdingType, name: keep ? `${name} kept as Safety` : name, source, ...(keep ? { safety: true } : {}) }
 }
 
 const usd = (h: Holding, rate: number | null): number | null =>
@@ -86,7 +102,7 @@ const usd = (h: Holding, rate: number | null): number | null =>
 /** Tracked places that can have funded this: idle or safe money kept as a plain value, big enough. */
 export function sourceOptions(profile: FinancialProfile, req: RecordRequest, rate: number | null): Holding[] {
   return profile.holdings.filter(h => {
-    if (h.type === req.holdingType) return false
+    if (h.type === req.holdingType && isSafe(h) === isSafe({ type: req.holdingType, category: req.safety ? 'safe' : undefined })) return false
     const kind = priceKindOf(h.type)
     if (kind !== 'self' && kind !== 'stable') return false
     if (!['idle', 'safe'].includes(categoryOf(h))) return false
@@ -105,7 +121,8 @@ const inCurrency = (amountUsd: number, h: Pick<Holding, 'currency'>, rate: numbe
  */
 export function buildRecordOps(profile: FinancialProfile, req: RecordRequest, source: RecordSource, rate: number | null, now = Date.now()): ProfileOp[] {
   const ops: ProfileOp[] = []
-  const dest = profile.holdings.find(h => h.type === req.holdingType && h.value !== undefined && (priceKindOf(h.type) === 'self' || priceKindOf(h.type) === 'stable'))
+  const safeDest = isSafe({ type: req.holdingType, category: req.safety ? 'safe' : undefined })
+  const dest = profile.holdings.find(h => h.type === req.holdingType && isSafe(h) === safeDest && h.value !== undefined && (priceKindOf(h.type) === 'self' || priceKindOf(h.type) === 'stable'))
   const add = dest ? inCurrency(req.amountUsd, dest, rate) : null
   if (dest && add !== null) {
     ops.push({ op: 'set_holding', id: dest.id, patch: { value: Math.round(((dest.value ?? 0) + add) * 100) / 100 } })
@@ -114,7 +131,7 @@ export function buildRecordOps(profile: FinancialProfile, req: RecordRequest, so
       op: 'add_holding',
       holding: {
         id: newId('h'), type: req.holdingType, name: req.name, value: req.amountUsd, currency: 'USDC', updatedAt: now,
-        priceSource: 'self', rebalanceable: defaultRebalanceable(req.holdingType),
+        priceSource: 'self', rebalanceable: defaultRebalanceable(req.holdingType), ...(req.safety ? { category: 'safe' as const } : {}),
       },
     })
   }
@@ -129,5 +146,5 @@ export function buildRecordOps(profile: FinancialProfile, req: RecordRequest, so
 /** One line for the agent and the card: what was saved. */
 export function recordSummary(req: RecordRequest, source: RecordSource, profile: FinancialProfile): string {
   const from = source.kind === 'new' ? 'new money' : profile.holdings.find(h => h.id === source.id)?.name ?? 'a listed item'
-  return `${req.amountUsd.toLocaleString('en-US', { maximumFractionDigits: 2 })} USDC in ${req.name} (${bucketLabel(req.holdingType)}), from ${from}`
+  return `${req.amountUsd.toLocaleString('en-US', { maximumFractionDigits: 2 })} USDC in ${req.name} (${bucketLabel(req.holdingType, req.safety)}), from ${from}`
 }

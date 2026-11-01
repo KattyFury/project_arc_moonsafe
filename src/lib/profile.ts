@@ -33,8 +33,13 @@ export const isAssetType = (t: unknown): t is AssetType => typeof t === 'string'
 /** Category of a holding (KB spec 3); "other" uses its own, unclassified other counts as lifestyle (outside the base). */
 export function categoryOf(h: Pick<Holding, 'type' | 'category'>): Category {
   if (h.type === 'other') return h.category ?? 'lifestyle'
-  return (assetTypeRow(h.type)?.category ?? 'lifestyle') as Category
+  const cat = (assetTypeRow(h.type)?.category ?? 'lifestyle') as Category
+  // Idle money becomes Safety only when the user chose to keep it as Safety (Hieu, 2026-11-01).
+  return cat === 'idle' && h.category === 'safe' ? 'safe' : cat
 }
+
+/** Money the user may choose as Safety: low-volatility forms only (cash, bank, stablecoins, term deposits, bonds), never gold, stocks or coins. */
+export const canBeSafety = (type: AssetType): boolean => { const c = assetTypeRow(type)?.category; return c === 'idle' || c === 'safe' }
 
 /** Invest subgroup (traditional / btc / large_cap / altcoin / real_estate / business / lending), null outside invest. */
 export const subgroupOf = (h: Pick<Holding, 'type'>): string | null => assetTypeRow(h.type)?.subgroup ?? null
