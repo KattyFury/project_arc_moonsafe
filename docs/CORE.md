@@ -29,6 +29,7 @@ MoonSafe là **người giữ quỹ dự phòng**, rồi là **người tư vấ
 | **Traditional** | Cổ phiếu / quỹ chỉ số (VOO), vàng, trái phiếu lãi cao | |
 | **Crypto** | Chủ yếu BTC; coin khác vẫn ghi và tính vào đây | Không đặt mục tiêu riêng cho altcoin hay memecoin |
 
+- **Tiền bank / stablecoin KHÔNG BAO GIỜ mặc định là Safety** (Hiếu 2026-11-01): chỉ đúng khoản người dùng tự nói là Safety.
 - **Không theo dõi tiền nhàn rỗi** (Hiếu 2026-11-01: "track vậy không mệt à? biết tiền nhàn rỗi bao nhiêu thì giúp ích gì"). Tiền mặt, ngân hàng không kỳ hạn, stablecoin mà người dùng không chọn làm Safety: không hỏi, không ghi, không hiện. Người dùng tự bổ sung các phần từ thu nhập hay tiền rảnh.
 - Safety chỉ là Safety khi người dùng **hiểu vì sao cần** và **tự chọn** tiền nào, dạng nào. Chỉ chọn được dạng ít biến động; vàng, cổ phiếu hay coin làm Safety thì agent giải thích vì sao không nên và không ghi. Tiền gửi có kỳ hạn và trái phiếu đã có thì tính thẳng là Safety, kèm lời giải thích.
 - Nhà ở, xe, bất động sản cho thuê, vốn doanh nghiệp, tiền cho vay nằm ngoài 3 phần (chưa chốt cách xếp, xem cuối file).
@@ -42,7 +43,8 @@ MoonSafe là **người giữ quỹ dự phòng**, rồi là **người tư vấ
 - **Không lấy tổng 3 phần làm 100%** (làm một phần luôn luôn thiếu), và **không hiện % trên từng phần** (khó hiểu; Hiếu 2026-11-01). Mỗi phần chỉ hiện: số tiền "$1,000 of $3,500" + "$2,500 to go" hoặc "Full"; phần làm mốc ghi "Full, it sets the size".
 - Không phần nào vượt thanh của nó, nên **không bao giờ có chuyện khuyên bán**. Giá giảm không phải lý do để giục mua thêm.
 - Giá trị tài sản tính theo **giá hiện tại** (số lượng × giá), không theo giá vốn; không hỏi "đã mua bao nhiêu tiền".
-- *Đã code, chờ Hiếu duyệt ảnh (Desktop `MoonSafe-moc-2026-11-01`) rồi mới deploy.*
+- Chưa đầu tư gì: nói tỷ lệ 3 phần (mỗi $100 chia theo tuổi) rồi để người dùng bổ sung từ từ; đã có tài sản: bổ sung các phần sau mốc, thứ tự do người dùng.
+- *Đã code, Hiếu duyệt, đã deploy (2026-11-01).*
 
 ## 4. Ghi dữ liệu
 

@@ -151,6 +151,12 @@ try {
     assert.equal(proposed((await ask('i sold some eth last week', true, [], { profile: eth })).data).length, 0, 'selling some is not selling all')
     forcedTools = [tools('remove_holding', { id: 'eth' })]
     assert.ok(readOps(proposed((await ask('i sold all my eth last week', true, [], { profile: eth })).data)).some(o => o.op === 'remove_holding'), 'selling all still removes it')
+    // Bank money and stablecoins are never Safety by default (Hieu, 2026-11-01): only the money the user names as Safety.
+    forcedTools = [tools('add_holding', { type: 'savings', name: 'Bank', worth: { amount: 3000, currency: 'USDC' }, category: 'safe' }), tools('add_holding', { type: 'stable_wallet', name: 'USDT', symbol: 'USDT', worth: { amount: 5000, currency: 'USDC' }, category: 'safe' })]
+    const named = readOps(proposed((await ask('3000 in bank, and 5000 USDT is my safety')).data)).filter(o => o.op === 'add_holding') as Array<{ holding: { type: string; category?: string } }>
+    assert.deepEqual(named.map(o => `${o.holding.type}:${o.holding.category}`), ['stable_wallet:safe'], 'only the USDT the user named is Safety; the bank money is spare, not recorded')
+    forcedTools = []
+    checks++
     // The answer to "how much did you sell?" goes on the card: ETH 3,000 − 1,000 = 2,000.
     forcedTools = []
     const sold = await ask('about 1000 worth', true, [{ role: 'user', content: 'i sold some eth last week' }, { role: 'assistant', content: 'How much ETH did you sell, and roughly what was it worth in dollars?' }], { profile: eth })

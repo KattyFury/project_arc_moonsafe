@@ -128,8 +128,8 @@ export function splitSection(b: Balance, vi: boolean, n = 2): string | null {
   // What already counts as Safety, and why (a term deposit or bonds count as they are; bank, cash or stablecoins only when chosen).
   const safeLine = safeItems.length
     ? (vi
-      ? `- Đã là Safety: ${safeItems.join(', ')}. Khoản này có lãi đều và không chạy theo giá cổ phiếu hay crypto, nên nó làm đúng việc của Safety: giữ cho tổng tài sản ít dao động.` // lang-ok
-      : `- Already Safety: ${safeItems.join(', ')}. It pays a steady return and does not follow stock or crypto prices, which is exactly Safety's job: keeping your whole picture steadier.`)
+      ? `- Đã là Safety: ${safeItems.join(', ')}. Khoản này để riêng và không chạy theo giá cổ phiếu hay crypto, nên nó làm đúng việc của Safety: giữ cho tổng tài sản ít dao động.` // lang-ok
+      : `- Already Safety: ${safeItems.join(', ')}. It is set aside and does not follow stock or crypto prices, which is exactly Safety's job: keeping your whole picture steadier.`)
     : null
   const rule = vi
     ? '- Phần đi xa nhất so với tỷ lệ của nó làm mốc; các phần khác theo nó:' // lang-ok
@@ -140,7 +140,10 @@ export function splitSection(b: Balance, vi: boolean, n = 2): string | null {
     ? 'Bổ sung các phần còn thiếu từ thu nhập hay tiền rảnh, theo thứ tự bạn thích. Safety để ở đâu cũng được, miễn ít biến động (tiền gửi có kỳ hạn, trái phiếu chính phủ, hoặc stablecoin hay tiền mặt bạn để riêng). Làm xong thì nói với mình (ví dụ "I keep 500 USDC as Safety") để mình ghi lại.' // lang-ok
     : 'Top up the parts still short from your income or spare money, in any order you like. Safety can sit anywhere low-volatility (a term deposit, government bonds, or stablecoins or cash you keep apart). When you have, tell me (for example "I keep 500 USDC as Safety") and I will record it.'
   // Nothing in the three parts yet: whichever they start becomes the one the others follow.
-  if (!standing) return [head, why, vi ? '- Chưa có gì trong 3 phần. Bắt đầu phần nào cũng được, từ thu nhập hay tiền rảnh; phần đầu tiên sẽ làm mốc cho các phần khác.' : '- Nothing is in the three parts yet. Start any of them from your income or spare money; the first one you fill sets the size for the others.', how].join('\n') // lang-ok
+  // Nothing invested yet (Hieu, 2026-11-01): say the three shares and let them top up little by little.
+  if (!standing) return [head, why, vi
+    ? `- Bạn chưa có gì trong 3 phần, nên cứ bổ sung từ từ theo đúng tỷ lệ này: mỗi $100 bạn để dành được, khoảng $${sSafe} vào Safety, $${sTrad} vào Traditional, $${sCrypto} vào Crypto. Phần nào có trước thì làm mốc cho các phần còn lại.` // lang-ok
+    : `- Nothing is in the three parts yet, so top them up little by little by these shares: of every $100 you put aside, about $${sSafe} to Safety, $${sTrad} to Traditional and $${sCrypto} to Crypto. Whichever part gets ahead then sets the size for the others.`, how].join('\n')
   const [safe, trad, crypto] = standing
   return [head, why, safeLine, rule, part(safe), part(trad), part(crypto), how].filter(Boolean).join('\n')
 }
@@ -284,6 +287,8 @@ export type Part = 'safe' | 'traditional' | 'crypto'
 
 /** The question that follows the plan: only the parts that still have room, each with "X of Y". Never a purchase. */
 export function pickQuestion(standing: Standing[], vi: boolean): string {
+  // Nothing in the three parts yet: the investing step already says to top up by the shares, no question needed.
+  if (!standing.length) return ''
   const open = standing.filter(x => !x.full)
   const names = (xs: string[]) => xs.length > 1 ? `${xs.slice(0, -1).join(', ')} ${vi ? 'hay' : 'or'} ${xs[xs.length - 1]}` : xs[0] // lang-ok
   const tag = (x: Standing) => `${x.name} (${fmt(x.have)} ${vi ? 'trên' : 'of'} ${fmt(x.target)})` // lang-ok
@@ -379,8 +384,9 @@ export function buildPartAnswer({ b, vi, part, walletUsd }: { b: Balance; vi: bo
 
 /** After the user signs the emergency-fund deposit, or confirms a saved amount: where things stand, then only the parts with room. */
 export function buildAfterSign({ b, vi, kind, summary, cover = null, partial = null }: { b: Balance; vi: boolean; kind: 'deposit' | 'record' | 'open'; summary?: string; cover?: number | null; partial?: number | null }): string | null {
-  const standing = bucketStanding(b)
-  if (!standing || b.fund.floorUsd === null) return null
+  if (b.fund.floorUsd === null) return null
+  // Nothing in the three parts yet is fine (a new saver): the investing step then says the three shares.
+  const standing = bucketStanding(b) ?? []
   const vault = b.fundUsd ?? 0
   const fundFull = vault >= b.fund.floorUsd - 0.005
   // The vault was just opened: now the first deposit.
@@ -401,9 +407,11 @@ export function buildAfterSign({ b, vi, kind, summary, cover = null, partial = n
       : `Your emergency fund is now ${fmt(vault)} of ${fmt(b.fund.floorUsd)} (${b.fund.floorMonths} months of spending). Keep adding a little at a time, whenever it suits you.`
     // Full: now, and only now, the investing step (Hieu, 2026-11-01).
     const split = splitSection(b, vi, 1)
-    return vi
-      ? `Quỹ dự phòng giờ là ${fmt(vault)} trên ${fmt(b.fund.floorUsd)} (${b.fund.floorMonths} tháng chi tiêu): đã đủ. Giờ mình chuyển sang đầu tư.${split ? `\n\n${split}` : ''}\n\n${pickQuestion(standing, vi)}` // lang-ok
-      : `Your emergency fund is now ${fmt(vault)} of ${fmt(b.fund.floorUsd)} (${b.fund.floorMonths} months of spending): full. Now on to investing.${split ? `\n\n${split}` : ''}\n\n${pickQuestion(standing, vi)}`
+    // A new saver has nothing in the three parts: no "which part" question, and no trailing blank lines.
+    const pick = pickQuestion(standing, vi)
+    return (vi
+      ? `Quỹ dự phòng giờ là ${fmt(vault)} trên ${fmt(b.fund.floorUsd)} (${b.fund.floorMonths} tháng chi tiêu): đã đủ. Giờ mình chuyển sang đầu tư.${split ? `\n\n${split}` : ''}${pick ? `\n\n${pick}` : ''}` // lang-ok
+      : `Your emergency fund is now ${fmt(vault)} of ${fmt(b.fund.floorUsd)} (${b.fund.floorMonths} months of spending): full. Now on to investing.${split ? `\n\n${split}` : ''}${pick ? `\n\n${pick}` : ''}`)
   }
   const touched = /\(Safety\)/i.test(summary ?? '') ? standing[0] : /Traditional/i.test(summary ?? '') ? standing[1] : /Crypto/i.test(summary ?? '') ? standing[2] : null
   const status = touched && fundFull ? ` ${touched.name} ${vi ? 'giờ là' : 'is now'} ${shareLine(touched, vi)}.` : '' // lang-ok

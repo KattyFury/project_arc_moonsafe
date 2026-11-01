@@ -489,7 +489,7 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
     // Only spare money, nothing in the three parts: nothing to measure, the plan says to start any part.
     const only = normalizeProfile({ ...base, age: 20, holdings: [H({ id: 'k', type: 'checking', name: 'Bank account', value: 10000 })] })
     if (bucketStanding(bal(only, 0, 450)) !== null) fail('only spare money: nothing in the three parts')
-    if (!/Nothing is in the three parts yet/.test(buildPlan({ p: only, b: bal(only, 0, 450), shares: [20, 40, 40], cover: null, vi: false }) ?? '')) fail('only spare money: the plan says to start any part')
+    if (!/Nothing is in the three parts yet, so top them up little by little by these shares: of every \$100 you put aside, about \$20 to Safety, \$40 to Traditional and \$40 to Crypto/.test(buildPlan({ p: only, b: bal(only, 0, 450), shares: [20, 40, 40], cover: null, vi: false }) ?? '')) fail('not invested yet: the plan says the three shares and to top up little by little')
   }
   const withAirdrops = buildPlan({ p: normalizeProfile({ ...base, hasWindfalls: true }), b: bal(base, 1900, 450), shares, cover: null, vi: false })!
   if (!/Airdrops come in bursts[^\n]*only counts your steady income/.test(withAirdrops)) fail('plan: airdrops are explained as not steady income')

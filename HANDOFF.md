@@ -1,4 +1,25 @@
-# ▶ HANDOFF 2026-11-01 (đêm) — CORE + BẢNG CÂN ĐỐI "PHẦN ĐI XA NHẤT LÀM MỐC" (CHƯA DEPLOY, CHỜ HIẾU DUYỆT ẢNH)
+# ▶ HANDOFF 2026-11-01 (khuya nhất) — LUẬT MỐC ĐÃ DEPLOY + TEST 5 NGƯỜI × 2M TOKEN HAIKU (Cloudflare `c9506894`)
+
+**Đọc `docs/CORE.md` trước.** Hiếu đã DUYỆT màn hình "phần đi xa nhất làm mốc" và nó đang live (bundle `index--R3BQKqW.js`, deploy `fe46f621`, rồi `c9506894` chỉ đổi server/agent).
+
+Test: `scripts/balance-cases.ts` (b1 người mới chưa đầu tư — đi trọn luồng; b2 dồn hết crypto; b3 gia đình VN có học phí, không thích crypto, chọn 80/20; b4 55 tuổi gần như toàn tiền gửi/trái phiếu; b5 thu nhập không đều 2 con, đổi ý, đòi track bank, thử 0/100). Đã dùng 1.914.053 token: `docs/evals/balance-r1a/r1b` (tìm lỗi), `balance-r2a/r2b` (sau sửa).
+
+**Hiếu dặn thêm:** chưa đầu tư → nói tỷ lệ 3 phần rồi cho bổ sung từ từ; đã có tài sản → dựa vào đó mà bổ sung. **Tiền bank / stablecoin KHÔNG BAO GIỜ mặc định là Safety** — chỉ khoản user tự nói là Safety.
+
+Lỗi tìm ra → đã sửa (r2 thấy đúng):
+1. Người mới nạp đủ quỹ mà không có tỷ lệ (khối "sau khi ký" đòi `balance.declared`) → bỏ điều kiện; `splitSection` chưa có gì thì nói "mỗi $100: $24 Safety, $38 Traditional, $38 Crypto"; câu "$200 bỏ đâu" chia đúng $48/$76/$76.
+2. Agent tự chọn phần bổ sung trước (có lúc sai), gọi Safety là "tiền gửi", gọi tiền gửi là "đầu tư" → dặn: thứ tự do user, chỉ gọi Safety/Traditional/Crypto.
+3. Giải thích sai mục tiêu học phí trong Safety → dữ kiện nói rõ Safety đã gồm goal.
+4. "Track my bank account" → agent từng nói "record as money not doing anything yet", rồi gợi ý biến nó thành Safety → giờ chỉ nói "không theo dõi tiền nhàn rỗi", không gợi ý.
+5. "BTC up 50%, am I over?" trả lời kiểu "above its share" → nothing is over, phần lớn lên thành mốc mới.
+6. Đổi split 0/100 đã lưu mà agent nói "already set, no change" → `done` báo rõ vừa đổi.
+7. "Already Safety: USDT… pays a steady return" → bỏ "pays a return".
+8. **Lỗ hổng Safety mặc định:** chữ "safety" ở bất kỳ đâu trong tin làm mọi khoản bank/stablecoin thành Safety → `saysSafetyFor` (chat.ts) chỉ nhận khoản nằm cùng mệnh đề với chữ Safety ("3000 in bank, and 5000 USDT is my safety" → chỉ USDT). Có test.
+9. Dòng trống thừa khi chưa có gì trong 3 phần; `pickQuestion([])` không còn nói "All three parts are at their targets".
+
+Còn để ý (chưa sửa): b4 55 tuổi toàn Safety $400k → luật mốc cho Crypto "còn $158,636" (agent có nói "không bắt buộc"); một câu lạ "it would not be protected by them when they fall". Lượt cuối của b4 và b5 (0/100) bị cắt vì trần token.
+
+# HANDOFF 2026-11-01 (đêm) — CORE + BẢNG CÂN ĐỐI "PHẦN ĐI XA NHẤT LÀM MỐC" (đã duyệt + deploy, xem mục trên)
 
 **Đọc `docs/CORE.md` trước** (nguồn chuẩn, Hiếu chốt hôm nay; đúng hơn mọi spec cũ). CLAUDE.md đã trỏ tới nó.
 

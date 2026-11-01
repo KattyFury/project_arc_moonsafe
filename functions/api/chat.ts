@@ -255,6 +255,26 @@ const SAYS_VND = /(?<!\p{L})(vnd|đồng|triệu|tr|nghìn|ngàn|củ)(?!\p{L})|
 // Part of a holding, not all of it: "sold some", "a bit", "part of", "bán bớt", "một ít".
 const PART_OF = /(?<!\p{L})(some|a bit|a little|part of|half|a few|bớt|một ít|một phần|một nửa)(?!\p{L})/iu // lang-ok
 const SAFETY_WORD = /(?<!\p{L})(safety|safe part|an toàn)(?!\p{L})/iu // lang-ok
+// Words for each kind of spare money, to find the one the user named as Safety.
+const KIND_WORDS: Partial<Record<AssetType, RegExp>> = {
+  cash: /(?<!\p{L})(cash|tiền mặt)(?!\p{L})/iu, checking: /(?<!\p{L})(bank|checking|current account|ngân hàng)(?!\p{L})/iu, savings: /(?<!\p{L})(bank|savings?|ngân hàng|tiết kiệm)(?!\p{L})/iu, // lang-ok
+  stable_wallet: /(?<!\p{L})(usdc|usdt|stablecoins?|stables?)(?!\p{L})/iu, flexible_earn: /(?<!\p{L})(earn|usdc|usdt|stablecoins?)(?!\p{L})/iu,
+  locked_earn: /(?<!\p{L})(earn|locked|usdc|usdt)(?!\p{L})/iu, defi_stable: /(?<!\p{L})(defi|vault|usdc|usdt|stablecoins?)(?!\p{L})/iu,
+}
+/**
+ * Bank money or stablecoins are NEVER Safety by default (Hieu, 2026-11-01): only when the user says THAT money is their Safety. The
+ * Safety word must sit in the same clause as the money ("5k usdt on binance, it is my safety"), so "3000 in the bank, and 5000 USDT is
+ * my safety" makes only the USDT Safety.
+ */
+const saysSafetyFor = (text: string, type: AssetType) => {
+  const kind = KIND_WORDS[type]
+  if (!kind) return false
+  return text.split(/[.;!?\n]|(?<!\d),(?!\d)\s*(?:and|but|plus|also|và|còn)\b|\b(?:and|but|plus|also|và|còn)\b/iu).some((part, i, all) => { // lang-ok
+    // "5k usdt on binance, it is my safety": the clause right after the money may carry the word.
+    const near = part + ' ' + (all[i + 1] ?? '')
+    return kind.test(part) && (SAFETY_WORD.test(part) || (/^\s*(it|that|this|đó|này)\b/iu.test(all[i + 1] ?? '') && SAFETY_WORD.test(near))) // lang-ok
+  })
+}
 const ALL_OF_IT = /(?<!\p{L})(all|whole|everything|entire|max|hết|toàn bộ|tất cả)(?!\p{L})/iu // lang-ok
 const ASKS_HOW_MUCH = /how much|bao nhiêu/i // lang-ok
 const SAYS_LOCKED = /lock|kho[áa]|khóa|(to open|để mở)/i // lang-ok
@@ -309,7 +329,7 @@ Reply in the language of the user's latest message (default English). ${VI_VOICE
 - Write for someone who has never heard of personal finance. Everyday words; one idea per reply.
 - Never use these internal labels as they are; say the plain version (the figures use the labels, your reply does not):
   - fund floor → "your emergency fund target" with its months ("3 months of spending")
-  - idle money → "money that is not doing anything yet"
+  - idle money → "spare money" (not tracked: never asked, recorded or counted)
   - liquid assets → "money you can use or sell quickly"
   - surplus → "what is left each month after spending"
   - priority debt → "expensive debt (high interest)"
@@ -320,7 +340,7 @@ Reply in the language of the user's latest message (default English). ${VI_VOICE
 
 ## Words that must never be mixed (Hieu, 2026-10-28: "you confuse Safety with the emergency fund")
 - **Emergency fund** = accessible money reserved for unexpected costs or lost income. MoonSafe tracks an onchain portion in a USDC vault, sized by its framework in MONTHS OF SPENDING (3, 6, 9 or 12). A zero vault does not mean no reserves elsewhere. Keep outside savings and the vault distinct; never count the same money twice. Always say "emergency fund", never "Safety".
-- **Safety** = one of the three parts, OUTSIDE the app: the low-risk part (term deposits, government bonds, or stablecoins, cash or a bank account the user CHOSE to keep as Safety). Plain bank money and stablecoins are money not doing anything yet until the user chooses. Its size follows their investments. Safety never has months, is never the emergency fund and is not money to take out any time.
+- **Safety** = one of the three parts, OUTSIDE the app: the low-risk part (term deposits, government bonds, or stablecoins, cash or a bank account the user CHOSE to keep as Safety). Plain bank money and stablecoins are spare money, NOT tracked, until the user chooses to keep some as Safety. If they ask you to track their bank account or spare money, say plainly MoonSafe does not track spare money, and stop there: do NOT suggest turning that bank money or those stablecoins into Safety (never Safety by default, Hieu 2026-11-01); only if THEY say a specific amount is their Safety is it recorded. Safety never has months, is never the emergency fund and is not money to take out any time.
 - Months of spending belong ONLY to the emergency fund. When the emergency fund is full, say "your emergency fund is full"; never "Safety is full" for it.
 - When all three figures are verified, give a part as its share now against its target with the money next to it ("Safety 35% of what the investments need ($210,000), target 100%: below; Traditional 86% of the investments ($300,000), target 50%: above"; CORE §3: the balance is tracked by shares, not totals); the amount still missing only when they ask how much. If any figure is unknown or pending confirmation, say what is known and what remains undetermined; never fill the gap with zero or an illustrative target.
 
@@ -708,7 +728,9 @@ function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: nu
     lines.push(`- Target by the MoonSafe framework at age ${b.age}${b.ageIsDefault ? ' (DEFAULT age 30: the user declined; say the split is an estimate)' : ''}: Safety ${ts}%, Traditional ${ttr}%, Crypto ${tcr}% (mostly BTC; no target for other coins). Safety = age is the "age in bonds" rule of thumb. ${p.cryptoSplit === undefined ? 'Traditional / Crypto is MoonSafe\'s default even split, NOT a standard rule: say so, and that they can choose another split (record it with update_profile crypto_split); when you first give the split, ask once how they want it.' : `Traditional / Crypto is the split they chose (${100 - p.cryptoSplit}/${p.cryptoSplit}).`}`)
     // Totals, not only what is missing (Hieu, 2026-10-28): "X of Y, Z to go" for each part; Safety carries a near-term goal first.
     const st = bucketStanding(b)
-    if (st && b.fund.met) lines.push(`- Where they stand (Hieu, 2026-11-01): the part furthest ahead of its age share is the full bar and sets the size; the others' full amounts follow it (full = leader value / leader share × their share). Nothing is ever above its bar, so never suggest selling. They top up the others from income or spare money, in any order they like; spare money is NOT tracked, never ask how much they have spare. Quote each part exactly as below${b.goalUsd > 0 ? `; Safety holds the near-term goal ${show(b.goalUsd)} on top` : ''}. Safety is NOT the emergency fund: ${st.map(x => x.anchor ? `${x.name} ${show(x.have)}: furthest ahead, sets the size` : `${x.name} ${show(x.have)} of ${show(x.target)}${x.full ? ': full' : `, ${show(x.left)} to go`}`).join('; ')}`)
+    if (st && b.fund.met) lines.push(`- Where they stand (Hieu, 2026-11-01): the part furthest ahead of its age share is the full bar and sets the size; the others' full amounts follow it (full = leader value / leader share × their share). Nothing is ever "over": if a part grows (prices up) it simply becomes the one that sets the size and the others' bars rise; never suggest selling. New money goes to the parts still short, in ANY order the user likes: never pick the order for them and never say one part should come first. Name the parts only as Safety, Traditional and Crypto (a term deposit or bonds are Safety, never "investments"). Spare money is NOT tracked. Quote each part exactly as below${b.goalUsd > 0 ? `; Safety includes the near-term goal ${show(b.goalUsd)}: what they hold in Safety counts toward that goal first, and the Safety figure already includes it` : ''}: ${st.map(x => x.anchor ? `${x.name} ${show(x.have)}: furthest ahead, sets the size` : `${x.name} ${show(x.have)} of ${show(x.target)}${x.full ? ': full' : `, ${show(x.left)} to go`}`).join('; ')}`)
+    // Nothing in the three parts yet (Hieu, 2026-11-01): the three shares, topped up little by little.
+    else if (b.fund.met) lines.push(`- Nothing is in Safety, Traditional or Crypto yet. Tell them to split each amount they put aside by the age shares (of every $100: about $${Math.round(ts)} Safety, $${Math.round(ttr)} Traditional, $${Math.round(tcr)} Crypto) and top up little by little; when they say an amount, split THAT amount by these shares. Whichever part gets ahead then sets the size. Spare money is not tracked.`)
   } else lines.push('- Target: AGE UNKNOWN. Ask the age before talking about any share.')
   if (!b.declared) lines.push('- Nothing is declared yet: the user has not said what they hold (the wallet balance seen onchain does not count until they declare it). If they ask how to split or invest: suggest NO split and NO purchase, turn NO percentage into an amount; ask about the next item of the collection flow instead.')
   else if (b.suggest && fundTargetKnown) {
@@ -1122,7 +1144,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     if (kind === 'crypto' && !basis && currentMarketValue(lastUserText)) return 'Not recorded: current market value is not invested cost. Keep the existing holding and explain the distinction.'
     const idleKind = KB.asset_types.find(t => t.key === type)?.category === 'idle'
     // Spare money is not tracked (Hieu, 2026-11-01): cash, bank money and stablecoins are recorded only as Safety the user keeps.
-    if (idleKind && !SAFETY_WORD.test(evidence.text)) return 'Not recorded: cash, bank money and stablecoins are tracked only when the user keeps them as Safety; spare money is never collected.'
+    if (idleKind && !saysSafetyFor(evidence.text, type)) return 'Not recorded: cash, bank money and stablecoins are tracked only when the user keeps them as Safety; spare money is never collected.'
     const category = type === 'other' && ['safe', 'invest', 'idle', 'lifestyle'].includes(String(a.category)) ? a.category as Holding['category']
       // Idle money is Safety only when the user said so (Hieu, 2026-11-01).
       : idleKind ? 'safe' : undefined
@@ -1230,6 +1252,8 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       if (f.cryptoSplit !== undefined) parts.push([{ cryptoSplit: f.cryptoSplit }, `outside Safety: Traditional ${100 - (f.cryptoSplit as number)}%, Crypto ${f.cryptoSplit}%`])
       for (const [fields, text] of parts) record({ op: 'update_profile', fields }, text)
       done.push(`Recorded: ${parts.map(x => x[1]).join(', ')}.`)
+      // Persona run 2026-11-01: a split set this turn was answered "already set, no change recorded".
+      if (f.cryptoSplit !== undefined) done.push(`The Traditional / Crypto split was CHANGED just now, at the user's request, to ${100 - (f.cryptoSplit as number)} / ${f.cryptoSplit}: confirm it as their choice in one sentence (the split is theirs to pick); never say it was already set.${(f.cryptoSplit as number) >= 80 ? ' Mention once, plainly, that crypto can fall by half.' : ''}`)
     } else if (name === 'add_holding') {
       const h = await buildHolding(a)
       if (typeof h === 'string') { console.log(`dropped add_holding ${call.function.arguments}: ${h}`); return h }
@@ -1265,7 +1289,8 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       // Move between the "Not placed yet" box and Safety (Hieu, 2026-11-01): idle kinds only, and only when the user said so.
       if (a.box === 'safety' || a.box === 'unplaced') {
         if (KB.asset_types.find(t => t.key === h.type)?.category !== 'idle') return 'Not changed: only cash, bank money or stablecoins can be moved to or from Safety; gold, stocks and coins are never Safety (their price can fall when it is needed).'
-        if (!SAFETY_WORD.test(evidence.text)) return 'Not changed: the user did not say this is (or is not) Safety.'
+        if (!saysSafetyFor(evidence.text, h.type) && !SAFETY_WORD.test(evidence.text.replace(/\s+/g, ' ')) ) return 'Not changed: the user did not say this is (or is not) Safety.'
+        if (a.box === 'safety' && !saysSafetyFor(evidence.text, h.type)) return 'Not changed: the user did not say THIS money is Safety; bank money and stablecoins are never Safety by default.'
         if (a.box === 'safety' && h.category !== 'safe') patch.category = 'safe'
         if (a.box === 'unplaced' && h.category === 'safe') patch.category = 'idle'
       }
@@ -1775,7 +1800,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
 
   // After the plan: the user picks a part, signs the emergency-fund deposit, or confirms a saved amount. The next step is built from the
   // numbers (only parts that still have room, "X of Y", the offer to buy cirBTC only after they pick crypto), never written by the model.
-  if (planGiven && balance.target && balance.declared && !placement) {
+  if (planGiven && balance.target && !placement) {
     const next = partChoice && !readback.length ? buildPartAnswer({ b: balance, vi, part: partChoice, walletUsd: wallet ?? 0 })
       : /^\[app event\] The user signed the card: Added .*emergency fund/i.test(lastUserText) ? buildAfterSign({ b: balance, vi, kind: 'deposit' })
       : /^\[app event\] The user signed the card: Opened/i.test(lastUserText) ? buildAfterSign({ b: balance, vi, kind: 'open', cover, partial })
