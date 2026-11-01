@@ -115,6 +115,9 @@ const placed: [string, { amountUsd: number; holdingType: string; source: string 
   ['I will keep 200 cash for safety', { amountUsd: 200, holdingType: 'cash', source: null, safety: true }],
   ['I put 2000 in a term deposit as Safety', { amountUsd: 2000, holdingType: 'term_deposit', source: null }],
   ['I keep 1 oz of gold as Safety', null],
+  ['Mình vừa gửi tiết kiệm có kỳ hạn 2000$ làm safety', { amountUsd: 2000, holdingType: 'term_deposit', source: null }], // lang-ok
+  ['mình giữ 500 USDC làm an toàn', { amountUsd: 500, holdingType: 'stable_wallet', source: null, safety: true }], // lang-ok
+  ['mình giữ vàng 1000$ làm safety', null], // lang-ok
   ['I keep 500 of BTC as Safety', null],
   ['I moved 500 USDC from my wallet into savings', { amountUsd: 500, holdingType: 'savings', source: 'wallet' }],
   ['I deposited 2,000 in a term deposit', { amountUsd: 2000, holdingType: 'term_deposit', source: null }],
@@ -141,6 +144,10 @@ for (const [msg, want] of placed) {
   const safe = p1.holdings.find(h => h.id !== 'u')
   if (p1.holdings.find(h => h.id === 'u')?.value !== 5 || safe?.value !== 5 || categoryOf(safe) !== 'safe' || safe.name !== 'Stablecoins kept as Safety') fail(`chosen Safety: 5 of the 10 USDC move to "Stablecoins kept as Safety" (got ${JSON.stringify(p1.holdings)})`)
   if (!sourceOptions(p0, keep, null).some(h => h.id === 'u')) fail('chosen Safety: the idle USDC of the same type is offered as the source')
+  // Haiku run 2026-11-01: "Saved. Safety is now $0" because the profile sent back to the server lost the Safety mark.
+  const again = normalizeProfile(JSON.parse(JSON.stringify(p1)))
+  const sb = computeBalance({ profile: again, walletUsd: 0, vaultUsd: 0, cirBtcUsd: 0, prices: null, vndPerUsd: 25000 })
+  if (sb.byGroup.safe !== 5 || sb.byGroup.idle !== 5) fail(`chosen Safety survives saving: Safety 5, idle 5 (got ${sb.byGroup.safe} / ${sb.byGroup.idle})`)
 }
 const cashP = normalizeProfile({ v: 2, holdings: [{ id: 'h1', type: 'cash', name: 'Cash', value: 1500, currency: 'USDC', priceSource: 'self', rebalanceable: true, updatedAt: 1 }] })
 const req = detectPlacement('I put 1000$ in my bank', null)!
@@ -463,7 +470,7 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   for (const [what, re] of [['safety', /Safety 31%\*\* \(set aside, low-volatility\)/], ['traditional', /Traditional 34\.5%\*\* \(index funds/], ['crypto', /Crypto 34\.5%\*\* \(mostly Bitcoin, which can halve/]] as const) if (!re.test(fullPlan)) fail(`plan: the reason for the ${what} is missing\n${fullPlan}`)
   if (!/You have \$2,000 invested[^\n]*so it needs \$899 of Safety/.test(fullPlan)) fail(`plan: the investments set the Safety they need\n${fullPlan}`)
   if (!/\*\*Safety\*\* is the low-risk part[^\n]*It is not emergency money \(that is the emergency fund\), and a term deposit is usually locked until it matures/.test(fullPlan)) fail('plan: why Safety, before any number')
-  if (!/Money not doing anything yet: Bank savings \$500, USDC in this wallet \$1,900; keep \$150[^\n]*You decide which of it goes where/.test(fullPlan) || /Put \$|add \$/.test(fullPlan)) fail(`plan: target and what is missing only; the user places the money (Hieu, 2026-11-01)\n${fullPlan}`)
+  if (!/Money not doing anything yet: Bank savings \$500, USDC in this wallet \$1,900; keep \$150 of it[^\n]*You decide which of it goes where/.test(fullPlan) || /Put \$|add \$/.test(fullPlan)) fail(`plan: target and what is missing only; the user places the money (Hieu, 2026-11-01)\n${fullPlan}`)
   if (!/You choose where your Safety sits, as long as it is low-volatility/.test(fullPlan)) fail('plan: the user chooses the form of Safety')
   if (/your Safety is|You have \$2,400 in Safety/i.test(fullPlan)) fail('plan: bank and stablecoins are never called Safety')
   if (!/Which part would you like to fill first|Only [^.]* still has room/.test(fullPlan)) fail('plan: with the fund full it asks which part to fill')

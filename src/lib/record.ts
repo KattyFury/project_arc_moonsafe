@@ -46,6 +46,8 @@ const PLACE = /(?<!\p{L})(put|putting|add|added|move|moved|moving|deposit|deposi
 // "keep 400 USDC as Safety", "set aside 1000 of my bank money for Safety" (Hieu, 2026-11-01: the user decides what their Safety is).
 const PLACE_AS = /(?<!\p{L})(put|keep|keeping|set aside|use|using|hold|holding|leave|move|moved|save|saved|mark)\s[^.?!\n]{0,40}?\d[^.?!\n]{0,50}?(?<!\p{L})(as|for|into|in|to)\s+(my\s+|the\s+)?(safety|safe part)(?!\p{L})/iu
 const PLACE_VI = /(vừa|đã|mới)\s+(bỏ|gửi|chuyển|cho|nạp|để)[^.?!\n]{0,30}\d[^.?!\n]{0,30}(vào|sang)\s+(phần\s+|quỹ\s+)?(an toàn|safe|tiết kiệm|ngân hàng)/iu // lang-ok
+// "mình vừa gửi tiết kiệm có kỳ hạn 2000$ làm safety", "giữ 500 USDC làm an toàn" (Haiku run 2026-11-01: no box, the money was counted twice).
+const PLACE_VI_AS = /(?<!\p{L})(gửi|giữ|để|dùng|bỏ|cất|chuyển)(?!\p{L})[^.?!\n]{0,50}\d[^.?!\n]{0,40}(làm|cho|vào)\s+(phần\s+)?(safety|an toàn)(?!\p{L})/iu // lang-ok
 const QUESTION = /\?|^\s*(should|shall|can|could|would|how|what|is|do|does|if)\b/i
 const FROM_WALLET = /(from|out of)\s+(my\s+|the\s+|this\s+)?(app\s+|moonsafe\s+)?wallet|(this|the app|my app)\s+wallet/i
 const NEW_MONEY = /(?<!\p{L})(new money|airdrop|salary|bonus|earned|income|just got|received|from work|tiền mới|lương)(?!\p{L})/iu // lang-ok
@@ -74,7 +76,7 @@ export function detectPlacement(text: string, vndPerUsd: number | null): RecordR
   if (!t || t.startsWith('[app event]') || QUESTION.test(t)) return null
   const hit = PLACE.exec(t) ?? PLACE_AS.exec(t) ?? PLACE_AFTER.exec(t) ?? PLACE_NEW_AFTER.exec(t) ?? PLACE_NEW_BEFORE.exec(t)
   const viaIt = !hit && PLACE_IT.test(t)
-  if (!hit && !viaIt && !PLACE_VI.test(t)) return null
+  if (!hit && !viaIt && !PLACE_VI.test(t) && !PLACE_VI_AS.test(t)) return null
   // "put 1000 in my bank" has no currency word: read the first number after the verb as USD.
   const amount = firstAmount(t, hit && !viaIt ? hit.index : 0, vndPerUsd) || firstAmount(t, 0, vndPerUsd)
   if (!amount || !(amount > 0)) return null
@@ -82,13 +84,13 @@ export function detectPlacement(text: string, vndPerUsd: number | null): RecordR
   // Gold, stocks or coins are never recorded as Safety (the agent explains why instead).
   const safety = /(?<!\p{L})(safety|safe part|an toàn)(?!\p{L})/iu.test(t) // lang-ok
   if (safety && /(?<!\p{L})(gold|stocks?|shares|etfs?|voo|btc|bitcoin|eth|crypto|coins?|vàng|cổ phiếu)(?!\p{L})/iu.test(t)) return null // lang-ok
-  const holdingType: AssetType = /term deposit|fixed deposit/i.test(t) ? 'term_deposit'
-    : /(?<!\p{L})(government bonds?|bonds?|t-bills?|treasur(y|ies))(?!\p{L})/iu.test(t) ? 'bond'
+  const holdingType: AssetType = /term deposit|fixed deposit|có kỳ hạn/iu.test(t) ? 'term_deposit' // lang-ok
+    : /(?<!\p{L})(government bonds?|bonds?|t-bills?|treasur(y|ies)|trái phiếu)(?!\p{L})/iu.test(t) ? 'bond' // lang-ok
     : /flexible|simple earn|(?<!\p{L})earn(?!\p{L})/iu.test(t) ? 'flexible_earn'
     : /checking|current account/i.test(t) ? 'checking'
-    : /(?<!\p{L})(savings?|bank)(?!\p{L})/iu.test(t) ? 'savings'
+    : /(?<!\p{L})(savings?|bank|ngân hàng|tiết kiệm)(?!\p{L})/iu.test(t) ? 'savings' // lang-ok
     : /(?<!\p{L})(usdc|usdt|stablecoins?|stables?)(?!\p{L})/iu.test(t) ? 'stable_wallet'
-    : /(?<!\p{L})cash(?!\p{L})/iu.test(t) ? 'cash'
+    : /(?<!\p{L})(cash|tiền mặt)(?!\p{L})/iu.test(t) ? 'cash' // lang-ok
     : 'savings'
   const source = FROM_WALLET.test(t) ? 'wallet' : NEW_MONEY.test(t) || /outside|extra/i.test(t) ? 'new' : null
   const keep = safety && canBeSafety(holdingType) && categoryOf({ type: holdingType }) === 'idle'
@@ -99,7 +101,7 @@ export function detectPlacement(text: string, vndPerUsd: number | null): RecordR
 const usd = (h: Holding, rate: number | null): number | null =>
   h.value === undefined ? null : h.currency === 'VND' ? (rate ? h.value / rate : null) : h.value
 
-/** Tracked places that can have funded this: idle or safe money kept as a plain value, big enough. */
+/** Tracked places that can have funded this: idle or safe money kept as a plain value, big enough; the same kind first ("keep 5 USDC as Safety" = from the USDC). */
 export function sourceOptions(profile: FinancialProfile, req: RecordRequest, rate: number | null): Holding[] {
   return profile.holdings.filter(h => {
     if (h.type === req.holdingType && isSafe(h) === isSafe({ type: req.holdingType, category: req.safety ? 'safe' : undefined })) return false
@@ -108,7 +110,7 @@ export function sourceOptions(profile: FinancialProfile, req: RecordRequest, rat
     if (!['idle', 'safe'].includes(categoryOf(h))) return false
     const v = usd(h, rate)
     return v !== null && v >= req.amountUsd - 0.005
-  })
+  }).sort((a, b) => Number(b.type === req.holdingType) - Number(a.type === req.holdingType))
 }
 
 /** Add `amount` USD to a holding's own currency; null when a VND item has no rate. */

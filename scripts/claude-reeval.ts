@@ -13,6 +13,10 @@ import { SignJWT, exportJWK, generateKeyPair } from 'jose'
 import { normalizeProfile, applyOps, readOps } from '../src/lib/profile'
 import { FRAMEWORK_CASES } from './framework-eval-cases'
 import { E2_INTAKE_CASES } from './e2-intake-cases'
+import { SAFETY_CASES, SAFETY_SEEDED_CASES } from './safety-cases'
+import { walletMoveOps } from '../src/lib/profile'
+import { buildRecordOps, presetSource, recordSummary, sourceOptions, type RecordRequest, type RecordSource } from '../src/lib/record'
+import type { AssetType } from '../src/types'
 
 const flag = (name: string) => { const i = process.argv.indexOf(name); return i < 0 ? undefined : process.argv[i + 1] }
 const CAP = Number(flag('--budget') ?? 0)
@@ -20,7 +24,7 @@ const label = flag('--run') ?? 'claude-reeval-2026-10-29'
 if (!/^[a-z0-9-]+$/.test(label)) throw new Error('Run label must contain only lowercase letters, digits and hyphens.')
 const OUT = 'docs/evals/' + label + '.json'
 const priority = ['cost-basis', 'irregular-family', 'no-consent', 'loss-listening', 'beginner-vi', 'shared-transfers']
-const ordered = [...E2_INTAKE_CASES, ...SESSION_EVAL_CASES, ...FRAMEWORK_CASES.filter(c => priority.includes(c.id)), ...FRAMEWORK_CASES.filter(c => !priority.includes(c.id)), ...REEVAL_CASES, ...CYCLE_FRESH_CASES, ...DAY_EVAL_CASES]
+const ordered = [...SAFETY_CASES, ...SAFETY_SEEDED_CASES, ...E2_INTAKE_CASES, ...SESSION_EVAL_CASES, ...FRAMEWORK_CASES.filter(c => priority.includes(c.id)), ...FRAMEWORK_CASES.filter(c => !priority.includes(c.id)), ...REEVAL_CASES, ...CYCLE_FRESH_CASES, ...DAY_EVAL_CASES]
 const selected = flag('--only')?.split(',')
 const cases = selected ? selected.flatMap(id => ordered.filter(c => c.id === id)) : ordered
 if (selected && (new Set(selected).size !== selected.length || cases.length !== selected.length)) throw new Error('Unknown or duplicate case id.')
@@ -125,8 +129,12 @@ try {
   for (const scenario of cases) {
     if (halted) break
     activeCase = scenario.id
-    let profile = normalizeProfile({ v: 2 })
-    let lastActions: Array<{ type?: string; items?: Array<{ text:string; ops:unknown[] }>; ask?:string[] }> = []
+    // A case may start from a saved profile, to probe the later turns without paying for the intake again.
+    let profile = normalizeProfile((scenario as { profile?: Record<string, unknown> }).profile ?? { v: 2 })
+    let lastActions: Array<{ type?: string; items?: Array<{ text:string; ops:unknown[] }>; ask?:string[]; amount?: { amount: number }; holdingType?: string; name?: string; source?: 'wallet' | 'new' | null; safety?: boolean }> = []
+    // Per-case wallet and vault (2026-11-01): '@sign-deposit' signs the deposit card shown, '@deposit N' adds N from outside the app,
+    // '@confirm-record' confirms the record box with the source the app preselects (else the first offered, else new money).
+    let wallet = (scenario as { wallet?: number }).wallet ?? 50, vault = (scenario as { vault?: number }).vault ?? 0
     const history: Array<{ role: string; content: string }> = []
     for (const [i, scriptedUser] of scenario.lines.entries()) {
       if (halted) break
@@ -134,12 +142,8 @@ try {
       let reviewedOps: unknown[] = []
       if (user.startsWith('@review-')) {
         const card = lastActions.find(a => a.type === 'confirm_items')
-        if (!card?.items?.length) {
-          report.stopped = 'fixture-missing-confirmation-card'
-          halted = true
-          checkpoint()
-          break
-        }
+        // A first declaration is saved at once (no card): nothing to review, go on with the next line.
+        if (!card?.items?.length) { report.transcript.push({ case: scenario.id, turn: i + 1, user, skipped: 'no confirmation card (saved at once)' }); continue }
         const choice = user.slice('@review-'.length)
         const accepted = card.items.filter((_, index) => choice === 'all' || (choice === 'first' && index === 0))
         const skipped = card.items.filter(item => !accepted.includes(item))
@@ -147,13 +151,30 @@ try {
         profile = applyOps(profile, readOps(reviewedOps))
         user = `[app event] The user reviewed the items: saved: ${accepted.map(a=>a.text).join('; ') || 'none'}. skipped: ${skipped.map(a=>a.text).join('; ') || 'none'}.${card.ask?.length ? ` Still to ask: ${card.ask.join(' | ')}.` : ''}`
       }
+      if (user === '@sign-deposit' || user.startsWith('@deposit ')) {
+        const amt = user === '@sign-deposit' ? lastActions.find(a => a.type === 'prepare_deposit')?.amount?.amount : Number(user.split(' ')[1])
+        if (!amt) { report.transcript.push({ case: scenario.id, turn: i + 1, user, skipped: 'no deposit card to sign' }); continue }
+        vault += amt
+        if (user === '@sign-deposit') { wallet -= amt; profile = applyOps(profile, walletMoveOps(profile, -amt)) }
+        user = `[app event] The user signed the card: Added ${amt} USDC to your emergency fund.`
+      } else if (user === '@confirm-record') {
+        const a = lastActions.find(x => x.type === 'confirm_record')
+        if (!a?.amount || !a.holdingType || !a.name) { report.transcript.push({ case: scenario.id, turn: i + 1, user, skipped: 'no record box to confirm' }); continue }
+        const req: RecordRequest = { amountUsd: a.amount.amount, holdingType: a.holdingType as AssetType, name: a.name, source: a.source ?? null, ...(a.safety ? { safety: true } : {}) }
+        const opt = sourceOptions(profile, req, 25000)[0]
+        const src: RecordSource = presetSource(req, profile) ?? (opt ? { kind: 'holding', id: opt.id } : { kind: 'new' })
+        const summary = recordSummary(req, src, profile)
+        reviewedOps = buildRecordOps(profile, req, src, 25000)
+        profile = applyOps(profile, readOps(reviewedOps))
+        user = `[app event] The user confirmed recording: ${summary}`
+      }
       activeTurn = i + 1
       const start = Date.now(), before = used(), callsBefore = report.calls
       const beforeProfile = profile
       history.push({ role: 'user', content: user })
       const res = await onRequestPost({ env, request: new Request('http://localhost/api/chat', {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ messages: history.slice(-30), context: { profile, walletUsdc: 50, vaultUsdc: 0, cirBtcUsdc: 0, hasVault: true }, debug: true }),
+        body: JSON.stringify({ messages: history.slice(-30), context: { profile, walletUsdc: wallet, vaultUsdc: vault, cirBtcUsdc: 0, hasVault: true }, debug: true }),
       }) })
       const data = await res.json() as { content?: string; ops?: unknown[]; actions?: unknown[] }
       lastActions = (data.actions ?? []) as typeof lastActions

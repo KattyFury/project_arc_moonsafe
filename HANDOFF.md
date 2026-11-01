@@ -1,3 +1,17 @@
+# ▶ 2026-11-01 (khuya) — TEST 1M TOKEN CLAUDE HAIKU + SỬA (ĐÃ DEPLOY Cloudflare `7371f931`)
+
+Hiếu cho 1M token Haiku. Đã dùng 962.709 token (3 lượt, trần cứng mỗi lượt): `docs/evals/safety-r1/r2/r3-2026-11-01.json`. Ca mới `scripts/safety-cases.ts` (đúng chat thật của Hiếu, chỉ có bank VN, đã đầu tư nặng crypto, 2 ca nạp sẵn hồ sơ). Script `claude-reeval.ts` có thêm `@sign-deposit`, `@deposit N`, `@confirm-record`, `profile`/`wallet`/`vault` theo ca; `@review-all` không thấy thẻ thì bỏ qua.
+Lỗi tìm ra → đã sửa + có test:
+1. "keep 5 USDC as Safety" xác nhận xong vẫn Safety $0: `normalizeProfile` xoá `category` của món không phải "other" → giữ `category: 'safe'` cho món nhàn rỗi.
+2. Prompt còn câu cũ "Safety = bank savings or flexible earn" (4 chỗ chat.ts) → sửa theo luật mới.
+3. Số "$5.2" → "$5.20".
+4. Thẻ ghi lại đề xuất nguồn "Bank savings" cho USDC → ưu tiên nguồn cùng loại.
+5. "Mình vừa gửi tiết kiệm có kỳ hạn 2000$ làm safety" không hiện thẻ → model tự thêm $2.000, tính trùng → thêm `PLACE_VI_AS`, từ VN (kỳ hạn, trái phiếu, ngân hàng, tiền mặt).
+6. Crypto vượt tỷ lệ bị agent gọi "on track at $21,000 of $21,000" → facts + `buildStanding` nói "above its share".
+7. "keep $2,000 in your account for bills" khi tiền nằm ở Binance Earn → "keep $2,000 of it for bills".
+Đúng sẵn: không gọi bank/stablecoin là Safety, "Ok. But who said…" không sinh thẻ nạp, Safety ≠ quỹ dự phòng, tiền gửi kỳ hạn bị khoá, vàng không làm Safety, không khuyên bán, không ra lệnh mua bao nhiêu.
+Còn để ý (chưa sửa, chưa rõ là lỗi): người mới khai tài sản lần đầu bằng tiếng Việt thì kế hoạch do model viết thay vì `buildPlan` (nội dung vẫn đúng luật).
+
 # ▶ 2026-11-01 (khuya) — NGƯỜI DÙNG QUYẾT SAFETY (Hiếu chốt, ĐÃ DEPLOY Cloudflare `2f962d5e`, sửa định nghĩa Safety sau đó) — sửa mục ngay dưới
 
 - **Vai trò app (Hiếu):** app là người đảm bảo quỹ dự phòng (onchain, phải đầy trước); sau đó chỉ TƯ VẤN, không yêu cầu; user tự quyết rồi báo lại để app ghi và nắm.

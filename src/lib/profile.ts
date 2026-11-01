@@ -68,7 +68,9 @@ function readHolding(raw: unknown, now: number): Holding | null {
   const o = raw as Record<string, unknown>
   if (!isAssetType(o.type)) return null
   const type = o.type
-  const category = type === 'other' && ['safe', 'invest', 'idle', 'lifestyle'].includes(String(o.category)) ? o.category as Category : undefined
+  // "other" keeps what it is by nature; idle money keeps "safe" when the user chose it as Safety (Hieu, 2026-11-01; Haiku run: it was dropped).
+  const category = type === 'other' && ['safe', 'invest', 'idle', 'lifestyle'].includes(String(o.category)) ? o.category as Category
+    : o.category === 'safe' && assetTypeRow(type)?.category === 'idle' ? 'safe' : undefined
   const h: Holding = {
     id: str(o.id) ?? newId('h'),
     type,

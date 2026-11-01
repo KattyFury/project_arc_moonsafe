@@ -1,0 +1,3449 @@
+{
+  "sourceTree": [
+    {
+      "path": "functions/_lib/admin.ts",
+      "sha256": "2e2bcd06e185cf9ef026b305537778a60fe6058142adc3c3d1d9d66bc774d169"
+    },
+    {
+      "path": "functions/_lib/agentGuards.ts",
+      "sha256": "e66485d0da45241d62449a3338452f143fd23d2ea519d5d86b30b6f395718da1"
+    },
+    {
+      "path": "functions/_lib/budget.ts",
+      "sha256": "df173f85a5648cd5ca6eafa6a51a8302870770258675dd0b3781aa89fac775f2"
+    },
+    {
+      "path": "functions/_lib/coaching.ts",
+      "sha256": "b870bf431793da5d70e8cfe1ef2aa35a0c0a3bbfd8e8e309aae1f41c571a6ec9"
+    },
+    {
+      "path": "functions/_lib/config.ts",
+      "sha256": "5326baa048a80bbcaafe6b4605c93f2324851159d24db9bfe7f7874ed4208a01"
+    },
+    {
+      "path": "functions/_lib/confirmationStatus.ts",
+      "sha256": "ebd38239a2a99542bc7da2ea5d83c729774149fe2ec7912e39a5aa87ead02809"
+    },
+    {
+      "path": "functions/_lib/education.ts",
+      "sha256": "b435fe84688d607248fc55d6c87ed016f47efbfd4efbf11919f90692c66297c7"
+    },
+    {
+      "path": "functions/_lib/educationFigures.ts",
+      "sha256": "4ce3da2b8d5e7332d1bbd4acbbeaf1a1d463c823216589d61ff57e3bc7fa1a69"
+    },
+    {
+      "path": "functions/_lib/intake.ts",
+      "sha256": "a4cacadb650d01578894c7296d84172d664ba9ff46b658b10433481c323ff0b8"
+    },
+    {
+      "path": "functions/_lib/ledger.ts",
+      "sha256": "66dd4d7ce183585c1e8131e935c570c61b4d6d52c37318dd2142a2fceb5ef420"
+    },
+    {
+      "path": "functions/_lib/llm.ts",
+      "sha256": "23546b46741735ad32d5a8960bbfa474dd1cd9a21850105c06d3a8dbe74550d2"
+    },
+    {
+      "path": "functions/_lib/mutationEvidence.ts",
+      "sha256": "b1d34aed306d1b447f9b793ddf49531d2636d24aa582023d5b869a5eae760d5c"
+    },
+    {
+      "path": "functions/_lib/plan.ts",
+      "sha256": "31817ef6acd72a39eb5a7d19059fbe24b1f2bf2d467e705ef47831f42e05316d"
+    },
+    {
+      "path": "functions/_lib/privyAuth.ts",
+      "sha256": "e438bece6391bb7d9bc6449578f0caf6e01e888217dd0e46dd268ddfa21f174b"
+    },
+    {
+      "path": "functions/_lib/quota.ts",
+      "sha256": "f414923d51a316babb45bfb62f6061e0d4dee84d4eae6e831f95dd73212280c6"
+    },
+    {
+      "path": "functions/_lib/stats.ts",
+      "sha256": "454b97253bd0fda382d6c020940b7e0abfd4a76d95c7377721f3e05a47e524f4"
+    },
+    {
+      "path": "functions/api/admin.ts",
+      "sha256": "95d407a888b628894dded6dacb2e5892820f5520e1a9993ad1042c8e6984b47f"
+    },
+    {
+      "path": "functions/api/chat.ts",
+      "sha256": "fcaca78155f2453ea50e73d4b520e1accb2b6d57b66b645b2aa0ebd20d81c6b2"
+    },
+    {
+      "path": "functions/api/power.ts",
+      "sha256": "28c1f4b6565ac8639b14909e4412083d9d11c467a14fce1ce4a33b38e137e3ab"
+    },
+    {
+      "path": "functions/api/price.ts",
+      "sha256": "d526b1de91d32381468035c17d437714f81dcfecefdccb16ea153590db0da8a7"
+    },
+    {
+      "path": "functions/api/prices.ts",
+      "sha256": "fafa2e9603909ccae6b06b610cdecb0f0e62b5d412ebbd8d4ef7ce5b8ff54b50"
+    },
+    {
+      "path": "functions/api/rates.ts",
+      "sha256": "1f538706bb000f0976e12438406d24d16ae6427295c8eb5cc0bb00d3a24b8073"
+    },
+    {
+      "path": "functions/api/status.ts",
+      "sha256": "0005a15b81333c6f51516c8e3379dd5b70c3f49aeda0b2bc0d934774fbebd94a"
+    },
+    {
+      "path": "functions/api/usage.ts",
+      "sha256": "d5b2dc53ce8746b6f1a070b67d6727e0d260a56e921085e764a4b6148e68a99c"
+    },
+    {
+      "path": "functions/api/userdata.ts",
+      "sha256": "23297cd3b25550a874352b65a6f6129a09b617d471d5e68aba317e3552996d61"
+    },
+    {
+      "path": "src/App.tsx",
+      "sha256": "b4b8e887fe2ec15c3d74b63cc0a84f3457b0b863df53737f26ab27c5d2a6b9d3"
+    },
+    {
+      "path": "src/components/chat/ActionCard.tsx",
+      "sha256": "ccf9060aecd6683e2a83cba643d9280aaad6cfcbf2a5eb3ca035917be9d07368"
+    },
+    {
+      "path": "src/components/chat/AiPower.tsx",
+      "sha256": "f774ca89a5b6cf89ae62cf3129c15db8a0d02f5d29d31d630edcd4a81da9ade5"
+    },
+    {
+      "path": "src/components/chat/IntakeFormCard.tsx",
+      "sha256": "7aa96d8775b9a4f85f25d66833e6e4b18bf907a3ea83cda37be0f791a083827c"
+    },
+    {
+      "path": "src/components/chat/ItemsCard.tsx",
+      "sha256": "2ce128d4148b00a7a50f6850ed035fd8a3463437db3a8c9a3411d1f40f74eb5d"
+    },
+    {
+      "path": "src/components/chat/RecordCard.tsx",
+      "sha256": "fe543df3f8ff259d14535ea4f51418fdb521227bafa39ed9653dca8246737d6b"
+    },
+    {
+      "path": "src/components/chat/StepToast.tsx",
+      "sha256": "06a09865d5cfb760e22a0362522c8d7ecff792a5df53f871efd26ada47803f8e"
+    },
+    {
+      "path": "src/components/layout/AppShell.tsx",
+      "sha256": "46db43e5dc6c86a7aa4f7ea3878c21ad74096ff78925dd50362c4cfa853f9902"
+    },
+    {
+      "path": "src/components/layout/NavBar.tsx",
+      "sha256": "7e7cd04ab84650987bf78df099618715b24d57e880857473d2bbbb844fa63c4d"
+    },
+    {
+      "path": "src/components/screens/AdminPage.tsx",
+      "sha256": "cff34997fe5810390485a0a96e70a8742d77d5fe6af7281b1833e34ed921ee15"
+    },
+    {
+      "path": "src/components/screens/BalanceSheet.tsx",
+      "sha256": "32550917c58b4cda9dd9a63ec15b59cae55596b2e64c842441c1773cf12b62bf"
+    },
+    {
+      "path": "src/components/screens/ChatScreen.tsx",
+      "sha256": "3d88fc95318493a2f171a789007efb7ac996cc9a26f43ae5f78f85e797c87841"
+    },
+    {
+      "path": "src/components/screens/FundScreen.tsx",
+      "sha256": "9da3f13905cf2225a72d8d5303deb72c4970dbbc8783ee37d1f8a0c95b7ac9cc"
+    },
+    {
+      "path": "src/components/screens/InvestScreen.tsx",
+      "sha256": "4dbc3f428dbbc8062290791e337af045c64ea8ae4d8c72a32fd7e9cd87fbaf80"
+    },
+    {
+      "path": "src/components/screens/LoginScreen.tsx",
+      "sha256": "51b1729b93b539a32c3e2ecab5d80fcca3b3fa4ac9d60204453bd59fd13441ba"
+    },
+    {
+      "path": "src/components/screens/SettingsScreen.tsx",
+      "sha256": "c5f9332a0eefd697201ce3da615a87c904cf0ad05d84185cfd190bab6d8ba856"
+    },
+    {
+      "path": "src/components/screens/VaultSetup.tsx",
+      "sha256": "88e4fef09a95d536ede0912acf281ed4945401c3ae86c684701e3adf522d9607"
+    },
+    {
+      "path": "src/components/screens/WarningModal.tsx",
+      "sha256": "bcc46401bb86ad505e0a5212bc4317323e5ccb7b1533ab47981b9f56d0087a46"
+    },
+    {
+      "path": "src/components/ui/AllocationPies.tsx",
+      "sha256": "f3cab1fd399032d1edc62d606f6e8f8c25bfa5e393984630ff6c3e6f831c03f5"
+    },
+    {
+      "path": "src/components/ui/CashflowCard.tsx",
+      "sha256": "daa1252336f68b818bace10b97faae9e48ae75c0f4721319d3822697ef0abdb9"
+    },
+    {
+      "path": "src/components/ui/kit.tsx",
+      "sha256": "f7d7227850cbe18388eb338363624abc3fd6b6572e1d04dd3e3887ca47c106a3"
+    },
+    {
+      "path": "src/config.ts",
+      "sha256": "8afa93b4f3933e642887aeb5186aa8e5e34e4e90133fcc929f4c29eb1e519dac"
+    },
+    {
+      "path": "src/console-capture.ts",
+      "sha256": "ab682e27bfb8efb8b1084ab91ff604baee9b2128892a8036dc0584d82733d3ce"
+    },
+    {
+      "path": "src/hooks/useAgent.ts",
+      "sha256": "22de47cdf62d1df42a09b030729c5ff76a76051ebca91568c712c497ccc13f11"
+    },
+    {
+      "path": "src/hooks/useAiPower.ts",
+      "sha256": "9561009aaeb229f996a040e570004436819fbba2e338ce95623406060aec205e"
+    },
+    {
+      "path": "src/hooks/useCirBtc.ts",
+      "sha256": "6808ed7e5175042042ad29579c35384a99ca0338940379a0ec17b11e1815addd"
+    },
+    {
+      "path": "src/hooks/useExchangeRate.ts",
+      "sha256": "974bebb4381280b26c3e7e6a6af5443b61befd82b694e96fae002a31c0f46081"
+    },
+    {
+      "path": "src/hooks/useFinancialProfile.ts",
+      "sha256": "a6a70f9c3c7bf62497af46b0a0f905f6dc952e8dc4e9b2fc91ad7b7b3be35fed"
+    },
+    {
+      "path": "src/hooks/useNow.ts",
+      "sha256": "9587e6b0abf4386251cec6d0508b19d9e774fa246b06ead98fa30642bf2c6bf6"
+    },
+    {
+      "path": "src/hooks/usePrices.ts",
+      "sha256": "535cf56b5fdd7ef42c1fa7cac5a27534556ef8628aad17d48a0dd1756ec7fe5a"
+    },
+    {
+      "path": "src/hooks/useServiceStatus.ts",
+      "sha256": "e7f8c3235b5ba0236dab27773eb1382625cf3d6ec679b9333115eb630c2456af"
+    },
+    {
+      "path": "src/hooks/useVault.ts",
+      "sha256": "74390f4d02c0bbe31e3d3c440845a8c4f5a6b1318eb98cfbc6edadb4327fe433"
+    },
+    {
+      "path": "src/index.css",
+      "sha256": "6d1549e4ccd7ea01894a034f828fdc439b7b4ffc52779dd60e6f691a5d61d37c"
+    },
+    {
+      "path": "src/kb/facts.ts",
+      "sha256": "efdf540b960555969398d177caf3ecbfdf1b769804290f1281109ca11c22ac7b"
+    },
+    {
+      "path": "src/kb/kb.ts",
+      "sha256": "19ad2b8f454c6272ad4b45110ce4b4be1b5317ca697ef6c26924f207ed67d5b5"
+    },
+    {
+      "path": "src/kb/moonsafe-kb.json",
+      "sha256": "d8279a95c20f8f7a912db28863cdce98ffde124713167ab7544f7c4e5ab58c95"
+    },
+    {
+      "path": "src/lib/allocation.ts",
+      "sha256": "8acbcaeb6b079ab317419c31747713c32879bcb4200ff846980f97e665cac463"
+    },
+    {
+      "path": "src/lib/chain.ts",
+      "sha256": "870b4723b1c64513f38337e5b4bd52b98edfd7d937801c61eaa371e12b6cc413"
+    },
+    {
+      "path": "src/lib/cloud.ts",
+      "sha256": "40620e50c7d042ed4d35534dd9c4851c9f2fe4a72328bebce2477903899a0303"
+    },
+    {
+      "path": "src/lib/features.ts",
+      "sha256": "b166d3275f440298f29345e8f121308148e15d0d1d4b4f72bdaefceda05cbd5e"
+    },
+    {
+      "path": "src/lib/format.ts",
+      "sha256": "f6a9967f750d7d7ded7d855f575c6aac68f64bb5c5c20fb924294205eef0d8aa"
+    },
+    {
+      "path": "src/lib/intakeForm.ts",
+      "sha256": "9fb35b4b16d74d3d1defdb7cc3a8a889df1836203aa5447747f50212b8d04023"
+    },
+    {
+      "path": "src/lib/invest.ts",
+      "sha256": "75f3a5ef313093b0548df894a33bf8c02397ee08e439367699d0283626a4373f"
+    },
+    {
+      "path": "src/lib/network.ts",
+      "sha256": "c9852302b96b8c0ff032e91fb307b119e591f9d9e3ec2945ad2f7190defe0997"
+    },
+    {
+      "path": "src/lib/planningScope.ts",
+      "sha256": "49109edd2ed9590cc756242c455d0fbc2194dfcc08aea3921a42b9fc7e98e378"
+    },
+    {
+      "path": "src/lib/power.ts",
+      "sha256": "63270bf0af5987c0b2fc724e5f9a60a2676a857b2d03cb445a9384650c127ab2"
+    },
+    {
+      "path": "src/lib/profile.ts",
+      "sha256": "de85e873ade02064067b06ee70d15b93f57b6ba0f40dfc776887d7532788d0cc"
+    },
+    {
+      "path": "src/lib/record.ts",
+      "sha256": "56e7b73e692dd698a78cf896cb0c5121d147bd7c5ba7c94dda7726a0e5f0ac98"
+    },
+    {
+      "path": "src/main.tsx",
+      "sha256": "30a2dbb3fa6f5c6b76ab3e041cf641f7f3842432cf7689e111a57066abea0785"
+    },
+    {
+      "path": "src/privyConfig.ts",
+      "sha256": "e03dc694b41fc5dc14c1342f478d99a80fb7325b8a9caa341cde1cffd2456ce9"
+    },
+    {
+      "path": "src/state/AppState.tsx",
+      "sha256": "2343eab7b74a6f2eb30c714041c8a5928afb4af21fb6c1557d1fa9b7ec83c619"
+    },
+    {
+      "path": "src/state/WalletPref.tsx",
+      "sha256": "bf7c97b0d17a8bea93f59698bae810fb9ca23fc73bf87e2316a224273d81a276"
+    },
+    {
+      "path": "src/tracing.ts",
+      "sha256": "3ed5452d5abd6057c818e3362be325c3f1566523927e496e49e0eaf1bafd64b8"
+    },
+    {
+      "path": "src/types.ts",
+      "sha256": "2dda57f4adf53a780b07f783c60db8ae5d74e2a6b0d733637558ea0000c4bcdd"
+    },
+    {
+      "path": "src/vite-env.d.ts",
+      "sha256": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5"
+    }
+  ],
+  "sourceDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "commit": "97047d2e7592d7721a1e6f894e63566025ef3e21",
+  "cases": [
+    {
+      "id": "safety-hieu-en",
+      "turns": 12
+    },
+    {
+      "id": "safety-bank-vi",
+      "turns": 10
+    },
+    {
+      "id": "safety-invested-en",
+      "turns": 10
+    }
+  ],
+  "model": "claude-haiku-5-5",
+  "provider": "anthropic",
+  "comparisonLimit": "OpenAI baseline used an older app commit; this is not a paired model-only comparison.",
+  "cap": 450000,
+  "started": "2026-11-01T06:27:33.687Z",
+  "ended": "2026-11-01T06:28:09.740Z",
+  "input": 368422,
+  "output": 2782,
+  "cached": 0,
+  "cacheCreated": 368092,
+  "cacheCreated5m": 368092,
+  "cacheCreated1h": 0,
+  "calls": 32,
+  "conservativeUnknownUsage": 0,
+  "stopped": "fixture-missing-confirmation-card",
+  "fixture": {
+    "vndPerUsd": 25000,
+    "walletUsdc": 50,
+    "vaultUsdc": 0,
+    "hasVault": true,
+    "prices": "unavailable"
+  },
+  "apiCalls": [
+    {
+      "case": "safety-hieu-en",
+      "turn": 2,
+      "status": 200,
+      "ms": 1926,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 10488,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 10488,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 360,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "update_profile",
+          "arguments": {
+            "age": 20,
+            "income_stable": true,
+            "has_windfalls": true,
+            "dependents": 0,
+            "debts_complete": true
+          }
+        },
+        {
+          "name": "set_income",
+          "arguments": {
+            "name": "Monthly income",
+            "monthly": {
+              "amount": 2,
+              "currency": "USDC"
+            },
+            "kind": "active"
+          }
+        },
+        {
+          "name": "set_expense",
+          "arguments": {
+            "name": "Monthly spending",
+            "monthly": {
+              "amount": 1,
+              "currency": "USDC"
+            },
+            "kind": "fixed"
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "safety-hieu-en",
+      "turn": 2,
+      "status": 200,
+      "ms": 717,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 11279,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 11279,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 19,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "show_cashflow",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "safety-hieu-en",
+      "turn": 2,
+      "status": 200,
+      "ms": 778,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 11376,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 11376,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 18,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "show_allocation",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "safety-hieu-en",
+      "turn": 2,
+      "status": 200,
+      "ms": 806,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 11471,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 11471,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "safety-hieu-en",
+      "turn": 3,
+      "status": 200,
+      "ms": 1700,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 10835,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 10835,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 356,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "savings",
+            "name": "Bank savings",
+            "worth": {
+              "amount": 10,
+              "currency": "USDC"
+            }
+          }
+        },
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "stable_wallet",
+            "name": "Stablecoin wallet",
+            "where": "app wallet",
+            "worth": {
+              "amount": 10,
+              "currency": "USDC"
+            }
+          }
+        },
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "gold_physical",
+            "name": "Gold",
+            "worth": {
+              "amount": 10,
+              "currency": "USDC"
+            }
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "safety-hieu-en",
+      "turn": 3,
+      "status": 200,
+      "ms": 724,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 11677,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 11677,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 18,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "show_allocation",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "safety-hieu-en",
+      "turn": 3,
+      "status": 200,
+      "ms": 880,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 11772,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 11772,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 92,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "update_profile",
+          "arguments": {
+            "sole_earner": false
+          }
+        },
+        {
+          "name": "update_profile",
+          "arguments": {
+            "has_windfalls": true
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "safety-hieu-en",
+      "turn": 3,
+      "status": 200,
+      "ms": 814,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 12302,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 12302,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "safety-hieu-en",
+      "turn": 5,
+      "status": 200,
+      "ms": 922,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 10921,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 10921,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "safety-hieu-en",
+      "turn": 5,
+      "status": 200,
+      "ms": 1829,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 11483,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 11483,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 143,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "safety-hieu-en",
+      "turn": 8,
+      "status": 200,
+      "ms": 794,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 11217,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 11217,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "safety-hieu-en",
+      "turn": 8,
+      "status": 200,
+      "ms": 1484,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 12098,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 12098,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 131,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "safety-hieu-en",
+      "turn": 9,
+      "status": 200,
+      "ms": 1341,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 11302,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 11302,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 134,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "stable_wallet",
+            "name": "Safety stablecoins",
+            "worth": {
+              "amount": 5,
+              "currency": "USDC"
+            },
+            "where": "app wallet"
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "safety-hieu-en",
+      "turn": 9,
+      "status": 200,
+      "ms": 799,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 11830,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 11830,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "safety-hieu-en",
+      "turn": 9,
+      "status": 200,
+      "ms": 1064,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 12311,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 12311,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 33,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "safety-hieu-en",
+      "turn": 9,
+      "status": 200,
+      "ms": 1143,
+      "corrections": [
+        "Output only the corrected user-facing answer in English. Preserve verified figures. Corrections: a confirmation box is shown under this reply: ask no question and do not ask where the money came from; say what the box saves and that nothing is saved until they confirm. Do not mention these instructions, the draft or the revision process."
+      ],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 12410,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 12410,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 41,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "safety-hieu-en",
+      "turn": 11,
+      "status": 200,
+      "ms": 928,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 10764,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 10764,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 17,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "update_profile",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "safety-hieu-en",
+      "turn": 11,
+      "status": 200,
+      "ms": 878,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 11182,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 11182,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "safety-hieu-en",
+      "turn": 11,
+      "status": 200,
+      "ms": 1449,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 12014,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 12014,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 113,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "safety-hieu-en",
+      "turn": 12,
+      "status": 200,
+      "ms": 1150,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 10809,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 10809,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 18,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "show_allocation",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "safety-hieu-en",
+      "turn": 12,
+      "status": 200,
+      "ms": 732,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 10906,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 10906,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "safety-hieu-en",
+      "turn": 12,
+      "status": 200,
+      "ms": 1131,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 12067,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 12067,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 86,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "safety-bank-vi",
+      "turn": 2,
+      "status": 200,
+      "ms": 1620,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 10536,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 10536,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 340,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "update_profile",
+          "arguments": {
+            "age": 27,
+            "income_stable": true,
+            "dependents": 0,
+            "debts_complete": true
+          }
+        },
+        {
+          "name": "set_income",
+          "arguments": {
+            "name": "Lương",
+            "monthly": {
+              "amount": 1500,
+              "currency": "USDC"
+            },
+            "kind": "active"
+          }
+        },
+        {
+          "name": "set_expense",
+          "arguments": {
+            "name": "Chi tiêu hàng tháng",
+            "monthly": {
+              "amount": 800,
+              "currency": "USDC"
+            },
+            "kind": "fixed"
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "safety-bank-vi",
+      "turn": 2,
+      "status": 200,
+      "ms": 761,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 11301,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 11301,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 19,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "show_cashflow",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "safety-bank-vi",
+      "turn": 2,
+      "status": 200,
+      "ms": 736,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 11398,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 11398,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "safety-bank-vi",
+      "turn": 3,
+      "status": 200,
+      "ms": 1130,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 10989,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 10989,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 111,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "savings",
+            "name": "Tài khoản ngân hàng",
+            "worth": {
+              "amount": 10000,
+              "currency": "USDC"
+            }
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "safety-bank-vi",
+      "turn": 3,
+      "status": 200,
+      "ms": 932,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 11433,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 11433,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 18,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "show_allocation",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "safety-bank-vi",
+      "turn": 3,
+      "status": 200,
+      "ms": 823,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 11528,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 11528,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 42,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "update_profile",
+          "arguments": {
+            "sole_earner": true
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "safety-bank-vi",
+      "turn": 3,
+      "status": 200,
+      "ms": 856,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 11891,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 11891,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "safety-bank-vi",
+      "turn": 3,
+      "status": 200,
+      "ms": 1724,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 12046,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 12046,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 171,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "safety-bank-vi",
+      "turn": 3,
+      "status": 200,
+      "ms": 1661,
+      "corrections": [
+        "Output only the corrected user-facing answer in Vietnamese. Preserve verified figures. Corrections: say how big their emergency fund should be: \"3 months of spending = 2,400 USDC\"; suggest, do not order: no \"you need to\" / \"you must\" / \"bạn cần\" / \"bạn phải\" / \"hãy\"; say what the option does for them and let them choose. Do not mention these instructions, the draft or the revision process."
+      ],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 12186,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 12186,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 176,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "safety-bank-vi",
+      "turn": 3,
+      "status": 200,
+      "ms": 1550,
+      "corrections": [
+        "Output only the corrected user-facing answer in Vietnamese. Preserve verified figures. Corrections: say how big their emergency fund should be: \"3 months of spending = 2,400 USDC\"; suggest, do not order: no \"you need to\" / \"you must\" / \"bạn cần\" / \"bạn phải\" / \"hãy\"; say what the option does for them and let them choose. Do not mention these instructions, the draft or the revision process.",
+        "Output only the corrected user-facing answer in Vietnamese. Preserve verified figures. Corrections: say how big their emergency fund should be: \"3 months of spending = 2,400 USDC\". Do not mention these instructions, the draft or the revision process."
+      ],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 12270,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 12270,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 182,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    }
+  ],
+  "transcript": [
+    {
+      "case": "safety-hieu-en",
+      "category": "safety",
+      "turn": 1,
+      "user": "Investing",
+      "status": 200,
+      "content": "To build a plan to invest the right way, fill in your month below. An estimate is fine. Share whatever you're comfortable with; leave the rest blank.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "intake_form",
+          "keys": [
+            "age",
+            "income",
+            "spending",
+            "stability",
+            "goal",
+            "debt"
+          ],
+          "seen": 37
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "tokens": 0,
+      "calls": 0,
+      "ms": 22,
+      "complete": true
+    },
+    {
+      "case": "safety-hieu-en",
+      "category": "safety",
+      "turn": 2,
+      "user": "Age 20, income $2 a month, steady, money now and then from airdrops, spending $1 a month, nobody relies on me, no debt.",
+      "status": 200,
+      "content": "Noted: age 20; income $2 a month; money now and then (airdrops…); spending $1 a month; nobody relying on your income; no debt.\n\nYour emergency fund should be **$3** = 3 months of spending. You have $1 left each month, which can fill it over time.\n\nNow, what you hold, in your own words, for example \"3k in the bank, 1k USDC, 0.5 oz gold, 0.02 BTC\". I read your emergency fund in the app and any cirBTC onchain myself; this wallet shows 37 USDC, so say how much of it is yours.\n\nAnd one more: outside Safety, how would you like to split between traditional investments (stocks, gold) and crypto? MoonSafe's default is 50/50; another split is fine.",
+      "ops": [
+        {
+          "op": "update_profile",
+          "fields": {
+            "age": 20
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "incomeStable": true
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "dependents": 0
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "debtsComplete": true
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "hasWindfalls": true
+          }
+        },
+        {
+          "op": "set_income",
+          "income": {
+            "id": "ihoqfbu",
+            "name": "Monthly income",
+            "monthly": 2,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793514455708
+          }
+        },
+        {
+          "op": "set_expense",
+          "expense": {
+            "id": "enl4dcm",
+            "name": "Monthly spending",
+            "monthly": 1,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793514455708
+          }
+        }
+      ],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "show_cashflow"
+        },
+        {
+          "type": "show_allocation"
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": 20,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ihoqfbu",
+            "name": "Monthly income",
+            "monthly": 2,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "expenses": [
+          {
+            "id": "enl4dcm",
+            "name": "Monthly spending",
+            "monthly": 1,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "tokens": 45077,
+      "calls": 4,
+      "ms": 4255,
+      "complete": true
+    },
+    {
+      "case": "safety-hieu-en",
+      "category": "safety",
+      "turn": 3,
+      "user": "10$ in bank, 10$ in stablecoin in this wallet, 10$ in gold at current price",
+      "status": 200,
+      "content": "I picked up 3 things. Confirm or cancel each one below; nothing is saved until you do.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "confirm_items",
+          "items": [
+            {
+              "text": "Bank savings 10 USDC",
+              "ops": [
+                {
+                  "op": "add_holding",
+                  "holding": {
+                    "id": "hxkzbzi",
+                    "type": "savings",
+                    "name": "Bank savings",
+                    "updatedAt": 1793514459735,
+                    "rebalanceable": true,
+                    "value": 10,
+                    "currency": "USDC",
+                    "priceSource": "self"
+                  }
+                }
+              ]
+            },
+            {
+              "text": "Stablecoin wallet 10 USDC",
+              "ops": [
+                {
+                  "op": "add_holding",
+                  "holding": {
+                    "id": "h0y6crd",
+                    "type": "stable_wallet",
+                    "name": "Stablecoin wallet",
+                    "where": "app wallet",
+                    "updatedAt": 1793514459735,
+                    "rebalanceable": true,
+                    "value": 10,
+                    "currency": "USDC",
+                    "priceSource": "market"
+                  }
+                }
+              ]
+            },
+            {
+              "text": "Gold 10 USDC",
+              "ops": [
+                {
+                  "op": "add_holding",
+                  "holding": {
+                    "id": "h7aippv",
+                    "type": "gold_physical",
+                    "name": "Gold",
+                    "updatedAt": 1793514459735,
+                    "rebalanceable": true,
+                    "value": 10,
+                    "currency": "USDC",
+                    "priceSource": "self"
+                  }
+                }
+              ]
+            }
+          ],
+          "ask": []
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": 20,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ihoqfbu",
+            "name": "Monthly income",
+            "monthly": 2,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "expenses": [
+          {
+            "id": "enl4dcm",
+            "name": "Monthly spending",
+            "monthly": 1,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "profile": {
+        "v": 2,
+        "age": 20,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ihoqfbu",
+            "name": "Monthly income",
+            "monthly": 2,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "expenses": [
+          {
+            "id": "enl4dcm",
+            "name": "Monthly spending",
+            "monthly": 1,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "tokens": 47118,
+      "calls": 4,
+      "ms": 4140,
+      "complete": true
+    },
+    {
+      "case": "safety-hieu-en",
+      "category": "safety",
+      "turn": 4,
+      "user": "[app event] The user reviewed the items: saved: Bank savings 10 USDC; Stablecoin wallet 10 USDC; Gold 10 USDC. skipped: none.",
+      "status": 200,
+      "content": "Here is your plan, in order:\n\n1. **Emergency fund: $3** = 3 months of spending, because your income is steady and nobody relies on it, so a few months is enough to cover a pause without selling anything. You have $0. It comes first from money not doing anything yet (stablecoins go straight in, bank money once changed to USDC), then from what is left each month.\n\n2. **Investing comes once the fund is full.** The fund sits onchain in your own vault, so it is really there if work stops or things get hard; once it is full I will show how to place the rest by your age.\n\nAirdrops come in bursts, so the plan only counts your steady income; when one lands, place it by this same plan.\n\nReady to start? The first step is your emergency fund: shall I prepare a deposit of **3 USDC** from your wallet for you to sign?",
+      "ops": [],
+      "reviewedOps": [
+        {
+          "op": "add_holding",
+          "holding": {
+            "id": "hxkzbzi",
+            "type": "savings",
+            "name": "Bank savings",
+            "updatedAt": 1793514459735,
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC",
+            "priceSource": "self"
+          }
+        },
+        {
+          "op": "add_holding",
+          "holding": {
+            "id": "h0y6crd",
+            "type": "stable_wallet",
+            "name": "Stablecoin wallet",
+            "where": "app wallet",
+            "updatedAt": 1793514459735,
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC",
+            "priceSource": "market"
+          }
+        },
+        {
+          "op": "add_holding",
+          "holding": {
+            "id": "h7aippv",
+            "type": "gold_physical",
+            "name": "Gold",
+            "updatedAt": 1793514459735,
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC",
+            "priceSource": "self"
+          }
+        }
+      ],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 20,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hxkzbzi",
+            "type": "savings",
+            "name": "Bank savings",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          },
+          {
+            "id": "h0y6crd",
+            "type": "stable_wallet",
+            "name": "Stablecoin wallet",
+            "updatedAt": 1793514459735,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "where": "app wallet",
+            "value": 10,
+            "currency": "USDC"
+          },
+          {
+            "id": "h7aippv",
+            "type": "gold_physical",
+            "name": "Gold",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ihoqfbu",
+            "name": "Monthly income",
+            "monthly": 2,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "expenses": [
+          {
+            "id": "enl4dcm",
+            "name": "Monthly spending",
+            "monthly": 1,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "profile": {
+        "v": 2,
+        "age": 20,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hxkzbzi",
+            "type": "savings",
+            "name": "Bank savings",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          },
+          {
+            "id": "h0y6crd",
+            "type": "stable_wallet",
+            "name": "Stablecoin wallet",
+            "updatedAt": 1793514459735,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "where": "app wallet",
+            "value": 10,
+            "currency": "USDC"
+          },
+          {
+            "id": "h7aippv",
+            "type": "gold_physical",
+            "name": "Gold",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ihoqfbu",
+            "name": "Monthly income",
+            "monthly": 2,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "expenses": [
+          {
+            "id": "enl4dcm",
+            "name": "Monthly spending",
+            "monthly": 1,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "tokens": 0,
+      "calls": 0,
+      "ms": 6,
+      "complete": true
+    },
+    {
+      "case": "safety-hieu-en",
+      "category": "safety",
+      "turn": 5,
+      "user": "Ok. But who said my safety is 20$?",
+      "status": 200,
+      "content": "Nobody set your Safety to $20. That $20 figure is just the money not placed in any part yet, and Safety is currently $0 because you haven't chosen to keep any money there.\n\nSafety is the low-risk part, kept in bank savings or flexible earn outside the app. It steadies the whole picture when stocks or crypto fall, but it is not your emergency money; that is the emergency fund. You decide if and how much to keep as Safety.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 20,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hxkzbzi",
+            "type": "savings",
+            "name": "Bank savings",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          },
+          {
+            "id": "h0y6crd",
+            "type": "stable_wallet",
+            "name": "Stablecoin wallet",
+            "updatedAt": 1793514459735,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "where": "app wallet",
+            "value": 10,
+            "currency": "USDC"
+          },
+          {
+            "id": "h7aippv",
+            "type": "gold_physical",
+            "name": "Gold",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ihoqfbu",
+            "name": "Monthly income",
+            "monthly": 2,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "expenses": [
+          {
+            "id": "enl4dcm",
+            "name": "Monthly spending",
+            "monthly": 1,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "profile": {
+        "v": 2,
+        "age": 20,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hxkzbzi",
+            "type": "savings",
+            "name": "Bank savings",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          },
+          {
+            "id": "h0y6crd",
+            "type": "stable_wallet",
+            "name": "Stablecoin wallet",
+            "updatedAt": 1793514459735,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "where": "app wallet",
+            "value": 10,
+            "currency": "USDC"
+          },
+          {
+            "id": "h7aippv",
+            "type": "gold_physical",
+            "name": "Gold",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ihoqfbu",
+            "name": "Monthly income",
+            "monthly": 2,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "expenses": [
+          {
+            "id": "enl4dcm",
+            "name": "Monthly spending",
+            "monthly": 1,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "tokens": 22581,
+      "calls": 2,
+      "ms": 2763,
+      "complete": true
+    },
+    {
+      "case": "safety-hieu-en",
+      "category": "safety",
+      "turn": 6,
+      "user": "ok",
+      "status": 200,
+      "content": "Here is the deposit of **3 USDC** into your emergency fund: check it and sign below.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "prepare_deposit",
+          "amount": {
+            "amount": 3,
+            "currency": "USDC"
+          }
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": 20,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hxkzbzi",
+            "type": "savings",
+            "name": "Bank savings",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          },
+          {
+            "id": "h0y6crd",
+            "type": "stable_wallet",
+            "name": "Stablecoin wallet",
+            "updatedAt": 1793514459735,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "where": "app wallet",
+            "value": 10,
+            "currency": "USDC"
+          },
+          {
+            "id": "h7aippv",
+            "type": "gold_physical",
+            "name": "Gold",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ihoqfbu",
+            "name": "Monthly income",
+            "monthly": 2,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "expenses": [
+          {
+            "id": "enl4dcm",
+            "name": "Monthly spending",
+            "monthly": 1,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "profile": {
+        "v": 2,
+        "age": 20,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hxkzbzi",
+            "type": "savings",
+            "name": "Bank savings",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          },
+          {
+            "id": "h0y6crd",
+            "type": "stable_wallet",
+            "name": "Stablecoin wallet",
+            "updatedAt": 1793514459735,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "where": "app wallet",
+            "value": 10,
+            "currency": "USDC"
+          },
+          {
+            "id": "h7aippv",
+            "type": "gold_physical",
+            "name": "Gold",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ihoqfbu",
+            "name": "Monthly income",
+            "monthly": 2,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "expenses": [
+          {
+            "id": "enl4dcm",
+            "name": "Monthly spending",
+            "monthly": 1,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "tokens": 0,
+      "calls": 0,
+      "ms": 1,
+      "complete": true
+    },
+    {
+      "case": "safety-hieu-en",
+      "category": "safety",
+      "turn": 7,
+      "user": "[app event] The user signed the card: Added 3 USDC to your emergency fund.",
+      "status": 200,
+      "content": "Your emergency fund is now $3 of $3 (3 months of spending): full. Now on to investing.\n\n1. **Investing, by your age, 20:** Safety 20%, Traditional 40%, Crypto 40%. An even Traditional / Crypto split is MoonSafe's default, not a standard rule; you can pick another.\n- **Safety** is the low-risk part of what you own (deposits, bonds): it earns less but steadily and does not move with stocks or crypto, so when markets fall your whole picture falls less. It is not emergency money (that is the emergency fund), and a term deposit is usually locked until it matures. The more you invest, the bigger the Safety part needs to be.\n- You have $10 invested (Traditional $10, Crypto $0), so it needs $2.5 of Safety.\n- Money not doing anything yet: Bank savings $10, Stablecoin wallet $7; keep $1 (a month of spending) in your account for bills. You decide which of it goes where.\n  - **Safety 20%** (set aside, low-volatility): $0 of $5.2, $5.2 to go.\n  - **Traditional 40%** (index funds such as VOO, gold): $10 of $10.4, $0.4 to go.\n  - **Crypto 40%** (mostly Bitcoin, which can halve on the way): $0 of $10.4, $10.4 to go.\nYou choose where your Safety sits, as long as it is low-volatility: a term deposit, government bonds, or stablecoins or cash you keep apart. When you have placed money, tell me (for example \"I keep 5 USDC as Safety\") and I will record it.\n\nWhich part would you like to fill first: Safety ($0 of $5.2), Traditional ($10 of $10.4) or Crypto ($0 of $10.4)?",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 20,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hxkzbzi",
+            "type": "savings",
+            "name": "Bank savings",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          },
+          {
+            "id": "h0y6crd",
+            "type": "stable_wallet",
+            "name": "Stablecoin wallet",
+            "updatedAt": 1793514464938,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "where": "app wallet",
+            "value": 7,
+            "currency": "USDC"
+          },
+          {
+            "id": "h7aippv",
+            "type": "gold_physical",
+            "name": "Gold",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ihoqfbu",
+            "name": "Monthly income",
+            "monthly": 2,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "expenses": [
+          {
+            "id": "enl4dcm",
+            "name": "Monthly spending",
+            "monthly": 1,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "profile": {
+        "v": 2,
+        "age": 20,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hxkzbzi",
+            "type": "savings",
+            "name": "Bank savings",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          },
+          {
+            "id": "h0y6crd",
+            "type": "stable_wallet",
+            "name": "Stablecoin wallet",
+            "updatedAt": 1793514464938,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "where": "app wallet",
+            "value": 7,
+            "currency": "USDC"
+          },
+          {
+            "id": "h7aippv",
+            "type": "gold_physical",
+            "name": "Gold",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ihoqfbu",
+            "name": "Monthly income",
+            "monthly": 2,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "expenses": [
+          {
+            "id": "enl4dcm",
+            "name": "Monthly spending",
+            "monthly": 1,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "tokens": 0,
+      "calls": 0,
+      "ms": 3,
+      "complete": true
+    },
+    {
+      "case": "safety-hieu-en",
+      "category": "safety",
+      "turn": 8,
+      "user": "Why do I need Safety? Can I take it out any time like the emergency fund?",
+      "status": 200,
+      "content": "Safety is there to steady your whole picture: when stocks or crypto fall, money in low-volatility forms falls less, so you are less likely to sell investments at a loss. It is not designed for instant access like the emergency fund. A term deposit is usually locked until it matures, while flexible savings or stablecoins you keep apart can often be withdrawn sooner. Check the terms of whichever form you choose.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 20,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hxkzbzi",
+            "type": "savings",
+            "name": "Bank savings",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          },
+          {
+            "id": "h0y6crd",
+            "type": "stable_wallet",
+            "name": "Stablecoin wallet",
+            "updatedAt": 1793514464938,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "where": "app wallet",
+            "value": 7,
+            "currency": "USDC"
+          },
+          {
+            "id": "h7aippv",
+            "type": "gold_physical",
+            "name": "Gold",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ihoqfbu",
+            "name": "Monthly income",
+            "monthly": 2,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "expenses": [
+          {
+            "id": "enl4dcm",
+            "name": "Monthly spending",
+            "monthly": 1,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "profile": {
+        "v": 2,
+        "age": 20,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hxkzbzi",
+            "type": "savings",
+            "name": "Bank savings",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          },
+          {
+            "id": "h0y6crd",
+            "type": "stable_wallet",
+            "name": "Stablecoin wallet",
+            "updatedAt": 1793514464938,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "where": "app wallet",
+            "value": 7,
+            "currency": "USDC"
+          },
+          {
+            "id": "h7aippv",
+            "type": "gold_physical",
+            "name": "Gold",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ihoqfbu",
+            "name": "Monthly income",
+            "monthly": 2,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "expenses": [
+          {
+            "id": "enl4dcm",
+            "name": "Monthly spending",
+            "monthly": 1,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "tokens": 23480,
+      "calls": 2,
+      "ms": 2290,
+      "complete": true
+    },
+    {
+      "case": "safety-hieu-en",
+      "category": "safety",
+      "turn": 9,
+      "user": "I keep 5 USDC as Safety",
+      "status": 200,
+      "content": "Got it: 5 USDC kept as Safety. Please confirm the box below to save it; nothing is saved until you do.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "confirm_record",
+          "amount": {
+            "amount": 5,
+            "currency": "USDC"
+          },
+          "holdingType": "stable_wallet",
+          "name": "Stablecoins kept as Safety",
+          "source": null,
+          "safety": true
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": 20,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hxkzbzi",
+            "type": "savings",
+            "name": "Bank savings",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          },
+          {
+            "id": "h0y6crd",
+            "type": "stable_wallet",
+            "name": "Stablecoin wallet",
+            "updatedAt": 1793514464938,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "where": "app wallet",
+            "value": 7,
+            "currency": "USDC"
+          },
+          {
+            "id": "h7aippv",
+            "type": "gold_physical",
+            "name": "Gold",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ihoqfbu",
+            "name": "Monthly income",
+            "monthly": 2,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "expenses": [
+          {
+            "id": "enl4dcm",
+            "name": "Monthly spending",
+            "monthly": 1,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "profile": {
+        "v": 2,
+        "age": 20,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hxkzbzi",
+            "type": "savings",
+            "name": "Bank savings",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          },
+          {
+            "id": "h0y6crd",
+            "type": "stable_wallet",
+            "name": "Stablecoin wallet",
+            "updatedAt": 1793514464938,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "where": "app wallet",
+            "value": 7,
+            "currency": "USDC"
+          },
+          {
+            "id": "h7aippv",
+            "type": "gold_physical",
+            "name": "Gold",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ihoqfbu",
+            "name": "Monthly income",
+            "monthly": 2,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "expenses": [
+          {
+            "id": "enl4dcm",
+            "name": "Monthly spending",
+            "monthly": 1,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "tokens": 48111,
+      "calls": 4,
+      "ms": 4359,
+      "complete": true
+    },
+    {
+      "case": "safety-hieu-en",
+      "category": "safety",
+      "turn": 10,
+      "user": "[app event] The user confirmed recording: 5 USDC in Stablecoins kept as Safety (Safety), from Bank savings",
+      "status": 200,
+      "content": "Saved. Safety is now $0 of $5.2, $5.2 to go. Which part would you like to fill first: Safety ($0 of $5.2), Traditional ($10 of $10.4) or Crypto ($0 of $10.4)?",
+      "ops": [],
+      "reviewedOps": [
+        {
+          "op": "add_holding",
+          "holding": {
+            "id": "hgpyrif",
+            "type": "stable_wallet",
+            "name": "Stablecoins kept as Safety",
+            "value": 5,
+            "currency": "USDC",
+            "updatedAt": 1793514471592,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "category": "safe"
+          }
+        },
+        {
+          "op": "set_holding",
+          "id": "hxkzbzi",
+          "patch": {
+            "value": 5
+          }
+        }
+      ],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 20,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hxkzbzi",
+            "type": "savings",
+            "name": "Bank savings",
+            "updatedAt": 1793514471592,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 5,
+            "currency": "USDC"
+          },
+          {
+            "id": "h0y6crd",
+            "type": "stable_wallet",
+            "name": "Stablecoin wallet",
+            "updatedAt": 1793514464938,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "where": "app wallet",
+            "value": 7,
+            "currency": "USDC"
+          },
+          {
+            "id": "h7aippv",
+            "type": "gold_physical",
+            "name": "Gold",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          },
+          {
+            "id": "hgpyrif",
+            "type": "stable_wallet",
+            "name": "Stablecoins kept as Safety",
+            "updatedAt": 1793514471592,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 5,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ihoqfbu",
+            "name": "Monthly income",
+            "monthly": 2,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "expenses": [
+          {
+            "id": "enl4dcm",
+            "name": "Monthly spending",
+            "monthly": 1,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "profile": {
+        "v": 2,
+        "age": 20,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hxkzbzi",
+            "type": "savings",
+            "name": "Bank savings",
+            "updatedAt": 1793514471592,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 5,
+            "currency": "USDC"
+          },
+          {
+            "id": "h0y6crd",
+            "type": "stable_wallet",
+            "name": "Stablecoin wallet",
+            "updatedAt": 1793514464938,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "where": "app wallet",
+            "value": 7,
+            "currency": "USDC"
+          },
+          {
+            "id": "h7aippv",
+            "type": "gold_physical",
+            "name": "Gold",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          },
+          {
+            "id": "hgpyrif",
+            "type": "stable_wallet",
+            "name": "Stablecoins kept as Safety",
+            "updatedAt": 1793514471592,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 5,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ihoqfbu",
+            "name": "Monthly income",
+            "monthly": 2,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "expenses": [
+          {
+            "id": "enl4dcm",
+            "name": "Monthly spending",
+            "monthly": 1,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "tokens": 0,
+      "calls": 0,
+      "ms": 5,
+      "complete": true
+    },
+    {
+      "case": "safety-hieu-en",
+      "category": "safety",
+      "turn": 11,
+      "user": "Can I keep my gold as Safety instead?",
+      "status": 200,
+      "content": "Gold is not a good fit for Safety. Its price moves day to day and can fall exactly when you might need the money, which is the opposite of what Safety is for. It works better in your Traditional part, where it sits alongside your other investments. For Safety, a term deposit, government bonds, or stablecoins and cash you keep apart are the steadier choices.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 20,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hxkzbzi",
+            "type": "savings",
+            "name": "Bank savings",
+            "updatedAt": 1793514471592,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 5,
+            "currency": "USDC"
+          },
+          {
+            "id": "h0y6crd",
+            "type": "stable_wallet",
+            "name": "Stablecoin wallet",
+            "updatedAt": 1793514464938,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "where": "app wallet",
+            "value": 7,
+            "currency": "USDC"
+          },
+          {
+            "id": "h7aippv",
+            "type": "gold_physical",
+            "name": "Gold",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          },
+          {
+            "id": "hgpyrif",
+            "type": "stable_wallet",
+            "name": "Stablecoins kept as Safety",
+            "updatedAt": 1793514471592,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 5,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ihoqfbu",
+            "name": "Monthly income",
+            "monthly": 2,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "expenses": [
+          {
+            "id": "enl4dcm",
+            "name": "Monthly spending",
+            "monthly": 1,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "profile": {
+        "v": 2,
+        "age": 20,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hxkzbzi",
+            "type": "savings",
+            "name": "Bank savings",
+            "updatedAt": 1793514471592,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 5,
+            "currency": "USDC"
+          },
+          {
+            "id": "h0y6crd",
+            "type": "stable_wallet",
+            "name": "Stablecoin wallet",
+            "updatedAt": 1793514464938,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "where": "app wallet",
+            "value": 7,
+            "currency": "USDC"
+          },
+          {
+            "id": "h7aippv",
+            "type": "gold_physical",
+            "name": "Gold",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          },
+          {
+            "id": "hgpyrif",
+            "type": "stable_wallet",
+            "name": "Stablecoins kept as Safety",
+            "updatedAt": 1793514471592,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 5,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ihoqfbu",
+            "name": "Monthly income",
+            "monthly": 2,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "expenses": [
+          {
+            "id": "enl4dcm",
+            "name": "Monthly spending",
+            "monthly": 1,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "tokens": 34136,
+      "calls": 3,
+      "ms": 3268,
+      "complete": true
+    },
+    {
+      "case": "safety-hieu-en",
+      "category": "safety",
+      "turn": 12,
+      "user": "Crypto is above its share now, should I sell some?",
+      "status": 200,
+      "content": "Crypto is not above its share: it is at $0 of $10.4, so it is actually below. Your records show no crypto holdings at all, so there is nothing to sell. If you want to move toward your target, new money could go there. You don't need to sell anything; that is your call.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "show_allocation"
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": 20,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hxkzbzi",
+            "type": "savings",
+            "name": "Bank savings",
+            "updatedAt": 1793514471592,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 5,
+            "currency": "USDC"
+          },
+          {
+            "id": "h0y6crd",
+            "type": "stable_wallet",
+            "name": "Stablecoin wallet",
+            "updatedAt": 1793514464938,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "where": "app wallet",
+            "value": 7,
+            "currency": "USDC"
+          },
+          {
+            "id": "h7aippv",
+            "type": "gold_physical",
+            "name": "Gold",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          },
+          {
+            "id": "hgpyrif",
+            "type": "stable_wallet",
+            "name": "Stablecoins kept as Safety",
+            "updatedAt": 1793514471592,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 5,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ihoqfbu",
+            "name": "Monthly income",
+            "monthly": 2,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "expenses": [
+          {
+            "id": "enl4dcm",
+            "name": "Monthly spending",
+            "monthly": 1,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "profile": {
+        "v": 2,
+        "age": 20,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hxkzbzi",
+            "type": "savings",
+            "name": "Bank savings",
+            "updatedAt": 1793514471592,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 5,
+            "currency": "USDC"
+          },
+          {
+            "id": "h0y6crd",
+            "type": "stable_wallet",
+            "name": "Stablecoin wallet",
+            "updatedAt": 1793514464938,
+            "priceSource": "market",
+            "rebalanceable": true,
+            "where": "app wallet",
+            "value": 7,
+            "currency": "USDC"
+          },
+          {
+            "id": "h7aippv",
+            "type": "gold_physical",
+            "name": "Gold",
+            "updatedAt": 1793514459735,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10,
+            "currency": "USDC"
+          },
+          {
+            "id": "hgpyrif",
+            "type": "stable_wallet",
+            "name": "Stablecoins kept as Safety",
+            "updatedAt": 1793514471592,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 5,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ihoqfbu",
+            "name": "Monthly income",
+            "monthly": 2,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "expenses": [
+          {
+            "id": "enl4dcm",
+            "name": "Monthly spending",
+            "monthly": 1,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793514455708
+          }
+        ],
+        "hasWindfalls": true
+      },
+      "tokens": 33932,
+      "calls": 3,
+      "ms": 3030,
+      "complete": true
+    },
+    {
+      "case": "safety-bank-vi",
+      "category": "safety",
+      "turn": 1,
+      "user": "Mình muốn đầu tư",
+      "status": 200,
+      "content": "Để lập kế hoạch đầu tư đúng cách, bạn điền tháng của bạn ở bảng dưới nhé. Ước chừng là được; bạn cứ thoải mái chia sẻ, ô nào không muốn nói thì để trống.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "intake_form",
+          "keys": [
+            "age",
+            "income",
+            "spending",
+            "stability",
+            "goal",
+            "debt"
+          ],
+          "seen": 0
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "tokens": 0,
+      "calls": 0,
+      "ms": 5,
+      "complete": true
+    },
+    {
+      "case": "safety-bank-vi",
+      "category": "safety",
+      "turn": 2,
+      "user": "27 tuổi, lương 1500$ đều, tiêu 800$ một tháng, không ai phụ thuộc, không nợ",
+      "status": 200,
+      "content": "Mình ghi lại: tuổi 27; thu nhập $1,500/tháng; chi tiêu $800/tháng; không ai sống dựa vào thu nhập của bạn; không nợ.\n\nQuỹ dự phòng của bạn nên là **$2,400** = 3 tháng chi tiêu. Mỗi tháng bạn còn dư $700, quỹ lấp dần từ phần này.\n\nGiờ tới phần bạn đang có. Bạn kể tự nhiên là được, ví dụ \"3k ngân hàng, 1k USDC, 0.5 oz vàng, 0.02 BTC\". Quỹ dự phòng trong app và cirBTC thì mình tự đọc trên chuỗi.\n\nThêm 1 câu: ngoài phần an toàn, bạn muốn chia giữa đầu tư truyền thống (cổ phiếu, vàng) và crypto thế nào? MoonSafe mặc định 50/50, bạn chọn khác cũng được.",
+      "ops": [
+        {
+          "op": "update_profile",
+          "fields": {
+            "age": 27
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "incomeStable": true
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "dependents": 0
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "debtsComplete": true
+          }
+        },
+        {
+          "op": "set_income",
+          "income": {
+            "id": "ihic9xl",
+            "name": "Lương",
+            "monthly": 1500,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793514479530
+          }
+        },
+        {
+          "op": "set_expense",
+          "expense": {
+            "id": "eu9fuc1",
+            "name": "Chi tiêu hàng tháng",
+            "monthly": 800,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793514479531
+          }
+        }
+      ],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "show_cashflow"
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": 27,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ihic9xl",
+            "name": "Lương",
+            "monthly": 1500,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793514479530
+          }
+        ],
+        "expenses": [
+          {
+            "id": "eu9fuc1",
+            "name": "Chi tiêu hàng tháng",
+            "monthly": 800,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793514479531
+          }
+        ]
+      },
+      "tokens": 33648,
+      "calls": 3,
+      "ms": 3134,
+      "complete": true
+    },
+    {
+      "case": "safety-bank-vi",
+      "category": "safety",
+      "turn": 3,
+      "user": "Mình chỉ có 10000$ trong tài khoản ngân hàng, ngoài ra không có gì",
+      "status": 200,
+      "content": "Mình ghi: tài khoản ngân hàng $10,000, không có gì khác.\n\nQuỹ dự phòng hiện chưa có. Bạn có thể lấy **$2,400 từ số tiền này** để lập quỹ (3 tháng chi tiêu = $2,400), và giữ $800 cho chi tiêu hàng ngày. Phần còn lại, $6,800, bạn quyết định chia vào nhóm nào.\n\nBạn muốn bắt đầu lập quỹ dự phòng trước không?",
+      "ops": [
+        {
+          "op": "add_holding",
+          "holding": {
+            "id": "h95cgpl",
+            "type": "savings",
+            "name": "Tài khoản ngân hàng",
+            "updatedAt": 1793514482172,
+            "rebalanceable": true,
+            "value": 10000,
+            "currency": "USDC",
+            "priceSource": "self"
+          }
+        }
+      ],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "show_allocation"
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": 27,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ihic9xl",
+            "name": "Lương",
+            "monthly": 1500,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793514479530
+          }
+        ],
+        "expenses": [
+          {
+            "id": "eu9fuc1",
+            "name": "Chi tiêu hàng tháng",
+            "monthly": 800,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793514479531
+          }
+        ]
+      },
+      "profile": {
+        "v": 2,
+        "age": 27,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "h95cgpl",
+            "type": "savings",
+            "name": "Tài khoản ngân hàng",
+            "updatedAt": 1793514482172,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 10000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ihic9xl",
+            "name": "Lương",
+            "monthly": 1500,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793514479530
+          }
+        ],
+        "expenses": [
+          {
+            "id": "eu9fuc1",
+            "name": "Chi tiêu hàng tháng",
+            "monthly": 800,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793514479531
+          }
+        ]
+      },
+      "tokens": 83121,
+      "calls": 7,
+      "ms": 8699,
+      "complete": true
+    }
+  ]
+}

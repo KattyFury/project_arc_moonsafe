@@ -15,7 +15,7 @@ import type { FinancialProfile } from '../../src/types'
 export const DCA_MONTHS = 6
 
 /** A value in dollars (Hieu, 2026-10-29). */
-const fmt = (n: number) => `$${new Intl.NumberFormat('en-US', { maximumFractionDigits: n >= 100 ? 0 : 2 }).format(n)}`
+const fmt = (n: number) => `$${new Intl.NumberFormat('en-US', { maximumFractionDigits: n >= 100 ? 0 : 2, minimumFractionDigits: n < 100 && Math.round(n * 100) % 100 !== 0 ? 2 : 0 }).format(n)}`
 /** The token the user signs for (deposit, cirBTC buy): what the wallet shows. */
 const tok = (n: number) => `${new Intl.NumberFormat('en-US', { maximumFractionDigits: n >= 100 ? 0 : 2 }).format(n)} USDC`
 
@@ -130,7 +130,7 @@ export function splitSection(b: Balance, vi: boolean, n = 2): string | null {
       ? `- Đã là Safety: ${safeItems.join(', ')}. Khoản này có lãi đều và không chạy theo giá cổ phiếu hay crypto, nên nó làm đúng việc của Safety: giữ cho tổng tài sản ít dao động.` // lang-ok
       : `- Already Safety: ${safeItems.join(', ')}. It pays a steady return and does not follow stock or crypto prices, which is exactly Safety's job: keeping your whole picture steadier.`)
     : null
-  const keepNote = keep >= 0.005 ? (vi ? `; giữ ${fmt(keep)} (1 tháng chi tiêu) trong tài khoản để tiêu` : `; keep ${fmt(keep)} (a month of spending) in your account for bills`) : '' // lang-ok
+  const keepNote = keep >= 0.005 ? (vi ? `; giữ ${fmt(keep)} (1 tháng chi tiêu) lại để tiêu` : `; keep ${fmt(keep)} of it (a month of spending) for bills`) : '' // lang-ok
   const idleLine = idleItems.length
     ? (vi ? `- Tiền chưa làm gì: ${idleItems.join(', ')}${keepNote}. Bạn quyết định tiền nào vào phần nào.` : `- Money not doing anything yet: ${idleItems.join(', ')}${keepNote}. You decide which of it goes where.`) // lang-ok
     : (vi ? '- Không có tiền nào đang nằm yên, nên tiền mới (phần dư mỗi tháng, airdrop) sẽ vào phần còn thiếu.' : '- No money is sitting idle, so new money (what is left each month, airdrops) goes to the parts still short.') // lang-ok
@@ -272,7 +272,9 @@ export function buildStanding({ p, b, vi }: { p: FinancialProfile; b: Balance; v
   const bank = b.items.filter(i => i.group === 'safe').map(i => `${i.label} ${fmt(i.usd)}`)
   const idle = b.items.filter(i => i.group === 'idle' && i.usd >= 0.005).map(i => `${i.label} ${fmt(i.usd)}`)
   const idleLine = idle.length ? (vi ? `**Tiền chưa làm gì:** ${idle.join(', ')}.` : `**Money not doing anything yet:** ${idle.join(', ')}.`) : null // lang-ok
-  const row = (x: typeof safe, detail?: string) => `**${x.name}:** ${fmt(x.have)} ${vi ? 'trên' : 'of'} ${fmt(x.target)}${!x.full ? `, ${fmt(x.left)} ${vi ? 'nữa' : 'to go'}` : vi ? ', đúng tỷ lệ' : ', on track'}${detail ? ` (${detail})` : ''}.` // lang-ok
+  const row = (x: typeof safe, detail?: string) => x.over
+    ? `**${x.name}:** ${fmt(x.have)}, ${vi ? 'trên tỷ lệ; không cần bán, tiền mới vào phần khác' : 'above its share; no need to sell, new money goes to the others'}${detail ? ` (${detail})` : ''}.` // lang-ok
+    : `**${x.name}:** ${fmt(x.have)} ${vi ? 'trên' : 'of'} ${fmt(x.target)}${!x.full ? `, ${fmt(x.left)} ${vi ? 'nữa' : 'to go'}` : vi ? ', đúng tỷ lệ' : ', on track'}${detail ? ` (${detail})` : ''}.` // lang-ok
   const safeDetail = [bank.length ? bank.join(', ') : null, safe.goal ? (vi ? `gồm mục tiêu ${fmt(safe.goal)} + ${fmt(safe.rest ?? 0)}` : `target = goal ${fmt(safe.goal)} + ${fmt(safe.rest ?? 0)}`) : null].filter(Boolean).join('; ') // lang-ok
   return [p.planningScope === 'household' ? (vi ? 'Tổng quan gia đình:' : 'Household totals:') : null, fundLine, idleLine, row(safe, safeDetail || undefined), row(trad), row(crypto)].filter(Boolean).join('\n') // lang-ok
 }
