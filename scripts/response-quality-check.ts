@@ -145,8 +145,19 @@ try {
     forcedTools = [tools('set_expense', { name: 'Spending', monthly: { amount: 3500, currency: 'USDC' }, kind: 'fixed' }), tools('add_debt', { name: 'Mortgage', type: 'mortgage', balance: { amount: 250000, currency: 'USDC' }, rate_pct: 7, monthly_payment: { amount: 1800, currency: 'USDC' } })]
     const once = readOps(proposed((await ask('I spend 3.5k. Mortgage 250k at 7%, I pay 1800 a month (already in the 3.5k).')).data)).find(o => o.op === 'set_expense') as { expense?: { monthly: number } } | undefined
     assert.equal(once?.expense?.monthly, 1700, 'the payment already in spending is not counted twice')
+    // "i sold some eth last week" is part of it with no amount: nothing removed (the agent asks how much).
+    const eth = normalizeProfile({ v: 2, holdings: [{ id: 'eth', type: 'eth', name: 'ETH', symbol: 'ETH', value: 3000, currency: 'USDC', priceSource: 'self', rebalanceable: true, updatedAt: 1 }] })
+    forcedTools = [tools('remove_holding', { id: 'eth' })]
+    assert.equal(proposed((await ask('i sold some eth last week', true, [], { profile: eth })).data).length, 0, 'selling some is not selling all')
+    forcedTools = [tools('remove_holding', { id: 'eth' })]
+    assert.ok(readOps(proposed((await ask('i sold all my eth last week', true, [], { profile: eth })).data)).some(o => o.op === 'remove_holding'), 'selling all still removes it')
+    // The answer to "how much did you sell?" goes on the card: ETH 3,000 − 1,000 = 2,000.
     forcedTools = []
-    checks += 6
+    const sold = await ask('about 1000 worth', true, [{ role: 'user', content: 'i sold some eth last week' }, { role: 'assistant', content: 'How much ETH did you sell, and roughly what was it worth in dollars?' }], { profile: eth })
+    const cut = readOps(proposed(sold.data)).find(o => o.op === 'set_holding') as { patch?: { value?: number } } | undefined
+    assert.equal(cut?.patch?.value, 2000, 'the sold amount comes off ETH, on the card')
+    assert.equal((sold.data.ops ?? []).length, 0, 'not saved before the user confirms')
+    checks += 10
   }
   forcedTools = []
   // No model needed for reviewed standalone concepts, even with an existing financial profile.

@@ -111,6 +111,6 @@ export function assetsAsk(p: FinancialProfile, fund: { floorUsd: number | null; 
   lines.push(vi
     ? 'Thêm 1 câu: ngoài phần an toàn, bạn muốn chia giữa đầu tư truyền thống (cổ phiếu, vàng) và crypto thế nào? MoonSafe mặc định 50/50, bạn chọn khác cũng được.' // lang-ok
     : 'And one more: outside Safety, how would you like to split between traditional investments (stocks, gold) and crypto? MoonSafe\'s default is 50/50; another split is fine.')
-  if (p.incomeStable === null && p.incomes.length) lines.push(vi ? 'Một câu nhanh: lương của bạn có đều hằng tháng không?' : 'Quick one: is your pay about the same every month?') // lang-ok
+  if (p.incomeStable === null && p.incomes.length) lines.push(vi ? 'Một câu nhanh: thu nhập của bạn có đều hằng tháng không?' : 'Quick one: is your income about the same every month?') // lang-ok
   return lines.join('\n\n')
 }

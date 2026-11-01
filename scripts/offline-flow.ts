@@ -118,7 +118,7 @@ const q2Text = q2.body.content ?? ''
 console.log('\nstep 0c:\n' + q2Text)
 expect(/Noted: age 31; income \$600 a month; money now and then \(airdrops…\); spending \$400 a month; 1 relying on you; debt Mom \$20,000, no interest, \$200 a month\./.test(q2Text), 'question 2 says what was noted, spending without the debt payment')
 expect(/\*\*\$3,600\*\* = 6 months of spending \(debt payments included/.test(q2Text) && /fills from the money that comes now and then, like airdrops/.test(q2Text), 'the fund target, with the debt payment, and where its money comes from when the pay only covers the month')
-expect(/Now, what you hold, in your own words/.test(q2Text) && /MoonSafe's default is 50\/50/.test(q2Text) && /is your pay about the same every month\?/.test(q2Text) && !/Here is your plan/.test(q2Text), 'then what they hold, the split, and the steadiness left out; no plan yet')
+expect(/Now, what you hold, in your own words/.test(q2Text) && /MoonSafe's default is 50\/50/.test(q2Text) && /is your income about the same every month\?/.test(q2Text) && !/Here is your plan/.test(q2Text), 'then what they hold, the split, and the steadiness left out; no plan yet')
 const q2Again = await call([{ role: 'user', content: 'investing' }, { role: 'assistant', content: hello.body.content ?? '' }, { role: 'user', content: 'ok' }, { role: 'assistant', content: q2Text }, { role: 'user', content: 'nothing else' }], month, 0)
 expect(!/Now, what you hold/.test(q2Again.body.content ?? ''), 'question 2 is asked once')
 // Saving the form (an app event) is what brings question 2 now (Hieu, 2026-11-01).

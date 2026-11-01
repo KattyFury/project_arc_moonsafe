@@ -252,6 +252,8 @@ const FUND_WORD = /fund|vault|emergency|quỹ/i // lang-ok
 const HOLDING_CHANGE = /(?<!\p{L})(bought|buy more|sold|sell(?:ing)? some|added|topped up|withdrew|took out|moved|cashed out|mua thêm|mua|bán|rút|chuyển|nạp thêm)(?!\p{L})[^.?!\n]{0,40}(?<!\p{L})(gold|btc|bitcoin|eth|crypto|coins?|stocks?|shares|voo|etfs?|usdc|usdt|stablecoins?|savings|bank|term deposit|bonds?|vàng|cổ phiếu|ngân hàng|tiết kiệm|trái phiếu)(?!\p{L})/iu // lang-ok
 // The user named Vietnamese dong: vnd, ₫, đồng, triệu / tr, nghìn / ngàn, or "k" after a number in a Vietnamese message.
 const SAYS_VND = /(?<!\p{L})(vnd|đồng|triệu|tr|nghìn|ngàn|củ)(?!\p{L})|₫/iu // lang-ok
+// Part of a holding, not all of it: "sold some", "a bit", "part of", "bán bớt", "một ít".
+const PART_OF = /(?<!\p{L})(some|a bit|a little|part of|half|a few|bớt|một ít|một phần|một nửa)(?!\p{L})/iu // lang-ok
 const SAFETY_WORD = /(?<!\p{L})(safety|safe part|an toàn)(?!\p{L})/iu // lang-ok
 const ALL_OF_IT = /(?<!\p{L})(all|whole|everything|entire|max|hết|toàn bộ|tất cả)(?!\p{L})/iu // lang-ok
 const ASKS_HOW_MUCH = /how much|bao nhiêu/i // lang-ok
@@ -705,7 +707,7 @@ function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: nu
     lines.push(`- Target by the MoonSafe framework at age ${b.age}${b.ageIsDefault ? ' (DEFAULT age 30: the user declined; say the split is an estimate)' : ''}: Safety ${ts}%, Traditional ${ttr}%, Crypto ${tcr}% (mostly BTC; no target for other coins). Safety = age is the "age in bonds" rule of thumb. ${p.cryptoSplit === undefined ? 'Traditional / Crypto is MoonSafe\'s default even split, NOT a standard rule: say so, and that they can choose another split (record it with update_profile crypto_split); when you first give the split, ask once how they want it.' : `Traditional / Crypto is the split they chose (${100 - p.cryptoSplit}/${p.cryptoSplit}).`}`)
     // Totals, not only what is missing (Hieu, 2026-10-28): "X of Y, Z to go" for each part; Safety carries a near-term goal first.
     const st = bucketStanding(b)
-    if (st && b.fund.met) lines.push(`- Where they stand in the three parts, by value. Rule (Hieu, 2026-11-01): the investments (Traditional + Crypto) set how much Safety they need = investments × Safety% / (100 − Safety%); money not doing anything yet fills that first, the rest is split by the shares, and inside Traditional / Crypto it goes to the part below its split first. A part above its share is never sold: new money goes to the others. Copy "X of Y, Z to go" exactly${b.goalUsd > 0 ? `; Safety carries the near-term goal ${show(b.goalUsd)} on top` : ''}. Safety is NOT the emergency fund: ${st.map(x => `${x.name} ${show(x.have)} of ${show(x.target)}${x.goal ? ` (= goal ${show(x.goal)} + ${x.share}% share ${show(x.rest ?? 0)})` : ''}, ${!x.full ? `under, ${show(x.left)} to go` : x.over ? 'ABOVE its share: say "above its share", never "on track"; no need to sell, new money goes to the others' : 'on track'}`).join('; ')}`)
+    if (st && b.fund.met) lines.push(`- Where they stand in the three parts, by value. Rule (Hieu, 2026-11-01): the investments (Traditional + Crypto) set how much Safety they need = investments × Safety% / (100 − Safety%); money not doing anything yet fills that first, the rest is split by the shares, and inside Traditional / Crypto it goes to the part below its split first. A part above its share is never sold: new money goes to the others. Copy "X of Y, Z to go" exactly${b.goalUsd > 0 ? `; Safety carries the near-term goal ${show(b.goalUsd)} on top` : ''}. Safety is NOT the emergency fund: ${st.map(x => `${x.name} ${show(x.have)}${x.over ? '' : ` of ${show(x.target)}`}${x.goal ? ` (= goal ${show(x.goal)} + ${x.share}% share ${show(x.rest ?? 0)})` : ''}, ${!x.full ? `under, ${show(x.left)} to go` : x.over ? 'ABOVE its share: say "above its share", never "on track"; no need to sell, new money goes to the others' : 'on track'}`).join('; ')}`)
   } else lines.push('- Target: AGE UNKNOWN. Ask the age before talking about any share.')
   if (!b.declared) lines.push('- Nothing is declared yet: the user has not said what they hold (the wallet balance seen onchain does not count until they declare it). If they ask how to split or invest: suggest NO split and NO purchase, turn NO percentage into an amount; ask about the next item of the collection flow instead.')
   else if (b.suggest && fundTargetKnown) {
@@ -1279,6 +1281,8 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       const h = findH(a.id)
       if (!h) return `No item with id ${String(a.id)}.`
       if (!SOLD.test(lastUserText) && !SAYS_NONE.test(lastUserText)) return 'Not removed: the user did not say it is gone.'
+      // "i sold some eth last week" removed all the ETH (persona run 2026-11-01): part of it is not all of it.
+      if (PART_OF.test(lastUserText) && !/(?<!\p{L})(all|everything|whole|hết|toàn bộ)(?!\p{L})/iu.test(lastUserText)) return 'Not removed: they sold only part of it and did not say how much. Record nothing; ask ONE short question: how much did they sell (or how much is left)?' // lang-ok
       record({ op: 'remove_holding', id: h.id }, `${h.name} removed`)
       done.push(`Removed ${h.name}.`)
     } else if (name === 'move') {
@@ -1570,6 +1574,19 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     planMessages.push({ role: 'system', content: `${recorded ? `${stateText()}\n` : ''}Anything else the user's latest message asked for or told that is not done yet? If not, call no_action.` })
   }
   console.log(`plan steps=${planSteps} tokens in=${planIn} out=${planOut} ops=${ops.length}`)
+  // "How much ETH did you sell?" → "about 1000 worth" (persona run 2026-11-01: "I've noted that" with nothing recorded): the amount
+  // asked for comes off the item named in the question, and goes on the confirm card like any change.
+  if (!appEvent && !placement && !ops.some(o => o.op === 'set_holding' || o.op === 'remove_holding') && /how much[^?]{0,40}(sell|sold|take out|withdr[ae]w)|bán (bao nhiêu|bớt bao nhiêu)/iu.test(prevAssistantText)) { // lang-ok
+    const m = /(\d[\d,]*(?:\.\d+)?)\s*(k)?/i.exec(lastUserText)
+    const amount = m ? Number(m[1].replace(/,/g, '')) * (m[2] ? 1000 : 1) : NaN
+    const said = (h: Holding) => [h.name, h.symbol].filter(Boolean).some(n => new RegExp(`(?<![\\p{L}])${String(n).replace(/[^\p{L}\p{N} ]/gu, '')}(?![\\p{L}])`, 'iu').test(prevAssistantText))
+    const h = profile.holdings.find(x => said(x) && x.value !== undefined && (x.priceSource === 'self' || priceKindOf(x.type) === 'stable'))
+    if (h && amount > 0 && !/coins?|eth\b|btc\b|units?|shares?/iu.test(lastUserText.replace(/\d[\d,.]*\s*k?/g, ''))) {
+      const left = Math.max(0, (h.value ?? 0) - (h.currency === 'VND' && rate ? amount * rate : amount))
+      record({ op: 'set_holding', id: h.id, patch: { value: Math.round(left * 100) / 100 } }, `${h.name} now ${moneyText({ amount: left, currency: h.currency ?? 'USDC' })} (sold ${usdc(amount)})`)
+      done.push(`Proposed ${h.name} down by ${usdc(amount)} after the sale; it waits on the confirm card.`)
+    }
+  }
   // "mortgage, pay 1800 a month (already in the 3.5k)": spending is kept WITHOUT debt payments (they are added once, from the debt), so a
   // payment the user says is inside the spending figure comes out of it (persona run 2026-11-01: 3,500 + 1,800 = 5,300, fund $31,800).
   if (INCLUDED_IN_SPENDING.test(evidence.text)) {
@@ -1674,7 +1691,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   }
   // Critical financial targets come from code, never a model's guessed X-of-Y.
   if (policy.question && !actions.length && !placement && /fund|quỹ/iu.test(lastUserText) && /target|how much|mục tiêu|tính|bao nhiêu/iu.test(lastUserText)) { // lang-ok
-    const show = (n: number) => vi && rate ? moneyText({ amount: n * rate, currency: 'VND' }) : usdc(n)
+    const show = (n: number) => vi && rate ? moneyText({ amount: n * rate, currency: 'VND' }) : dollars(n)
     const missing = spendingIncomplete ? ['monthly spending'] : fundMissingInputs(profile, balance.cashflow.spending)
     const ask: Record<string, [string, string]> = {
       'monthly spending': ['How much do you spend in a usual month, all in?', 'Một tháng bình thường bạn tiêu khoảng bao nhiêu, tính hết?'], // lang-ok
@@ -1996,7 +2013,7 @@ ${ending}` })
         continue
       }
       // Still asking twice after the rewrites: drop the extra questions rather than send them.
-      // A read-back with nothing recorded survived the rewrites once ("Mình ghi: Bạn muốn mua…"): drop it.
+      // A read-back with nothing recorded survived the rewrites once ("Mình ghi: Bạn muốn mua…"): drop it. // lang-ok
       if (responseProblems(content, policy.answerFirst, fundTargetUnknown, vi).length) return json({ content: unreliableReply(), ops, dcaStop, actions })
       const noFalseNote = ops.length ? content : content.replace(/^\s*(\*\*)?(Noted|Mình ghi)(\*\*)?:\s*/i, '').replace(/\s*(Right\?|Đúng chưa\?)\s*$/i, '') // lang-ok
       const oneAsk = (noFalseNote.match(/\?/g) ?? []).length > 1 ? noFalseNote.replace(/\s*(Right\?|Đúng chưa\?)\s*$/i, '') : noFalseNote // lang-ok

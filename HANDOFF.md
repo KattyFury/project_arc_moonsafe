@@ -1,3 +1,10 @@
+# ▶ 2026-11-01 (khuya, phần cuối) — HOÀN TẤT VIỆC DANG DỞ (ĐÃ DEPLOY Cloudflare `bdb40fb5`)
+
+Dùng thêm ~448k token Haiku (`docs/evals/persona-r3/r4/r5-2026-11-01.json`; ca nạp sẵn hồ sơ `PERSONA_TAIL_CASES` + `p5-sold-en` trong `scripts/persona-cases.ts`).
+- Đã thấy đúng bằng Haiku: tuổi "40, …, wife works too" được ghi; "keep 10,000 of the current account as Safety" tách đúng 10,000; phần vượt tỷ lệ nói "above its share" (bỏ "X of X"); hỏi người về hưu "is your income…" (thay "pay").
+- Sửa thêm từ lượt chạy lại: "i sold some eth" từng đề nghị XOÁ cả ETH → bán một phần mà không nói số thì không xoá, hỏi 1 câu (`PART_OF`); câu trả lời "about 1000 worth" cho câu hỏi "bán bao nhiêu" giờ ra thẻ "ETH now $2,000 (sold $1,000)" (trước: nói "noted" mà không ghi gì); câu trả lời mục tiêu quỹ ghi $ thay vì USDC.
+- Test offline mới trong `response-quality-check.ts` cho mọi lỗi trên.
+
 # ▶ 2026-11-01 (khuya) — 5 VAI × 2M TOKEN HAIKU + SỬA (ĐÃ DEPLOY Cloudflare `f6a68b93`)
 
 Ca: `scripts/persona-cases.ts` (p1 freelancer nợ thẻ 24% muốn all-in BTC, p2 bố một con cháy future + nợ bạn (VN), p3 về hưu 63 tuổi số lớn, p4 sinh viên không lương (VN), p5 người nói mơ hồ / đổi số / thử lừa agent). Đã dùng ~1.89M token: `docs/evals/persona-r1a/r1b/r2a/r2b-2026-11-01.json` (r1 = tìm lỗi, r2 = chạy lại sau sửa).
