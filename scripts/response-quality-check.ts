@@ -138,8 +138,8 @@ try {
     forcedTools = [tools('add_holding', { type: 'term_deposit', name: 'Term deposits', worth: { amount: 200000, currency: 'VND' } })]
     const dollars = readOps(proposed((await ask('Term deposits 200,000 at my bank.')).data)).find(o => o.op === 'add_holding') as { holding?: { currency?: string } } | undefined
     assert.equal(dollars?.holding?.currency, 'USDC', 'no VND unless the user names it')
-    forcedTools = [tools('add_holding', { type: 'savings', name: 'Tiết kiệm', worth: { amount: 20000000, currency: 'VND' } })]
-    const dong = readOps(proposed((await ask('Mình có 20 triệu tiết kiệm.')).data)).find(o => o.op === 'add_holding') as { holding?: { currency?: string } } | undefined // lang-ok
+    forcedTools = [tools('add_holding', { type: 'term_deposit', name: 'Tiết kiệm có kỳ hạn', worth: { amount: 20000000, currency: 'VND' } })] // lang-ok
+    const dong = readOps(proposed((await ask('Mình có 20 triệu gửi tiết kiệm có kỳ hạn.')).data)).find(o => o.op === 'add_holding') as { holding?: { currency?: string } } | undefined // lang-ok
     assert.equal(dong?.holding?.currency, 'VND', 'VND stays when the user says triệu') // lang-ok
     // A debt payment the user says is inside their spending comes out of it (3,500 − 1,800 = 1,700), so it counts once.
     forcedTools = [tools('set_expense', { name: 'Spending', monthly: { amount: 3500, currency: 'USDC' }, kind: 'fixed' }), tools('add_debt', { name: 'Mortgage', type: 'mortgage', balance: { amount: 250000, currency: 'USDC' }, rate_pct: 7, monthly_payment: { amount: 1800, currency: 'USDC' } })]

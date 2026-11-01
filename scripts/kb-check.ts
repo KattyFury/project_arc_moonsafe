@@ -110,7 +110,7 @@ const personas: [string, Facts, string[]][] = [
 // The user decides what their Safety is (Hieu, 2026-11-01): "as Safety" keeps the form they name, marked as Safety; never gold, stocks or coins.
 const placed: [string, { amountUsd: number; holdingType: string; source: string | null; safety?: boolean } | null][] = [
   ['Imma put 1000$ in my bank account as Safety', { amountUsd: 1000, holdingType: 'savings', source: null, safety: true }],
-  ['I just put 1,000 into safe', { amountUsd: 1000, holdingType: 'savings', source: null }],
+  ['I just put 1,000 into safe', { amountUsd: 1000, holdingType: 'savings', source: null, safety: true }],
   ['I keep 5 USDC as Safety', { amountUsd: 5, holdingType: 'stable_wallet', source: null, safety: true }],
   ['I will keep 200 cash for safety', { amountUsd: 200, holdingType: 'cash', source: null, safety: true }],
   ['I put 2000 in a term deposit as Safety', { amountUsd: 2000, holdingType: 'term_deposit', source: null }],
@@ -119,17 +119,18 @@ const placed: [string, { amountUsd: number; holdingType: string; source: string 
   ['mình giữ 500 USDC làm an toàn', { amountUsd: 500, holdingType: 'stable_wallet', source: null, safety: true }], // lang-ok
   ['mình giữ vàng 1000$ làm safety', null], // lang-ok
   ['I keep 500 of BTC as Safety', null],
-  ['I moved 500 USDC from my wallet into savings', { amountUsd: 500, holdingType: 'savings', source: 'wallet' }],
+  // Spare money is not tracked (Hieu, 2026-11-01): plain bank, stablecoin or earn placements are not recorded.
+  ['I moved 500 USDC from my wallet into savings', null],
   ['I deposited 2,000 in a term deposit', { amountUsd: 2000, holdingType: 'term_deposit', source: null }],
-  ['I put 300 in flexible earn from my salary', { amountUsd: 300, holdingType: 'flexible_earn', source: 'new' }],
-  ['I got 1000 new money from outside the app, I put it in my bank', { amountUsd: 1000, holdingType: 'savings', source: 'new' }],
-  ['ok I have 1000 more in savings from outside', { amountUsd: 1000, holdingType: 'savings', source: 'new' }],
-  ['I told you it is outside money, 1000 in the bank', { amountUsd: 1000, holdingType: 'savings', source: 'new' }],
+  ['I put 300 in flexible earn from my salary', null],
+  ['I got 1000 new money from outside the app, I put it in my bank', null],
+  ['ok I have 1000 more in savings from outside', null],
+  ['I told you it is outside money, 1000 in the bank', null],
   ['I have 200$ in the bank', null],
   ['I have 3000 in savings and 200 in cash', null],
   ['should I put 1000$ in the bank?', null],
   ['Oh I just accidentaly got 1000$ doing airdrop', null],
-  ['I withdraw money on this wallet to add to the bank, 600$', { amountUsd: 600, holdingType: 'savings', source: 'wallet' }],
+  ['I withdraw money on this wallet to add to the bank, 600$', null],
   ['Safety, I told you before', null],
 ]
 for (const [msg, want] of placed) {
@@ -150,7 +151,7 @@ for (const [msg, want] of placed) {
   if (sb.byGroup.safe !== 5 || sb.byGroup.idle !== 5) fail(`chosen Safety survives saving: Safety 5, idle 5 (got ${sb.byGroup.safe} / ${sb.byGroup.idle})`)
 }
 const cashP = normalizeProfile({ v: 2, holdings: [{ id: 'h1', type: 'cash', name: 'Cash', value: 1500, currency: 'USDC', priceSource: 'self', rebalanceable: true, updatedAt: 1 }] })
-const req = detectPlacement('I put 1000$ in my bank', null)!
+const req = detectPlacement('I put 1000$ in my bank as Safety', null)!
 const valuesOf = (p: FinancialProfile) => p.holdings.map(h => `${h.type}:${h.value}`).join(',')
 if (sourceOptions(cashP, req, null).map(h => h.id).join() !== 'h1') fail('the cash item should be offered as a source')
 if (valuesOf(applyOps(cashP, buildRecordOps(cashP, req, { kind: 'holding', id: 'h1' }, null))) !== 'cash:500,savings:1000') fail('a listed source goes down, the destination goes up')
@@ -183,18 +184,18 @@ const healthy: FinancialProfile = {
 }
 type Real = { name: string; p: FinancialProfile; vault?: number; wallet?: number; msg?: string; open?: boolean; want: string[] }
 const reals: Real[] = [
-  { name: 'healthy, fund full, no debt', p: healthy, vault: 4500, open: true, want: ['lock_open_surplus'] },
+  { name: 'healthy, fund full, no debt', p: healthy, vault: 4500, open: true, want: ['lock_open_surplus', 'off_target'] },
   { name: 'credit card blocks', p: { ...healthy, debts: [debt({ type: 'credit_card', balance: 2000, ratePct: 24, monthlyPayment: 200 })] }, vault: 6000, open: false, want: ['priority_debt'] },
-  { name: 'family, no interest, does not block', p: { ...healthy, debts: [debt({ type: 'family_no_interest', balance: 5000, ratePct: 0, monthlyPayment: 200, lender: 'Mom' })] }, vault: 6000, open: true, want: ['family_debt_no_interest', 'lock_open_surplus'] },
-  { name: 'mortgage 8% does not block', p: { ...healthy, debts: [debt({ type: 'mortgage', balance: 80000, ratePct: 8, monthlyPayment: 600 })] }, vault: 6300, open: true, want: ['lock_open_surplus'] },
+  { name: 'family, no interest, does not block', p: { ...healthy, debts: [debt({ type: 'family_no_interest', balance: 5000, ratePct: 0, monthlyPayment: 200, lender: 'Mom' })] }, vault: 6000, open: true, want: ['family_debt_no_interest', 'lock_open_surplus', 'off_target'] },
+  { name: 'mortgage 8% does not block', p: { ...healthy, debts: [debt({ type: 'mortgage', balance: 80000, ratePct: 8, monthlyPayment: 600 })] }, vault: 6300, open: true, want: ['lock_open_surplus', 'off_target'] },
   { name: 'mortgage 10% blocks', p: { ...healthy, debts: [debt({ type: 'mortgage', balance: 80000, ratePct: 10, monthlyPayment: 600 })] }, vault: 6300, open: false, want: ['priority_debt'] },
   { name: 'fund short blocks, says the gap', p: healthy, vault: 1000, open: false, want: ['fund_short'] },
   { name: 'age not known: ask it', p: { ...healthy, age: null }, vault: 4500, open: true, want: ['age_unknown', 'lock_open_surplus'] },
-  { name: 'age declined: default 30', p: { ...healthy, age: null, ageDeclined: true }, vault: 4500, open: true, want: ['age_declined', 'lock_open_surplus'] },
-  { name: 'passive covers spending: free', p: { ...healthy, incomes: [...healthy.incomes, { id: 'i2', name: 'Rent', monthly: 1600, currency: 'USDC', kind: 'passive', updatedAt: NOW }] }, vault: 4500, open: true, want: ['financially_free', 'lock_open_surplus'] },
-  { name: '"just put 1,000 into safe"', p: healthy, vault: 4500, msg: 'I just put $1,000 into my savings', open: true, want: ['added_to_safe', 'lock_open_surplus'] },
-  { name: 'says where it came from: no question', p: healthy, vault: 4500, msg: 'I just moved $1,000 from my wallet into my savings', open: true, want: ['lock_open_surplus'] },
-  { name: 'wants to go all in altcoins', p: healthy, vault: 4500, msg: 'I want to go all in on memecoins', open: true, want: ['altcoin_heavy', 'lock_open_surplus'] },
+  { name: 'age declined: default 30', p: { ...healthy, age: null, ageDeclined: true }, vault: 4500, open: true, want: ['age_declined', 'lock_open_surplus', 'off_target'] },
+  { name: 'passive covers spending: free', p: { ...healthy, incomes: [...healthy.incomes, { id: 'i2', name: 'Rent', monthly: 1600, currency: 'USDC', kind: 'passive', updatedAt: NOW }] }, vault: 4500, open: true, want: ['financially_free', 'lock_open_surplus', 'off_target'] },
+  { name: '"just put 1,000 into safe"', p: healthy, vault: 4500, msg: 'I just put $1,000 into my savings', open: true, want: ['added_to_safe', 'lock_open_surplus', 'off_target'] },
+  { name: 'says where it came from: no question', p: healthy, vault: 4500, msg: 'I just moved $1,000 from my wallet into my savings', open: true, want: ['lock_open_surplus', 'off_target'] },
+  { name: 'wants to go all in altcoins', p: healthy, vault: 4500, msg: 'I want to go all in on memecoins', open: true, want: ['altcoin_heavy', 'lock_open_surplus', 'off_target'] },
   { name: 'nothing declared', p: EMPTY_PROFILE, vault: 0, wallet: 50, open: false, want: ['age_unknown', 'collecting', 'new_starter'] },
   { name: 'v1 record migrated (debt type unknown)', p: normalizeProfile({ monthlyIncome: 3000, monthlyExpenses: 1500, debtAmount: 500, age: 30, incomeStable: true, units: { monthlyIncome: 'USDC', monthlyExpenses: 'USDC', debtAmount: 'USDC' }, holdings: [{ kind: 'savings', quantity: 9000, currency: 'USDC' }] }, NOW), vault: 4500, open: false, want: ['priority_debt', 'collecting'] }, // no off_target while expensive debt is left (Hieu, 2026-11-01)
 ]
@@ -385,14 +386,14 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   if (a.liquid !== b2.liquid || a.liquid !== c2.liquid) fail('wallet seen onchain must not change the total')
   if (a.walletSeen !== 1900) fail('the wallet seen is still reported')
   if (bal(normalizeProfile({ v: 2, age: 31 }), 3000).liquid !== 0) fail('nothing declared = no money, however much the wallet holds')
-  // The transcript of 2026-10-28: 500 from the declared wallet into the bank. Total, targets and the other buckets do not move.
-  const req = detectPlacement('I withdraw 500 USDC on this wallet, put it in the bank', null)!
+  // The transcript of 2026-10-28: 500 from the declared wallet into the bank. Spare money is not tracked (Hieu, 2026-11-01): a plain
+  // move to the bank records nothing; kept as Safety it moves 500 into Safety and the total does not change.
+  if (detectPlacement('I withdraw 500 USDC on this wallet, put it in the bank', null) !== null) fail('a plain move to the bank is spare money: not recorded')
+  const req = detectPlacement('I withdraw 500 USDC on this wallet, put it in the bank as Safety', null)!
   const moved = applyOps(base, buildRecordOps(base, req, { kind: 'holding', id: 'hw' }, null))
   const before = bal(base, 1900), after = bal(moved, 1900)
   if (Math.abs(before.liquid - after.liquid) > 0.01) fail('moving declared money between places must not change the total')
-  // Balance Sheet v2 (2026-10-31): stablecoins and the bank are both Safety, so moving between them changes no part.
-  const { bucketStanding: standingOf } = await import('../src/lib/allocation')
-  if (JSON.stringify(standingOf(before)) !== JSON.stringify(standingOf(after))) fail('moving money inside Safety (wallet to bank) changes no part')
+  if (Math.abs((after.byGroup.safe - before.byGroup.safe) - 500) > 0.01) fail('kept as Safety, the 500 moves into Safety')
   // New money does grow the total, and each target grows by its share of it.
   const fresh = applyOps(base, buildRecordOps(base, req, { kind: 'new' }, null))
   const grown = bal(fresh, 1900)
@@ -465,29 +466,30 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   if (!/3 months of spending, because your income is steady/.test(plan)) fail('plan: the reason for the fund is missing')
   if (!/prepare a deposit of \*\*450 USDC\*\* from your wallet for you to sign/.test(plan)) fail('plan: the deposit offer wording')
   if (!/Investing comes once the fund is full/.test(plan) || /Safety \d+%|Traditional \d+%|Crypto \d+%/.test(plan)) fail(`plan: fund not full = no split yet\n${plan}`)
-  if (!/stablecoins go straight in, bank money once changed to USDC/.test(plan)) fail('plan: the fund money comes from idle money first')
+  if (!/It goes in as USDC: stablecoins straight in, bank money once changed to USDC/.test(plan)) fail('plan: how the fund money gets in')
   if (!/Here is your plan, in order/.test(plan)) fail('plan: must be recognised as the plan already given')
-  // Fund full: gold $2,000 invested needs 2,000 x 31 / 69 = $898.55 of Safety; bank $500 + USDC $1,900 are idle, never "your Safety".
+  // Fund full (Hieu, 2026-11-01): the part furthest ahead of its share sets the size. Gold $2,000 is Traditional's 34.5%, so the scale
+  // is 2,000 / 34.5% and Safety is full at $1,797, Crypto at $2,000. Bank $500 and USDC $1,900 are spare money: not tracked, not shown.
   const fullPlan = buildPlan({ p: base, b: bal(base, 1900, 450), shares, cover: null, vi: false })!
-  for (const [what, re] of [['safety', /Safety 31%\*\* \(set aside, low-volatility\)/], ['traditional', /Traditional 34\.5%\*\* \(index funds/], ['crypto', /Crypto 34\.5%\*\* \(mostly Bitcoin, which can halve/]] as const) if (!re.test(fullPlan)) fail(`plan: the reason for the ${what} is missing\n${fullPlan}`)
-  if (!/You have \$2,000 invested[^\n]*so it needs \$899 of Safety/.test(fullPlan)) fail(`plan: the investments set the Safety they need\n${fullPlan}`)
+  for (const [what, re] of [['safety', /\*\*Safety\*\* \(low-volatility\): \$0 of \$1,797, \$1,797 to go\./], ['traditional', /\*\*Traditional\*\* \(index funds such as VOO, gold\): \$2,000: furthest ahead for your age, so it sets the size\./], ['crypto', /\*\*Crypto\*\* \(mostly Bitcoin, which can halve on the way\): \$0 of \$2,000, \$2,000 to go\./]] as const) if (!re.test(fullPlan)) fail(`plan: ${what} against the part that sets the size\n${fullPlan}`)
   if (!/\*\*Safety\*\* is the low-risk part[^\n]*It is not emergency money \(that is the emergency fund\), and a term deposit is usually locked until it matures/.test(fullPlan)) fail('plan: why Safety, before any number')
-  if (!/Money not doing anything yet: Bank savings \$500, USDC in this wallet \$1,900; keep \$150 of it[^\n]*You decide which of it goes where/.test(fullPlan) || /Put \$|add \$/.test(fullPlan)) fail(`plan: target and what is missing only; the user places the money (Hieu, 2026-11-01)\n${fullPlan}`)
-  if (!/You choose where your Safety sits, as long as it is low-volatility/.test(fullPlan)) fail('plan: the user chooses the form of Safety')
-  if (/your Safety is|You have \$2,400 in Safety/i.test(fullPlan)) fail('plan: bank and stablecoins are never called Safety')
+  if (/not doing anything yet|keep \$150|\$1,900|\$500|above its share|no need to sell/.test(fullPlan)) fail(`plan: spare money is not tracked, and nothing is ever above its bar\n${fullPlan}`)
+  if (!/Top up the parts still short from your income or spare money, in any order you like/.test(fullPlan)) fail('plan: the user tops up as they like')
   if (!/Which part would you like to fill first|Only [^.]* still has room/.test(fullPlan)) fail('plan: with the fund full it asks which part to fill')
   if (/cirBTC|prepare a|for you to sign/i.test(fullPlan)) fail('plan: never opens with a purchase')
-  // Traditional is above its share (gold $2,000): never sold, the idle money goes to Crypto.
-  if (!/Traditional 34\.5%[^\n]*above its share; no need to sell/.test(fullPlan) || !/Crypto 34\.5%[^\n]*\$0 of \$1,466, \$1,466 to go/.test(fullPlan)) fail(`plan: a part above its share is not sold, new money goes to the other\n${fullPlan}`)
   // The overview at 21 (Hieu, 2026-10-28): safe 21%, at risk 79%.
   const young = buildPlan({ p: normalizeProfile({ ...base, age: 21 }), b: bal(normalizeProfile({ ...base, age: 21 }), 1900, 450), shares: [21, 45, 34], cover: null, vi: false })!
   if (!/by your age, 21/.test(young) || !/Safety 21%/.test(young)) fail(`plan: at 21 the split reads Safety 21%\n${young}`)
-  // Only idle money, nothing invested: split by the shares (Hieu, 2026-11-01: $10,000 in the bank at 20 -> $2,000 / $4,000 / $4,000).
+  // Hieu's example (2026-11-01): age 30, Safety $3,000 leads, so Traditional and Crypto are each full at $3,500.
   {
     const { bucketStanding } = await import('../src/lib/allocation')
-    const only = normalizeProfile({ ...base, age: 20, cryptoSplit: 50, holdings: [H({ id: 'k', type: 'checking', name: 'Bank account', value: 10150 })] })
-    const add = bucketStanding(bal(only, 0, 450))!.map(x => Math.round(x.add))
-    if (add.join() !== '2000,4000,4000') fail(`only idle money: split 20/40/40 of what is free after a month of spending (got ${add})`)
+    const thirty = normalizeProfile({ ...base, age: 30, cryptoSplit: 50, holdings: [H({ id: 'td', type: 'term_deposit', name: 'Term deposit', value: 3000 })] })
+    const st = bucketStanding(bal(thirty, 0, 450))!
+    if (st.map(x => Math.round(x.target)).join() !== '3000,3500,3500' || !st[0].anchor || !st[0].full || st.some(x => x.over)) fail(`Hieu's example: Safety 3,000 leads, Traditional and Crypto full at 3,500 (got ${JSON.stringify(st.map(x => [x.target, x.anchor]))})`)
+    // Only spare money, nothing in the three parts: nothing to measure, the plan says to start any part.
+    const only = normalizeProfile({ ...base, age: 20, holdings: [H({ id: 'k', type: 'checking', name: 'Bank account', value: 10000 })] })
+    if (bucketStanding(bal(only, 0, 450)) !== null) fail('only spare money: nothing in the three parts')
+    if (!/Nothing is in the three parts yet/.test(buildPlan({ p: only, b: bal(only, 0, 450), shares: [20, 40, 40], cover: null, vi: false }) ?? '')) fail('only spare money: the plan says to start any part')
   }
   const withAirdrops = buildPlan({ p: normalizeProfile({ ...base, hasWindfalls: true }), b: bal(base, 1900, 450), shares, cover: null, vi: false })!
   if (!/Airdrops come in bursts[^\n]*only counts your steady income/.test(withAirdrops)) fail('plan: airdrops are explained as not steady income')
@@ -518,18 +520,17 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
     holdings: [H({ id: 'b', type: 'savings', name: 'Bank savings', value: bank }), H({ id: 'w', type: 'stable_wallet', name: 'USDC in this wallet', where: 'app wallet', value: wallet }),
       H({ id: 'g', type: 'gold_physical', name: 'Gold', quantity: 0.5, unit: 'oz', priceSource: 'market', value: undefined }), ...extra] })
   const bal = (p: FinancialProfile, vault = 0) => computeBalance({ profile: p, walletUsd: 0, vaultUsd: vault, cirBtcUsd: 0, prices, vndPerUsd: 25000 })
-  // The transcript: a 4,000 goal absorbed the savings, so adding 500 left "Safety still needs 218" unchanged. Bank money is idle now
-  // (Hieu, 2026-11-01): 500 more in the bank is 500 more that the idle money adds to Safety for the goal.
+  // Spare money is not tracked (Hieu, 2026-11-01): 500 more in a plain bank account changes no part.
   const s500 = bucketStanding(bal(goalP(500)))!.find(x => x.key === 'safe')!
   const s1000 = bucketStanding(bal(goalP(1000)))!.find(x => x.key === 'safe')!
-  if (Math.abs((s1000.add - s500.add) - 500) > 0.01) fail(`Safety add must rise by exactly the 500 added (${s500.add} -> ${s1000.add})`)
+  if (s500.have !== s1000.have || Math.abs(s500.target - s1000.target) > 0.01) fail(`spare bank money changes no part (${s500.target} -> ${s1000.target})`)
   if (Math.abs(s500.target - (4000 + (s500.rest ?? 0))) > 0.01 || s500.goal !== 4000) fail('Safety target = goal + its share of the rest')
   const plan = buildPlan({ p: goalP(500), b: bal(goalP(500), 600), shares: [21, 45, 34], cover: null, vi: false })!
   if (!/Near-term goal: Marriage \$4,000\*\* stays in Safety/.test(plan)) fail(`plan: the near-term goal is explained\n${plan}`)
-  if (!/Safety 21%\*\*[^\n]*\$0 of \$[\d,]+, \$[\d,]+ to go/.test(plan)) fail(`plan: Safety shows its target (goal included) and what is missing\n${plan}`)
+  if (!/\*\*Safety\*\*[^\n]*\$0 of \$5,063, \$5,063 to go/.test(plan)) fail(`plan: Safety shows its target (goal included) and what is missing\n${plan}`)
   if (!/6 months of spending, because/.test(plan)) fail('plan: the months are explained (why this number)')
   const st = buildStanding({ p: goalP(1000, 1500), b: bal(goalP(1000, 1500), 600), vi: false })!
-  if (!/Emergency fund:\*\* \$600 of \$600 \(6 months of spending\), full/.test(st) || !/\*\*Money not doing anything yet:\*\* Bank savings \$1,000, USDC in this wallet \$1,500\./.test(st) || !/\*\*Safety:\*\* \$0 of \$[\d,]+, \$[\d,]+ to go \(target = goal \$4,000/.test(st)) fail(`standing: the emergency fund and Safety are separate lines with totals\n${st}`)
+  if (!/Emergency fund:\*\* \$600 of \$600 \(6 months of spending\), full/.test(st) || /not doing anything yet|\$1,500/.test(st) || !/\*\*Safety:\*\* \$0 of \$5,063, \$5,063 to go \(holds the near-term goal \$4,000/.test(st)) fail(`standing: the emergency fund and Safety are separate lines with totals\n${st}`)
   if (/Safety[^\n]*months of spending/.test(st)) fail('standing: Safety never carries months')
 }
 
@@ -545,14 +546,14 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   ]
   for (const [text, prev, want] of cases) if (detectPartChoice(text, prev) !== want) fail(`part choice: "${text}" after "${prev.slice(0, 24)}…" should be ${want}`)
   const rows = [
-    { key: 'safe' as const, name: 'Safety' as const, share: 21, have: 1000, target: 840, left: 0, full: true, over: true, add: 0 },
-    { key: 'traditional' as const, name: 'Traditional' as const, share: 45, have: 2000, target: 1800, left: 0, full: true, over: true, add: 0 },
-    { key: 'crypto' as const, name: 'Crypto' as const, share: 34, have: 0, target: 1354, left: 1354, full: false, over: false, add: 0 },
+    { key: 'safe' as const, name: 'Safety' as const, share: 21, have: 840, target: 840, left: 0, full: true, over: false, add: 0, pct: 100, targetPct: 100, anchor: false, drift: 'on' as const },
+    { key: 'traditional' as const, name: 'Traditional' as const, share: 45, have: 1800, target: 1800, left: 0, full: true, over: false, add: 0, pct: 100, targetPct: 100, anchor: true, drift: 'on' as const },
+    { key: 'crypto' as const, name: 'Crypto' as const, share: 34, have: 0, target: 1354, left: 1354, full: false, over: false, add: 0, pct: 0, targetPct: 100, anchor: false, drift: 'under' as const },
   ]
-  if (!/^Only Crypto \(\$0 of \$1,354\) still has room/.test(pickQuestion(rows, false))) fail('pick: only the part with room is named')
+  if (!/^Only Crypto \(\$0 of \$1,354\) still has room/.test(pickQuestion(rows, false))) fail('pick: only the part with room is named, as its share against its target')
   if (/Safety|Traditional/.test(pickQuestion(rows, false))) fail('pick: full parts are never named')
   if (!/All three parts are at their targets/.test(pickQuestion(rows.map(r => ({ ...r, left: 0, full: true })), false))) fail('pick: all full')
-  if (!/Which part would you like to fill first: Safety \(\$300 of \$840\) or Crypto/.test(pickQuestion([{ ...rows[0], have: 300, left: 540, full: false }, rows[1], rows[2]], false))) fail('pick: two parts with room, each as "X of Y"')
+  if (!/Which part would you like to fill first: Safety \(\$300 of \$840\) or Crypto/.test(pickQuestion([{ ...rows[0], have: 300, left: 540, full: false, pct: 36, drift: 'under' }, rows[1], rows[2]], false))) fail('pick: two parts with room, each as its share against its target')
 }
 
 // 12. Small plans (real chat 2026-10-29): Crypto 0 of 0.43 USDC was called "full" because "full" meant "less than 0.5 USDC left".

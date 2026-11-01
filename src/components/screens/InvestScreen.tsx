@@ -4,7 +4,7 @@
 
 import { useState, type ReactNode } from 'react'
 import { Bitcoin, ExternalLink, Landmark, Lock, ShieldCheck, X, type LucideIcon } from 'lucide-react'
-import { bucketStanding } from '@/lib/allocation'
+import { bucketStanding, type Standing } from '@/lib/allocation'
 import { useApp } from '@/state/AppState'
 import { explorerTx } from '@/lib/network'
 import { spendable } from '@/lib/invest'
@@ -62,23 +62,26 @@ export function InvestScreen({ onOpenFund, onOpenChat, onAsk }: { onOpenFund: ()
 }
 
 /** One part of the split: what is held of its target, a bar, what is left and the next step (Hieu, 2026-10-30, option 2a). */
-function PartRow({ icon: Icon, color, name, have, target, left, full, note, action }: {
-  icon: LucideIcon; color: string; name: string; have: string; target: string; left: string; full: boolean; note: string; action?: ReactNode
+// One part as money against its full bar (Hieu, 2026-11-01, CORE §3): the part furthest ahead of its age share sets the size.
+function PartRow({ icon: Icon, color, part, note, action }: {
+  icon: LucideIcon; color: string; part: Standing | undefined; note: string; action?: ReactNode
   }) {
-  const pct = (() => { const h = Number(have.replace(/[^0-9.]/g, '')), t = Number(target.replace(/[^0-9.]/g, '')); return t > 0 ? Math.min(100, h / t * 100) : 0 })()
+  const { moneyUsd } = useApp()
+  if (!part) return null
+  const status = part.anchor ? 'Full, it sets the size. ' : part.full ? 'Full. ' : `${moneyUsd(part.left)} to go. `
   return (
     <div className="py-4 flex flex-col gap-2 border-b border-[var(--line)]">
       <div className="flex items-center gap-2">
         <span className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ border: '1px solid var(--line)', color }}><Icon size={16} /></span>
-        <span className="flex-1 text-[18px] leading-6 font-semibold" style={{ color: 'var(--ink)' }}>{name}</span>
-        <span className="text-[16px] leading-6 tabular-nums"><strong style={{ color: 'var(--ink)' }}>{have}</strong> <span style={{ color: 'var(--subtle)' }}>of {target}</span></span>
+        <span className="flex-1 text-[18px] leading-6 font-semibold" style={{ color: 'var(--ink)' }}>{part.name}</span>
+        <span className="text-[16px] leading-6 tabular-nums whitespace-nowrap"><strong style={{ color: 'var(--ink)' }}>{moneyUsd(part.have)}</strong>{!part.anchor && <span style={{ color: 'var(--subtle)' }}> of {moneyUsd(part.target)}</span>}</span>
       </div>
       <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--surface-muted)' }}>
-        <div className="fill-in h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
+        <div className="fill-in h-full rounded-full" style={{ width: `${part.pct}%`, background: color }} />
       </div>
       <div className="flex items-center justify-between gap-4">
         <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>
-          {full ? <strong style={{ color: 'var(--success)' }}>Full. </strong> : <strong style={{ color: 'var(--ink)' }}>{left} to go. </strong>}{note}
+          <strong style={{ color: part.full ? 'var(--success)' : 'var(--ink)' }}>{status}</strong>{note}
         </p>
         {action}
       </div>
@@ -122,7 +125,6 @@ function InvestOpen({ onAsk }: { onAsk: (question: string) => void }) {
   const standing = bucketStanding(balance)
   const part = (key: 'safe' | 'traditional' | 'crypto') => standing?.find(x => x.key === key)
   const crypto = part('crypto'), traditional = part('traditional'), safety = part('safe')
-  const money0 = (n: number | undefined) => moneyUsd(n ?? 0)
 
   return (
     <Screen>
@@ -142,13 +144,13 @@ function InvestOpen({ onAsk }: { onAsk: (question: string) => void }) {
             </Notice>
           )}
           <div className="flex flex-col [&>*:last-child]:border-b-0">
-            <PartRow icon={Bitcoin} color="#eb6834" name="Crypto" have={money0(crypto?.have)} target={money0(crypto?.target)} left={money0(crypto?.left)} full={!!crypto?.full}
+            <PartRow icon={Bitcoin} color="#eb6834" part={crypto}
               note="Buy cirBTC here, all at once or a bit each month."
               action={<Btn size="sm" className="!w-auto" onClick={() => setBuying(true)}>Buy cirBTC</Btn>} />
-            <PartRow icon={Landmark} color="var(--accent)" name="Traditional" have={money0(traditional?.have)} target={money0(traditional?.target)} left={money0(traditional?.left)} full={!!traditional?.full}
+            <PartRow icon={Landmark} color="var(--accent)" part={traditional}
               note="An index fund such as VOO, or gold, with your own broker."
               action={<Btn size="sm" variant="outline" className="!w-auto" onClick={() => onAsk('How do I buy an index fund such as VOO, or gold, for the Traditional part of my plan?')}>How <ExternalLink size={14} /></Btn>} />
-            <PartRow icon={ShieldCheck} color="#1baf7a" name="Safety" have={money0(safety?.have)} target={money0(safety?.target)} left={money0(safety?.left)} full={!!safety?.full}
+            <PartRow icon={ShieldCheck} color="#1baf7a" part={safety}
               note="The low-risk part: deposits or bonds, outside the app." />
           </div>
           <p className="text-[14px] leading-5" style={{ color: 'var(--muted)' }}>A suggestion, not investment advice. Prices can fall; only invest what you will not need soon.</p>

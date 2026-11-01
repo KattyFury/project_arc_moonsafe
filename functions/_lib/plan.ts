@@ -7,7 +7,7 @@
  * goes to the model as before (buildPlan returns null). A near-term goal is handled here: it is kept in savings first and added to Safety.
  */
 
-import { bucketStanding, splitOf, type Balance, type Standing } from '../../src/lib/allocation'
+import { bucketStanding, type Balance, type Standing } from '../../src/lib/allocation'
 import { param } from '../../src/kb/kb'
 import type { FinancialProfile } from '../../src/types'
 
@@ -87,6 +87,16 @@ export const partialOffer = (vi: boolean, amount: number, windfalls = false) => 
   ? `Sẵn sàng bắt đầu chưa? Ví của bạn có thể bắt đầu quỹ với **${tok(amount)}** ngay, phần còn lại ${windfalls ? 'thêm khi có airdrop hay khoản thu lâu lâu' : 'thêm dần sau'}: mình chuẩn bị một lệnh nạp **${tok(amount)}** để bạn ký nhé?` // lang-ok
   : `Ready to start? Your wallet can start the fund with **${tok(amount)}** now and the rest can follow${windfalls ? ' when an airdrop or other occasional money comes in' : ''}: shall I prepare a deposit of **${tok(amount)}** for you to sign?`
 
+/**
+ * Where a part stands against its full bar (Hieu, 2026-11-01): the part furthest ahead of its age share is full and sets the others'.
+ * "$3,000: the biggest for your age, it sets the size" / "$1,000 of $3,500, $2,500 to go" / "$3,500 of $3,500: full".
+ */
+export function shareLine(r: Standing, vi: boolean): string {
+  if (r.anchor) return vi ? `${fmt(r.have)}: phần đi xa nhất theo tuổi, làm mốc cho các phần khác` : `${fmt(r.have)}: furthest ahead for your age, so it sets the size` // lang-ok
+  if (r.full) return vi ? `${fmt(r.have)} trên ${fmt(r.target)}: đủ` : `${fmt(r.have)} of ${fmt(r.target)}: full` // lang-ok
+  return vi ? `${fmt(r.have)} trên ${fmt(r.target)}, còn ${fmt(r.left)}` : `${fmt(r.have)} of ${fmt(r.target)}, ${fmt(r.left)} to go` // lang-ok
+}
+
 /** Shares as quoted in a plan: halves, from the age formula. */
 export const planShares = (b: Balance): [number, number, number] | null => {
   const t = b.target
@@ -96,56 +106,43 @@ export const planShares = (b: Balance): [number, number, number] | null => {
 }
 
 /**
- * The investing step, only once the emergency fund is full (Hieu, 2026-11-01). Cash, bank accounts and stablecoins are money not doing
- * anything yet, never "your Safety". The investments set how much Safety they need; idle money fills that first, the rest is split
- * by the shares, and a part above its share is never sold.
+ * The investing step, only once the emergency fund is full (Hieu, 2026-11-01). The part furthest ahead of its age share sets the
+ * size; the others are topped up to follow it, from income or spare money, in any order the user likes. Spare money is not tracked.
  */
 export function splitSection(b: Balance, vi: boolean, n = 2): string | null {
-  const x = splitOf(b)
   const standing = bucketStanding(b)
   const shares = planShares(b)
-  if (!x || !standing || !shares) return null
+  if (!shares) return null
   const [sSafe, sTrad, sCrypto] = shares
   const age = b.age ?? 30
   const est = b.ageIsDefault ? (vi ? ' (ước tính theo tuổi mặc định 30)' : ' (an estimate: the default age of 30 is used)') : '' // lang-ok
   const even = sTrad === sCrypto
-  const list = (g: 'idle' | 'safe') => b.items.filter(i => i.group === g && i.usd >= 0.005).map(i => `${i.label} ${fmt(i.usd)}`)
-  const idleItems = list('idle'), safeItems = list('safe')
-  const keep = b.suggest?.keep ?? 0
+  const safeItems = b.items.filter(i => i.group === 'safe' && i.usd >= 0.005).map(i => `${i.label} ${fmt(i.usd)}`)
   const head = vi
     ? `${n}. **Đầu tư theo tuổi của bạn, ${age}${est}:** Safety ${sSafe}%, Traditional ${sTrad}%, Crypto ${sCrypto}%. ${even ? 'Traditional và Crypto chia đôi là mặc định của MoonSafe, không phải quy tắc chuẩn; bạn có thể chọn tỷ lệ khác.' : `Traditional ${sTrad}% và Crypto ${sCrypto}% là tỷ lệ bạn chọn.`}` // lang-ok
     : `${n}. **Investing, by your age, ${age}${est}:** Safety ${sSafe}%, Traditional ${sTrad}%, Crypto ${sCrypto}%. ${even ? 'An even Traditional / Crypto split is MoonSafe\'s default, not a standard rule; you can pick another.' : `Traditional ${sTrad}% and Crypto ${sCrypto}% is the split you chose.`}`
   // Why Safety, in plain words, before any number (Hieu, 2026-11-01: the user must understand why they need it and decide it themselves).
   const why = vi
-    ? '- **Safety** là phần rủi ro thấp của tài sản (tiền gửi, trái phiếu): lời ít hơn nhưng đều, không lên xuống theo cổ phiếu hay crypto, nên khi thị trường giảm thì tổng tài sản của bạn giảm ít hơn. Nó không phải tiền dùng lúc khẩn cấp (đó là quỹ dự phòng), và tiền gửi có kỳ hạn thường bị khoá đến ngày đáo hạn. Đầu tư càng nhiều thì phần Safety cần càng lớn.' // lang-ok
-    : '- **Safety** is the low-risk part of what you own (deposits, bonds): it earns less but steadily and does not move with stocks or crypto, so when markets fall your whole picture falls less. It is not emergency money (that is the emergency fund), and a term deposit is usually locked until it matures. The more you invest, the bigger the Safety part needs to be.'
-  const investLine = x.invest > 0.005
-    ? (vi
-      ? `- Bạn đang đầu tư ${fmt(x.invest)} (Traditional ${fmt(x.g.traditional)}, Crypto ${fmt(x.crypto)}), nên cần ${fmt(x.need)} Safety.` // lang-ok
-      : `- You have ${fmt(x.invest)} invested (Traditional ${fmt(x.g.traditional)}, Crypto ${fmt(x.crypto)}), so it needs ${fmt(x.need)} of Safety.`)
-    : (vi ? '- Bạn chưa đầu tư gì.' : '- Nothing is invested yet.') // lang-ok
+    ? '- **Safety** là phần rủi ro thấp của tài sản (tiền gửi, trái phiếu): lời ít hơn nhưng đều, không lên xuống theo cổ phiếu hay crypto, nên khi thị trường giảm thì tổng tài sản của bạn giảm ít hơn. Nó không phải tiền dùng lúc khẩn cấp (đó là quỹ dự phòng), và tiền gửi có kỳ hạn thường bị khoá đến ngày đáo hạn.' // lang-ok
+    : '- **Safety** is the low-risk part of what you own (deposits, bonds): it earns less but steadily and does not move with stocks or crypto, so when markets fall your whole picture falls less. It is not emergency money (that is the emergency fund), and a term deposit is usually locked until it matures.'
   // What already counts as Safety, and why (a term deposit or bonds count as they are; bank, cash or stablecoins only when chosen).
   const safeLine = safeItems.length
     ? (vi
       ? `- Đã là Safety: ${safeItems.join(', ')}. Khoản này có lãi đều và không chạy theo giá cổ phiếu hay crypto, nên nó làm đúng việc của Safety: giữ cho tổng tài sản ít dao động.` // lang-ok
       : `- Already Safety: ${safeItems.join(', ')}. It pays a steady return and does not follow stock or crypto prices, which is exactly Safety's job: keeping your whole picture steadier.`)
     : null
-  const keepNote = keep >= 0.005 ? (vi ? `; giữ ${fmt(keep)} (1 tháng chi tiêu) lại để tiêu` : `; keep ${fmt(keep)} of it (a month of spending) for bills`) : '' // lang-ok
-  const idleLine = idleItems.length
-    ? (vi ? `- Tiền chưa làm gì: ${idleItems.join(', ')}${keepNote}. Bạn quyết định tiền nào vào phần nào.` : `- Money not doing anything yet: ${idleItems.join(', ')}${keepNote}. You decide which of it goes where.`) // lang-ok
-    : (vi ? '- Không có tiền nào đang nằm yên, nên tiền mới (phần dư mỗi tháng, airdrop) sẽ vào phần còn thiếu.' : '- No money is sitting idle, so new money (what is left each month, airdrops) goes to the parts still short.') // lang-ok
-  const what = { safe: vi ? 'để riêng, ít biến động' : 'set aside, low-volatility', traditional: vi ? 'quỹ chỉ số như VOO, vàng' : 'index funds such as VOO, gold', crypto: vi ? 'chủ yếu Bitcoin, có lúc giảm một nửa' : 'mostly Bitcoin, which can halve on the way' } // lang-ok
-  // Target and what is missing only (Hieu, 2026-11-01): the user places the money, then tells the app.
-  const part = (r: Standing, share: number) => {
-    const where = r.over ? (vi ? `${fmt(r.have)}, trên tỷ lệ; không cần bán, tiền mới vào phần khác` : `${fmt(r.have)}, above its share; no need to sell, new money goes to the others`) // lang-ok
-      : `${fmt(r.have)} ${vi ? 'trên' : 'of'} ${fmt(r.target)}${r.full ? (vi ? ', đúng tỷ lệ' : ', on track') : `, ${fmt(r.left)} ${vi ? 'còn thiếu' : 'to go'}`}` // lang-ok
-    return `  - **${r.name} ${share}%** (${what[r.key]}): ${where}.`
-  }
+  const rule = vi
+    ? '- Phần đi xa nhất so với tỷ lệ của nó làm mốc; các phần khác theo nó:' // lang-ok
+    : '- The part furthest ahead of its share sets the size; the others follow it:'
+  const what = { safe: vi ? 'ít biến động' : 'low-volatility', traditional: vi ? 'quỹ chỉ số như VOO, vàng' : 'index funds such as VOO, gold', crypto: vi ? 'chủ yếu Bitcoin, có lúc giảm một nửa' : 'mostly Bitcoin, which can halve on the way' } // lang-ok
+  const part = (r: Standing) => `  - **${r.name}** (${what[r.key]}): ${shareLine(r, vi)}.`
   const how = vi
-    ? 'Safety bạn chọn để ở đâu cũng được, miễn ít biến động: tiền gửi có kỳ hạn, trái phiếu chính phủ, hoặc stablecoin hay tiền mặt bạn để riêng. Khi đã chia xong, hãy nói với mình (ví dụ "I keep 5 USDC as Safety") để mình ghi lại.' // lang-ok
-    : 'You choose where your Safety sits, as long as it is low-volatility: a term deposit, government bonds, or stablecoins or cash you keep apart. When you have placed money, tell me (for example "I keep 5 USDC as Safety") and I will record it.'
+    ? 'Bổ sung các phần còn thiếu từ thu nhập hay tiền rảnh, theo thứ tự bạn thích. Safety để ở đâu cũng được, miễn ít biến động (tiền gửi có kỳ hạn, trái phiếu chính phủ, hoặc stablecoin hay tiền mặt bạn để riêng). Làm xong thì nói với mình (ví dụ "I keep 500 USDC as Safety") để mình ghi lại.' // lang-ok
+    : 'Top up the parts still short from your income or spare money, in any order you like. Safety can sit anywhere low-volatility (a term deposit, government bonds, or stablecoins or cash you keep apart). When you have, tell me (for example "I keep 500 USDC as Safety") and I will record it.'
+  // Nothing in the three parts yet: whichever they start becomes the one the others follow.
+  if (!standing) return [head, why, vi ? '- Chưa có gì trong 3 phần. Bắt đầu phần nào cũng được, từ thu nhập hay tiền rảnh; phần đầu tiên sẽ làm mốc cho các phần khác.' : '- Nothing is in the three parts yet. Start any of them from your income or spare money; the first one you fill sets the size for the others.', how].join('\n') // lang-ok
   const [safe, trad, crypto] = standing
-  return [head, why, investLine, safeLine, idleLine, part(safe, sSafe), part(trad, sTrad), part(crypto, sCrypto), how].filter(Boolean).join('\n')
+  return [head, why, safeLine, rule, part(safe), part(trad), part(crypto), how].filter(Boolean).join('\n')
 }
 
 export function buildPlan({ p, b, cover, partial = null, vi, hasVault = true, vaultFee = 1 }: PlanInput): string | null {
@@ -169,9 +166,9 @@ export function buildPlan({ p, b, cover, partial = null, vi, hasVault = true, va
   const goalLine = goal
     ? (vi ? `**Mục tiêu gần: ${goal.name} ${fmt(b.goalUsd)}** để trong Safety, không đầu tư, vì bạn cần nó ${goal.years ? `trong ${goal.years} năm tới` : 'sớm'}.` : `**Near-term goal: ${goal.name} ${fmt(b.goalUsd)}** stays in Safety, not invested, because you need it ${goal.years ? `within ${goal.years} year${goal.years === 1 ? '' : 's'}` : 'soon'}.`) // lang-ok
     : null
-  // Where the fund money comes from: idle money first (stablecoins go in directly, bank money once changed to USDC).
-  const source = !fundNow && b.byGroup.idle >= 0.5
-    ? (vi ? ' Lấy từ tiền chưa làm gì trước (stablecoin nạp thẳng, tiền ngân hàng thì đổi sang USDC), rồi từ phần dư mỗi tháng.' : ' It comes first from money not doing anything yet (stablecoins go straight in, bank money once changed to USDC), then from what is left each month.') // lang-ok
+  // Where the fund money comes from (spare money is not tracked, Hieu 2026-11-01: just say how it gets in).
+  const source = !fundNow
+    ? (vi ? ' Nạp bằng USDC: stablecoin nạp thẳng, tiền ngân hàng thì đổi sang USDC, hoặc từ phần dư mỗi tháng.' : ' It goes in as USDC: stablecoins straight in, bank money once changed to USDC, or what is left each month.') // lang-ok
     : ''
   // The fund is checked onchain before any investing advice (Hieu, 2026-11-01): a fund that is only declared cannot be trusted.
   const later = vi
@@ -261,22 +258,19 @@ export function buildDebtPlan({ p, b, shares, vi, walletUsd, hasVault = true, va
  */
 export function buildStanding({ p, b, vi }: { p: FinancialProfile; b: Balance; vi: boolean }): string | null {
   const standing = bucketStanding(b)
-  if (!standing) return null
-  const [safe, trad, crypto] = standing
   const vault = b.fundUsd ?? 0
   const fundLine = b.fund.floorUsd !== null
     ? (vi ? `**Quỹ dự phòng:** ${fmt(vault)} trên ${fmt(b.fund.floorUsd)} (${b.fund.floorMonths} tháng chi tiêu)${vault >= b.fund.floorUsd - 0.005 ? ', đã đủ' : `, còn ${fmt(b.fund.floorUsd - vault)}`}.` : `**Emergency fund:** ${fmt(vault)} of ${fmt(b.fund.floorUsd)} (${b.fund.floorMonths} months of spending)${vault >= b.fund.floorUsd - 0.005 ? ', full' : `, ${fmt(b.fund.floorUsd - vault)} to go`}.`) // lang-ok
     : (vi ? `**Quỹ dự phòng:** ${fmt(vault)}; hãy cho mình biết chi tiêu hằng tháng để tính mức cần có.` : `**Emergency fund:** ${fmt(vault)}; tell me your monthly spending to work out how much it should be.`) // lang-ok
-  // Everything in Safety by name (term deposits, bonds), so the list adds up to the total shown; cash, bank accounts and stablecoins
-  // are their own line, never called Safety (Hieu, 2026-11-01).
+  const scope = p.planningScope === 'household' ? (vi ? 'Tổng quan gia đình:' : 'Household totals:') : null // lang-ok
+  // Nothing in the three parts yet (spare money is not tracked, Hieu 2026-11-01): the fund, and that the parts start empty.
+  if (!standing) return [scope, fundLine, vi ? 'Chưa có gì trong Safety, Traditional hay Crypto.' : 'Nothing is in Safety, Traditional or Crypto yet.'].filter(Boolean).join('\n') // lang-ok
+  const [safe, trad, crypto] = standing
+  // Everything in Safety by name (term deposits, bonds, money kept as Safety), so the list adds up to the total shown.
   const bank = b.items.filter(i => i.group === 'safe').map(i => `${i.label} ${fmt(i.usd)}`)
-  const idle = b.items.filter(i => i.group === 'idle' && i.usd >= 0.005).map(i => `${i.label} ${fmt(i.usd)}`)
-  const idleLine = idle.length ? (vi ? `**Tiền chưa làm gì:** ${idle.join(', ')}.` : `**Money not doing anything yet:** ${idle.join(', ')}.`) : null // lang-ok
-  const row = (x: typeof safe, detail?: string) => x.over
-    ? `**${x.name}:** ${fmt(x.have)}, ${vi ? 'trên tỷ lệ; không cần bán, tiền mới vào phần khác' : 'above its share; no need to sell, new money goes to the others'}${detail ? ` (${detail})` : ''}.` // lang-ok
-    : `**${x.name}:** ${fmt(x.have)} ${vi ? 'trên' : 'of'} ${fmt(x.target)}${!x.full ? `, ${fmt(x.left)} ${vi ? 'nữa' : 'to go'}` : vi ? ', đúng tỷ lệ' : ', on track'}${detail ? ` (${detail})` : ''}.` // lang-ok
-  const safeDetail = [bank.length ? bank.join(', ') : null, safe.goal ? (vi ? `gồm mục tiêu ${fmt(safe.goal)} + ${fmt(safe.rest ?? 0)}` : `target = goal ${fmt(safe.goal)} + ${fmt(safe.rest ?? 0)}`) : null].filter(Boolean).join('; ') // lang-ok
-  return [p.planningScope === 'household' ? (vi ? 'Tổng quan gia đình:' : 'Household totals:') : null, fundLine, idleLine, row(safe, safeDetail || undefined), row(trad), row(crypto)].filter(Boolean).join('\n') // lang-ok
+  const row = (x: typeof safe, detail?: string) => `**${x.name}:** ${shareLine(x, vi)}${detail ? ` (${detail})` : ''}.`
+  const safeDetail = [bank.length ? bank.join(', ') : null, safe.goal ? (vi ? `gồm mục tiêu gần ${fmt(safe.goal)}` : `holds the near-term goal ${fmt(safe.goal)}`) : null].filter(Boolean).join('; ') // lang-ok
+  return [scope, fundLine, row(safe, safeDetail || undefined), row(trad), row(crypto)].filter(Boolean).join('\n') // lang-ok
 }
 
 
@@ -412,6 +406,6 @@ export function buildAfterSign({ b, vi, kind, summary, cover = null, partial = n
       : `Your emergency fund is now ${fmt(vault)} of ${fmt(b.fund.floorUsd)} (${b.fund.floorMonths} months of spending): full. Now on to investing.${split ? `\n\n${split}` : ''}\n\n${pickQuestion(standing, vi)}`
   }
   const touched = /\(Safety\)/i.test(summary ?? '') ? standing[0] : /Traditional/i.test(summary ?? '') ? standing[1] : /Crypto/i.test(summary ?? '') ? standing[2] : null
-  const status = touched && fundFull ? ` ${touched.name} ${vi ? 'giờ là' : 'is now'} ${fmt(touched.have)} ${vi ? 'trên' : 'of'} ${fmt(touched.target)}${!touched.full ? `, ${fmt(touched.left)} ${vi ? 'nữa để đủ' : 'to go'}` : (vi ? ': đúng tỷ lệ' : ': on track')}.` : '' // lang-ok
+  const status = touched && fundFull ? ` ${touched.name} ${vi ? 'giờ là' : 'is now'} ${shareLine(touched, vi)}.` : '' // lang-ok
   return `${vi ? 'Đã lưu.' : 'Saved.'}${status} ${fundFull ? pickQuestion(standing, vi) : fundFirst(b, vi)}` // lang-ok
 }

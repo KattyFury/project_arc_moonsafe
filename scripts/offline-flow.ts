@@ -157,7 +157,7 @@ expect(/Airdrops come in bursts/.test(text), 'the plan explains that airdrops ar
 expect(/Emergency fund: \$450\*\* = 3 months of spending, because/.test(text), 'the plan says why for the fund')
 expect(/prepare a deposit of \*\*450 USDC\*\*/.test(text), 'the plan offers the deposit')
 // Bank $500 and the declared wallet $1,900 are money not doing anything yet, never "Safety" (Hieu, 2026-11-01).
-expect(!/Safety[^\n]*\$1,950|Safety[^\n]*\$2,400/.test(text) && /stablecoins go straight in, bank money once changed to USDC/.test(text), 'the fund money comes from idle money; bank and stablecoins are never called Safety')
+expect(!/Safety[^\n]*\$1,950|Safety[^\n]*\$2,400/.test(text) && /It goes in as USDC: stablecoins straight in, bank money once changed to USDC/.test(text), 'how the fund money gets in; bank and stablecoins are never called Safety')
 
 // 2b. The same answer from someone whose emergency fund is ALREADY full: the overview still comes first, never a straight offer to buy.
 const full = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: crafted }, { role: 'user', content: event }], saved, 900)
@@ -167,8 +167,9 @@ expect(/Here is your plan, in order/.test(fullText), 'fund already full: the pla
 expect(!/cirBTC|prepare a|for you to sign/i.test(fullText), 'fund already full: no purchase is offered before they pick a part')
 expect(/Which part would you like to fill first|Only [^.]* still has room/.test(fullText), 'fund already full: it asks which part to fill')
 expect(/by your age, 31/.test(fullText) && /An even Traditional \/ Crypto split is MoonSafe's default, not a standard rule/.test(fullText), 'fund already full: the split by age, the even split said to be MoonSafe\'s default')
-for (const [what, re] of [['Safety', /Safety 31%\*\* \(set aside, low-volatility\)/], ['Traditional', /Traditional 34\.5%\*\* \(index funds/], ['Crypto', /Crypto 34\.5%\*\* \(mostly Bitcoin/]] as const) expect(re.test(fullText), `the plan says what goes in ${what}`)
-expect(/You have \$2,000 invested[^\n]*so it needs \$899 of Safety/.test(fullText), 'the investments (gold $2,000) set how much Safety they need')
+// Hieu, 2026-11-01: the part furthest ahead of its share sets the size (gold $2,000 is Traditional's 34.5%); spare money is not shown.
+for (const [what, re] of [['Safety', /\*\*Safety\*\* \(low-volatility\): \$0 of \$1,797, \$1,797 to go/], ['Traditional', /\*\*Traditional\*\* \(index funds such as VOO, gold\): \$2,000: furthest ahead for your age, so it sets the size/], ['Crypto', /\*\*Crypto\*\* \(mostly Bitcoin[^\n]*\$0 of \$2,000, \$2,000 to go/]] as const) expect(re.test(fullText), `the plan says where ${what} stands`)
+expect(!/not doing anything yet|\$1,900|above its share/.test(fullText), 'spare money is not shown, and nothing is above its bar')
 
 // 3. The user cancels everything: nothing saved, the agent does not run the plan.
 const none = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: crafted }, { role: 'user', content: '[app event] The user reviewed the items: saved: none. skipped: everything.' }], empty)
@@ -181,8 +182,9 @@ const known = normalizeProfile({ v: 2, age: 21, incomeStable: false, dependents:
 const net = await call([...history, { role: 'user', content: '2500 in USDC, 500 in cash, 2000 in gold that\'s all' }], known, 0)
 const netCard = net.body.actions?.find(a => a.type === 'confirm_items')
 console.log('\nstep 3b: items', netCard?.items?.map(i => i.text).join(' / '))
-expect((netCard?.items ?? []).length === 3, 'the three phrases become three items to confirm')
-expect(/USDC.*2,?500/.test((netCard?.items ?? [])[0]?.text ?? '') && /Cash 500 USDC/.test((netCard?.items ?? [])[1]?.text ?? '') && /Gold/.test((netCard?.items ?? [])[2]?.text ?? ''), 'USDC, cash and gold with the right amounts')
+// Spare money is not tracked (Hieu, 2026-11-01): of "2500 in USDC, 500 in cash, 2000 in gold" only the gold is recorded.
+expect((netCard?.items ?? []).length === 1, 'only the gold becomes an item to confirm')
+expect(/Gold/.test((netCard?.items ?? [])[0]?.text ?? '') && !(netCard?.items ?? []).some(i => /^(USDC|Cash)/.test(i.text)), 'gold only; USDC and cash are spare money')
 planMode = 'full'
 
 // 4. Length (Hieu, 2026-10-28): short when collecting or asking, long only to educate.
@@ -197,7 +199,7 @@ const how = await call([...history, { role: 'user', content: 'how much is in my 
 const howText = how.body.content ?? ''
 console.log('\nstep 5: model calls', how.calls, '\n' + howText)
 expect(how.calls === 0, 'a "how much" question is answered by the server: no model call')
-expect(/\*\*Emergency fund:\*\*[^\n]*months of spending/.test(howText) && /\*\*Safety:\*\* [^\n]* of [^\n]*(to go|on track)/.test(howText), 'the emergency fund and Safety are separate lines, each with "X of Y"')
+expect(/\*\*Emergency fund:\*\*[^\n]*months of spending/.test(howText) && /\*\*Safety:\*\* \$[\d,]+ of \$[\d,]+, \$[\d,]+ to go/.test(howText) && /\*\*Traditional:\*\* \$2,000: furthest ahead/.test(howText), 'the emergency fund and Safety are separate lines, Safety as its share against its target with the money')
 expect(!/Safety[^\n]*months of spending/.test(howText), 'Safety never carries months of spending')
 
 
@@ -257,7 +259,7 @@ expect(!/Safety or Traditional|Which (part|bucket)/i.test(yepText), 'full parts 
 const signed = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: text }, { role: 'user', content: '[app event] The user signed the card: Added 900 USDC to your emergency fund.' }], base, 900)
 const signedText = signed.body.content ?? ''
 console.log('\nstep 6b: model calls', signed.calls, '\n' + signedText)
-expect(signed.calls === 0 && /emergency fund is now \$900 of \$900/.test(signedText) && /Now on to investing/.test(signedText) && /Which part would you like to fill first: Safety \(\$0 of \$[\d,]+\) or Crypto \(\$0 of/.test(signedText) && !/Traditional \(/.test(signedText), 'after the deposit fills the fund: the investing step, then only the parts below their share (gold $2,000 is above its share, never sold)')
+expect(signed.calls === 0 && /emergency fund is now \$900 of \$900/.test(signedText) && /Now on to investing/.test(signedText) && /Which part would you like to fill first: Safety \(\$0 of \$[\d,]+\) or Crypto \(\$0 of \$2,000\)/.test(signedText) && !/Traditional \(/.test(signedText), 'after the deposit fills the fund: the investing step, then only the parts below their share (gold $2,000 is above its share, never sold)')
 
 // 6b3. A buy asked a few words later (real chat 2026-10-30: "Create an 11$ order for me" got "I can't create that order from here").
 const buyOffer6 = 'cirBTC is Bitcoin you can buy and hold in this app. Shall I prepare the first buy of **1 USDC** for you to sign? If you prefer all **6 USDC** at once, just say so.'
@@ -280,13 +282,13 @@ expect(small.calls === 0 && /emergency fund is now \$5 of \$[\d,]+/.test(smallTe
 const rec = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: text }, { role: 'user', content: '[app event] The user confirmed recording: Recorded 500 USDC in Term deposit (Safety), from Binance.' }], base, 900)
 const recText = rec.body.content ?? ''
 console.log('\nstep 6c: model calls', rec.calls, '\n' + recText)
-expect(rec.calls === 0 && /^Saved\. Safety is now \$[\d,]+ of \$[\d,]+/.test(recText) && /or Crypto \(\$0 of/.test(recText) && !/Traditional \(/.test(recText), 'after a saved amount: which part it touched, then only the parts with room')
+expect(rec.calls === 0 && /^Saved\. Safety is now \$[\d,]+ of \$[\d,]+, \$[\d,]+ to go/.test(recText) && /or Crypto \(\$0 of \$2,000\)/.test(recText) && !/Traditional \(/.test(recText), 'after a saved amount: which part it touched, then only the parts with room')
 
 // 6d. Naming a part answers where it lives and what is left; Safety is outside the app.
 const safe = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: text }, { role: 'user', content: '[app event] The user signed the card: Added 900 USDC to your emergency fund.' }, { role: 'assistant', content: 'Which part would you like to fill first: Safety (300 USDC of 840 USDC) or Crypto (0 USDC of 1,354 USDC)?' }, { role: 'user', content: 'How about the "safe" part' }], { ...base, holdings: base.holdings.map(h => h.id === 'h2' ? { ...h, type: 'term_deposit' as const, name: 'Term deposit', value: 300 } : h.id === 'h1' ? { ...h, value: 0 } : h) }, 900)
 const safeText = safe.body.content ?? ''
 console.log('\nstep 6d: model calls', safe.calls, '\n' + safeText)
-expect(safe.calls === 0 && /Safety is the low-risk part[^\n]*it is not emergency money/.test(safeText) && /You choose where it sits, as long as it is low-volatility/.test(safeText) && /You have \$300 of/.test(safeText), 'naming Safety explains why it is needed, that the user chooses its form, with the totals')
+expect(safe.calls === 0 && /Safety is the low-risk part[^\n]*it is not emergency money/.test(safeText) && /You choose where it sits, as long as it is low-volatility/.test(safeText) && /You have \$300 of \$[\d,]+, \$[\d,]+ to go/.test(safeText), 'naming Safety explains why it is needed, that the user chooses its form, with the totals')
 
 
 // 7. The admin page's API: who may call it, what it changes, and that it never shows a secret.

@@ -306,11 +306,19 @@ export interface Standing {
   full: boolean
   /** Above its share. Never a reason to sell (Hieu, 2026-11-01): new money goes to the parts below theirs. */
   over: boolean
-  /** What the idle money should add to this part now; `left` beyond it waits for new money. */
+  /** Unused since spare money is no longer tracked (Hieu, 2026-11-01); always 0. */
   add: number
   /** Safety only: the near-term goal inside the target, and the share of the rest on top of it. */
   goal?: number
   rest?: number
+  /** How full its bar is, 0–100 (Hieu, 2026-11-01): have / target, the leader's bar being full. */
+  pct: number
+  /** The part furthest ahead of its share: its bar is full and sets the others' (Hieu, 2026-11-01). */
+  anchor: boolean
+  /** Always 100: a bar is full at its target. */
+  targetPct: number
+  /** Below its bar, or on it (nothing is ever above: the leader sets the size). */
+  drift: 'under' | 'on' | 'over'
 }
 
 /** 5/25 band (spec Balance Sheet v2 §3): a part is Under when its share falls below target by more than 5 points or 25% of the target, whichever is smaller. */
@@ -355,25 +363,37 @@ export function splitOf(b: Balance) {
   return { t, g, crypto, safeFree, idle, ...splitIdle(t, safeFree, g.traditional, crypto, idle) }
 }
 
+/**
+ * Where Safety, Traditional and Crypto stand (Hieu, 2026-11-01, CORE §3). The part furthest ahead of its age share (largest value /
+ * share) is the full bar, 100%; every other part's full bar follows it: full = that part's value / its share × the other's share.
+ * Age 30 (30 / 35 / 35) with $3,000 of Safety as the leader: Traditional and Crypto are full at $3,500 each. People top the others up
+ * from income or spare money as they like; nothing is ever above its bar, so nothing is ever "to sell". Spare money is not tracked.
+ * A near-term goal held in Safety sits on top of Safety's bar. Null without an age or with nothing in the three parts.
+ */
 export function bucketStanding(b: Balance): Standing[] | null {
-  const x = splitOf(b)
-  if (!x) return null
-  const { t, g, crypto, safeFree, idle, ...sp } = x
+  const t = b.target
+  if (!t) return null
+  const g = b.byGroup
   const goal = b.goalUsd
-  if (!(sp.invest + safeFree + idle + goal > 0)) return null
-  const tol = (x: number) => Math.max(0.005, x * 0.01)
-  const row = (key: Standing['key'], name: Standing['name'], share: number, have: number, ideal: number, add: number, extra = 0): Standing => {
-    const target = Math.max(have, ideal + extra, have + add)
-    const left = Math.max(0, target - have)
-    return { key, name, share, have, target, left, full: left < tol(target), over: have - extra > ideal + tol(ideal), add, ...(extra > 0 ? { goal: extra, rest: target - extra } : {}) }
-  }
-  return [
-    // Safety's share of the investments once the idle money is placed.
-    row('safe', 'Safety', t.safe, g.safe, t.safe < 100 ? sp.after * t.safe / (100 - t.safe) : 0, (b.suggest?.toGoal ?? 0) + sp.add.safe, goal),
-    row('traditional', 'Traditional', t.traditional, g.traditional, sp.ideal.traditional, sp.add.traditional),
-    row('crypto', 'Crypto', t.btc + t.large_cap + t.altcoin, crypto, sp.ideal.crypto, sp.add.crypto),
+  const parts = [
+    { key: 'safe' as const, name: 'Safety' as const, share: t.safe, have: g.safe, value: Math.max(0, g.safe - goal), extra: goal },
+    { key: 'traditional' as const, name: 'Traditional' as const, share: t.traditional, have: g.traditional, value: g.traditional, extra: 0 },
+    { key: 'crypto' as const, name: 'Crypto' as const, share: t.btc + t.large_cap + t.altcoin, have: g.btc + g.large_cap + g.altcoin, value: g.btc + g.large_cap + g.altcoin, extra: 0 },
   ]
+  const scale = Math.max(...parts.map(p => p.share > 0 ? p.value / p.share : 0))
+  if (!(scale > 0)) return null
+  const leader = parts.findIndex(p => p.share > 0 && p.value / p.share === scale)
+  return parts.map((p, i): Standing => {
+    const target = scale * p.share + p.extra
+    const left = Math.max(0, target - p.have)
+    const full = left < Math.max(0.005, target * 0.01)
+    return { key: p.key, name: p.name, share: p.share, have: p.have, target, left, full, over: false, add: 0, anchor: i === leader,
+      pct: target > 0 ? Math.min(100, p.have / target * 100) : 0, targetPct: 100, drift: full ? 'on' : 'under', ...(p.extra > 0 ? { goal: p.extra, rest: target - p.extra } : {}) }
+  })
 }
+
+/** "36%" / "18.5%": whole when it is, one decimal otherwise. */
+export const pctText = (n: number) => `${Number.isInteger(Math.round(n * 2) / 2) ? Math.round(n) : (Math.round(n * 2) / 2).toFixed(1)}%`
 
 /** Share of liquid assets in %, 0 without any. */
 export const shareOfLiquid = (b: Balance, usd: number) => b.liquid > 0 ? usd / b.liquid * 100 : 0

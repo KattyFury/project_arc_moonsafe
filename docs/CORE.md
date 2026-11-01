@@ -20,7 +20,7 @@ MoonSafe là **người giữ quỹ dự phòng**, rồi là **người tư vấ
 - Nợ lãi cao (từ 10%/năm) trả trước: quỹ khởi đầu 1 tháng → trả nợ → hoàn tất quỹ → đầu tư.
 - *Đã có trong code.*
 
-## 2. Ba phần và 5 ô dữ liệu
+## 2. Bốn ô dữ liệu
 
 | Ô | Gồm | Ghi chú |
 |---|---|---|
@@ -28,21 +28,21 @@ MoonSafe là **người giữ quỹ dự phòng**, rồi là **người tư vấ
 | **Safety** | Phần rủi ro thấp: tiền gửi có kỳ hạn, trái phiếu chính phủ / quỹ trái phiếu / quỹ thị trường tiền tệ; tiền mặt, tài khoản ngân hàng hoặc stablecoin **mà người dùng chọn làm Safety** | Safety ≠ quỹ dự phòng: nó giữ cho tổng tài sản ít dao động, không phải tiền rút lúc nào cũng được (tiền gửi có kỳ hạn bị khoá tới ngày đáo hạn) |
 | **Traditional** | Cổ phiếu / quỹ chỉ số (VOO), vàng, trái phiếu lãi cao | |
 | **Crypto** | Chủ yếu BTC; coin khác vẫn ghi và tính vào đây | Không đặt mục tiêu riêng cho altcoin hay memecoin |
-| **Chưa xếp** | Tiền mặt, ngân hàng không kỳ hạn, stablecoin chưa được chọn làm Safety | Không bao giờ gọi là Safety |
 
+- **Không theo dõi tiền nhàn rỗi** (Hiếu 2026-11-01: "track vậy không mệt à? biết tiền nhàn rỗi bao nhiêu thì giúp ích gì"). Tiền mặt, ngân hàng không kỳ hạn, stablecoin mà người dùng không chọn làm Safety: không hỏi, không ghi, không hiện. Người dùng tự bổ sung các phần từ thu nhập hay tiền rảnh.
 - Safety chỉ là Safety khi người dùng **hiểu vì sao cần** và **tự chọn** tiền nào, dạng nào. Chỉ chọn được dạng ít biến động; vàng, cổ phiếu hay coin làm Safety thì agent giải thích vì sao không nên và không ghi. Tiền gửi có kỳ hạn và trái phiếu đã có thì tính thẳng là Safety, kèm lời giải thích.
 - Nhà ở, xe, bất động sản cho thuê, vốn doanh nghiệp, tiền cho vay nằm ngoài 3 phần (chưa chốt cách xếp, xem cuối file).
-- *Đã có trong code.*
+- *Đã code (2026-11-01).*
 
-## 3. Bảng cân đối theo dõi SỰ CÂN BẰNG, không theo dõi tổng tiền
+## 3. Bảng cân đối: phần đi xa nhất làm mốc
 
-- **Vì sao:** tổng tiền thay đổi liên tục theo giá. Thứ cần theo dõi là tỷ lệ Safety / Traditional / Crypto so với mục tiêu.
-- Mục tiêu theo tuổi: Safety = tuổi %, phần còn lại chia Traditional / Crypto (MoonSafe mặc định 50/50, người dùng chọn khác được; agent nói rõ 50/50 là mặc định của app, không phải quy tắc chuẩn). Ví dụ 63 tuổi: 63% / 18,5% / 18,5%.
-- **Hiển thị:** tỷ lệ là thước đo chính, **số tiền hiện song song** ("Safety 36% ($200,000), mục tiêu 63%: thiếu"). Cân bằng được đánh giá bằng %, không bằng việc tổng tiền tăng hay giảm.
-- Gốc tính là phần đầu tư: Safety cần = (Traditional + Crypto) × Safety% / (100 − Safety%). Tiền chưa xếp lấp Safety trước, phần dư chia theo tỷ lệ; trong phần đầu tư, tiền mới vào bên đang thiếu trước.
-- **Không bao giờ khuyên bán** để cân lại. Phần vượt tỷ lệ là "trên tỷ lệ, không cần bán, tiền mới vào phần khác". Giá giảm không phải lý do để giục mua thêm.
+- **Vì sao:** không theo dõi tổng tiền (đổi liên tục). Theo dõi các phần có cân với nhau theo tuổi không.
+- Tỷ lệ theo tuổi: Safety = tuổi %, phần còn lại chia Traditional / Crypto (MoonSafe mặc định 50/50, người dùng chọn khác được; agent nói rõ 50/50 là mặc định của app, không phải quy tắc chuẩn).
+- **Luật mốc (Hiếu chốt 2026-11-01):** phần đi xa nhất so với tỷ lệ của nó (tiền / tỷ lệ lớn nhất) là thanh đầy 100%; thanh đầy của các phần khác theo nó. Ví dụ 30 tuổi (30 / 35 / 35), Safety $3.000 đi xa nhất → Traditional đầy ở $3.500, Crypto đầy ở $3.500. Người dùng bổ sung Traditional và Crypto theo Safety, tiền từ thu nhập hay tiền rảnh, thích bổ sung kiểu gì thì bổ sung.
+- **Không lấy tổng 3 phần làm 100%** (làm một phần luôn luôn thiếu), và **không hiện % trên từng phần** (khó hiểu; Hiếu 2026-11-01). Mỗi phần chỉ hiện: số tiền "$1,000 of $3,500" + "$2,500 to go" hoặc "Full"; phần làm mốc ghi "Full, it sets the size".
+- Không phần nào vượt thanh của nó, nên **không bao giờ có chuyện khuyên bán**. Giá giảm không phải lý do để giục mua thêm.
 - Giá trị tài sản tính theo **giá hiện tại** (số lượng × giá), không theo giá vốn; không hỏi "đã mua bao nhiêu tiền".
-- *Code hiện chỉ có $ ("$X of $Y, $Z to go") → **phải sửa**: màn Balance + lời agent đưa % lên làm chính, $ đi kèm.*
+- *Đã code, chờ Hiếu duyệt ảnh (Desktop `MoonSafe-moc-2026-11-01`) rồi mới deploy.*
 
 ## 4. Ghi dữ liệu
 

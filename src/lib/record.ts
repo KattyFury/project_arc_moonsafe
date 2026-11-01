@@ -82,7 +82,7 @@ export function detectPlacement(text: string, vndPerUsd: number | null): RecordR
   if (!amount || !(amount > 0)) return null
   // The user decides what their Safety is (Hieu, 2026-11-01), in a low-volatility form: the form they name is kept, marked as Safety.
   // Gold, stocks or coins are never recorded as Safety (the agent explains why instead).
-  const safety = /(?<!\p{L})(safety|safe part|an toàn)(?!\p{L})/iu.test(t) // lang-ok
+  const safety = /(?<!\p{L})(safety|safe part|safe|an toàn)(?!\p{L})/iu.test(t) // lang-ok
   if (safety && /(?<!\p{L})(gold|stocks?|shares|etfs?|voo|btc|bitcoin|eth|crypto|coins?|vàng|cổ phiếu)(?!\p{L})/iu.test(t)) return null // lang-ok
   const holdingType: AssetType = /term deposit|fixed deposit|có kỳ hạn/iu.test(t) ? 'term_deposit' // lang-ok
     : /(?<!\p{L})(government bonds?|bonds?|t-bills?|treasur(y|ies)|trái phiếu)(?!\p{L})/iu.test(t) ? 'bond' // lang-ok
@@ -94,6 +94,8 @@ export function detectPlacement(text: string, vndPerUsd: number | null): RecordR
     : 'savings'
   const source = FROM_WALLET.test(t) ? 'wallet' : NEW_MONEY.test(t) || /outside|extra/i.test(t) ? 'new' : null
   const keep = safety && canBeSafety(holdingType) && categoryOf({ type: holdingType }) === 'idle'
+  // Spare money is not tracked (Hieu, 2026-11-01): "I put 1000 in my bank" is not recorded unless it is kept as Safety.
+  if (!keep && categoryOf({ type: holdingType }) === 'idle') return null
   const name = DEST_NAME[holdingType] ?? 'Savings'
   return { amountUsd: Math.round(amount * 100) / 100, holdingType, name: keep ? `${name} kept as Safety` : name, source, ...(keep ? { safety: true } : {}) }
 }

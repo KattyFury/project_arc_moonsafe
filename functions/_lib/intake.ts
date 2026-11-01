@@ -106,8 +106,8 @@ export function assetsAsk(p: FinancialProfile, fund: { floorUsd: number | null; 
   }
   const s = seen(walletSeen)
   lines.push(vi
-    ? `Giờ tới phần bạn đang có. Bạn kể tự nhiên là được, ví dụ "3k ngân hàng, 1k USDC, 0.5 oz vàng, 0.02 BTC". Quỹ dự phòng trong app và cirBTC thì mình tự đọc trên chuỗi${s ? `; ví này đang có ${s} USDC, bạn nói giúp phần nào là của bạn` : ''}.` // lang-ok
-    : `Now, what you hold, in your own words, for example "3k in the bank, 1k USDC, 0.5 oz gold, 0.02 BTC". I read your emergency fund in the app and any cirBTC onchain myself${s ? `; this wallet shows ${s} USDC, so say how much of it is yours` : ''}.`)
+    ? `Giờ tới phần bạn đang có. Bạn kể tự nhiên là được, ví dụ "5k tiền gửi có kỳ hạn, 0.5 oz vàng, 2k VOO, 0.02 BTC". Quỹ dự phòng trong app và cirBTC thì mình tự đọc trên chuỗi${s ? `; ví này đang có ${s} USDC, bạn nói giúp phần nào là của bạn` : ''}.` // lang-ok
+    : `Now, what you hold, in your own words, for example "5k term deposit, 0.5 oz gold, 2k of VOO, 0.02 BTC". I read your emergency fund in the app and any cirBTC onchain myself.`)
   lines.push(vi
     ? 'Thêm 1 câu: ngoài phần an toàn, bạn muốn chia giữa đầu tư truyền thống (cổ phiếu, vàng) và crypto thế nào? MoonSafe mặc định 50/50, bạn chọn khác cũng được.' // lang-ok
     : 'And one more: outside Safety, how would you like to split between traditional investments (stocks, gold) and crypto? MoonSafe\'s default is 50/50; another split is fine.')

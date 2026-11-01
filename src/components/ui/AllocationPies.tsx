@@ -9,7 +9,7 @@
 
 import { useApp } from '@/state/AppState'
 import type { ReactNode } from 'react'
-import { GROUP_LABEL, bucketStanding, shareOfLiquid } from '@/lib/allocation'
+import { GROUP_LABEL, bucketStanding, shareOfLiquid, type Standing } from '@/lib/allocation'
 
 type Segment = 'safe' | 'traditional' | 'crypto' | 'idle' | 'grey'
 
@@ -68,7 +68,7 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
   const { target, liquid, grey, byGroup, unpriced, declared } = b
   const size = compact ? 72 : 112
   // Crypto is one bucket: BTC plus any other coins held; its target is all of the crypto share.
-  const held: Record<Segment, number> = { safe: byGroup.safe, traditional: byGroup.traditional, crypto: byGroup.btc + byGroup.large_cap + byGroup.altcoin, idle: byGroup.idle, grey }
+  const held: Record<Segment, number> = { safe: byGroup.safe, traditional: byGroup.traditional, crypto: byGroup.btc + byGroup.large_cap + byGroup.altcoin, idle: 0, grey } // spare money is not tracked (Hieu, 2026-11-01)
   const goalPct: Partial<Record<Segment, number>> = target ? { safe: target.safe, traditional: target.traditional, crypto: target.btc + target.large_cap + target.altcoin, idle: 0 } : {}
   // The "now" ring shows liquid assets plus the grey slice, so the grey part is visible beside them.
   const ring = liquid + grey
@@ -106,31 +106,27 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
     </div>
   )
 
-  // Each part as a bar against its target (Hieu, 2026-10-30, option B), by value. Targets (Hieu, 2026-11-01): the investments set how
-  // much Safety they need, money not placed yet fills it and then the shares; a part above its share is never sold. On track, Above its
-  // share, or Under with what is left. Same totals as the agent's (bucketStanding). Items outside the split follow as plain rows.
+  // Each part as money against its full bar (Hieu, 2026-11-01, CORE §3): the part furthest ahead of its age share is full and sets the
+  // size, the others follow it ("$1,000 of $3,500, $2,500 to go"). Nothing is above its bar, so nothing is ever to sell. Spare money is
+  // not tracked, so there is no "not placed" row. Same figures as the agent's (bucketStanding).
   const standing = bucketStanding(b)
   const color: Record<string, string> = { safe: SEG_COLOR.safe, traditional: SEG_COLOR.traditional, crypto: SEG_COLOR.crypto }
-  const bar = (key: string, name: string, have: number, tgt: number, full: boolean, left: number, over: boolean) => {
-    const p = tgt > 0 ? have / tgt : 0
-    return (
-      <li key={key} className="py-2 flex flex-col gap-2 border-b border-[var(--line)]">
-        <div className="flex items-baseline justify-between gap-4">
-          <span className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--ink)' }}>{name}</span>
-          <span className="text-[16px] leading-6 tabular-nums"><strong style={{ color: 'var(--ink)' }}>{moneyUsd(have)}</strong> <span style={{ color: 'var(--subtle)' }}>of {moneyUsd(tgt)}</span></span>
-        </div>
-        <div className="relative h-7 rounded-lg" style={{ background: `${color[key]}1f` }} role="img" aria-label={`${name}: ${Math.round(p * 100)}% of its target`}>
-          <div className="fill-in absolute top-1 bottom-1 left-0 rounded-md" style={{ width: `${Math.min(p, 1) * 100}%`, background: color[key] }} />
-        </div>
-        <div className="flex justify-between gap-4 text-[14px] leading-5">
-          <span style={{ color: 'var(--subtle)' }}>
-            {full ? <><strong style={{ color: 'var(--success)' }}>{over ? 'Above its share' : 'On track'}</strong>{over ? ', no need to sell' : ''}</> : <><strong style={{ color: 'var(--ink)' }}>Under</strong>, {moneyUsd(left)} to go</>}
-          </span>
-          <strong className="tabular-nums" style={{ color: full ? 'var(--success)' : 'var(--ink)' }}>{Math.round(p * 100)}%</strong>
-        </div>
-      </li>
-    )
-  }
+  const bar = (x: Standing) => (
+    <li key={x.key} className="py-2 flex flex-col gap-2 border-b border-[var(--line)]">
+      <div className="flex items-baseline justify-between gap-4">
+        <span className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--ink)' }}>{x.name}</span>
+        <span className="text-[16px] leading-6 tabular-nums"><strong style={{ color: 'var(--ink)' }}>{moneyUsd(x.have)}</strong>{!x.anchor && <span style={{ color: 'var(--subtle)' }}> of {moneyUsd(x.target)}</span>}</span>
+      </div>
+      <div className="relative h-7 rounded-lg" style={{ background: `${color[x.key]}1f` }} role="img" aria-label={`${x.name}: ${moneyUsd(x.have)} of ${moneyUsd(x.target)}`}>
+        <div className="fill-in absolute top-1 bottom-1 left-0 rounded-md" style={{ width: `${x.pct}%`, background: color[x.key] }} />
+      </div>
+      <div className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>
+        {x.anchor ? <><strong style={{ color: 'var(--success)' }}>Full</strong>, furthest ahead: it sets the size</>
+          : x.full ? <strong style={{ color: 'var(--success)' }}>Full</strong>
+          : <><strong style={{ color: 'var(--ink)' }}>{moneyUsd(x.left)}</strong> to go</>}
+      </div>
+    </li>
+  )
   const outside = grey + b.lifestyle
   // The Traditional / Crypto split: the one they chose, or MoonSafe's default 50 / 50 (Hieu, 2026-10-31).
   const chosen = profile.profile?.cryptoSplit
@@ -149,9 +145,8 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
       {walletOnly || (
         <ul className="flex flex-col [&>li:last-child]:border-b-0">
           {standing
-            ? standing.map(x => bar(x.key, x.name, x.have, x.target, x.full, x.left, x.over))
+            ? standing.map(bar)
             : (['safe', 'traditional', 'crypto'] as const).map(s => line(s, SEG_COLOR[s], SEG_NAME[s], <strong style={{ color: 'var(--ink)' }}>{moneyUsd(held[s])}</strong>))}
-          {held.idle > 0.5 && line('idle', SEG_COLOR.idle, 'Not placed yet', <strong style={{ color: 'var(--ink)' }}>{moneyUsd(held.idle)}</strong>)}
           {outside > 0.5 && line('grey', SEG_COLOR.grey, 'Outside the three parts', <strong style={{ color: 'var(--ink)' }}>{moneyUsd(outside)}</strong>)}
         </ul>
       )}

@@ -149,8 +149,8 @@ try {
       assert.ok(calls > before, 'Mixed requests must reach normal planning and safeguards')
       checks++
     }
-    const hold = (amount: number) => ({ id: `h${amount}`, type: 'function', function: { name: 'add_holding', arguments: JSON.stringify({ type: 'savings', name: 'Bank savings', worth: { amount, currency: 'USDC' } }) } })
-    for (const text of ['I lost $12,000 in altcoins', 'If I had $12,000 in savings', 'My friend has $12,000 in savings']) {
+    const hold = (amount: number) => ({ id: `h${amount}`, type: 'function', function: { name: 'add_holding', arguments: JSON.stringify({ type: 'term_deposit', name: 'Term deposit', worth: { amount, currency: 'USDC' } }) } })
+    for (const text of ['I lost $12,000 in altcoins', 'If I had $12,000 in a term deposit', 'My friend has $12,000 in a term deposit']) {
       forcedTools = [hold(12000)]
       const res = await ask(text)
       assert.equal(res.status, 200)
@@ -158,7 +158,7 @@ try {
       checks++
     }
     forcedTools = [hold(12000), hold(2000)]
-    const mixed = await ask('I lost $12,000, but now I have $2,000 in savings')
+    const mixed = await ask('I lost $12,000, but now I have $2,000 in a term deposit')
     assert.equal(mixed.status, 200)
     assert.ok(JSON.stringify(proposed(mixed.data)).includes('2000'))
     assert.ok(!JSON.stringify(proposed(mixed.data)).includes('12000'))
@@ -233,7 +233,8 @@ try {
     ] as const) {
       const result = await ask(text)
       const p = applyOps(normalizeProfile({ v: 2 }), readOps(proposed(result.data)))
-      assert.ok(p.holdings.some(h => h.value === amount && h.currency === currency))
+      // Spare money is not tracked (Hieu, 2026-11-01): plain savings are not recorded.
+      assert.ok(!p.holdings.some(h => h.value === amount && h.currency === currency), 'plain savings are spare money, not recorded')
       assert.notEqual(p.ageDeclined, true)
       checks += 2
     }

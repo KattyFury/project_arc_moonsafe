@@ -1,3 +1,17 @@
+# ▶ HANDOFF 2026-11-01 (đêm) — CORE + BẢNG CÂN ĐỐI "PHẦN ĐI XA NHẤT LÀM MỐC" (CHƯA DEPLOY, CHỜ HIẾU DUYỆT ẢNH)
+
+**Đọc `docs/CORE.md` trước** (nguồn chuẩn, Hiếu chốt hôm nay; đúng hơn mọi spec cũ). CLAUDE.md đã trỏ tới nó.
+
+**Trạng thái:** code đã commit + push lên `main` nhưng **CHƯA deploy**. Live moonsafe.app vẫn là bản trước (`bdb40fb5`, bundle `index-jV-RzWK8.js`). Ảnh để Hiếu duyệt: Desktop `MoonSafe-moc-2026-11-01` (balance/invest × 393/1440, đều vừa 1 màn). Hiếu bảo "deploy" thì chạy lệnh deploy mainnet ở mục ▶ MAINNET bên dưới, kiểm bundle chứa `A9A5447a` + trang 200 + `/api/chat` 401. Hai thư mục ảnh `MoonSafe-ty-le-*` trên Desktop là bản % đã bỏ.
+
+**Luật mới (Hiếu chốt 2026-11-01, đã code):**
+- **Mốc:** phần đi xa nhất so với tỷ lệ tuổi (tiền / tỷ lệ lớn nhất) là thanh đầy; thanh đầy các phần khác theo nó. 30 tuổi, Safety $3.000 dẫn → Traditional và Crypto đầy ở $3.500. Màn hình: "$1,000 of $3,500", "$2,500 to go" / "Full"; phần mốc "Full, it sets the size". **Không % trên từng phần, không tổng 3 phần = 100%** (Hiếu chê cả 2 cách đó khó hiểu / làm một phần luôn thiếu). Không phần nào vượt thanh → không bao giờ khuyên bán. Code: `bucketStanding` (`src/lib/allocation.ts`, field `anchor`), `shareLine` / `splitSection` / `buildStanding` (`functions/_lib/plan.ts`), `AllocationPies.tsx`, `InvestScreen.tsx`, dòng "Where they stand" cho agent trong `chat.ts`.
+- **Không theo dõi tiền nhàn rỗi:** tiền mặt / bank không kỳ hạn / stablecoin chỉ được ghi khi user giữ làm Safety (`add_holding` chặn, `detectPlacement` trả null, câu hỏi bank/stablecoin thay bằng 1 câu "có để riêng làm Safety không"); bỏ dòng "Not placed yet", bỏ câu "this wallet shows X USDC, say how much is yours". Lệnh nạp quỹ vẫn tính theo số dư ví onchain, không bị ảnh hưởng.
+- Cách tính cũ trong ngày (Safety đo theo phần đầu tư, chia tiền nhàn rỗi `splitIdle`) chỉ còn code phụ, màn hình và agent không dùng nữa.
+- Kiểm: `check:all`, `test:agent` (6/6), tsc chat, check-lang đều qua. **Chưa chạy Haiku** với luật mốc mới.
+
+**Việc tiếp theo:** (1) Hiếu duyệt ảnh → deploy. (2) Chạy lại vài ca Haiku (`scripts/claude-reeval.ts`, ca `persona-*`, `safety-*`) để xem agent nói đúng luật mốc và không hỏi tiền nhàn rỗi. (3) Vault v3 (ví + email 2-of-2) làm SAU hackathon khi có mini grant — xem CORE §6.
+
 # ▶ 2026-11-01 (khuya, phần cuối) — HOÀN TẤT VIỆC DANG DỞ (ĐÃ DEPLOY Cloudflare `bdb40fb5`)
 
 Dùng thêm ~448k token Haiku (`docs/evals/persona-r3/r4/r5-2026-11-01.json`; ca nạp sẵn hồ sơ `PERSONA_TAIL_CASES` + `p5-sold-en` trong `scripts/persona-cases.ts`).
