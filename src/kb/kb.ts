@@ -1,5 +1,5 @@
 // MoonSafe knowledge base: the framework (top of moonsafe-kb.json) and the situation patterns
-// (bottom). Spec: docs/SPEC-FRAMEWORK-2026-10-25.md. Patterns are data: adding one needs no code.
+// (bottom). Spec: docs/archive/SPEC-FRAMEWORK-2026-10-25.md. Patterns are data: adding one needs no code.
 // The server computes the user's facts, matches them here and sends the model only the few
 // patterns that apply, instead of the whole framework on every message.
 //

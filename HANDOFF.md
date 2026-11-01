@@ -1,3 +1,11 @@
+# ▶ 2026-11-01 (cuối) — DỌN REPO THEO CORE
+
+- `README.md` viết lại theo CORE (vai trò, quỹ onchain, 3 phần, luật mốc với ví dụ 30 tuổi, không theo dõi tiền nhàn rỗi, lộ trình vault ví + email), có ảnh `docs/images/` (balance mobile/desktop, invest mobile — bản Hiếu đã duyệt). Cập nhật ảnh khi đổi giao diện.
+- `AGENTS.md` viết gọn lại cho mainnet (bản cũ còn địa chỉ testnet), trỏ về CORE.
+- Chuyển vào `docs/archive/` (có dòng "đã thay bởi CORE"): SPEC-BALANCE-SHEET (2 bản), BUILD-BALANCE-v2, SPEC-FRAMEWORK-2026-10-25, deployment-2026-10-31.json, browser-checks.md; đường dẫn trong code/HANDOFF đã sửa.
+- `docs/AGENT-FRAMEWORK.md` và định nghĩa nhóm `safe` / `idle` trong `src/kb/moonsafe-kb.json` sửa theo CORE (bỏ "giá vốn", bỏ "tiền nhàn rỗi lấp Safety"); `docs/vault-recovery-spec.md` thêm ghi chú hướng 2-of-2.
+- Đã deploy (chỉ server/nội dung; giao diện không đổi).
+
 # ▶ HANDOFF 2026-11-01 (kết thúc ngày) — LÀM NỐT, ĐÃ DEPLOY Cloudflare `6210e61b`
 
 Live = bundle giao diện `index--R3BQKqW.js` (đã Hiếu duyệt) + server mới nhất. Hiếu: luật mốc cho người 55 tuổi (Crypto "còn $158k") là **hợp lý**, giữ nguyên.
@@ -124,7 +132,7 @@ Lỗi gốc (chat thật): khai "$10 bank, $10 stablecoin, $10 vàng" → agent 
 
 # ▶ Balance Sheet v2 — ĐÃ BUILD + DEPLOY 2026-10-31 (Cloudflare `442d5078`, main `c0e6f8c`)
 
-Spec build: `docs/BUILD-BALANCE-v2-2026-10-31.md`. Đã làm: công thức mốc (`bucketStanding`: mục đi xa nhất theo tỷ lệ làm mốc, ngưỡng 5/25, On track / Under), Safety = tiền gửi + tiền mặt + stablecoin + trái phiếu (KB: `cash`/`checking`/`stable_wallet` sang safe, thêm `bond` safe + `junk_bond` traditional), tỷ lệ Traditional/Crypto do người dùng chọn (`profile.cryptoSplit`, tool `crypto_split`, mặc định 50, agent nói rõ là mặc định của MoonSafe), cirBTC tính theo giá trị trên chuỗi, màn Balance bỏ Net worth / Can use now, nút gạt Split | Cash flow (thu, chi, trả nợ, từng khoản nợ, mục tiêu quỹ).
+Spec build: `docs/archive/BUILD-BALANCE-v2-2026-10-31.md`. Đã làm: công thức mốc (`bucketStanding`: mục đi xa nhất theo tỷ lệ làm mốc, ngưỡng 5/25, On track / Under), Safety = tiền gửi + tiền mặt + stablecoin + trái phiếu (KB: `cash`/`checking`/`stable_wallet` sang safe, thêm `bond` safe + `junk_bond` traditional), tỷ lệ Traditional/Crypto do người dùng chọn (`profile.cryptoSplit`, tool `crypto_split`, mặc định 50, agent nói rõ là mặc định của MoonSafe), cirBTC tính theo giá trị trên chuỗi, màn Balance bỏ Net worth / Can use now, nút gạt Split | Cash flow (thu, chi, trả nợ, từng khoản nợ, mục tiêu quỹ).
 - **Khai báo = E2 (Hiếu chốt sau khi chê bảng hỏi dài):** KHÔNG còn bảng hỏi. Server tự soạn 2 câu (`functions/_lib/intake.ts`): (1) `cashflowAsk` hỏi cả tháng 1 lần (tuổi, thu nhập + có đều không, khoản thu lâu lâu như airdrop, chi tiêu chưa tính nợ, người phụ thuộc, nợ); (2) `assetsAsk` ghi lại những gì đã nghe + mục tiêu quỹ + tiền quỹ lấy từ đâu (dư tháng / airdrop) + hỏi tài sản bằng lời + tỷ lệ chia + hỏi bù "lương có đều không" nếu bỏ qua. Câu 2 gửi 1 lần trước kế hoạch; khai tài sản sau đó đi qua thẻ xác nhận. Hỏi về quỹ mà chưa biết chi tiêu → gửi lại câu 1 (tối đa 2 lần).
 - Bảng hỏi cũ (`IntakeFormCard`, `formToItems` có $/số lượng) vẫn còn trong code để hiện các thẻ cũ đã lưu trong lịch sử chat; server không gửi nữa.
 - Kiểm: `check:all`, `test:agent`, tsc 3 cấu hình, check-lang, build mainnet đều qua; ảnh 393×852/1440×900 ở Desktop `MoonSafe-balance-v2-2026-10-31` (ảnh bảng hỏi là bản cũ đã bỏ).
@@ -135,7 +143,7 @@ Spec build: `docs/BUILD-BALANCE-v2-2026-10-31.md`. Đã làm: công thức mốc
 
 # Balance Sheet v2 — Hiếu chốt thêm 2026-10-31 (quyết định, nền cho bản build ở trên)
 
-Bổ sung/sửa `docs/SPEC-BALANCE-SHEET-v2-2026-10-30.md`. Nguồn chuẩn đã dùng: SEC Investor.gov "Beginners' Guide to Asset Allocation" (3 nhóm stocks/bonds/cash; cash equivalents = savings deposits, CDs, treasury bills, money market deposit accounts, money market funds; real estate/precious metals = nhóm khác) và quy tắc "age in bonds" của Bogle ("crude starting point", không phải luật).
+Bổ sung/sửa `docs/archive/SPEC-BALANCE-SHEET-v2-2026-10-30.md`. Nguồn chuẩn đã dùng: SEC Investor.gov "Beginners' Guide to Asset Allocation" (3 nhóm stocks/bonds/cash; cash equivalents = savings deposits, CDs, treasury bills, money market deposit accounts, money market funds; real estate/precious metals = nhóm khác) và quy tắc "age in bonds" của Bogle ("crude starting point", không phải luật).
 
 **Dòng tiền + nợ = 1 cụm (đảo mục "hoãn dòng tiền" của spec v2):**
 - Bảng hỏi 2 bước: (1) dòng tiền: lương, chi tiêu (KHÔNG gồm trả nợ), thu nhập đều?, người phụ thuộc, nợ (còn nợ / lãi / trả mỗi tháng), khoản chi lớn trong 5 năm; (2) tài sản. Bước nào không vừa 393×852 thì tách thành 2 khung, không cuộn.
@@ -156,13 +164,13 @@ Bổ sung/sửa `docs/SPEC-BALANCE-SHEET-v2-2026-10-30.md`. Nguồn chuẩn đã
 
 # Agent three-cycle improvements — deployed 2026-10-31
 
-User requested deployment after the three Haiku improvement sessions. Current working tree (HEAD `4c8a0b0` plus local agent changes, including the final deterministic confirmation-status repair) deployed successfully to Cloudflare production `148f6808-3e1d-4bcf-96bd-254376ef0ff1`: https://148f6808.moonsafe.pages.dev and https://moonsafe.app. Verified mainnet factory `0xA9A5447a1Dd9874c25238d69E285249Fa1c9E10A`, RPC, cirBTC and Privy against the prior live bundle and the new build. Cloudflare canonical deployment is production/success; production KV and D1 IDs are unchanged. Both URLs: homepage 200, HTML matches local production build, unauthenticated POST `/api/chat` 401. Six agent suites, `check:all` (including ledger), handler/eval TypeScript and mainnet build pass. No paid model call or transaction during deployment; no Git commit or push. Evaluation limits remain in `docs/evals/session-three-cycles-2026-10-31.md`; deployment receipt is `docs/deployment-2026-10-31.json`.
+User requested deployment after the three Haiku improvement sessions. Current working tree (HEAD `4c8a0b0` plus local agent changes, including the final deterministic confirmation-status repair) deployed successfully to Cloudflare production `148f6808-3e1d-4bcf-96bd-254376ef0ff1`: https://148f6808.moonsafe.pages.dev and https://moonsafe.app. Verified mainnet factory `0xA9A5447a1Dd9874c25238d69E285249Fa1c9E10A`, RPC, cirBTC and Privy against the prior live bundle and the new build. Cloudflare canonical deployment is production/success; production KV and D1 IDs are unchanged. Both URLs: homepage 200, HTML matches local production build, unauthenticated POST `/api/chat` 401. Six agent suites, `check:all` (including ledger), handler/eval TypeScript and mainnet build pass. No paid model call or transaction during deployment; no Git commit or push. Evaluation limits remain in `docs/evals/session-three-cycles-2026-10-31.md`; deployment receipt is `docs/archive/deployment-2026-10-31.json`.
 
 # Balance Sheet v2 — CHỐT HƯỚNG 2026-10-30, chưa code
 
 **Deployment (Codex, user requested):** production `aa2af126-c20b-4750-85e4-012449c4d50e`, https://aa2af126.moonsafe.pages.dev and https://moonsafe.app. Before upload, preserved local work in stash `codex-agent-fix-before-deploy-sync-2026-10-30`, fast-forwarded c635084 → 5fc0eb7 (four newer user commits), reapplied the part-choice fix, and resolved HANDOFF by keeping both notes. TypeScript, KB including 63 routing checks, offline-flow, language gate and mainnet build passed after synchronization. Both URLs: homepage 200, unauthenticated chat 401, served asset hashes match the new build. Cloudflare confirms canonical deployment, existing D1 ledger and production KV retained. No extra paid calls, commit or push. The 974,475-token evaluation below predates these four upstream commits; it is not a paid evaluation of the combined deployed tree. Other findings in that review remain follow-ups.
 
-Spec: [`docs/SPEC-BALANCE-SHEET-v2-2026-10-30.md`](docs/SPEC-BALANCE-SHEET-v2-2026-10-30.md) (bản bàn trước: `docs/SPEC-BALANCE-SHEET-2026-10-30.md`, chỉ còn là tư liệu).
+Spec: [`docs/archive/SPEC-BALANCE-SHEET-v2-2026-10-30.md`](docs/archive/SPEC-BALANCE-SHEET-v2-2026-10-30.md) (bản bàn trước: `docs/archive/SPEC-BALANCE-SHEET-2026-10-30.md`, chỉ còn là tư liệu).
 - **Đảo quyết định 10-29 "đầu tư tính theo tiền đã bỏ vào":** giờ tính theo **giá trị hiện tại** (số lượng × giá oracle); vẫn **không giục mua khi giá giảm**, không khuyên bán.
 - Khai bằng **số lượng**, bỏ khai bằng tiền cho tài sản có giá. Bỏ Net worth, Can use now, cost basis, lãi/lỗ, trừ khoản chi lớn sắp tới.
 - Mốc = mục có v/w lớn nhất; tổng ngụ ý = v_mốc / w_mốc; ngưỡng 5/25 → On track / Under (không có Over).
@@ -244,7 +252,7 @@ Branch `codex/finance-coach-depth` extends the existing framework rather than re
 
 Agent tư vấn tài chính cá nhân cho người dùng Web3 + quỹ dự phòng USDC onchain, chạy trên **Arc MAINNET** (chain 5042, tiền thật). Live: https://moonsafe.app (Cloudflare Pages project `moonsafe`; push GitHub KHÔNG tự deploy).
 Cập nhật lần cuối: **2026-10-29** (khuya), xem ▶ Làm tiếp từ đây.
-Khung tài chính: [`docs/SPEC-FRAMEWORK-2026-10-25.md`](docs/SPEC-FRAMEWORK-2026-10-25.md) (dữ liệu ở `src/kb/`). Rà soát bảo mật: [`docs/archive/audit-2026-10-27.md`](docs/archive/audit-2026-10-27.md). Chi phí token: [`docs/archive/token-cost-2026-10-28.md`](docs/archive/token-cost-2026-10-28.md). Kiểm giao diện bằng trình duyệt thật: [`docs/browser-checks.md`](docs/browser-checks.md).
+Khung tài chính: [`docs/archive/SPEC-FRAMEWORK-2026-10-25.md`](docs/archive/SPEC-FRAMEWORK-2026-10-25.md) (dữ liệu ở `src/kb/`). Rà soát bảo mật: [`docs/archive/audit-2026-10-27.md`](docs/archive/audit-2026-10-27.md). Chi phí token: [`docs/archive/token-cost-2026-10-28.md`](docs/archive/token-cost-2026-10-28.md). Kiểm giao diện bằng trình duyệt thật: [`docs/archive/browser-checks.md`](docs/archive/browser-checks.md).
 
 ## ▶ Làm tiếp từ đây (2026-10-29 tối)
 **Đang ở đâu:** mainnet đã live, đang thi hackathon Arc Micrograants (DoraHacks). Phiên 10-29 đã làm xong rất nhiều thứ ở mục ▶ MAINNET bên dưới, đều đã deploy + qua bộ kiểm offline (`kb-check`, `flow`, typecheck, check-lang), NHƯNG chưa ai thử trên app thật bằng tài khoản thật.

@@ -1,3 +1,5 @@
+> **Lưu trữ.** Đã được thay thế bởi [`docs/CORE.md`](../CORE.md) (Hiếu chốt 2026-11-01). Chỉ đọc để tra lịch sử; mâu thuẫn thì CORE đúng.
+
 # MoonSafe: Spec chốt (framework phân bổ, dòng tiền, tool của agent)
 
 > **Cập nhật 2026-10-29 (Hiếu):** phần còn lại r = 100 − tuổi chia ĐỀU: Truyền thống = r/2, Crypto = r/2 (crypto sập thì truyền thống đỡ, truyền thống giảm thì crypto đỡ, cả hai cùng giảm vẫn còn quỹ dự phòng + Safety). Mọi chỗ 4/7 – 3/7 bên dưới đã cũ.

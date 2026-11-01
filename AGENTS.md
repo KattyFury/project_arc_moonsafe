@@ -1,41 +1,32 @@
-# MoonSafe — Project Notes
+# MoonSafe — notes for agents
 
-## App
-"Onchain personal finance for Web3" — personal finance app with a USDC emergency fund on Arc Testnet.
+Read first: [`docs/CORE.md`](docs/CORE.md) (the rules, settled 2026-11-01), then the newest **▶** section of [`HANDOFF.md`](HANDOFF.md). Working rules for Claude are in [`CLAUDE.md`](CLAUDE.md).
 
-## Deployed Contracts (Arc Testnet)
+## Live
 
-| Contract | Address | Explorer |
+- https://moonsafe.app = Arc **mainnet** (chain 5042). Cloudflare Pages project `moonsafe`, direct upload (a push does NOT deploy).
+- Deploy: `VITE_NETWORK=mainnet VITE_FACTORY_ADDRESS=0xA9A5447a1Dd9874c25238d69E285249Fa1c9E10A bun run cf:deploy` (with `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`); `scripts/check-deploy-env.mjs` refuses a build that points at the wrong network. After deploy: page 200, unauthenticated `POST /api/chat` 401, bundle contains `A9A5447a`.
+- Contracts, the Safe owner and the testnet history: see `README.md` and `HANDOFF.md`.
+
+## Environment
+
+| Variable | Where | What |
 |---|---|---|
-| VaultProxy (implementation) | `0xd0d5ca56381079d83d43b5da73940bd958b868d8` | [View](https://explorer.testnet.arc.io/address/0xd0d5ca56381079d83d43b5da73940bd958b868d8) |
-| VaultFactory (current, owner = user 0xEb2D…52F6, fee 1 USDC) | `0x7E0f289d535369E582C596071b637E78E69Ac88F` | [View](https://explorer.testnet.arc.io/address/0x7E0f289d535369E582C596071b637E78E69Ac88F) |
-| VaultFactory (legacy, Arc Studio, fee 1e12 wei — still read for old vaults) | `0x358e6669347cdda814efca51657b7a97cbf2576f` | [View](https://explorer.testnet.arc.io/address/0x358e6669347cdda814efca51657b7a97cbf2576f) |
+| `VITE_PRIVY_APP_ID` | build | Privy app |
+| `VITE_NETWORK`, `VITE_FACTORY_ADDRESS` | build | `mainnet` and the mainnet factory |
+| `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | Pages secrets | advisor model (OpenAI) and fallback (Claude Haiku) |
+| `USERDATA`, `DB` | Pages bindings | KV (profile + chat per user) and D1 `moonsafe-ledger` (usage) |
 
-## Environment Variables
+Secrets live in `D:\Files\Claude\.secrets\keys.env` on Hieu's machines, never in the repo.
 
-| Variable | Description |
-|---|---|
-| `VITE_PRIVY_APP_ID` | Privy App ID (from dashboard.privy.io) |
-| `VITE_FACTORY_ADDRESS` | VaultFactory address (set to deployed address above) |
-| `OPENAI_API_KEY` | OpenAI API key for chat agent (server-side only) |
+## Code map
 
-## Factory Constructor Args (current factory)
-- implementation: 0xd0d5ca56381079d83d43b5da73940bd958b868d8 (VaultProxy)
-- feeRecipient: 0xEb2D222d28F35fE7BeB5387f8Bc4eBF65f2652F6 (user, also owner/deployer)
-- fee: 1000000000000000000 (1 USDC — Arc native USDC has 18 decimals)
+- Balance maths (the part furthest ahead sets the size): `src/lib/allocation.ts` (`bucketStanding`)
+- Plan and fixed replies (no model): `functions/_lib/plan.ts`; first questions: `functions/_lib/intake.ts`
+- Agent (planner tools, guards, reply): `functions/api/chat.ts`
+- Record box ("I keep 500 USDC as Safety"): `src/lib/record.ts`
+- Finance framework as data: `src/kb/moonsafe-kb.json` (check with `bun scripts/kb-check.ts`)
 
-## Privy Allowed Origins
-- https://irol80jxblfxew72yvd5m.preview.studio.arc.io
+## Checks before a deploy
 
-## Notes
-- USDC on Arc Testnet: 0x3600000000000000000000000000000000000000 (6 decimals ERC-20)
-- Gas is USDC — no ETH needed
-- cirBTC (testnet) `0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF`, 8 decimals — hardcoded in src/hooks/useCirBtc.ts (docs.arc.network contract-addresses). Swap USDC→cirBTC via Circle App Kit, keyless, alias `cirBTC` on `Arc_Testnet`
-- BTC price for valuing cirBTC: /api/price (CoinGecko public, cached 5 min)
-- OpenAI chat runs server-side via Cloudflare Pages Functions (/functions/api/chat.ts)
-- Exchange rates via /api/rates (open.er-api.com), cached 24h in localStorage; on failure the last cached rate is used, never a guessed one
-- Financial profile stored in localStorage (key: moonsafe_profile_v1)
-- Chat history stored in localStorage (key: moonsafe_chat_v2, max 80 messages)
-- Shared app state: src/state/AppState.tsx (one instance of vault/profile/fx/cirBTC)
-- Native USDC on Arc has 18 decimals; the app works in 6-decimal units (src/lib/format.ts)
-- Wallet: Privy + @privy-io/wagmi 1.x (matches @privy-io/react-auth 2.x)
+`npm run check:all`, `npm run test:agent`, `bunx tsc --noEmit -p scripts/tsconfig.chat.json`, `node scripts/check-lang.mjs` ("English only"). Live model runs: `bun scripts/claude-reeval.ts --live --budget N --run <name> --only <case ids>` (cases in `scripts/*-cases.ts`), only with a token budget Hieu approved.

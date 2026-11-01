@@ -1,6 +1,8 @@
+> **Lưu trữ.** Đã được thay thế bởi [`docs/CORE.md`](../CORE.md) (Hiếu chốt 2026-11-01). Chỉ đọc để tra lịch sử; mâu thuẫn thì CORE đúng.
+
 # Build Balance Sheet v2 — 2026-10-31
 
-Quyết định: mục ▶ đầu `HANDOFF.md` (2026-10-31) + `docs/SPEC-BALANCE-SHEET-v2-2026-10-30.md`. Hiếu duyệt danh sách món 2026-10-31.
+Quyết định: mục ▶ đầu `HANDOFF.md` (2026-10-31) + `docs/archive/SPEC-BALANCE-SHEET-v2-2026-10-30.md`. Hiếu duyệt danh sách món 2026-10-31.
 
 ## 1. Nhóm tài sản (KB `asset_types`)
 - `cash`, `checking`, `stable_wallet`: idle → **safe** (SEC: tiền gửi, tiền mặt là tương đương tiền; stablecoin Hiếu chốt vào Safety).

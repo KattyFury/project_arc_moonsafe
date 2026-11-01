@@ -1,6 +1,6 @@
 {
   "version": "2026-10-25",
-  "source": "docs/SPEC-FRAMEWORK-2026-10-25.md (Hieu's final spec). Build exactly from it; do not extrapolate. Entries marked status=accepted_for_now are Claude Code's suggestions Hieu accepted for now (2026-10-25); revisit with real users.",
+  "source": "docs/archive/SPEC-FRAMEWORK-2026-10-25.md (Hieu's final spec). Build exactly from it; do not extrapolate. Entries marked status=accepted_for_now are Claude Code's suggestions Hieu accepted for now (2026-10-25); revisit with real users.",
 
   "params": {
     "priority_debt_rate_pct": { "value": 10, "note": "Debt at or above this yearly rate is priority debt, whatever its type (spec 5.2, 13)" },
@@ -31,9 +31,9 @@
 
   "categories": [
     { "key": "fund", "name": "Emergency fund", "definition": "USDC in the MoonSafe vault, a cushion to live on if income stops", "in_liquid_base": false },
-    { "key": "safe", "name": "Safe", "definition": "Low-volatility money set aside on purpose: term savings deposits, government bonds, bond and money market funds, savings insurance. Its size follows the investments (Hieu, 2026-11-01): investments x safe share / (100 - safe share)", "in_liquid_base": true },
+    { "key": "safe", "name": "Safe", "definition": "The low-risk part, set aside on purpose: term deposits, government bonds, bond and money market funds, savings insurance, and cash, bank money or stablecoins only for the amount the user says is their Safety (never by default). Not emergency money. Balanced against the other two parts: the part furthest ahead of its age share sets the size (docs/CORE.md)", "in_liquid_base": true },
     { "key": "invest", "name": "Invest", "definition": "Assets expected to grow: traditional (stocks, gold, funds), BTC, large caps, altcoins, plus items that cannot be rebalanced (rental property, business stakes, loans given)", "in_liquid_base": "only rebalanceable items" },
-    { "key": "idle", "name": "Idle", "definition": "Money not doing anything yet: cash, bank accounts with no term and stablecoins, earning or not (Hieu, 2026-11-01: never called Safety). It fills the emergency fund first, then the Safety the investments need, then the rest is split by the shares", "in_liquid_base": true },
+    { "key": "idle", "name": "Idle", "definition": "Spare money: cash, bank accounts with no term and stablecoins, earning or not, that the user has not kept as Safety. Not tracked (Hieu, 2026-11-01): never asked, recorded or shown; the user tops up the parts from it as they like", "in_liquid_base": true },
     { "key": "lifestyle", "name": "Lifestyle assets", "definition": "The home you live in and your car: for living, not for rebalancing", "in_liquid_base": false },
     { "key": "debt", "name": "Debt", "definition": "Each debt on its own, subtracted from net worth only", "in_liquid_base": false }
   ],

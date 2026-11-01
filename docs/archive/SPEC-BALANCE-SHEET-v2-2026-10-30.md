@@ -1,3 +1,5 @@
+> **Lưu trữ.** Đã được thay thế bởi [`docs/CORE.md`](../CORE.md) (Hiếu chốt 2026-11-01). Chỉ đọc để tra lịch sử; mâu thuẫn thì CORE đúng.
+
 # Spec Balance Sheet v2: cân port theo giá trị, mốc là mục vừa được bơm (2026-10-30)
 
 > Trạng thái: **đã chốt hướng, chưa code.** Thay cho bản bàn trước cùng ngày. Việc tiếp theo là mổ xẻ chi tiết từng màn hình rồi mới viết spec build.

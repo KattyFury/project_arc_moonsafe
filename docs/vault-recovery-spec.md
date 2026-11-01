@@ -1,5 +1,7 @@
 # Vault recovery by email (decided 2026-10-29: build LATER, not for the hackathon launch)
 
+> **2026-11-01:** the direction is now wallet + email as two separate keys (2-of-2) for every withdrawal, with this email recovery as one of its paths; built after the hackathon. See [`CORE.md`](CORE.md) §6, which wins where the two differ.
+
 Today (mainnet launch for friends): no contract change. Email logins use a Privy embedded wallet, which Privy restores at the same address, so the vault stays reachable. Wallet-only logins carry the lost-key risk and are told to keep amounts small. Every account has an email (required in "Before you start") so this feature can use it.
 
 ## Why one onchain key is unavoidable

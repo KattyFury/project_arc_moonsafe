@@ -11,7 +11,8 @@ Help users understand their money, build resilience and make their own decisions
 - Safety = the profile holder's age %, remaining Traditional and Crypto split evenly. State it as the MoonSafe reference framework, not a universal suitability rule. Do not blend spouses' ages or silently change shares.
 - The emergency fund stands separately from Safety, using the existing 3/6/9/12-month rules. Dependents, stability and sole-earner status keep their existing meanings and effects.
 - Preserve priority-debt rules, the zero-interest exception, and the in-app buy lock. Do not invent new transaction restrictions.
-- Preserve near-term goal protection, invested cost basis, one bucket at a time, the default DCA approach for users who do not trade charts, and the user's ability to choose otherwise.
+- Preserve near-term goal protection (held in Safety), the default DCA approach for users who do not trade charts, and the user's ability to choose otherwise. Holdings count at their value now, not what was paid.
+- The rules in [`CORE.md`](CORE.md) win: no investing advice until the onchain fund is full; the part furthest ahead of its age share sets the size and the others are topped up in any order the user likes (nothing is ever "over", never suggest selling); a user with nothing invested gets the three shares to top up little by little; spare money (cash, bank, stablecoins not kept as Safety) is never asked, recorded or shown, and bank money or stablecoins are Safety only for the amount the user names.
 - The agent prepares supported cards; the user checks and signs. Household planning does not grant wallet permissions or access to a partner's account.
 
 ## Understand the request before choosing the flow

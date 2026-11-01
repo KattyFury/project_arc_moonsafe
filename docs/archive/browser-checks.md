@@ -1,3 +1,5 @@
+> **Lưu trữ.** Đã được thay thế bởi [`docs/CORE.md`](../CORE.md) (Hiếu chốt 2026-11-01). Chỉ đọc để tra lịch sử; mâu thuẫn thì CORE đúng.
+
 # Kiểm giao diện bằng trình duyệt thật (sandbox Arc Studio, không cần sudo, không gọi model)
 
 Dùng khi cần đo layout/chiều cao/tràn chữ thay vì đoán. Không tốn token.

@@ -1,7 +1,7 @@
 // Cloudflare Pages Function — MoonSafe agent (OpenAI), every app operation is a tool.
 // OPENAI_API_KEY is in Cloudflare environment variables (never in client bundle).
 //
-// Framework: docs/SPEC-FRAMEWORK-2026-10-25.md, as data in src/kb (moonsafe-kb.json + kb.ts).
+// Framework: docs/archive/SPEC-FRAMEWORK-2026-10-25.md, as data in src/kb (moonsafe-kb.json + kb.ts).
 // Numbers: src/lib/allocation.ts computeBalance, the same code the app's screens and buy lock use.
 //
 // Each user message runs two stages:

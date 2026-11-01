@@ -1,4 +1,4 @@
-// The user's whole picture by the MoonSafe framework (docs/SPEC-FRAMEWORK-2026-10-25.md, data in
+// The user's whole picture by the MoonSafe framework (docs/archive/SPEC-FRAMEWORK-2026-10-25.md, data in
 // src/kb): every holding valued in USD, liquid assets (the base of every %: Safe + rebalanceable
 // Invest + Idle) and net worth (everything, fund and lifestyle assets included, minus debt), the six
 // groups against targetMix(age), the grey slice of items that cannot be rebalanced, cash flow, the

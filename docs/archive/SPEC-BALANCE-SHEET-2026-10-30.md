@@ -1,3 +1,5 @@
+> **Lưu trữ.** Đã được thay thế bởi [`docs/CORE.md`](../CORE.md) (Hiếu chốt 2026-11-01). Chỉ đọc để tra lịch sử; mâu thuẫn thì CORE đúng.
+
 # Spec Balance Sheet: tính giá trị thế nào, lệch thì xử lý ra sao (bản bàn, 2026-10-30)
 
 > Trạng thái: **đã thay bằng [`SPEC-BALANCE-SHEET-v2-2026-10-30.md`](SPEC-BALANCE-SHEET-v2-2026-10-30.md)** (Hiếu chốt 2026-10-30). Giữ lại làm tư liệu: hiện trạng code và cách thế giới làm.
