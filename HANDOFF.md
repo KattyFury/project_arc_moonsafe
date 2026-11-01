@@ -1,3 +1,15 @@
+# ▶ 2026-11-01 (tối) — LUẬT CHIA TIỀN MỚI (Hiếu chốt, ĐÃ DEPLOY Cloudflare `a6d60f54`)
+
+Lỗi gốc (chat thật): khai "$10 bank, $10 stablecoin, $10 vàng" → agent nói "Safety $20 = on track" và lấy Safety làm mốc ("phần đi xa nhất"); rồi "Ok. But who said my safety is 20$" sinh lệnh nạp 20 USDC. Luật Hiếu chốt (thay quy tắc "mốc" của Balance Sheet v2):
+- **Tiền mặt, tài khoản bank không kỳ hạn, stablecoin (kể cả earn) = TIỀN NHÀN RỖI**, không bao giờ gọi là Safety. KB: `cash, checking, savings, stable_wallet, flexible_earn, locked_earn, defi_stable` → category `idle`. **Safety = tiền gửi có kỳ hạn, trái phiếu chính phủ/quỹ trái phiếu/quỹ thị trường tiền tệ** (`term_deposit`, `bond`) — có sẵn thì tính thẳng Safety.
+- **Quỹ dự phòng onchain đầy mới tư vấn đầu tư** (quỹ phải nằm vault để agent tin được, người dùng không bịa được). Quỹ chưa đầy: kế hoạch chỉ có quỹ + "Investing comes once the fund is full", chọn phần nào cũng trả về quỹ (`fundFirst`). Nạp đầy quỹ → `buildAfterSign` hiện luôn phần đầu tư.
+- **Đầu tư làm gốc**: Safety cần = (Traditional + Crypto) × Safety% / (100 − Safety%). Tiền nhàn rỗi (sau khi giữ 1 tháng chi tiêu — luật cũ spec 5.4, quỹ, nợ lãi cao, mục tiêu gần) lấp Safety trước, phần dư chia theo tỷ lệ; trong phần đầu tư thì vào Traditional/Crypto bên nào đang thiếu so với tỷ lệ trước. Chưa đầu tư gì → chia thẳng theo tỷ lệ ($10.000 bank ở tuổi 20 → $2.000/$4.000/$4.000).
+- **Không khuyên bán**: phần vượt tỷ lệ = "Above its share, no need to sell", tiền mới vào phần khác.
+- Code: `splitIdle` / `splitOf` / `bucketStanding` trong `src/lib/allocation.ts` (bỏ `anchor`, thêm `over`, `add`); `splitSection`, `fundFirst`, `buildPlan` trong `functions/_lib/plan.ts`; off_target (`src/kb/facts.ts`) chỉ tính khi quỹ đầy + hết nợ lãi cao, sau khi chia tiền nhàn rỗi; "as Safety"/"bond" khi ghi lại → `term_deposit`/`bond` (`src/lib/record.ts`).
+- Chốt chặn lệnh nạp (`chat.ts`): câu hỏi (có ? + số hoặc who/why/what…) không sinh thẻ nạp; số nạp lớn hơn phần quỹ còn thiếu bị bỏ trừ khi người dùng nói "deposit".
+- Kiểm: `check:all`, `test:agent`, tsc chat đều qua; chạy lại đúng ca của Hiếu: `bun scripts/replay-hieu-2026-11-01.ts`.
+- Chưa làm: chưa thử bằng tài khoản thật sau deploy; dữ liệu cũ đã lưu (bank = `savings`) tự chuyển sang nhàn rỗi, không cần migrate.
+
 # ▶ 2026-11-01 — bảng thu chi quay lại + kế hoạch nợ lãi cao
 
 - **Bảng hỏi thu chi quay lại** (Hiếu: hỏi bằng lời khó dùng). Câu 1 = 1 câu ngắn + bảng `intake_form` chỉ phần dòng tiền (`cashflowKeys`: tuổi, lương, chi, đều không, khoản thu lâu lâu như airdrop, người phụ thuộc, nợ, khoản chi lớn 5 năm). 1 khung: từ md trở lên 2 cột (Income and spending | Debt and big expenses), mobile 1 cột cao được; hàng 48px. Đo: 1440×900 và 1024×900 bảng cao 556px, không cuộn; ảnh ở Desktop `MoonSafe-form-2026-11-01`. Câu 2 (tài sản + tỷ lệ chia) vẫn hỏi bằng lời, gửi ngay sau khi lưu bảng. Hỏi quỹ dự phòng mà chưa biết chi tiêu → gửi lại bảng.

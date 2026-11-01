@@ -106,13 +106,12 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
     </div>
   )
 
-  // Each part as a bar against its target (Hieu, 2026-10-30, option B), by value (Balance Sheet v2, 2026-10-31): the part furthest ahead
-  // of its share sets the size, so no bar passes its target; the track is the target. On track (inside 5 points / 25% of its share, or
-  // the part that sets the size) or Under with what is left. Same totals as the agent's (bucketStanding). Items outside the split follow
-  // as plain rows.
+  // Each part as a bar against its target (Hieu, 2026-10-30, option B), by value. Targets (Hieu, 2026-11-01): the investments set how
+  // much Safety they need, money not placed yet fills it and then the shares; a part above its share is never sold. On track, Above its
+  // share, or Under with what is left. Same totals as the agent's (bucketStanding). Items outside the split follow as plain rows.
   const standing = bucketStanding(b)
   const color: Record<string, string> = { safe: SEG_COLOR.safe, traditional: SEG_COLOR.traditional, crypto: SEG_COLOR.crypto }
-  const bar = (key: string, name: string, have: number, tgt: number, full: boolean, left: number, anchor: boolean) => {
+  const bar = (key: string, name: string, have: number, tgt: number, full: boolean, left: number, over: boolean) => {
     const p = tgt > 0 ? have / tgt : 0
     return (
       <li key={key} className="py-2 flex flex-col gap-2 border-b border-[var(--line)]">
@@ -125,7 +124,7 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
         </div>
         <div className="flex justify-between gap-4 text-[14px] leading-5">
           <span style={{ color: 'var(--subtle)' }}>
-            {full ? <><strong style={{ color: 'var(--success)' }}>On track</strong>{anchor ? ', sets the size' : ''}</> : <><strong style={{ color: 'var(--ink)' }}>Under</strong>, {moneyUsd(left)} to go</>}
+            {full ? <><strong style={{ color: 'var(--success)' }}>{over ? 'Above its share' : 'On track'}</strong>{over ? ', no need to sell' : ''}</> : <><strong style={{ color: 'var(--ink)' }}>Under</strong>, {moneyUsd(left)} to go</>}
           </span>
           <strong className="tabular-nums" style={{ color: full ? 'var(--success)' : 'var(--ink)' }}>{Math.round(p * 100)}%</strong>
         </div>
@@ -150,7 +149,7 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
       {walletOnly || (
         <ul className="flex flex-col [&>li:last-child]:border-b-0">
           {standing
-            ? standing.map(x => bar(x.key, x.name, x.have, x.target, x.full, x.left, x.anchor))
+            ? standing.map(x => bar(x.key, x.name, x.have, x.target, x.full, x.left, x.over))
             : (['safe', 'traditional', 'crypto'] as const).map(s => line(s, SEG_COLOR[s], SEG_NAME[s], <strong style={{ color: 'var(--ink)' }}>{moneyUsd(held[s])}</strong>))}
           {held.idle > 0.5 && line('idle', SEG_COLOR.idle, 'Not placed yet', <strong style={{ color: 'var(--ink)' }}>{moneyUsd(held.idle)}</strong>)}
           {outside > 0.5 && line('grey', SEG_COLOR.grey, 'Outside the three parts', <strong style={{ color: 'var(--ink)' }}>{moneyUsd(outside)}</strong>)}

@@ -31,9 +31,9 @@
 
   "categories": [
     { "key": "fund", "name": "Emergency fund", "definition": "USDC in the MoonSafe vault, a cushion to live on if income stops", "in_liquid_base": false },
-    { "key": "safe", "name": "Safe", "definition": "Low-volatility money you can take out, or nearly: savings, flexible earn, interest-bearing stablecoins, savings insurance", "in_liquid_base": true },
+    { "key": "safe", "name": "Safe", "definition": "Low-volatility money set aside on purpose: term savings deposits, government bonds, bond and money market funds, savings insurance. Its size follows the investments (Hieu, 2026-11-01): investments x safe share / (100 - safe share)", "in_liquid_base": true },
     { "key": "invest", "name": "Invest", "definition": "Assets expected to grow: traditional (stocks, gold, funds), BTC, large caps, altcoins, plus items that cannot be rebalanced (rental property, business stakes, loans given)", "in_liquid_base": "only rebalanceable items" },
-    { "key": "idle", "name": "Idle", "definition": "Cash, checking accounts and stablecoins in a wallet not placed anywhere yet", "in_liquid_base": true },
+    { "key": "idle", "name": "Idle", "definition": "Money not doing anything yet: cash, bank accounts with no term and stablecoins, earning or not (Hieu, 2026-11-01: never called Safety). It fills the emergency fund first, then the Safety the investments need, then the rest is split by the shares", "in_liquid_base": true },
     { "key": "lifestyle", "name": "Lifestyle assets", "definition": "The home you live in and your car: for living, not for rebalancing", "in_liquid_base": false },
     { "key": "debt", "name": "Debt", "definition": "Each debt on its own, subtracted from net worth only", "in_liquid_base": false }
   ],
@@ -54,14 +54,14 @@
   },
 
   "asset_types": [
-    { "n": 1, "key": "cash", "label": "Cash", "category": "safe", "net_worth": true, "liquid_base": true, "pricing": "self" },
-    { "n": 2, "key": "checking", "label": "Bank checking account", "category": "safe", "net_worth": true, "liquid_base": true, "pricing": "self" },
+    { "n": 1, "key": "cash", "label": "Cash", "category": "idle", "net_worth": true, "liquid_base": true, "pricing": "self" },
+    { "n": 2, "key": "checking", "label": "Bank checking account", "category": "idle", "net_worth": true, "liquid_base": true, "pricing": "self" },
     { "n": 3, "key": "term_deposit", "label": "Term savings deposit", "category": "safe", "net_worth": true, "liquid_base": true, "pricing": "self" },
-    { "n": 4, "key": "savings", "label": "Savings account (no term)", "category": "safe", "net_worth": true, "liquid_base": true, "pricing": "self" },
-    { "n": 5, "key": "stable_wallet", "label": "USDC/USDT in a wallet, not earning", "category": "safe", "net_worth": true, "liquid_base": true, "pricing": "stable_1" },
-    { "n": 6, "key": "flexible_earn", "label": "Flexible earn on an exchange (Binance Simple Earn Flexible…)", "category": "safe", "net_worth": true, "liquid_base": true, "pricing": "stable_1" },
-    { "n": 7, "key": "locked_earn", "label": "Fixed / locked earn on an exchange", "category": "safe", "net_worth": true, "liquid_base": true, "pricing": "self" },
-    { "n": 8, "key": "defi_stable", "label": "Stablecoins lent in DeFi, yield vaults", "category": "safe", "net_worth": true, "liquid_base": true, "pricing": "market_or_self", "note": "Mention smart-contract risk" },
+    { "n": 4, "key": "savings", "label": "Savings account (no term)", "category": "idle", "net_worth": true, "liquid_base": true, "pricing": "self" },
+    { "n": 5, "key": "stable_wallet", "label": "USDC/USDT in a wallet, not earning", "category": "idle", "net_worth": true, "liquid_base": true, "pricing": "stable_1" },
+    { "n": 6, "key": "flexible_earn", "label": "Flexible earn on an exchange (Binance Simple Earn Flexible…)", "category": "idle", "net_worth": true, "liquid_base": true, "pricing": "stable_1" },
+    { "n": 7, "key": "locked_earn", "label": "Fixed / locked earn on an exchange", "category": "idle", "net_worth": true, "liquid_base": true, "pricing": "self" },
+    { "n": 8, "key": "defi_stable", "label": "Stablecoins lent in DeFi, yield vaults", "category": "idle", "net_worth": true, "liquid_base": true, "pricing": "market_or_self", "note": "Mention smart-contract risk" },
     { "n": 9, "key": "moonsafe_fund", "label": "MoonSafe emergency fund", "category": "fund", "net_worth": true, "liquid_base": false, "pricing": "onchain" },
     { "n": 10, "key": "gold_physical", "label": "Physical gold", "category": "invest", "subgroup": "traditional", "net_worth": true, "liquid_base": true, "pricing": "quantity_x_gold" },
     { "n": 11, "key": "gold_token", "label": "Tokenized gold (PAXG, XAUT)", "category": "invest", "subgroup": "traditional", "net_worth": true, "liquid_base": true, "pricing": "market" },

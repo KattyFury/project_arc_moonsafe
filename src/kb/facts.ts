@@ -6,7 +6,7 @@
 // Pure module with relative imports only (functions/api/chat.ts and scripts/kb-check.ts).
 
 import { param, type Facts } from './kb'
-import { holdingUsd, type Balance, type Prices } from '../lib/allocation'
+import { bucketStanding, holdingUsd, type Balance, type Prices } from '../lib/allocation'
 import type { FinancialProfile } from '../types'
 
 const DAY = 86_400_000
@@ -63,12 +63,14 @@ export function computeFacts(i: FactsInput): Facts {
   const share = (usd: number) => liquid > 0 ? usd / liquid : null
   const g = b.byGroup
   const crypto = g.btc + g.large_cap + g.altcoin
-  // Off target: placed money (liquid minus idle) against the target split; idle money is handled by the suggestion.
-  const placed = liquid - g.idle
-  // Three buckets (framework v2): Safety, Traditional, Crypto as one (held ETH or small coins are not "off target").
-  const maxGap = b.target && placed > 0
-    ? Math.max(Math.abs(g.safe / placed * 100 - b.target.safe), Math.abs(g.traditional / placed * 100 - b.target.traditional),
-      Math.abs(crypto / placed * 100 - (b.target.btc + b.target.large_cap + b.target.altcoin)))
+  // Off target (Hieu, 2026-11-01): only once the emergency fund is full and no expensive debt is left (no investing advice before), and after the idle money is placed
+  // by bucketStanding, so money that is only waiting (bank, stablecoins) is not "off". Three buckets (framework v2): Safety, Traditional,
+  // Crypto as one (held ETH or small coins are not "off target"); a near-term goal held in Safety is left out.
+  const after = b.fund.met && b.debts.priorityCount === 0 ? bucketStanding(b)?.map(x => x.have + x.add - (x.goal ?? 0)) : null
+  const placed = after ? after.reduce((x, y) => x + y, 0) : 0
+  const maxGap = b.target && after && placed > 0
+    ? Math.max(Math.abs(after[0] / placed * 100 - b.target.safe), Math.abs(after[1] / placed * 100 - b.target.traditional),
+      Math.abs(after[2] / placed * 100 - (b.target.btc + b.target.large_cap + b.target.altcoin)))
     : null
   const holdings = p?.holdings ?? []
   const stale = holdings.filter(h => h.priceSource === 'self' && now - h.updatedAt > param('stale_self_declared_days') * DAY)

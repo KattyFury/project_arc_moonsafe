@@ -1,5 +1,5 @@
 // Balance sheet by the MoonSafe framework (spec 11), Balance Sheet v2 (Hieu, 2026-10-31): the emergency fund against its floor, then
-// two views. Split = Safety, Traditional and Crypto as bars by value, sized by the part furthest ahead (no net worth, no total asked).
+// two views. Split = Safety, Traditional and Crypto as bars by value, sized by the investments (Hieu, 2026-11-01; no net worth, no total asked).
 // Cash flow = income, spending, debt payments and each debt in one block, with the emergency fund target they size. Everything comes
 // from the chat; nothing is typed here. Mobile fits 393×852 with a two-way toggle; desktop shows both at once (1440×900). The Chat tab
 // is always in the nav, so there is no extra "talk to the agent" button here.

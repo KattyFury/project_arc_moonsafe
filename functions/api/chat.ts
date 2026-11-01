@@ -207,7 +207,7 @@ const TEACH_ONCE: { term: RegExp; taught: RegExp; plain: string }[] = [
   { term: /cirBTC/i, taught: /bitcoin[^.;\n]{0,40}in (this|the) app|in-app bitcoin/i, plain: 'cirBTC = Bitcoin you can buy and hold in this app' },
 ]
 // The plan was given in this chat: a Traditional share quoted as a percentage.
-const PLAN_GIVEN = /Traditional[^\n]{0,80}\d+(\.\d+)?\s*%|Truyền thống[^\n]{0,80}\d+(\.\d+)?\s*%/i // lang-ok
+const PLAN_GIVEN = /Here is your plan, in order|Kế hoạch của bạn, theo thứ tự|Traditional[^\n]{0,80}\d+(\.\d+)?\s*%|Truyền thống[^\n]{0,80}\d+(\.\d+)?\s*%/i // lang-ok
 // "Not at all" answering "does it charge interest?" (real chat 2026-10-27: the question came back three times).
 const PAID_Q = /paid (it )?off|still owe|trả hết|còn nợ/i // lang-ok
 const SOLE_WORDS = /(only|sole|single|main)[^.?!\n]{0,20}(earner|income|breadwinner|one (who )?work)|breadwinner|trụ cột|một mình (kiếm|lo)|duy nhất (kiếm|có thu nhập)/i // lang-ok
@@ -670,9 +670,10 @@ function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: nu
     lines.push(`- Total debt ${show(b.debtTotal)}; priority debt ${show(b.debts.priorityTotal)}`)
   } else lines.push(p.debtsComplete ? '- Debts: none (the user said so)' : '- Debts: not asked yet')
 
-  // The split (spec 4). Balance Sheet v2 (2026-10-31): no net worth, no "total to divide"; the part furthest ahead sizes the others.
+  // The split (spec 4). Hieu, 2026-11-01: the investments set how much Safety they need; idle money fills it, then the shares.
   lines.push(`- In the three parts now: ${show(b.liquid)}. Outside them: emergency fund (vault), home, car, rental, business, money lent${b.lifestyle + b.grey > 0 ? ` (${show(b.lifestyle + b.grey)})` : ''}. Never quote a net worth or a "total to divide".`)
-  lines.push('- Safety = bank deposits and cash, stablecoins (USDC, USDT), bonds, T-bills, bond and money market funds; high-yield bonds are Traditional (SEC Investor.gov). The emergency fund is separate, never part of Safety.')
+  lines.push('- Safety = money set aside on purpose: term deposits, government bonds, T-bills, bond and money market funds; high-yield bonds are Traditional (SEC Investor.gov). Cash, bank accounts with no term and stablecoins (USDC, USDT, earning or not) are NOT Safety: they are money not doing anything yet. Never tell the user "your Safety is $X" for their bank money or stablecoins; say that money can become their Safety (a term deposit or government bonds) or be invested. The emergency fund is separate, never part of Safety.')
+  lines.push(b.fund.met ? '- The emergency fund is full: investing advice is open.' : '- The emergency fund is NOT full: give NO investing advice, no split amounts and no part to fill; the next step is always the emergency fund (its money comes first from stablecoins, or bank money changed to USDC). It sits onchain in their own vault so it is really there when things get hard.')
   // Three buckets (framework v2, 2026-10-27): Safety, Traditional, Crypto as one; whole % that add to 100.
   const g = b.byGroup
   const cryptoNow = g.btc + g.large_cap + g.altcoin
@@ -694,7 +695,7 @@ function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: nu
     lines.push(`- Target by the MoonSafe framework at age ${b.age}${b.ageIsDefault ? ' (DEFAULT age 30: the user declined; say the split is an estimate)' : ''}: Safety ${ts}%, Traditional ${ttr}%, Crypto ${tcr}% (mostly BTC; no target for other coins). Safety = age is the "age in bonds" rule of thumb. ${p.cryptoSplit === undefined ? 'Traditional / Crypto is MoonSafe\'s default even split, NOT a standard rule: say so, and that they can choose another split (record it with update_profile crypto_split); when you first give the split, ask once how they want it.' : `Traditional / Crypto is the split they chose (${100 - p.cryptoSplit}/${p.cryptoSplit}).`}`)
     // Totals, not only what is missing (Hieu, 2026-10-28): "X of Y, Z to go" for each part; Safety carries a near-term goal first.
     const st = bucketStanding(b)
-    if (st) lines.push(`- Where they stand in the three parts, by value: ${st.find(x => x.anchor)?.name} is furthest ahead of its share, so it sets the size and the other two are measured against it (no total is asked; a part inside 5 points or 25% of its share is "on track"). Copy "X of Y, Z to go" exactly${b.goalUsd > 0 ? `; Safety carries the near-term goal ${show(b.goalUsd)} on top` : ''}. Safety is NOT the emergency fund: ${st.map(x => `${x.name} ${show(x.have)} of ${show(x.target)}${x.goal ? ` (= goal ${show(x.goal)} + ${x.share}% share ${show(x.rest ?? 0)})` : ''}, ${!x.full ? `under, ${show(x.left)} to go` : 'on track'}`).join('; ')}`)
+    if (st && b.fund.met) lines.push(`- Where they stand in the three parts, by value. Rule (Hieu, 2026-11-01): the investments (Traditional + Crypto) set how much Safety they need = investments × Safety% / (100 − Safety%); money not doing anything yet fills that first, the rest is split by the shares, and inside Traditional / Crypto it goes to the part below its split first. A part above its share is never sold: new money goes to the others. Copy "X of Y, Z to go" exactly${b.goalUsd > 0 ? `; Safety carries the near-term goal ${show(b.goalUsd)} on top` : ''}. Safety is NOT the emergency fund: ${st.map(x => `${x.name} ${show(x.have)} of ${show(x.target)}${x.goal ? ` (= goal ${show(x.goal)} + ${x.share}% share ${show(x.rest ?? 0)})` : ''}, ${!x.full ? `under, ${show(x.left)} to go` : 'on track'}`).join('; ')}`)
   } else lines.push('- Target: AGE UNKNOWN. Ask the age before talking about any share.')
   if (!b.declared) lines.push('- Nothing is declared yet: the user has not said what they hold (the wallet balance seen onchain does not count until they declare it). If they ask how to split or invest: suggest NO split and NO purchase, turn NO percentage into an amount; ask about the next item of the collection flow instead.')
   else if (b.suggest && fundTargetKnown) {
@@ -1418,8 +1419,19 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
         console.log('dropped prepare_deposit: fund already full')
         return 'Not done: the emergency fund is already full; nothing to add unless the user asks to.'
       }
+      // "Ok. But who said my safety is 20$" became a 20 USDC deposit card (real chat 2026-11-01): a question with an "ok" in front is
+      // a question, and a deposit above what the fund still needs is only made when the user asks to deposit that much.
+      if (name === 'prepare_deposit' && /[?？]/.test(lastUserText) && (/\d/.test(lastUserText) || /(?<!\p{L})(who|why|what|how|where|ai|sao|gì|đâu)(?!\p{L})/iu.test(lastUserText)) && !DEPOSIT_WORD.test(lastUserText)) { // lang-ok
+        console.log('dropped prepare_deposit: the user asked a question')
+        return 'Not done: the user asked a question; answer it, no card.'
+      }
       const amt0 = moneyArg(a.amount)
       const amtUsd = amt0 ? toUsd(amt0.amount, amt0.currency, rate) : null
+      const gapNow = startBalance.fund.gap
+      if (name === 'prepare_deposit' && amtUsd !== null && gapNow !== null && amtUsd > gapNow + 0.5 && !DEPOSIT_WORD.test(lastUserText)) {
+        console.log(`dropped prepare_deposit: ${amtUsd} is more than the fund still needs (${gapNow})`)
+        return `Not done: the fund only needs ${usdc(gapNow)} more; offer that amount, not ${usdc(amtUsd)}.`
+      }
       const toSafe = startBalance.suggest?.to.safe
       if (name === 'prepare_deposit' && !FUND_WORD.test(lastUserText) && amtUsd !== null && toSafe && Math.abs(amtUsd - toSafe) <= toSafe * 0.01 + 1) {
         console.log('dropped prepare_deposit: safe part is bank savings')
@@ -1649,7 +1661,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   const planGiven = assistantTexts.some(a => PLAN_GIVEN.test(a)) || (balance.fund.met && !batchAsked)
   const phase: 'collect' | 'plan' | 'start' = pending || toAsk.length ? 'collect' : !planGiven && balance.target ? 'plan' : 'start'
   // Crypto to buy now: the smaller of what the Crypto bucket still needs and what the wallet can spend.
-  // Balance Sheet v2: what Crypto still needs against the part furthest ahead.
+  // What Crypto still needs (Hieu, 2026-11-01: investments set the size, idle money fills the gaps).
   const cryptoFill = bucketStanding(balance)?.find(x => x.key === 'crypto')?.left ?? 0
   // Spec 5.4: idle money keeps 1 month of spending for daily life before any purchase.
   const cryptoOffer = Math.floor(Math.min(cryptoFill, Math.max(0, (wallet ?? 0) - GAS_RESERVE_USDC), balance.suggest ? Math.max(0, balance.suggest.idle - balance.suggest.keep) : Infinity))

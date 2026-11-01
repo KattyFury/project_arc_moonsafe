@@ -30,7 +30,7 @@ export const presetSource = (req: RecordRequest, p: FinancialProfile): RecordSou
     : null
 
 const DEST_NAME: Partial<Record<AssetType, string>> = {
-  savings: 'Bank savings', term_deposit: 'Term deposit', flexible_earn: 'Flexible earn', checking: 'Bank checking account',
+  savings: 'Bank savings', term_deposit: 'Term deposit', bond: 'Bonds', flexible_earn: 'Flexible earn', checking: 'Bank checking account',
 }
 
 export const bucketLabel = (type: AssetType): string => categoryOf({ type }) === 'safe' ? 'Safety' : 'Idle money'
@@ -70,7 +70,9 @@ export function detectPlacement(text: string, vndPerUsd: number | null): RecordR
   // "put 1000 in my bank" has no currency word: read the first number after the verb as USD.
   const amount = firstAmount(t, hit && !viaIt ? hit.index : 0, vndPerUsd) || firstAmount(t, 0, vndPerUsd)
   if (!amount || !(amount > 0)) return null
-  const holdingType: AssetType = /term deposit|fixed deposit/i.test(t) ? 'term_deposit'
+  // Safety is a term deposit or bonds; a plain bank account is idle money (Hieu, 2026-11-01), so "as Safety" means a term deposit.
+  const holdingType: AssetType = /term deposit|fixed deposit|(?<!\p{L})(safety|safe part)(?!\p{L})/iu.test(t) ? 'term_deposit'
+    : /(?<!\p{L})(government bonds?|bonds?|t-bills?|treasur(y|ies))(?!\p{L})/iu.test(t) ? 'bond'
     : /flexible|simple earn|(?<!\p{L})earn(?!\p{L})/iu.test(t) ? 'flexible_earn'
     : /checking|current account/i.test(t) ? 'checking'
     : 'savings'
