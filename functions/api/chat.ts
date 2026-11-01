@@ -244,6 +244,9 @@ const OTHER_ASSET = /(?<!\p{L})(gold|stocks?|VOO|ETF|index|vàng|cổ phiếu)(?
 // A cirBTC buy asked in the user's words, with or without an amount ("create an 11$ order for me", "buy 5 dollars of BTC").
 const BUY_ORDER = /(?<!\p{L})(buy|order|purchase|mua|lệnh)(?!\p{L})/iu // lang-ok
 const FUND_WORD = /fund|vault|emergency|quỹ/i // lang-ok
+// A change to a holding: a buy / sale / move verb and something they hold (Hieu, 2026-11-01: ask one question when the amount is missing).
+const HOLDING_CHANGE = /(?<!\p{L})(bought|buy more|sold|sell(?:ing)? some|added|topped up|withdrew|took out|moved|cashed out|mua thêm|mua|bán|rút|chuyển|nạp thêm)(?!\p{L})[^.?!\n]{0,40}(?<!\p{L})(gold|btc|bitcoin|eth|crypto|coins?|stocks?|shares|voo|etfs?|usdc|usdt|stablecoins?|savings|bank|term deposit|bonds?|vàng|cổ phiếu|ngân hàng|tiết kiệm|trái phiếu)(?!\p{L})/iu // lang-ok
+const SAFETY_WORD = /(?<!\p{L})(safety|safe part|an toàn)(?!\p{L})/iu // lang-ok
 const ALL_OF_IT = /(?<!\p{L})(all|whole|everything|entire|max|hết|toàn bộ|tất cả)(?!\p{L})/iu // lang-ok
 const ASKS_HOW_MUCH = /how much|bao nhiêu/i // lang-ok
 const SAYS_LOCKED = /lock|kho[áa]|khóa|(to open|để mở)/i // lang-ok
@@ -447,7 +450,7 @@ const ALL_PLAN_TOOLS = [
     quantity: { type: 'number', description: 'Coins / shares / gold units. Leave out when only a value was given.' },
     unit: { type: 'string', enum: ['oz', 'g', 'kg', 'luong', 'chi'], description: 'Gold only' },
     worth: { ...MONEY, description: 'What it is worth, when a value was given instead of a quantity, or for anything without a market price' },
-    category: { type: 'string', enum: ['safe', 'invest', 'idle', 'lifestyle'], description: 'Type "other" only: what it is by nature' },
+    category: { type: 'string', enum: ['safe', 'invest', 'idle', 'lifestyle'], description: 'Type "other": what it is by nature. Cash, bank or stablecoins: "safe" only when the user says they keep it as Safety.' },
     loan_status: { type: 'string', enum: ['on_time', 'overdue'], description: 'loan_given only' },
   }, ['type', 'name']),
   fn('set_holding', 'Change the amount, or the type, of an item already listed (by id).', {
@@ -456,6 +459,7 @@ const ALL_PLAN_TOOLS = [
     quantity: { type: 'number' },
     worth: MONEY,
     loan_status: { type: 'string', enum: ['on_time', 'overdue'] },
+    box: { type: 'string', enum: ['safety', 'unplaced'], description: 'Cash, bank or stablecoins only: "safety" when the user says they keep it as Safety, "unplaced" when they say it is not Safety. Never for gold, stocks or coins.' },
   }, ['id']),
   fn('remove_holding', 'Remove an item (sold all, closed).', { id: { type: 'string' } }, ['id']),
   fn('move', 'Money moved between the user\'s own places (idle money / app wallet / a listed item → another place).', {
@@ -1103,7 +1107,9 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     const basis = investedBasis(evidence.text, sym)
     if (basis && w && (w.currency !== basis.currency || Math.abs(w.amount - basis.amount) > .01)) return 'Not recorded: that is market value, not the declared investment cost. Keep cost basis separate.'
     if (kind === 'crypto' && !basis && currentMarketValue(lastUserText)) return 'Not recorded: current market value is not invested cost. Keep the existing holding and explain the distinction.'
-    const category = type === 'other' && ['safe', 'invest', 'idle', 'lifestyle'].includes(String(a.category)) ? a.category as Holding['category'] : undefined
+    const category = type === 'other' && ['safe', 'invest', 'idle', 'lifestyle'].includes(String(a.category)) ? a.category as Holding['category']
+      // Idle money is Safety only when the user said so (Hieu, 2026-11-01).
+      : a.category === 'safe' && KB.asset_types.find(t => t.key === type)?.category === 'idle' && SAFETY_WORD.test(evidence.text) ? 'safe' : undefined
     const base = { id: newId('h'), type, name, ...(sym && kind !== 'self' ? { symbol: sym } : {}), ...(typeof a.where === 'string' && a.where.trim() ? { where: a.where.trim() } : kind === 'stable' && APP_WALLET.test(lastUserText) ? { where: 'app wallet' } : {}), updatedAt: Date.now(), rebalanceable: defaultRebalanceable(type, category), ...(category ? { category } : {}), ...(a.loan_status === 'on_time' || a.loan_status === 'overdue' ? { loanStatus: a.loan_status as Holding['loanStatus'] } : {}) }
     if (basis) return { ...base, value: basis.amount, currency: basis.currency, priceSource: 'self', ...(quantity !== undefined && quantityEvidence(evidence.text, quantity, sym, kind) ? { quantity, unit: 'coins' } : {}) }
     if (kind === 'stable') {
@@ -1233,6 +1239,13 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
         }
       }
       if (a.loan_status === 'on_time' || a.loan_status === 'overdue') patch.loanStatus = a.loan_status
+      // Move between the "Not placed yet" box and Safety (Hieu, 2026-11-01): idle kinds only, and only when the user said so.
+      if (a.box === 'safety' || a.box === 'unplaced') {
+        if (KB.asset_types.find(t => t.key === h.type)?.category !== 'idle') return 'Not changed: only cash, bank money or stablecoins can be moved to or from Safety; gold, stocks and coins are never Safety (their price can fall when it is needed).'
+        if (!SAFETY_WORD.test(evidence.text)) return 'Not changed: the user did not say this is (or is not) Safety.'
+        if (a.box === 'safety' && h.category !== 'safe') patch.category = 'safe'
+        if (a.box === 'unplaced' && h.category === 'safe') patch.category = 'idle'
+      }
       // Same way of pricing only (a bank balance → savings), so the stored amount keeps its meaning.
       const byValue = (t: AssetType) => priceKindOf(t) === 'self' || priceKindOf(t) === 'stable'
       if (isAssetType(a.type) && a.type !== h.type && (priceKindOf(a.type) === priceKindOf(h.type) || (byValue(a.type) && byValue(h.type) && h.value !== undefined))) {
@@ -1242,7 +1255,8 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
         patch.rebalanceable = defaultRebalanceable(a.type)
       }
       if (!Object.keys(patch).length) return 'Not changed: the new amount is not in the user\'s words.'
-      record({ op: 'set_holding', id: h.id, patch }, describe({ ...h, ...patch }))
+      const boxNote = patch.category === 'safe' ? ' → Safety' : patch.category === 'idle' ? ' → not placed yet' : ''
+      record({ op: 'set_holding', id: h.id, patch }, describe({ ...h, ...patch }) + boxNote)
       done.push(`Updated ${describe({ ...h, ...patch })}.`)
     } else if (name === 'remove_holding') {
       const h = findH(a.id)
@@ -1562,11 +1576,12 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   // (Hieu, 2026-10-28; first declarations and the form are saved at once). The server only prepares them (ops stay empty); the card
   // applies the confirmed ones and then tells the agent.
   let pendingNote = ''
-  if (!appEvent && hadDataBefore && readback.length >= CONFIRM_MIN_ITEMS) {
+  const touchesHoldings = readbackOps.some(list => list.some(o => o.op === 'add_holding' || o.op === 'set_holding' || o.op === 'remove_holding'))
+  if (!appEvent && readback.length && (touchesHoldings || (hadDataBefore && readback.length >= CONFIRM_MIN_ITEMS))) {
     const items = readback.map((text, i) => ({ text: text.charAt(0).toUpperCase() + text.slice(1), ops: readbackOps[i] }))
     const content = vi
       ? `Mình nhận được ${items.length} mục. Xác nhận hoặc hủy từng mục bên dưới; chưa có gì được lưu cho đến khi bạn xác nhận.` // lang-ok
-      : `I picked up ${items.length} things. Confirm or cancel each one below; nothing is saved until you do.`
+      : items.length === 1 ? `I picked up 1 change. Confirm or cancel it below; nothing is saved until you do.` : `I picked up ${items.length} things. Confirm or cancel each one below; nothing is saved until you do.`
     // Answer questions from saved state while new declarations await confirmation.
     // Cards computed from provisional data must not accompany the pending records.
     actions.splice(0, actions.length, { type: 'confirm_items', items, ask: [...toAsk] })
@@ -1797,6 +1812,10 @@ ${ending}` })
 
   replyMessages.push({ role: 'system', content: scopeBrief(profile.planningScope) })
   replyMessages.push({ role: 'system', content: TURN_POLICY + `\n${REPLY_DISCIPLINE}\nConversation-only: ${policy.conversationOnly}; answer-first: ${policy.answerFirst}. Saved facts this turn: ${JSON.stringify(ops)}. Existing saved profile: ${JSON.stringify(profile)}. Empty operations mean no changes THIS TURN, never that the existing profile is unconfirmed. A full plan is not requested merely because enough data exists. A simple correction needs a brief acknowledgment, no unsolicited buy-lock explanation. A zero vault establishes only the app vault gap, never a zero outside reserve or a full economic reserve gap.` })
+  // "I bought more gold last week" with no amount (Hieu, 2026-11-01): the records may be out of date; record nothing, ask ONE question.
+  if (!appEvent && !placement && !ops.length && !actions.length && HOLDING_CHANGE.test(lastUserText) && !/\d/.test(lastUserText) && !/\?/.test(lastUserText)) {
+    replyMessages.push({ role: 'system', content: 'The user told a change to something they hold (bought, sold, added, withdrew, moved) without the amount, so the records may no longer match. Nothing was recorded. Ask exactly ONE short question to get the amount (how much, or how many coins / ounces / shares), nothing else; when they answer, the change is shown on a card for them to confirm.' })
+  }
   if (pendingNote) replyMessages.push({ role: 'system', content: `New facts await confirmation in the card and are NOT saved. Saved profile is authoritative: ${JSON.stringify(profile)}. Pending proposals only: ${JSON.stringify(actions.filter(a => a.type === 'confirm_items'))}. Only those proposals are pending; do not call previously saved income, spending or risks pending. A target already computed from saved spending and risks remains valid. Pending savings do not establish current reserve coverage or a remaining gap. The server appends the confirmation notice; do not repeat it. Answer the requested explanation, with no intake questions.` })
 
   const explanatoryArithmetic = salaryRemainder(messages.filter(m => m.role === 'user').map(m => m.content))

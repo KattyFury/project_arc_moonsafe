@@ -43,6 +43,9 @@ const store = new Map<string, string>()
 const env = { OPENAI_API_KEY: 'offline-fake', USERDATA: { get: async (k: string) => store.get(k) ?? null, put: async (k: string, v: string) => { store.set(k, v) } }, FREE_TURNS_PER_DAY: '1000', USER_DAILY_TOKEN_BUDGET: '100000', DAILY_TOKEN_BUDGET: '100000' }
 const { onRequestPost } = await import('../functions/api/chat') as { onRequestPost: (ctx: { request: Request; env: typeof env }) => Promise<Response> }
 type Result = { content?: string; ops?: unknown[]; actions?: unknown[]; education?: string; error?: string }
+// Every change to what they hold waits on the confirm card (Hieu, 2026-11-01): what was saved plus what the card proposes.
+const proposed = (d: { ops?: unknown[]; actions?: unknown[] }) => [...(d.ops ?? []), ...((d.actions ?? []) as Array<{ type?: string; items?: Array<{ ops: unknown[] }> }>).filter(a => a.type === 'confirm_items').flatMap(a => (a.items ?? []).flatMap(i => i.ops))]
+
 async function ask(text: string, signed = true, history: Array<{ role: string; content: string }> = [], context: Record<string, unknown> = {}) {
   const response = await onRequestPost({ env, request: new Request('http://localhost/api/chat', {
     method: 'POST', headers: { 'Content-Type': 'application/json', ...(signed ? { Authorization: `Bearer ${token}` } : {}) },
@@ -57,27 +60,27 @@ try {
   fakeReply = 'The original invested cost stays separate from the current market value.'
   forcedTools = [tools('add_holding', { type: 'btc', symbol: 'BTC', quantity: 0.02 }), tools('add_holding', { type: 'cash', name: 'Cash', worth: { amount: 300, currency: 'USDC' } })]
   const mixed = await ask('I own 0.02 BTC bought for $1600, plus $300 cash. Please keep the BTC quantity and dollars distinct.')
-  const mixedProfile = applyOps(normalizeProfile({ v: 2 }), readOps(mixed.data.ops))
+  const mixedProfile = applyOps(normalizeProfile({ v: 2 }), readOps(proposed(mixed.data)))
   const btc = mixedProfile.holdings.find(h => h.type === 'btc')!
   assert.equal(btc.quantity, 0.02)
   assert.equal(btc.value, 1600)
   assert.equal(btc.priceSource, 'self')
   forcedTools = [tools('set_holding', { id: btc.id, worth: { amount: 1200, currency: 'USDC' } })]
   const market = await ask('The BTC is worth $1200 today. Does that change the money I originally invested?', true, [], { profile: mixedProfile })
-  const afterMarket = applyOps(mixedProfile, readOps(market.data.ops))
+  const afterMarket = applyOps(mixedProfile, readOps(proposed(market.data)))
   assert.equal(afterMarket.holdings.find(h => h.id === btc.id)?.value, 1600)
   assert.equal(afterMarket.holdings.find(h => h.id === btc.id)?.quantity, 0.02)
   checks += 5
   forcedTools = []
   const viCost = await ask('Mình bỏ 60 triệu VND mua Bitcoin, giờ giá trị còn 42 triệu. Đó là vốn đã mua, không phải mình có 60 BTC.') // lang-ok
-  const viProfile = applyOps(normalizeProfile({ v: 2 }), readOps(viCost.data.ops))
+  const viProfile = applyOps(normalizeProfile({ v: 2 }), readOps(proposed(viCost.data)))
   assert.equal(viProfile.holdings.find(h => h.type === 'btc')?.value, 60_000_000)
   assert.equal(viProfile.holdings.find(h => h.type === 'btc')?.quantity, undefined)
   checks += 2
   const debtor = normalizeProfile({ v: 2, debts: [{ id: 'relative', name: 'Relative loan', type: 'unknown', balance: 900, currency: 'USDC', ratePct: null, monthlyPayment: 75, updatedAt: 0 }] })
   forcedTools = [tools('update_debt', { id: 'relative', type: 'family_no_interest', rate_pct: 0, required: false })]
   const uncertain = await ask('Can you assume it is an interest-free gift because it is family? Explain what we need to confirm.', true, [], { profile: debtor })
-  const uncertainProfile = applyOps(debtor, readOps(uncertain.data.ops))
+  const uncertainProfile = applyOps(debtor, readOps(proposed(uncertain.data)))
   assert.equal(uncertainProfile.debts[0].ratePct, null)
   assert.equal(uncertainProfile.debts[0].type, 'unknown')
   assert.notEqual(uncertainProfile.debts[0].required, false)
@@ -86,7 +89,7 @@ try {
   assert.match(uncertain.data.content ?? '', /repayment schedule/)
   checks += 2
   const actual = await ask('I checked: zero interest, and I still must repay it. Keep the $75 repayment counted once.', true, [], { profile: debtor })
-  const actualProfile = applyOps(debtor, readOps(actual.data.ops))
+  const actualProfile = applyOps(debtor, readOps(proposed(actual.data)))
   assert.equal(actualProfile.debts[0].ratePct, 0)
   assert.equal(actualProfile.debts[0].monthlyPayment, 75)
   checks += 4
@@ -99,9 +102,29 @@ try {
   assert.match(contribution.data.content ?? '', /3,200/)
   assert.match(contribution.data.content ?? '', /1,900/)
   assert.match(contribution.data.content ?? '', /not their full salary/)
-  assert.equal(applyOps(shared, readOps(contribution.data.ops)).incomes.find(i => i.id === 'partner')?.kind, 'active')
+  assert.equal(applyOps(shared, readOps(proposed(contribution.data))).incomes.find(i => i.id === 'partner')?.kind, 'active')
   checks += 4
   results.push({ name: 'live-discovered cost and unknown-interest mutations repaired at handler boundary', status: 'pass' })
+  // The five boxes (Hieu, 2026-11-01): idle money moves to Safety only when the user says so, never gold; every change goes on the card.
+  {
+    const held = normalizeProfile({ v: 2, holdings: [
+      { id: 'usdc', type: 'stable_wallet', name: 'USDC', value: 500, currency: 'USDC', priceSource: 'self', rebalanceable: true, updatedAt: 1 },
+      { id: 'gold', type: 'gold_physical', name: 'Gold', value: 900, currency: 'USDC', priceSource: 'self', rebalanceable: true, updatedAt: 1 },
+    ] })
+    const move = (id: string, box: string) => [tools('set_holding', { id, box })]
+    forcedTools = move('usdc', 'safety')
+    const toSafety = await ask('From now on my USDC is my Safety.', true, [], { profile: held })
+    const patch = (readOps(proposed(toSafety.data)).find(o => o.op === 'set_holding') as { patch?: { category?: string } } | undefined)?.patch
+    assert.equal(patch?.category, 'safe', 'idle USDC moves to Safety when the user says so')
+    assert.equal((toSafety.data.ops ?? []).length, 0, 'the move waits on the confirm card')
+    assert.ok((toSafety.data.actions as Array<{ type: string }>).some(a => a.type === 'confirm_items'), 'a single change still gets the card')
+    forcedTools = move('gold', 'safety')
+    assert.equal(proposed((await ask('Treat my gold as Safety.', true, [], { profile: held })).data).length, 0, 'gold is never moved to Safety')
+    forcedTools = move('usdc', 'safety')
+    assert.equal(proposed((await ask('I like my USDC.', true, [], { profile: held })).data).length, 0, 'no move without the user saying Safety')
+    forcedTools = []
+    checks += 5
+  }
   forcedTools = []
   // No model needed for reviewed standalone concepts, even with an existing financial profile.
   const beforeLesson = calls
@@ -212,7 +235,7 @@ try {
   const beforeNatural = calls
   const natural = await ask('I am 38. Explain how a budget helps me?')
   assert.equal(natural.data.content, fakeReply)
-  assert.ok(readOps(natural.data.ops).some(o => o.op === 'update_profile' && o.fields.age === 38))
+  assert.ok(readOps(proposed(natural.data)).some(o => o.op === 'update_profile' && o.fields.age === 38))
   assert.equal(calls - beforeNatural, 3, 'one planner action, one no_action, one answer')
   results.push({ name: 'natural acknowledgment avoids mandatory-word rewrites', status: 'pass' })
   checks += 3

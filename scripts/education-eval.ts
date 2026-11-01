@@ -95,6 +95,9 @@ const env = { OPENAI_API_KEY: key, USERDATA: { get: async (k: string) => store.g
 const modulePath = baseline ? '../functions/api/.education-baseline' : '../functions/api/chat'
 const { onRequestPost } = await import(modulePath) as { onRequestPost: (ctx: { request: Request; env: typeof env }) => Promise<Response> }
 type Result = { content?: string; ops?: unknown[]; actions?: unknown[]; education?: string; error?: string }
+// Every change to what they hold waits on the confirm card (Hieu, 2026-11-01): what was saved plus what the card proposes.
+const proposed = (d: { ops?: unknown[]; actions?: unknown[] }) => [...(d.ops ?? []), ...((d.actions ?? []) as Array<{ type?: string; items?: Array<{ ops: unknown[] }> }>).filter(a => a.type === 'confirm_items').flatMap(a => (a.items ?? []).flatMap(i => i.ops))]
+
 async function ask(text: string, signed = true, history: Array<{ role: string; content: string }> = [], context: Record<string, unknown> = {}) {
   const response = await onRequestPost({ env, request: new Request('http://localhost/api/chat', {
     method: 'POST', headers: { 'Content-Type': 'application/json', ...(signed ? { Authorization: `Bearer ${token}` } : {}) },
@@ -151,14 +154,14 @@ try {
       forcedTools = [hold(12000)]
       const res = await ask(text)
       assert.equal(res.status, 200)
-      assert.deepEqual(res.data.ops, [], `Reject an incorrect model write: ${text}`)
+      assert.deepEqual(proposed(res.data), [], `Reject an incorrect model write: ${text}`)
       checks++
     }
     forcedTools = [hold(12000), hold(2000)]
     const mixed = await ask('I lost $12,000, but now I have $2,000 in savings')
     assert.equal(mixed.status, 200)
-    assert.ok(JSON.stringify(mixed.data.ops).includes('2000'))
-    assert.ok(!JSON.stringify(mixed.data.ops).includes('12000'))
+    assert.ok(JSON.stringify(proposed(mixed.data)).includes('2000'))
+    assert.ok(!JSON.stringify(proposed(mixed.data)).includes('12000'))
     checks++
     forcedTools = []
     const incomeProfile = normalizeProfile({ v: 2, planningScope: 'household', incomes: [{ id: 'self', name: 'Income', monthly: 2000, kind: 'active', currency: 'USDC' }] })
@@ -170,11 +173,11 @@ try {
     forcedTools = [incomeTool("Wife's salary", 1500)]
     const added = await ask('My wife earns $1500 a month', true, [], { profile: incomeProfile })
     assert.equal(added.status, 200)
-    const two = applyOps(incomeProfile, readOps(added.data.ops))
+    const two = applyOps(incomeProfile, readOps(proposed(added.data)))
     assert.equal(two.incomes.length, 2)
     assert.equal(two.incomes.find(i => i.id === 'self')?.monthly, 2000)
     const automatic = await ask('My wife earns $1500 a month', true, [], { profile: { ...incomeProfile, planningScope: undefined } })
-    const autoProfile = applyOps({ ...incomeProfile, planningScope: undefined }, readOps(automatic.data.ops))
+    const autoProfile = applyOps({ ...incomeProfile, planningScope: undefined }, readOps(proposed(automatic.data)))
     assert.equal(autoProfile.planningScope, 'household')
     assert.equal(autoProfile.incomes.length, 2)
     assert.equal(autoProfile.incomes.find(i => i.id === 'self')?.monthly, 2000)
@@ -210,26 +213,26 @@ try {
     checks += 9
     forcedTools = [{ id: 'bad-btc', type: 'function', function: { name: 'add_holding', arguments: JSON.stringify({ type: 'btc', symbol: 'BTC', quantity: 4000 }) } }]
     const btcCost = await ask('I invested $4000 into BTC. Its current market value is $2000 after a 50% fall.')
-    const btcProfile = applyOps(normalizeProfile({ v: 2 }), readOps(btcCost.data.ops))
+    const btcProfile = applyOps(normalizeProfile({ v: 2 }), readOps(proposed(btcCost.data)))
     assert.equal(btcProfile.holdings.length, 1)
     assert.equal(btcProfile.holdings[0].value, 4000)
     assert.equal(btcProfile.holdings[0].quantity, undefined)
     checks += 3
     forcedTools = [{ id: 'wrong-worth', type: 'function', function: { name: 'add_holding', arguments: JSON.stringify({ type: 'btc', symbol: 'BTC', worth: { amount: 2000, currency: 'USDC' } }) } }]
     const marketAsCost = await ask('I invested $4000 into BTC. Its current market value is $2000 after a 50% fall.')
-    const marketProfile = applyOps(normalizeProfile({ v: 2 }), readOps(marketAsCost.data.ops))
+    const marketProfile = applyOps(normalizeProfile({ v: 2 }), readOps(proposed(marketAsCost.data)))
     assert.equal(marketProfile.holdings[0]?.value, 4000)
     checks++
     forcedTools = []
     const actualRefusal = await ask('I do not want to share my age or bank balance. Can you help me budget?')
-    assert.ok(readOps(actualRefusal.data.ops ?? []).some(o => o.op === 'update_profile' && o.fields.ageDeclined === true))
+    assert.ok(readOps(proposed(actualRefusal.data)).some(o => o.op === 'update_profile' && o.fields.ageDeclined === true))
     checks++
     for (const [text, amount, currency] of [
       ['I have $600 in savings and bills due soon. What should I check first?', 600, 'USDC'],
       ['Hai vợ chồng đi làm. Có 100 triệu tiết kiệm ngân hàng, không nợ. Tính giúp quỹ dự phòng?', 100000000, 'VND'], // lang-ok
     ] as const) {
       const result = await ask(text)
-      const p = applyOps(normalizeProfile({ v: 2 }), readOps(result.data.ops))
+      const p = applyOps(normalizeProfile({ v: 2 }), readOps(proposed(result.data)))
       assert.ok(p.holdings.some(h => h.value === amount && h.currency === currency))
       assert.notEqual(p.ageDeclined, true)
       checks += 2
@@ -258,7 +261,7 @@ try {
     const tools = (name: string, args: Record<string, unknown>) => ({ id: name, type: 'function', function: { name, arguments: JSON.stringify(args) } })
     forcedTools = [tools('update_profile', { income_stable: false, sole_earner: true }), tools('set_income', { name: 'Freelance income', monthly: { amount: 3000, currency: 'USDC' }, kind: 'active' }), tools('set_expense', { name: 'Household spending', monthly: { amount: 1800, currency: 'USDC' }, kind: 'fixed' })]
     const familyFloor = await ask('I am married and 38. I am the only earner supporting my spouse and two children. My income is irregular and averages $3000 per month. Household spending is $1800 monthly. Explain our emergency fund target?')
-    const fp = applyOps(normalizeProfile({ v: 2 }), readOps(familyFloor.data.ops))
+    const fp = applyOps(normalizeProfile({ v: 2 }), readOps(proposed(familyFloor.data)))
     assert.equal(fp.age, 38)
     assert.equal(fp.dependents, 3)
     assert.match(familyFloor.data.content ?? '', /12 months/)
@@ -266,12 +269,12 @@ try {
     checks += 4
     forcedTools = []
     const tuition = await ask('I need $4000 for tuition in three months. Should this be invested?')
-    const tp = applyOps(normalizeProfile({ v: 2 }), readOps(tuition.data.ops))
+    const tp = applyOps(normalizeProfile({ v: 2 }), readOps(proposed(tuition.data)))
     assert.equal(tp.nearGoal?.amount, 4000)
     assert.equal(tp.nearGoal?.years, .25)
     checks += 2
     const naturalFamily = await ask('Nhà mình hai vợ chồng, chưa có con.') // lang-ok
-    assert.ok(readOps(naturalFamily.data.ops ?? []).some(o => o.op === 'update_profile' && o.fields.planningScope === 'household'))
+    assert.ok(readOps(proposed(naturalFamily.data)).some(o => o.op === 'update_profile' && o.fields.planningScope === 'household'))
     checks++
     for (const c of COACHING_CASES.filter(c => c.topics.length)) {
       const res = await ask(c.text)

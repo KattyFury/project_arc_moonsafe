@@ -1,3 +1,13 @@
+# ▶ 2026-11-01 (khuya) — DỮ LIỆU 5 Ô, LUÔN XÁC NHẬN (Hiếu chốt, ĐÃ DEPLOY Cloudflare `55642103`)
+
+- **Cách lưu (không đổi):** mỗi user 1 bản ghi KV `u:<Privy id>` (hồ sơ + chat), trình duyệt giữ bản sao; tài sản là danh sách món, ô tính từ loại + nhãn Safety. Quỹ dự phòng đọc onchain, không lưu.
+- **5 ô** (Hiếu chốt): Dự phòng (vault onchain) / Safety / Traditional / Crypto / **Chưa xếp** (tiền mặt, bank, stablecoin chưa chọn làm Safety). Màn Balance đã có đủ 5 (thẻ quỹ + 3 thanh + dòng "Not placed yet").
+- **Luôn hỏi xác nhận:** mọi thay đổi tài sản (thêm / sửa / chuyển ô / xoá) đi qua thẻ `confirm_items`, kể cả khai lần đầu và 1 món (bỏ "khai lần đầu lưu luôn"); thông tin không phải tài sản (tuổi, thu chi) đi cùng thẻ khi có thẻ.
+- **Chuyển ô:** `set_holding` có `box: safety | unplaced` (chỉ món nhàn rỗi, phải có chữ Safety/an toàn trong lời user; vàng/cổ phiếu/coin bị chặn); `add_holding` nhận `category: 'safe'` cho món nhàn rỗi user nói là Safety.
+- **Lệch thực tế:** user kể thay đổi (mua thêm / bán / rút / chuyển + tên tài sản) mà không có số → không ghi, hỏi đúng 1 câu (`HOLDING_CHANGE` trong chat.ts). Số cũ lâu: pattern `stale_data` có sẵn (hỏi 1 món cũ nhất).
+- Test: thêm 5 kiểm tra trong `response-quality-check.ts`; offline-flow/education-eval đọc ops trong thẻ (`proposed`).
+- Chưa thử bằng Haiku/tài khoản thật (đã dùng gần hết 1M token ở lượt trước).
+
 # ▶ 2026-11-01 (khuya) — TEST 1M TOKEN CLAUDE HAIKU + SỬA (ĐÃ DEPLOY Cloudflare `7371f931`)
 
 Hiếu cho 1M token Haiku. Đã dùng 962.709 token (3 lượt, trần cứng mỗi lượt): `docs/evals/safety-r1/r2/r3-2026-11-01.json`. Ca mới `scripts/safety-cases.ts` (đúng chat thật của Hiếu, chỉ có bank VN, đã đầu tư nặng crypto, 2 ca nạp sẵn hồ sơ). Script `claude-reeval.ts` có thêm `@sign-deposit`, `@deposit N`, `@confirm-record`, `profile`/`wallet`/`vault` theo ca; `@review-all` không thấy thẻ thì bỏ qua.

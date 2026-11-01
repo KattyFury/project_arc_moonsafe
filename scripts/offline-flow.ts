@@ -125,19 +125,22 @@ expect(!/Now, what you hold/.test(q2Again.body.content ?? ''), 'question 2 is as
 const q2Form = await call([{ role: 'user', content: 'investing' }, { role: 'assistant', content: hello.body.content ?? '' }, { role: 'user', content: '[app event] The user reviewed the items: saved: Age 31; Salary $600 a month (active). skipped: none.' }], month, 0)
 expect(/Now, what you hold, in your own words/.test(q2Form.body.content ?? ''), 'question 2 follows a saved form')
 
-// 1. A NEW user types everything in one message: it is saved at once (no confirm card), and the plan follows in the same reply.
+// 1. A NEW user types everything in one message. Changes to what they hold always go on the confirm card (Hieu, 2026-11-01), the
+// whole declaration with them; the plan follows once the card is reviewed (step 2).
 const empty = normalizeProfile({ v: 2 })
 const first = await call([...history, { role: 'user', content: message }], empty)
 const firstText = first.body.content ?? ''
 console.log('step 1: status', first.status, '| model calls', first.calls, '| ops', first.body.ops?.length)
 expect(first.status === 200, 'step 1 succeeds')
 expect(first.calls === 2, `the planner records and ends (2 calls), nothing else is called (got ${first.calls})`)
-expect(!first.body.actions?.some(a => a.type === 'confirm_items'), 'a first declaration is not put through a confirm card')
-expect((first.body.ops?.length ?? 0) >= 6, 'everything declared is saved at once (ops come back for the app to apply)')
-expect(readOps(first.body.ops).some(o => o.op === 'update_profile' && 'hasWindfalls' in o.fields), 'an airdrop is saved as a windfall flag')
-expect(!readOps(first.body.ops).some(o => o.op === 'set_income' && /airdrop/i.test(o.income.name)), 'an airdrop is never saved as monthly income')
-expect(/Here is your plan, in order/.test(firstText) && /Airdrops come in bursts/.test(firstText), 'the plan (with the airdrop note) follows without a model call')
-let saved = applyOps(empty, readOps(first.body.ops))
+const firstCard = first.body.actions?.find(a => a.type === 'confirm_items') as { items?: Array<{ ops: unknown[] }> } | undefined
+const firstOps = readOps([...(first.body.ops ?? []), ...(firstCard?.items ?? []).flatMap(i => i.ops)])
+expect(!!firstCard && (first.body.ops?.length ?? 0) === 0, 'a first declaration with holdings goes on the confirm card, nothing saved yet')
+expect(firstOps.length >= 6, 'everything declared is on the card (ops for the app to apply once confirmed)')
+expect(firstOps.some(o => o.op === 'update_profile' && 'hasWindfalls' in o.fields), 'an airdrop is proposed as a windfall flag')
+expect(!firstOps.some(o => o.op === 'set_income' && /airdrop/i.test(o.income.name)), 'an airdrop is never proposed as monthly income')
+expect(!/Here is your plan/.test(firstText), 'no plan before the card is reviewed')
+let saved = applyOps(empty, firstOps)
 
 // 2. A returning user confirms a card: the app applies the ops, tells the agent, and the plan follows (built by the server, no model call).
 const crafted = 'I picked up 10 things. Confirm or cancel each one below; nothing is saved until you do.'
@@ -208,7 +211,7 @@ const base = normalizeProfile({ v: 2, age: 21, incomeStable: false, dependents: 
     { id: 'h3', type: 'gold_physical', name: 'Gold', value: 2000, currency: 'USDC', priceSource: 'self', rebalanceable: true },
   ] })
 const onlyCrypto = 'Your emergency fund is now 900 USDC of 900 USDC. Only Crypto (0 USDC of 1,360 USDC) still has room. Would you like to start with it?'
-const yep = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: firstText }, { role: 'user', content: '[app event] The user signed the card: Added 900 USDC to your emergency fund.' }, { role: 'assistant', content: onlyCrypto }, { role: 'user', content: 'Yep. I will start with that' }], base, 900)
+const yep = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: text }, { role: 'user', content: '[app event] The user signed the card: Added 900 USDC to your emergency fund.' }, { role: 'assistant', content: onlyCrypto }, { role: 'user', content: 'Yep. I will start with that' }], base, 900)
 const yepText = yep.body.content ?? ''
 
 // "Are you free to use?": the real prices, from code (Hieu, 2026-10-29).
@@ -251,7 +254,7 @@ expect(/prepare the first buy of \*\*\d[\d,]* USDC\*\*[^\n]*all \*\*\d[\d,]* USD
 expect(!/Safety or Traditional|Which (part|bucket)/i.test(yepText), 'full parts are never offered')
 
 // 6b. After the user signs the emergency-fund deposit, the next step names only the parts that still have room.
-const signed = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: firstText }, { role: 'user', content: '[app event] The user signed the card: Added 900 USDC to your emergency fund.' }], base, 900)
+const signed = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: text }, { role: 'user', content: '[app event] The user signed the card: Added 900 USDC to your emergency fund.' }], base, 900)
 const signedText = signed.body.content ?? ''
 console.log('\nstep 6b: model calls', signed.calls, '\n' + signedText)
 expect(signed.calls === 0 && /emergency fund is now \$900 of \$900/.test(signedText) && /Now on to investing/.test(signedText) && /Which part would you like to fill first: Safety \(\$0 of \$[\d,]+\) or Crypto \(\$0 of/.test(signedText) && !/Traditional \(/.test(signedText), 'after the deposit fills the fund: the investing step, then only the parts below their share (gold $2,000 is above its share, never sold)')
@@ -269,18 +272,18 @@ expect(buyAmt(await buyLater('I will buy gold with 5$ instead', 50)) === undefin
 
 // 6b2. A small deposit that does not fill the fund (real chat 2026-10-30: $5 got "Still needed to open cirBTC buying"): the fund
 // status and "a little at a time", nothing about cirBTC, no model call.
-const small = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: firstText }, { role: 'user', content: '[app event] The user signed the card: Added 5 USDC to your emergency fund.' }], base, 5)
+const small = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: text }, { role: 'user', content: '[app event] The user signed the card: Added 5 USDC to your emergency fund.' }], base, 5)
 const smallText = small.body.content ?? ''
 expect(small.calls === 0 && /emergency fund is now \$5 of \$[\d,]+/.test(smallText) && /a little at a time/.test(smallText) && !/cirBTC|BTC|bitcoin|buy/i.test(smallText), `after a small deposit: "$5 of $X", add a little at a time, no cirBTC (got: ${smallText.slice(0, 160)})`)
 
 // 6c. A saved amount (record box) is acknowledged, with the part it touched, then only the parts that have room.
-const rec = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: firstText }, { role: 'user', content: '[app event] The user confirmed recording: Recorded 500 USDC in Term deposit (Safety), from Binance.' }], base, 900)
+const rec = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: text }, { role: 'user', content: '[app event] The user confirmed recording: Recorded 500 USDC in Term deposit (Safety), from Binance.' }], base, 900)
 const recText = rec.body.content ?? ''
 console.log('\nstep 6c: model calls', rec.calls, '\n' + recText)
 expect(rec.calls === 0 && /^Saved\. Safety is now \$[\d,]+ of \$[\d,]+/.test(recText) && /or Crypto \(\$0 of/.test(recText) && !/Traditional \(/.test(recText), 'after a saved amount: which part it touched, then only the parts with room')
 
 // 6d. Naming a part answers where it lives and what is left; Safety is outside the app.
-const safe = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: firstText }, { role: 'user', content: '[app event] The user signed the card: Added 900 USDC to your emergency fund.' }, { role: 'assistant', content: 'Which part would you like to fill first: Safety (300 USDC of 840 USDC) or Crypto (0 USDC of 1,354 USDC)?' }, { role: 'user', content: 'How about the "safe" part' }], { ...base, holdings: base.holdings.map(h => h.id === 'h2' ? { ...h, type: 'term_deposit' as const, name: 'Term deposit', value: 300 } : h.id === 'h1' ? { ...h, value: 0 } : h) }, 900)
+const safe = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: text }, { role: 'user', content: '[app event] The user signed the card: Added 900 USDC to your emergency fund.' }, { role: 'assistant', content: 'Which part would you like to fill first: Safety (300 USDC of 840 USDC) or Crypto (0 USDC of 1,354 USDC)?' }, { role: 'user', content: 'How about the "safe" part' }], { ...base, holdings: base.holdings.map(h => h.id === 'h2' ? { ...h, type: 'term_deposit' as const, name: 'Term deposit', value: 300 } : h.id === 'h1' ? { ...h, value: 0 } : h) }, 900)
 const safeText = safe.body.content ?? ''
 console.log('\nstep 6d: model calls', safe.calls, '\n' + safeText)
 expect(safe.calls === 0 && /Safety is the low-risk part[^\n]*it is not emergency money/.test(safeText) && /You choose where it sits, as long as it is low-volatility/.test(safeText) && /You have \$300 of/.test(safeText), 'naming Safety explains why it is needed, that the user chooses its form, with the totals')
