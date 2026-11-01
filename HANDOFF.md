@@ -1,4 +1,7 @@
-# ▶ 2026-11-01 (khuya) — NGƯỜI DÙNG QUYẾT SAFETY (Hiếu chốt, ĐÃ DEPLOY Cloudflare `2f962d5e`) — sửa mục ngay dưới
+# ▶ 2026-11-01 (khuya) — NGƯỜI DÙNG QUYẾT SAFETY (Hiếu chốt, ĐÃ DEPLOY Cloudflare `2f962d5e`, sửa định nghĩa Safety sau đó) — sửa mục ngay dưới
+
+- **Vai trò app (Hiếu):** app là người đảm bảo quỹ dự phòng (onchain, phải đầy trước); sau đó chỉ TƯ VẤN, không yêu cầu; user tự quyết rồi báo lại để app ghi và nắm.
+- **Safety ≠ quỹ dự phòng** (Hiếu sửa): Safety = phần rủi ro thấp của tài sản (tiền gửi, trái phiếu; SEC Investor.gov asset allocation): lời ít nhưng đều, không chạy theo cổ phiếu/crypto, giúp tổng tài sản dao động ít hơn. KHÔNG phải tiền khẩn cấp, KHÔNG phải "rút lúc nào cũng được" (tiền gửi có kỳ hạn bị khoá đến đáo hạn). Đã sửa mọi câu cũ "reach any time" trong plan.ts, chat.ts, InvestScreen.
 
 - **User tự chia, app không chia hộ**: kế hoạch chỉ ghi mỗi phần "$X of $Y, $Z to go" (hoặc on track / above its share), KHÔNG còn "Put $X into Safety first" hay "add $X". User đặt tiền rồi báo lại để ghi.
 - **Một khoản chỉ là Safety khi user hiểu vì sao cần và tự chọn** tiền nào, dạng nào. Kế hoạch giải thích Safety trước mọi con số. Dạng được chọn: chỉ loại ít biến động (bank, tiền mặt, stablecoin, tiền gửi có kỳ hạn, trái phiếu); vàng/cổ phiếu/coin làm Safety → agent giải thích vì sao không và KHÔNG ghi (`detectPlacement` trả null).

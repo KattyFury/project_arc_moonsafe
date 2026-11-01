@@ -462,7 +462,7 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   const fullPlan = buildPlan({ p: base, b: bal(base, 1900, 450), shares, cover: null, vi: false })!
   for (const [what, re] of [['safety', /Safety 31%\*\* \(set aside, low-volatility\)/], ['traditional', /Traditional 34\.5%\*\* \(index funds/], ['crypto', /Crypto 34\.5%\*\* \(mostly Bitcoin, which can halve/]] as const) if (!re.test(fullPlan)) fail(`plan: the reason for the ${what} is missing\n${fullPlan}`)
   if (!/You have \$2,000 invested[^\n]*so it needs \$899 of Safety/.test(fullPlan)) fail(`plan: the investments set the Safety they need\n${fullPlan}`)
-  if (!/\*\*Safety\*\* is money you set aside and do not invest[^\n]*never forces you to sell/.test(fullPlan)) fail('plan: why Safety, before any number')
+  if (!/\*\*Safety\*\* is the low-risk part[^\n]*It is not emergency money \(that is the emergency fund\), and a term deposit is usually locked until it matures/.test(fullPlan)) fail('plan: why Safety, before any number')
   if (!/Money not doing anything yet: Bank savings \$500, USDC in this wallet \$1,900; keep \$150[^\n]*You decide which of it goes where/.test(fullPlan) || /Put \$|add \$/.test(fullPlan)) fail(`plan: target and what is missing only; the user places the money (Hieu, 2026-11-01)\n${fullPlan}`)
   if (!/You choose where your Safety sits, as long as it is low-volatility/.test(fullPlan)) fail('plan: the user chooses the form of Safety')
   if (/your Safety is|You have \$2,400 in Safety/i.test(fullPlan)) fail('plan: bank and stablecoins are never called Safety')

@@ -117,8 +117,8 @@ export function splitSection(b: Balance, vi: boolean, n = 2): string | null {
     : `${n}. **Investing, by your age, ${age}${est}:** Safety ${sSafe}%, Traditional ${sTrad}%, Crypto ${sCrypto}%. ${even ? 'An even Traditional / Crypto split is MoonSafe\'s default, not a standard rule; you can pick another.' : `Traditional ${sTrad}% and Crypto ${sCrypto}% is the split you chose.`}`
   // Why Safety, in plain words, before any number (Hieu, 2026-11-01: the user must understand why they need it and decide it themselves).
   const why = vi
-    ? '- **Safety** là tiền bạn để riêng, không dùng để đầu tư: giá trị của nó đứng yên khi thị trường giảm, nên một năm xấu không buộc bạn bán đầu tư lúc lỗ. Đầu tư càng nhiều thì Safety cần càng lớn.' // lang-ok
-    : '- **Safety** is money you set aside and do not invest: its value stays put when markets fall, so a bad year never forces you to sell investments at a loss. The more you invest, the more Safety you need.'
+    ? '- **Safety** là phần rủi ro thấp của tài sản (tiền gửi, trái phiếu): lời ít hơn nhưng đều, không lên xuống theo cổ phiếu hay crypto, nên khi thị trường giảm thì tổng tài sản của bạn giảm ít hơn. Nó không phải tiền dùng lúc khẩn cấp (đó là quỹ dự phòng), và tiền gửi có kỳ hạn thường bị khoá đến ngày đáo hạn. Đầu tư càng nhiều thì phần Safety cần càng lớn.' // lang-ok
+    : '- **Safety** is the low-risk part of what you own (deposits, bonds): it earns less but steadily and does not move with stocks or crypto, so when markets fall your whole picture falls less. It is not emergency money (that is the emergency fund), and a term deposit is usually locked until it matures. The more you invest, the bigger the Safety part needs to be.'
   const investLine = x.invest > 0.005
     ? (vi
       ? `- Bạn đang đầu tư ${fmt(x.invest)} (Traditional ${fmt(x.g.traditional)}, Crypto ${fmt(x.crypto)}), nên cần ${fmt(x.need)} Safety.` // lang-ok
@@ -127,8 +127,8 @@ export function splitSection(b: Balance, vi: boolean, n = 2): string | null {
   // What already counts as Safety, and why (a term deposit or bonds count as they are; bank, cash or stablecoins only when chosen).
   const safeLine = safeItems.length
     ? (vi
-      ? `- Đã là Safety: ${safeItems.join(', ')}. Đây là tiền đã để riêng, giá không chạy theo thị trường và lấy ra được khi cần, nên nó làm đúng việc của Safety.` // lang-ok
-      : `- Already Safety: ${safeItems.join(', ')}. It is set aside, its value does not swing with the markets and you can take it out when needed, which is exactly Safety's job.`)
+      ? `- Đã là Safety: ${safeItems.join(', ')}. Khoản này có lãi đều và không chạy theo giá cổ phiếu hay crypto, nên nó làm đúng việc của Safety: giữ cho tổng tài sản ít dao động.` // lang-ok
+      : `- Already Safety: ${safeItems.join(', ')}. It pays a steady return and does not follow stock or crypto prices, which is exactly Safety's job: keeping your whole picture steadier.`)
     : null
   const keepNote = keep >= 0.005 ? (vi ? `; giữ ${fmt(keep)} (1 tháng chi tiêu) trong tài khoản để tiêu` : `; keep ${fmt(keep)} (a month of spending) in your account for bills`) : '' // lang-ok
   const idleLine = idleItems.length
@@ -368,8 +368,8 @@ export function buildPartAnswer({ b, vi, part, walletUsd }: { b: Balance; vi: bo
   }
   if (part === 'safe') {
     return vi
-      ? `Safety là tiền bạn để riêng, không đầu tư, để một năm xấu không buộc bạn bán đầu tư. ${mine}, ${toGo}. Bạn chọn để ở đâu cũng được, miễn ít biến động: tiền gửi có kỳ hạn, trái phiếu chính phủ, hoặc stablecoin hay tiền mặt để riêng. Khi đã để xong, hãy nói với mình (ví dụ "I keep 400 USDC as Safety") để mình ghi lại.` // lang-ok
-      : `Safety is money you set aside and do not invest, so a bad year never forces you to sell. ${mine}, ${toGo}. You choose where it sits, as long as it is low-volatility: a term deposit, government bonds, or stablecoins or cash you keep apart. When you have placed it, tell me (for example "I keep 400 USDC as Safety") and I will record it.`
+      ? `Safety là phần rủi ro thấp (lời ít nhưng đều, không chạy theo cổ phiếu hay crypto), giúp tổng tài sản giảm ít hơn khi thị trường xấu; nó không phải tiền khẩn cấp, việc đó là của quỹ dự phòng. ${mine}, ${toGo}. Bạn chọn để ở đâu cũng được, miễn ít biến động: tiền gửi có kỳ hạn, trái phiếu chính phủ, hoặc stablecoin hay tiền mặt để riêng. Khi đã để xong, hãy nói với mình (ví dụ "I keep 400 USDC as Safety") để mình ghi lại.` // lang-ok
+      : `Safety is the low-risk part (it earns less but steadily and does not follow stocks or crypto), so your whole picture falls less in a bad market; it is not emergency money, that is the emergency fund's job. ${mine}, ${toGo}. You choose where it sits, as long as it is low-volatility: a term deposit, government bonds, or stablecoins or cash you keep apart. When you have placed it, tell me (for example "I keep 400 USDC as Safety") and I will record it.`
   }
   const tSlice = Math.floor(row.left / DCA_MONTHS)
   const spread = tSlice >= 1

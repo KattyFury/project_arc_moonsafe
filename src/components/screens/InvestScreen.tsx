@@ -149,7 +149,7 @@ function InvestOpen({ onAsk }: { onAsk: (question: string) => void }) {
               note="An index fund such as VOO, or gold, with your own broker."
               action={<Btn size="sm" variant="outline" className="!w-auto" onClick={() => onAsk('How do I buy an index fund such as VOO, or gold, for the Traditional part of my plan?')}>How <ExternalLink size={14} /></Btn>} />
             <PartRow icon={ShieldCheck} color="#1baf7a" name="Safety" have={money0(safety?.have)} target={money0(safety?.target)} left={money0(safety?.left)} full={!!safety?.full}
-              note="Savings you can reach any time, outside the app." />
+              note="The low-risk part: deposits or bonds, outside the app." />
           </div>
           <p className="text-[14px] leading-5" style={{ color: 'var(--muted)' }}>A suggestion, not investment advice. Prices can fall; only invest what you will not need soon.</p>
         </Col>
