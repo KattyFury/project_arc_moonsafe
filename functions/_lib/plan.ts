@@ -92,6 +92,8 @@ export const partialOffer = (vi: boolean, amount: number, windfalls = false) => 
  * "$3,000: the biggest for your age, it sets the size" / "$1,000 of $3,500, $2,500 to go" / "$3,500 of $3,500: full".
  */
 export function shareLine(r: Standing, vi: boolean): string {
+  // A part the user set to 0% (split 0/100): not part of their plan, never "$0 of $0: full".
+  if (r.share <= 0) return vi ? `${fmt(r.have)}: không nằm trong tỷ lệ bạn chọn` : `${fmt(r.have)}: not in your split` // lang-ok
   if (r.anchor) return vi ? `${fmt(r.have)}: phần đi xa nhất theo tuổi, làm mốc cho các phần khác` : `${fmt(r.have)}: furthest ahead for your age, so it sets the size` // lang-ok
   if (r.full) return vi ? `${fmt(r.have)} trên ${fmt(r.target)}: đủ` : `${fmt(r.have)} of ${fmt(r.target)}: full` // lang-ok
   return vi ? `${fmt(r.have)} trên ${fmt(r.target)}, còn ${fmt(r.left)}` : `${fmt(r.have)} of ${fmt(r.target)}, ${fmt(r.left)} to go` // lang-ok

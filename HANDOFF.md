@@ -1,4 +1,15 @@
-# ▶ HANDOFF 2026-11-01 (khuya nhất) — LUẬT MỐC ĐÃ DEPLOY + TEST 5 NGƯỜI × 2M TOKEN HAIKU (Cloudflare `c9506894`)
+# ▶ HANDOFF 2026-11-01 (kết thúc ngày) — LÀM NỐT, ĐÃ DEPLOY Cloudflare `6210e61b`
+
+Live = bundle giao diện `index--R3BQKqW.js` (đã Hiếu duyệt) + server mới nhất. Hiếu: luật mốc cho người 55 tuổi (Crypto "còn $158k") là **hợp lý**, giữ nguyên.
+
+Làm nốt (dùng thêm ~349k token Haiku, `docs/evals/balance-r3`, `balance-r4-2026-11-01.json`; ca `BALANCE_TAIL_CASES`):
+- Đổi tỷ lệ Traditional/Crypto trong lượt này → **server tự xác nhận** "Done: outside Safety your split is now Traditional X% / Crypto Y%, as you chose" (+ cảnh báo khi Crypto ≥ 80%); model hai lần nói "already set" dù vừa đổi.
+- "Track my bank account" → chặn bằng code (`responseProblems` trong chat.ts): trả lời không theo dõi tiền nhàn rỗi rồi dừng, không gợi ý biến tiền đó thành Safety. Haiku r4 đúng.
+- Phần 0% (split 0/100) nói "not in your split" thay vì "$0 of $0: full" (lời agent + câu viết sẵn). **Màn hình** vẫn hiện "$0 of $0 / Full" cho phần 0% — đổi chữ trên màn hình thì chụp ảnh cho Hiếu duyệt trước.
+- Người 55 tuổi (r3): trả lời đúng về tiền gửi đáo hạn và cái giá của việc chỉ giữ tiền gửi; không còn câu lạ.
+- Tổng token Haiku cho đợt 5 người: ~2.26M.
+
+# HANDOFF 2026-11-01 (khuya nhất) — LUẬT MỐC ĐÃ DEPLOY + TEST 5 NGƯỜI × 2M TOKEN HAIKU (Cloudflare `c9506894`)
 
 **Đọc `docs/CORE.md` trước.** Hiếu đã DUYỆT màn hình "phần đi xa nhất làm mốc" và nó đang live (bundle `index--R3BQKqW.js`, deploy `fe46f621`, rồi `c9506894` chỉ đổi server/agent).
 
