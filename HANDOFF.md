@@ -1,8 +1,8 @@
-# ▶ 2026-11-03 — NÚT TẮT TRÊN Ô CHAT (Hiếu chốt 6a) — CODE ĐÃ PUSH, CHƯA DEPLOY, CHỜ DUYỆT ẢNH
+# ▶ 2026-11-03 — NÚT TẮT TRÊN Ô CHAT (Hiếu chốt 6a) — ĐÃ DEPLOY
 
 - `src/components/chat/ShortcutBar.tsx` + `src/lib/shortcuts.ts`, kiểm bằng `scripts/shortcuts-check.ts` (trong `test:agent`). Không gọi model, có bước Confirm, lưu bằng các thao tác có sẵn; ghi một dòng vào chat qua `addNote` trong `useAgent`.
-- Ảnh duyệt: Desktop `MoonSafe-nut-tat-2026-11-03` (393×852 và 1440×900). Hiếu duyệt rồi mới chạy lệnh deploy ở mục ▶ MAINNET. Live hiện KHÔNG có nút này, nhưng `main` đã có: nếu cần deploy gấp việc khác thì nhớ điều này.
-- Chưa thử trên ví thật và tài khoản thật. Ảnh chụp từ dữ liệu giả.
+- Hiếu tạm duyệt để tự test, đã deploy Cloudflare `3b48cca0`. 3 nút theo giai đoạn (7b): `Add to fund` hoặc `Add money` · `Edit portfolio` · `Edit month`. Ảnh: Desktop `MoonSafe-nut-tat-2026-11-03`.
+- Chờ Hiếu test bằng ví và tài khoản thật, nhất là lúc bàn phím điện thoại bật lên khi nhập số. Ảnh chụp từ dữ liệu giả.
 
 # ▶ 2026-11-03 — CRYPTO: 7 PHẦN BTC, 3 PHẦN TỰ CHỌN (Hiếu chốt 1a 2b 3a, ĐÃ DEPLOY)
 
