@@ -114,11 +114,12 @@ const COUNTS_AS_FUND = /counts?\s+(?:as|toward|towards)|can count|covers?\s+(?:t
 const FUND_WORD = /\bfund\b|reserve|(?<!\p{L})quỹ(?!\p{L})|dự phòng/iu // lang-ok
 const DENIES = /\b(?:not|never|cannot|can't|doesn't|don't|won't|isn't)\b|(?<!\p{L})(?:không|chưa|chẳng)(?!\p{L})/iu // lang-ok
 const ASKS_SPARE = /(?:do you have|have you got|how much|willing to mention|bạn có|cho mình biết)[^?？\n]{0,80}(?:savings?|cash|bank|tiền mặt|ngân hàng)[^?？\n]{0,60}[?？]/iu // lang-ok
-const PART_PERCENT = /of the three parts|\btarget\s+\d+(?:\.\d+)?\s*%|\d\s*%[^.\n]{0,40}:\s*(?:above|below|close to)/iu
+const PART_PERCENT = /\d\s*%\s*,\s*(?:your|khoản)\b|of the three parts|\btarget\s+\d+(?:\.\d+)?\s*%|\d\s*%[^.\n]{0,40}:\s*(?:above|below|close to)/iu // lang-ok
 
 export function responseProblems(content: string, answerOnly: boolean, fundTargetUnknown = false, vi?: boolean, investingLocked = false): string[] {
   const problems: string[] = []
   if (content.split(/(?<=[.!?])\s+|\n/u).some(s => OUTSIDE_MONEY.test(s) && COUNTS_AS_FUND.test(s) && FUND_WORD.test(s) && !DENIES.test(s))) problems.push('Only the vault counts as the emergency fund. Money kept anywhere else never counts or covers the target: remove that claim and give the real vault figure.')
+  if (/gọi bạn là|chứ không phải ["“]?(?:anh|chị|em)\b|note it in your profile|note Crypto as|haven.t saved that yet|want me to record it\?/iu.test(content)) problems.push('Remove this: never comment on how you address them, and the app stores no mix inside Crypto, so never offer to note or save one.') // lang-ok
   if (ASKS_SPARE.test(content)) problems.push('Never ask how much cash, bank money or savings they have: spare money is not asked about (CORE 2). Remove the question.')
   if (PART_PERCENT.test(content)) problems.push('Never show a part as a percentage or against the total of the three parts. Each part is only its money against its bar ("$10,000 of $13,000, $3,000 to go"). Remove these percentages.')
   if (investingLocked && /(?:Safety|Traditional|Crypto|Truyền thống)\s*(?:(?:share|target|allocation|is|at)\s*|[:=]\s*)?\d+(?:[.,]\d+)?\s*%|\d+(?:[.,]\d+)?\s*%\s*(?:(?:to|in|for|into)\s+)?(?:Safety|Traditional|Crypto|Truyền thống)/iu.test(content)) problems.push('Investing is locked: omit allocation shares and split amounts until the onchain reserve is known and full and expensive debt is gone. Answer the current fund/debt step instead.') // lang-ok

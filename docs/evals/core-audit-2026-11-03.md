@@ -69,3 +69,21 @@ Lỗi 7, 8, 9, 13 được sửa và có kiểm offline một phần, nhưng ch�
 ## Tệp
 
 Bản chạy gốc: `docs/evals/core-audit-r1…r5-*.json`. Ca thử: `scripts/core-audit-cases.ts`, `-tails`, `-finals`, `-rechecks`. Kiểm offline không tốn tiền: `scripts/core-audit-check.ts` (trong `test:agent`).
+
+## Đợt 2: kiểm tra thay đổi Crypto 7/3 (2M token)
+
+Hiếu giao tối đa 2M token sau khi đổi hướng dẫn Crypto. Đã dùng **1.938.201**. Bản chạy: `core-audit-gr1…gr3-*.json`; ca thử: `scripts/guide-audit-*.ts`.
+
+| # | Lỗi | Cách sửa | Kiểm lại trên model thật |
+|---|---|---|---|
+| 1 | Sau "70 btc 30 eth", câu "make it 60 40" đổi tỷ lệ Traditional/Crypto | Server không ghi nếu câu nói về coin, hoặc 2 con số không rõ là tỷ lệ nào | Đạt |
+| 2 | Agent đề nghị "note" tỷ lệ trong Crypto, app không lưu được | Thêm luật và chốt chặn | Đạt |
+| 3 | Chữ "3 parts" trùng "the three parts" (bị hiểu nhầm là Safety/Traditional/Crypto), "70/30" trùng tỷ lệ Traditional/Crypto | Đổi thành "$7 trên mỗi $10" | Đạt |
+| 4 | Có $1,000 mà tính sai: Crypto $330, BTC $231 | Dùng đúng tỷ lệ theo tuổi: $325, BTC $227,50 | Đạt |
+| 5 | "how much of my crypto should be btc?" chỉ đọc lại bảng số | Đường tắt số liệu không nhận câu có "should" | Đạt |
+| 6 | "Traditional: 39%, your VOO of $10,000" | Mở rộng chốt chặn | Đạt |
+| 7 | "Mình gọi bạn là 'bạn' nhé, chứ không phải 'anh'" | Thêm chốt chặn | Đạt |
+| 8 | Card vừa hiện mà nói "the card I showed earlier" | Thêm chốt chặn | Đạt |
+| 9 | Mở đầu "I can't split" dù đầu tư đang mở và có đủ tỷ lệ | Thêm chốt chặn | **Chưa đạt lúc đo:** lần cuối vẫn lọt câu "I can't give you the split". Đã mở rộng chốt chặn nhưng hết ngân sách, chưa chạy lại |
+
+Câu chưa được trả lời vì hết ngân sách: mua coin ngoài top 10 (PEPE), "vault trả lãi bao nhiêu". Phần xác nhận được: giữ ETH không có BTC không bị giục mua, không khuyên bán, "quyết hộ" bị từ chối, nút mua theo số người dùng gõ vẫn chạy, bán một phần BTC ghi đúng, tài khoản thanh toán không bị ghi.

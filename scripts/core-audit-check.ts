@@ -26,6 +26,10 @@ assert.ok(flagged('A drop only shows up as a lower value; you only lock in a los
 assert.equal(normalizeProfile({ v: 2, age: 30, cryptoSplit: 60 }).cryptoSplit, 50)
 assert.equal(normalizeProfile({ v: 2, age: 30, cryptoSplit: 0 }).cryptoSplit, 0)
 assert.equal(targetMix(30, 100).btc, targetMix(30, 50).btc)
+// No % next to what they hold; no offer to store a mix inside Crypto; no comment on how you address them.
+assert.ok(flagged('Traditional: 39%, your VOO of $10,000.'))
+assert.ok(flagged('Got it. Do you want me to note it in your profile?'))
+assert.ok(flagged('Mình gọi bạn là "bạn" nhé.')) // lang-ok
 // Crypto is one bar; the guide never changes the target.
 assert.equal(targetMix(30).btc + targetMix(30).large_cap + targetMix(30).altcoin, 35)
 // What people actually type.

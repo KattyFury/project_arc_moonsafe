@@ -168,7 +168,7 @@ expect(!/cirBTC|prepare a|for you to sign/i.test(fullText), 'fund already full: 
 expect(/Which part would you like to fill first|Only [^.]* still has room/.test(fullText), 'fund already full: it asks which part to fill')
 expect(/by your age, 31/.test(fullText) && /An even Traditional \/ Crypto split is MoonSafe's default, not a standard rule/.test(fullText), 'fund already full: the split by age, the even split said to be MoonSafe\'s default')
 // Hieu, 2026-11-01: the part furthest ahead of its share sets the size (gold $2,000 is Traditional's 34.5%); spare money is not shown.
-for (const [what, re] of [['Safety', /\*\*Safety\*\* \(low-volatility\): \$0 of \$1,797, \$1,797 to go/], ['Traditional', /\*\*Traditional\*\* \(index funds such as VOO, gold\): \$2,000: furthest ahead for your age, so it sets the size/], ['Crypto', /\*\*Crypto\*\* \(about 7 parts Bitcoin[^\n]*\$0 of \$2,000, \$2,000 to go/]] as const) expect(re.test(fullText), `the plan says where ${what} stands`)
+for (const [what, re] of [['Safety', /\*\*Safety\*\* \(low-volatility\): \$0 of \$1,797, \$1,797 to go/], ['Traditional', /\*\*Traditional\*\* \(index funds such as VOO, gold\): \$2,000: furthest ahead for your age, so it sets the size/], ['Crypto', /\*\*Crypto\*\* \(about \$7 of every[^\n]*\$0 of \$2,000, \$2,000 to go/]] as const) expect(re.test(fullText), `the plan says where ${what} stands`)
 expect(!/not doing anything yet|\$1,900|above its share/.test(fullText), 'spare money is not shown, and nothing is above its bar')
 
 // 3. The user cancels everything: nothing saved, the agent does not run the plan.

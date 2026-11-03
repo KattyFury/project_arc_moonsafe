@@ -48,8 +48,8 @@ const WHY = {
     vi: 'cổ phiếu, quỹ chỉ số (ví dụ VOO) và vàng. Chúng tăng đều theo thời gian dài.', // lang-ok
   },
   crypto: {
-    en: 'a guide of about 7 parts BTC, the long-term reserve asset for people who live in Web3, and 3 parts your own pick, top-10 coins by market cap first. Every coin you hold counts. It can fall by about half along the way, which is why it stays at its share.',
-    vi: 'gợi ý khoảng 7 phần BTC, tài sản dự trữ dài hạn của người sống trong Web3, và 3 phần bạn tự chọn, ưu tiên coin top 10 vốn hoá. Coin nào bạn giữ cũng được tính. Nó có thể giảm khoảng một nửa trên đường đi, vì vậy chỉ giữ ở tỷ lệ này.', // lang-ok
+    en: 'a guide of about $7 of every $10 in BTC, the long-term reserve asset for people who live in Web3, and the rest your own pick, top-10 coins by market cap first. Every coin you hold counts. It can fall by about half along the way, which is why it stays at its share.',
+    vi: 'gợi ý cứ 10 đô thì khoảng 7 đô vào BTC, tài sản dự trữ dài hạn của người sống trong Web3, còn lại bạn tự chọn, ưu tiên coin top 10 vốn hoá. Coin nào bạn giữ cũng được tính. Nó có thể giảm khoảng một nửa trên đường đi, vì vậy chỉ giữ ở tỷ lệ này.', // lang-ok
   },
 }
 
@@ -138,7 +138,7 @@ export function splitSection(b: Balance, vi: boolean, n = 2): string | null {
   const rule = vi
     ? '- Phần đi xa nhất so với tỷ lệ của nó làm mốc; các phần khác theo nó:' // lang-ok
     : '- The part furthest ahead of its share sets the size; the others follow it:'
-  const what = { safe: vi ? 'ít biến động' : 'low-volatility', traditional: vi ? 'quỹ chỉ số như VOO, vàng' : 'index funds such as VOO, gold', crypto: vi ? 'khoảng 7 phần Bitcoin, 3 phần bạn tự chọn, có lúc giảm một nửa' : 'about 7 parts Bitcoin, 3 parts your pick; it can halve on the way' } // lang-ok
+  const what = { safe: vi ? 'ít biến động' : 'low-volatility', traditional: vi ? 'quỹ chỉ số như VOO, vàng' : 'index funds such as VOO, gold', crypto: vi ? 'cứ 10 đô thì khoảng 7 đô Bitcoin, còn lại bạn tự chọn; có lúc giảm một nửa' : 'about $7 of every $10 in Bitcoin, the rest your pick; it can halve on the way' } // lang-ok
   const part = (r: Standing) => `  - **${r.name}** (${what[r.key]}): ${shareLine(r, vi)}.`
   const how = vi
     ? 'Bổ sung các phần còn thiếu từ thu nhập hay tiền rảnh, theo thứ tự bạn thích. Safety để ở đâu cũng được, miễn ít biến động (tiền gửi có kỳ hạn, trái phiếu chính phủ, hoặc stablecoin hay tiền mặt bạn để riêng). Làm xong thì nói với mình (ví dụ "I keep 500 USDC as Safety") để mình ghi lại.' // lang-ok

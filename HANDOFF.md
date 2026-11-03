@@ -1,7 +1,8 @@
 # ▶ 2026-11-03 — CRYPTO: 7 PHẦN BTC, 3 PHẦN TỰ CHỌN (Hiếu chốt 1a 2b 3a, ĐÃ DEPLOY)
 
 - Một thanh Crypto, mọi coin đều tính; 7/3 chỉ là hướng dẫn nói một lần, không theo dõi riêng; lệch là lựa chọn của người dùng, không nhắc, không khuyên bán. "Top" = top 10 vốn hoá, không tính stablecoin; agent không tự nêu tên coin ngoài BTC. Nút mua cirBTC đề nghị 7 phần số còn thiếu (`BTC_GUIDE` trong `src/kb/kb.ts`). Công thức `targetMix` không đổi. Nguồn chuẩn: `docs/CORE.md` mục 2.
-- CHƯA LÀM, chờ Hiếu chốt: app tự đọc coin EVM trong ví. Hiện app chỉ đọc trên Arc (USDC, vault, cirBTC); mọi coin khác là tự khai.
+- Đã thử 1,94M token Haiku trên thay đổi này, kết quả cuối `docs/evals/core-audit-2026-11-03.md`. Với người dùng viết "$7 trên mỗi $10", không viết "7 phần / 3 phần". Lỗi còn cần kiểm lại: câu mở đầu "I can't give you the split".
+- App tự đọc coin EVM trong ví: Hiếu chốt 4c, để SAU hackathon. Hiện app chỉ đọc trên Arc (USDC, vault, cirBTC); mọi coin khác vẫn tự khai.
 
 # ▶ 2026-11-03 — 5 VAI × 5M TOKEN HAIKU, ĐỐI CHIẾU CORE (ĐÃ DEPLOY)
 
