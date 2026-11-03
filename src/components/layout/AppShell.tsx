@@ -6,6 +6,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { usePrivy, useWallets } from '@privy-io/react-auth'
 import { useAccount } from 'wagmi'
 import { NET, networkLine } from '@/lib/network'
+import { useArcOnConnect } from '@/hooks/useArcOnConnect'
 import { useServiceStatus } from '@/hooks/useServiceStatus'
 import type { AgentAction } from '@/hooks/useAgent'
 import { AlertCircle, Loader2 } from 'lucide-react'
@@ -41,6 +42,7 @@ const WALLET_SYNC_MS = 8000
 export function AppShell({ onLogout }: { onLogout: () => void }) {
   const { vault, math, cloud } = useApp()
   const service = useServiceStatus()
+  useArcOnConnect()
   const { connectWallet } = usePrivy()
   const { ready: walletsReady, wallets } = useWallets()
   const { address } = useAccount()
