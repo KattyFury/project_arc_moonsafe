@@ -9,23 +9,19 @@ import { groupOf } from './allocation'
 import { defaultRebalanceable, newId, type ProfileOp } from './profile'
 
 export type Part = 'safe' | 'traditional' | 'crypto'
-export type ShortcutId = 'fund' | 'month' | 'hold' | 'add' | Part | 'split'
+export type ShortcutId = 'fund' | 'add' | 'hold' | 'month'
 
 export const PART_LABEL: Record<Part, string> = { safe: 'Safety', traditional: 'Traditional', crypto: 'Crypto' }
 
-/** Before investing opens there is nothing to split yet (CORE 1); after it, every part can be added to or edited. */
+/**
+ * As few as possible (Hieu, 2026-11-03: 7b): the main job of the stage, the portfolio, the month. Before investing opens the main job is
+ * the fund, and there is no fund button without a vault. The three parts and the split live inside "Edit portfolio".
+ */
 export function shortcutsFor({ unlocked, hasVault }: { unlocked: boolean; hasVault: boolean }): { id: ShortcutId; label: string }[] {
-  if (!unlocked) return [
-    ...(hasVault ? [{ id: 'fund' as const, label: 'Add to fund' }] : []),
-    { id: 'month', label: 'Edit my month' },
-    { id: 'hold', label: 'Edit what I hold' },
-  ]
   return [
-    { id: 'add', label: 'Add money' },
-    { id: 'safe', label: 'Edit Safety' },
-    { id: 'traditional', label: 'Edit Traditional' },
-    { id: 'crypto', label: 'Edit Crypto' },
-    { id: 'split', label: 'Change split' },
+    ...(unlocked ? [{ id: 'add' as const, label: 'Add money' }] : hasVault ? [{ id: 'fund' as const, label: 'Add to fund' }] : []),
+    { id: 'hold', label: 'Edit portfolio' },
+    { id: 'month', label: 'Edit month' },
   ]
 }
 

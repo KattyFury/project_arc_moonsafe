@@ -7,11 +7,11 @@ import {
 } from '../src/lib/shortcuts'
 import type { Holding } from '../src/types'
 
-// Before investing opens, nothing about splitting; no fund button without a vault.
+// As few as possible: the main job of the stage, the portfolio, the month. No fund button without a vault.
 const ids = (unlocked: boolean, hasVault: boolean) => shortcutsFor({ unlocked, hasVault }).map(c => c.id)
-assert.deepEqual(ids(false, true), ['fund', 'month', 'hold'])
-assert.deepEqual(ids(false, false), ['month', 'hold'])
-assert.deepEqual(ids(true, true), ['add', 'safe', 'traditional', 'crypto', 'split'])
+assert.deepEqual(ids(false, true), ['fund', 'hold', 'month'])
+assert.deepEqual(ids(false, false), ['hold', 'month'])
+assert.deepEqual(ids(true, true), ['add', 'hold', 'month'])
 
 // The Crypto cap: no choice above 50%, even if asked.
 assert.ok(SPLIT_CHOICES.length > 1 && SPLIT_CHOICES.every(c => c <= 50))

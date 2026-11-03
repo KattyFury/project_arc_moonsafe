@@ -2,7 +2,7 @@
 // change goes through one Confirm step and is saved with the same operations as the agent's cards (src/lib/shortcuts.ts).
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { ArrowLeft, Bitcoin, CalendarDays, Check, ChevronRight, Landmark, Plus, Shield, SlidersHorizontal, Wallet, X, type LucideIcon } from 'lucide-react'
+import { ArrowLeft, CalendarDays, Check, ChevronRight, Plus, Shield, Wallet, X, type LucideIcon } from 'lucide-react'
 import { useApp } from '@/state/AppState'
 import { holdingUsd } from '@/lib/allocation'
 import { parseAmount } from '@/lib/intakeForm'
@@ -14,11 +14,11 @@ import {
 import type { Holding } from '@/types'
 import { Btn } from '@/components/ui/kit'
 
-const ICONS: Record<ShortcutId, LucideIcon> = { fund: Shield, month: CalendarDays, hold: Wallet, add: Plus, safe: Shield, traditional: Landmark, crypto: Bitcoin, split: SlidersHorizontal }
+const ICONS: Record<ShortcutId, LucideIcon> = { fund: Shield, add: Plus, hold: Wallet, month: CalendarDays }
 
 type Step =
   | { s: 'fund' }
-  | { s: 'list'; part: Part | 'all' }
+  | { s: 'list' }
   | { s: 'item'; holding: Holding }
   | { s: 'choose'; part: Part | 'all'; amount?: number }
   | { s: 'new'; choice: AssetChoice; amount?: number }
@@ -57,7 +57,7 @@ export function ShortcutBar({ disabled, onSaved, onCard }: {
   const tap = (id: ShortcutId) => {
     if (open === id) { close(); return }
     setOpen(id); setPicked(p?.cryptoSplit ?? 50)
-    go(id === 'fund' ? { s: 'fund' } : id === 'month' ? { s: 'month' } : id === 'hold' ? { s: 'list', part: 'all' } : id === 'split' ? { s: 'split' } : id === 'add' ? { s: 'add' } : { s: 'list', part: id })
+    go(id === 'fund' ? { s: 'fund' } : id === 'month' ? { s: 'month' } : id === 'hold' ? { s: 'list' } : { s: 'add' })
   }
   const confirm = (text: string, ops: ProfileOp[], note: string, back: Step) => setStep({ s: 'confirm', text, ops, note, back })
   const usdOf = (h: Holding) => holdingUsd(h, prices.prices, fx.vndPerUsd)
@@ -73,16 +73,23 @@ export function ShortcutBar({ disabled, onSaved, onCard }: {
       <Btn size="sm" disabled={!valid} onClick={() => { onCard('deposit', n!); close() }}>Show the deposit card</Btn>
     </Panel>
   } else if (step?.s === 'list') {
-    const part = step.part
-    const list = editableHoldings(p, part)
-    body = <Panel title={part === 'all' ? 'What you hold' : PART_LABEL[part]} onClose={close}>
-      {list.map(h => <Line key={h.id} label={h.name} value={shown(h)} onClick={() => go({ s: 'item', holding: h }, String(editsQuantity(h) ? h.quantity : h.value ?? ''))} />)}
+    const list = editableHoldings(p, 'all')
+    const row = (h: Holding) => <Line key={h.id} label={h.name} value={shown(h)} onClick={() => go({ s: 'item', holding: h }, String(editsQuantity(h) ? h.quantity : h.value ?? ''))} />
+    const others = list.filter(h => partOf(h) === null)
+    const c = p?.cryptoSplit ?? 50
+    body = <Panel title="Your portfolio" onClose={close}>
+      {(['safe', 'traditional', 'crypto'] as const).map(part => {
+        const items = list.filter(h => partOf(h) === part)
+        return items.length ? <div key={part} className="flex flex-col"><Group>{PART_LABEL[part]}</Group>{items.map(row)}</div> : null
+      })}
+      {others.length > 0 && <div className="flex flex-col"><Group>Other</Group>{others.map(row)}</div>}
       {!list.length && <Hint>Nothing here yet.</Hint>}
-      <Line label="Add something" icon={Plus} onClick={() => go({ s: 'choose', part })} />
+      <Line label="Add something" icon={Plus} onClick={() => go({ s: 'choose', part: 'all' })} />
+      {math.investUnlocked && <Line label="Traditional / Crypto split" value={`${100 - c} / ${c}`} onClick={() => { setPicked(c); go({ s: 'split' }) }} />}
     </Panel>
   } else if (step?.s === 'item') {
     const h = step.holding
-    const back: Step = { s: 'list', part: partOf(h) ?? 'all' }
+    const back: Step = { s: 'list' }
     const qty = editsQuantity(h)
     const was = qty ? `${h.quantity} ${h.unit ?? ''}`.trim() : native(h.value ?? 0, h.currency ?? 'USDC')
     const now = !valid ? '' : qty ? `${n} ${h.unit ?? ''}`.trim() : native(n!, h.currency ?? 'USDC')
@@ -94,9 +101,11 @@ export function ShortcutBar({ disabled, onSaved, onCard }: {
   } else if (step?.s === 'choose') {
     const parts: Part[] = step.part === 'all' ? ['safe', 'traditional', 'crypto'] : [step.part]
     const preset = step.amount
-    const back: Step = preset !== undefined ? { s: 'parts', amount: preset } : { s: 'list', part: step.part }
-    body = <Panel title="What is it?" hint={parts.length === 1 && parts[0] === 'safe' ? 'Safety is only for low-volatility money, so it steadies your whole picture.' : undefined} onBack={() => setStep(back)} onClose={close}>
-      {parts.flatMap(part => ASSET_CHOICES[part].map(c => <Line key={c.type + c.name} label={c.label} sub={parts.length > 1 ? PART_LABEL[part] : undefined} onClick={() => go({ s: 'new', choice: c, amount: preset }, preset !== undefined ? String(preset) : '')} />))}
+    const back: Step = preset !== undefined ? { s: 'parts', amount: preset } : { s: 'list' }
+    body = <Panel title={parts.length > 1 ? 'Which part?' : 'What is it?'} hint={parts.length === 1 && parts[0] === 'safe' ? 'Safety is only for low-volatility money, so it steadies your whole picture.' : undefined} onBack={() => setStep(back)} onClose={close}>
+      {parts.length > 1
+        ? parts.map(part => <Line key={part} label={PART_LABEL[part]} onClick={() => go({ s: 'choose', part })} />)
+        : ASSET_CHOICES[parts[0]].map(c => <Line key={c.type + c.name} label={c.label} onClick={() => go({ s: 'new', choice: c, amount: preset }, preset !== undefined ? String(preset) : '')} />)}
     </Panel>
   } else if (step?.s === 'new') {
     const c = step.choice
@@ -133,7 +142,7 @@ export function ShortcutBar({ disabled, onSaved, onCard }: {
   } else if (step?.s === 'split') {
     const was = p?.cryptoSplit ?? 50
     const c = picked ?? was
-    body = <Panel title="Traditional / Crypto" hint="50 / 50 is MoonSafe's default. You can lean to Traditional; Crypto stays at 50% or less because it swings so much." onClose={close}>
+    body = <Panel title="Traditional / Crypto" hint="50 / 50 is MoonSafe's default. You can lean to Traditional; Crypto stays at 50% or less because it swings so much." onBack={() => setStep({ s: 'list' })} onClose={close}>
       <div role="radiogroup" aria-label="Traditional / Crypto split" className="flex flex-wrap gap-2">
         {SPLIT_CHOICES.map(v => {
           const on = c === v
@@ -205,6 +214,8 @@ function Panel({ title, hint, onBack, onClose, children }: { title: string; hint
     </div>
   )
 }
+
+const Group = ({ children }: { children: ReactNode }) => <p className="pt-2 text-[14px] leading-5 font-semibold" style={{ color: 'var(--subtle)' }}>{children}</p>
 
 const Hint = ({ children }: { children: ReactNode }) => <p className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>{children}</p>
 
