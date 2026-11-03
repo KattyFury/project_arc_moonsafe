@@ -1,3 +1,9 @@
+# ▶ 2026-11-03 — CRYPTO TỐI ĐA 50% PHẦN NGOÀI SAFETY (Hiếu chốt)
+
+- Mặc định 50/50. Người dùng chỉ được giảm Crypto, nghiêng sang Traditional (70/30), không được làm ngược lại (40/60), vì crypto biến động mạnh, quá 50% thì cân lại rất mệt. Nguồn chuẩn: `docs/CORE.md` mục 3, hằng `MAX_CRYPTO_SPLIT` trong `src/kb/kb.ts`.
+- Yêu cầu quá 50% bị server từ chối bằng câu cố định, không ghi. Tỷ lệ đã lưu quá 50% tự đọc thành 50. Biểu mẫu chỉ còn 70/30 và 50/50.
+- Đã kiểm bằng test có ép tool; chưa chạy thử model thật (chưa kiểm model có luôn gọi tool khi người dùng đòi quá 50%).
+
 # ▶ 2026-11-03 — ĐỔI MẠNG KHI VÀO APP (1a, Hiếu chốt)
 
 - Trước đây app chỉ đổi mạng lúc gửi giao dịch. `src/hooks/useArcOnConnect.ts` (gọi trong `AppShell`) yêu cầu ví đổi sang Arc ngay khi vào app, 1 lần cho mỗi ví mỗi lần tải trang; từ chối thì không hỏi lại, giao dịch sau `ensureArcChain` hỏi tiếp.

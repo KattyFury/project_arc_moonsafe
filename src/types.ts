@@ -103,7 +103,7 @@ export interface FinancialProfile {
   windfallsYearly?: number
   /** "If your crypto dropped by half, could you hold it without selling to live?" null = not asked / unsure. */
   cryptoDropOk?: boolean | null
-  /** Share of the money outside Safety that goes to Crypto, in % (the rest is Traditional). Unset = 50, MoonSafe's default (Hieu, 2026-10-31). */
+  /** Share of the money outside Safety that goes to Crypto, in % (the rest is Traditional), at most 50 (Hieu, 2026-11-03). Unset = 50, MoonSafe's default. */
   cryptoSplit?: number
   /** Health / life cover, asked only when people rely on their income. */
   insured?: boolean | null

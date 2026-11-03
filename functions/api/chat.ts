@@ -36,7 +36,7 @@ import { recordStats } from '../_lib/stats'
 import { ASSET_TYPES, ASSETS_MARK, BATCH_MARK, INTAKE_MIN_UNKNOWN, assetsAsk, buildIntake, cashflowAsk, cashflowKeys, unknownBullets } from '../_lib/intake'
 import { getConfig, isBlocked, effectiveEnv } from '../_lib/config'
 import { buildAfterSign, buildDebtPlan, buildPartAnswer, buildPlan, buildStanding, detectPartChoice, openVaultOffer } from '../_lib/plan'
-import { KB, matchPatterns, patternBrief, param } from '../../src/kb/kb'
+import { KB, MAX_CRYPTO_SPLIT, matchPatterns, patternBrief, param } from '../../src/kb/kb'
 import { computeFacts, displayFacts, amountsUsd } from '../../src/kb/facts'
 import { pctText, bucketStanding, computeBalance, holdingUsd, priceKey, symbolOf, toUsd, GOLD_UNITS_TO_OZ, GROUP_LABEL, type Balance, type Prices } from '../../src/lib/allocation'
 import {
@@ -78,6 +78,7 @@ ${KB.principles.map(p => `- ${p}`).join('\n')}
 ## Framework (by age, only age changes it)
 - Three buckets of the money to divide (liquid assets, minus money for a near-term goal): Safety = age %; the rest split EVENLY between Traditional (stocks, index funds, gold) and Crypto as ONE bucket, mostly BTC (say it in words; no share for other coins, never suggest buying small coins or memecoins). Age 30: Safety 30, Traditional 35, Crypto 35. Why even: if crypto crashes, Traditional can carry them; if stocks and gold fall, crypto can; if both fall, the emergency fund and Safety still stand. It is an objective, balanced suggestion, not a bet on either side: never argue that one deserves more. The formula keeps a positive BTC allocation; this is not a guarantee about its price. Assets can fall together. Coins they already hold just count in Crypto.
 - Money for a big expense within 5 years (car, wedding, school) stays in Safety, never invested.
+- Traditional / Crypto: 50/50 by default. The user may lower Crypto and lean to Traditional (70/30), never the reverse: Crypto is at most ${MAX_CRYPTO_SPLIT}% of the money outside Safety, because it swings so much that keeping the parts in balance above that is exhausting. Never offer or agree to more.
 - They said they could not hold through a 50% crypto drop → you may suggest a smaller Crypto part for now (their call); never change the numbers yourself.
 - The emergency fund (USDC in the MoonSafe vault) stands apart. Floor in months of spending (fixed + essential variable + debt payments): 3 stable income; 6 stable with dependents or irregular without; 9 irregular with dependents; 12 if also the sole earner.
 - Priority debt: credit card, consumer / payday loan, crypto margin, or any debt at ${param('priority_debt_rate_pct')}%/year or more. Interest-free debt never blocks.
@@ -468,7 +469,7 @@ const ALL_PLAN_TOOLS = [
     no_near_goal: { type: 'boolean', description: 'true when they said there is no big expense coming in the next 5 years' },
     crypto_drop_ok: { type: 'boolean', description: 'Answer to "if your crypto dropped by half, could you hold it without selling to live?": yes = true, no = false; unsure = leave out' },
     insured: { type: 'boolean', description: 'They have health or life insurance protecting the people who rely on them' },
-    crypto_split: { type: 'number', description: 'How they want the money outside Safety split, as the % that goes to Crypto (the rest is Traditional): "30/70 traditional/crypto" = 70, "half and half" = 50. Only when they chose it.' },
+    crypto_split: { type: 'number', description: 'How they want the money outside Safety split, as the % that goes to Crypto (the rest is Traditional): "70/30 traditional/crypto" = 30, "half and half" = 50. At most 50; a higher figure is refused. Only when they chose it.' },
   }),
   fn('add_holding', 'Record one thing the user holds (the app prices it live or keeps the declared value).', {
     type: { type: 'string', enum: ASSET_TYPE_KEYS },
@@ -729,7 +730,7 @@ function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: nu
     const tc = t.btc + t.large_cap + t.altcoin
     // Half percents, the same as the plan, so an even split never reads 35% / 34% (2026-10-29).
     const [ts, ttr, tcr] = [t.safe, t.traditional, tc].map(x => Math.round(x * 2) / 2)
-    lines.push(`- Target by the MoonSafe framework at age ${b.age}${b.ageIsDefault ? ' (DEFAULT age 30: the user declined; say the split is an estimate)' : ''}: Safety ${ts}%, Traditional ${ttr}%, Crypto ${tcr}% (mostly BTC; no target for other coins). Safety = age is the "age in bonds" rule of thumb. ${p.cryptoSplit === undefined ? 'Traditional / Crypto is MoonSafe\'s default even split, NOT a standard rule: say so, and that they can choose another split (record it with update_profile crypto_split); when you first give the split, ask once how they want it.' : `Traditional / Crypto is the split they chose (${100 - p.cryptoSplit}/${p.cryptoSplit}).`}`)
+    lines.push(`- Target by the MoonSafe framework at age ${b.age}${b.ageIsDefault ? ' (DEFAULT age 30: the user declined; say the split is an estimate)' : ''}: Safety ${ts}%, Traditional ${ttr}%, Crypto ${tcr}% (mostly BTC; no target for other coins). Safety = age is the "age in bonds" rule of thumb. ${p.cryptoSplit === undefined ? 'Traditional / Crypto is MoonSafe\'s default even split, NOT a standard rule: say so, and that they can lower Crypto, for example 70/30, but not go above 50% (record it with update_profile crypto_split); when you first give the split, ask once how they want it.' : `Traditional / Crypto is the split they chose (${100 - p.cryptoSplit}/${p.cryptoSplit}).`}`)
     // Totals, not only what is missing (Hieu, 2026-10-28): "X of Y, Z to go" for each part; Safety carries a near-term goal first.
     const st = bucketStanding(b)
     if (st && b.fund.met) lines.push(`- Where they stand (Hieu, 2026-11-01): the part furthest ahead of its age share is the full bar and sets the size; the others' full amounts follow it (full = leader value / leader share × their share). Nothing is ever "over": if a part grows (prices up) it simply becomes the one that sets the size and the others' bars rise; never suggest selling. New money goes to the parts still short, in ANY order the user likes: never pick the order for them and never say one part should come first. Name the parts only as Safety, Traditional and Crypto (a term deposit or bonds are Safety, never "investments"). Spare money is NOT tracked. Quote each part exactly as below${b.goalUsd > 0 ? `; Safety includes the near-term goal ${show(b.goalUsd)}: what they hold in Safety counts toward that goal first, and the Safety figure already includes it` : ''}: ${st.map(x => x.share <= 0 ? `${x.name} ${show(x.have)}: not in their split (0%)` : x.anchor ? `${x.name} ${show(x.have)}: furthest ahead, sets the size` : `${x.name} ${show(x.have)} of ${show(x.target)}${x.full ? ': full' : `, ${show(x.left)} to go`}`).join('; ')}`)
@@ -911,6 +912,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   let profile = startProfile
   const ops: ProfileOp[] = []
   const readback: string[] = []
+  let cryptoSplitRefused = false
   const embeddedScope = scopeChoice(latest)
   if (embeddedScope && embeddedScope !== startProfile.planningScope) {
     profile = { ...profile, planningScope: embeddedScope }
@@ -1238,8 +1240,12 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       if (a.no_near_goal === true && !profile.nearGoal && SAYS_NONE.test(lastUserText)) f.noNearGoal = true
       if (a.has_windfalls === true && !profile.hasWindfalls && WINDFALL.test(lastUserText)) f.hasWindfalls = true
       if (typeof a.crypto_drop_ok === 'boolean' && a.crypto_drop_ok !== profile.cryptoDropOk && (YES_NO.test(lastUserText) || /drop|half|giảm|một nửa/i.test(prevAssistantText))) f.cryptoDropOk = a.crypto_drop_ok // lang-ok
-      // The Traditional / Crypto split is the user's to choose (Hieu, 2026-10-31); only from a split they stated (a figure or "half").
-      if (typeof a.crypto_split === 'number' && a.crypto_split >= 0 && a.crypto_split <= 100 && Math.round(a.crypto_split) !== (profile.cryptoSplit ?? 50) && ((/\d/.test(lastUserText) && (stated(a.crypto_split) || stated(100 - a.crypto_split))) || /half|even|chia đôi|một nửa/i.test(lastUserText))) f.cryptoSplit = Math.round(a.crypto_split) // lang-ok
+      // The user may lower Crypto, never raise it above the cap (Hieu, 2026-11-03); only from a split they stated (a figure or "half").
+      if (typeof a.crypto_split === 'number' && a.crypto_split > MAX_CRYPTO_SPLIT && a.crypto_split <= 100) {
+        cryptoSplitRefused = true
+        return `Not recorded: Crypto is at most ${MAX_CRYPTO_SPLIT}% of the money outside Safety. Their split stays as it is; they can only lower Crypto.`
+      }
+      if (typeof a.crypto_split === 'number' && a.crypto_split >= 0 && a.crypto_split <= MAX_CRYPTO_SPLIT && Math.round(a.crypto_split) !== (profile.cryptoSplit ?? 50) && ((/\d/.test(lastUserText) && (stated(a.crypto_split) || stated(100 - a.crypto_split))) || /half|even|chia đôi|một nửa/i.test(lastUserText))) f.cryptoSplit = Math.round(a.crypto_split) // lang-ok
       if (typeof a.insured === 'boolean' && a.insured !== profile.insured && (YES_NO.test(lastUserText) || /insur|bảo hiểm/i.test(lastUserText + prevAssistantText))) f.insured = a.insured // lang-ok
       if (!Object.keys(f).length) { console.log(`dropped update_profile ${call.function.arguments}: not stated or unchanged`); return 'Nothing changed (not stated in the latest message, or already known).' }
       const parts: Array<[Record<string, unknown>, string]> = []
@@ -1258,7 +1264,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       for (const [fields, text] of parts) record({ op: 'update_profile', fields }, text)
       done.push(`Recorded: ${parts.map(x => x[1]).join(', ')}.`)
       // Persona run 2026-11-01: a split set this turn was answered "already set, no change recorded".
-      if (f.cryptoSplit !== undefined) done.push(`The Traditional / Crypto split was CHANGED just now, at the user's request, to ${100 - (f.cryptoSplit as number)} / ${f.cryptoSplit}: confirm it as their choice in one sentence (the split is theirs to pick); never say it was already set.${(f.cryptoSplit as number) >= 80 ? ' Mention once, plainly, that crypto can fall by half.' : ''}`)
+      if (f.cryptoSplit !== undefined) done.push(`The Traditional / Crypto split was CHANGED just now, at the user's request, to ${100 - (f.cryptoSplit as number)} / ${f.cryptoSplit}: confirm it as their choice in one sentence; never say it was already set.`)
     } else if (name === 'add_holding') {
       const h = await buildHolding(a)
       if (typeof h === 'string') { console.log(`dropped add_holding ${call.function.arguments}: ${h}`); return h }
@@ -1783,13 +1789,17 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     if (built) return json({ content: built, ops, dcaStop, actions })
   }
 
+  // A split above the cap gets the same answer every time, never the model's wording (Hieu, 2026-11-03).
+  if (cryptoSplitRefused && !ops.length && !appEvent) {
+    const c = profile.cryptoSplit ?? 50
+    return json({ content: vi ? `Crypto giữ ở mức tối đa ${MAX_CRYPTO_SPLIT}% phần tiền ngoài Safety: crypto biến động rất mạnh, vượt mức này thì việc cân lại các phần sẽ rất mệt. Mình giữ nguyên tỷ lệ Traditional ${100 - c}% / Crypto ${c}%. Bạn vẫn có thể giảm Crypto, ví dụ Traditional 70% / Crypto 30%.` : `Crypto stays at ${MAX_CRYPTO_SPLIT}% or less of the money outside Safety: it swings so much that above that, keeping your parts in balance gets exhausting. I kept your split at Traditional ${100 - c}% / Crypto ${c}%. You can still lower Crypto, for example Traditional 70% / Crypto 30%.`, ops, dcaStop, actions }) // lang-ok
+  }
   // A split changed this turn is confirmed by the server (Haiku runs 2026-11-01: the model twice said "already set, no change").
   {
     const only = ops.length === 1 && ops[0].op === 'update_profile' ? ops[0].fields : null
     const split = only && Object.keys(only).length === 1 && typeof only.cryptoSplit === 'number' ? only.cryptoSplit : null
     if (split !== null && !appEvent && !userAsks) {
-      const warn = split >= 80 ? (vi ? ' Crypto có thể giảm một nửa hoặc hơn, nên tỷ lệ này dao động mạnh; đây là lựa chọn của bạn.' : ' Crypto can fall by half or more, so this split swings hard; it is your choice.') : '' // lang-ok
-      return json({ content: vi ? `Xong: phần ngoài Safety giờ chia Traditional ${100 - split}% / Crypto ${split}%, theo lựa chọn của bạn.${warn}` : `Done: outside Safety your split is now Traditional ${100 - split}% / Crypto ${split}%, as you chose.${warn}`, ops, dcaStop, actions }) // lang-ok
+      return json({ content: vi ? `Xong: phần ngoài Safety giờ chia Traditional ${100 - split}% / Crypto ${split}%, theo lựa chọn của bạn.` : `Done: outside Safety your split is now Traditional ${100 - split}% / Crypto ${split}%, as you chose.`, ops, dcaStop, actions }) // lang-ok
     }
   }
   // "How much is in my Safety / bank / crypto?": answered from the numbers, with the totals (Hieu, 2026-10-28), never by the model.

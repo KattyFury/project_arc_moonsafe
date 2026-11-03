@@ -194,8 +194,8 @@ export function IntakeFormCard({ keys, seen, values, planningScope, status, save
       {values.coinsUnit === 'coins' && <Ticker label="Which coin" value={values.coinsTicker ?? ''} onChange={set('coinsTicker')} />}
       <div className="py-2 flex flex-col gap-2">
         <span className="text-[16px] leading-6" style={{ color: 'var(--ink)' }}>Outside Safety, Traditional / Crypto</span>
-        <Pills label="Traditional / Crypto split" value={values.cryptoSplit ?? null} options={[{ value: '30', label: '70 / 30' }, { value: '50', label: '50 / 50' }, { value: '70', label: '30 / 70' }]} onChange={set('cryptoSplit')} />
-        <span className="text-[14px] leading-5" style={{ color: 'var(--muted)' }}>50 / 50 is MoonSafe's default, not a fixed rule. Your call.</span>
+        <Pills label="Traditional / Crypto split" value={values.cryptoSplit ?? null} options={[{ value: '30', label: '70 / 30' }, { value: '50', label: '50 / 50' }]} onChange={set('cryptoSplit')} />
+        <span className="text-[14px] leading-5" style={{ color: 'var(--muted)' }}>50 / 50 is MoonSafe's default. You can lean to Traditional; Crypto stays at 50% or less.</span>
       </div>
     </> })
   }

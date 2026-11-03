@@ -38,7 +38,7 @@ MoonSafe là **người giữ quỹ dự phòng**, rồi là **người tư vấ
 ## 3. Bảng cân đối: phần đi xa nhất làm mốc
 
 - **Vì sao:** không theo dõi tổng tiền (đổi liên tục). Theo dõi các phần có cân với nhau theo tuổi không.
-- Tỷ lệ theo tuổi: Safety = tuổi %, phần còn lại chia Traditional / Crypto (MoonSafe mặc định 50/50, người dùng chọn khác được; agent nói rõ 50/50 là mặc định của app, không phải quy tắc chuẩn).
+- Tỷ lệ theo tuổi: Safety = tuổi %, phần còn lại chia Traditional / Crypto (MoonSafe mặc định 50/50; agent nói rõ 50/50 là mặc định của app, không phải quy tắc chuẩn). **Người dùng chỉ được giảm Crypto, nghiêng sang Traditional (VD 70/30), không được làm ngược lại (VD 40/60):** Crypto tối đa 50% phần ngoài Safety, vì crypto biến động mạnh, quá 50% thì cân lại các phần rất mệt (Hiếu 2026-11-03).
 - **Luật mốc (Hiếu chốt 2026-11-01):** phần đi xa nhất so với tỷ lệ của nó (tiền / tỷ lệ lớn nhất) là thanh đầy 100%; thanh đầy của các phần khác theo nó. Ví dụ 30 tuổi (30 / 35 / 35), Safety $3.000 đi xa nhất → Traditional đầy ở $3.500, Crypto đầy ở $3.500. Người dùng bổ sung Traditional và Crypto theo Safety, tiền từ thu nhập hay tiền rảnh, thích bổ sung kiểu gì thì bổ sung.
 - **Không lấy tổng 3 phần làm 100%** (làm một phần luôn luôn thiếu), và **không hiện % trên từng phần** (khó hiểu; Hiếu 2026-11-01). Mỗi phần chỉ hiện: số tiền "$1,000 of $3,500" + "$2,500 to go" hoặc "Full"; phần làm mốc ghi "Full, it sets the size".
 - Không phần nào vượt thanh của nó, nên **không bao giờ có chuyện khuyên bán**. Giá giảm không phải lý do để giục mua thêm.

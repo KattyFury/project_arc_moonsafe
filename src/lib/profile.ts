@@ -5,7 +5,7 @@
 //
 // Pure module with relative imports only (shared by the app, functions/api/chat.ts and scripts).
 
-import { assetTypeRow } from '../kb/kb'
+import { assetTypeRow, MAX_CRYPTO_SPLIT } from '../kb/kb'
 import {
   EMPTY_PROFILE, type AssetType, type Category, type Currency, type Debt, type DebtType, type Expense,
   type FinancialProfile, type Holding, type Income, type IncomeKind, type NearGoal,
@@ -184,7 +184,8 @@ function migrateV1(raw: Record<string, unknown>, now: number): FinancialProfile 
 
 /** Any stored shape (v2, v1, Arc Studio's) → v2. */
 /** Crypto share of the money outside Safety, 0 to 100 %. */
-const split = (v: unknown): number | null => { const n = num(v); return n !== null && n >= 0 && n <= 100 ? n : null }
+// A split saved before the cap (Hieu, 2026-11-03) reads as the cap.
+const split = (v: unknown): number | null => { const n = num(v); return n !== null && n >= 0 && n <= 100 ? Math.min(n, MAX_CRYPTO_SPLIT) : null }
 
 export function normalizeProfile(raw: Record<string, unknown> | null | undefined, now = Date.now()): FinancialProfile {
   if (!raw) return { ...EMPTY_PROFILE }

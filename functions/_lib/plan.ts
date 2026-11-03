@@ -123,8 +123,8 @@ export function splitSection(b: Balance, vi: boolean, n = 2): string | null {
   const even = sTrad === sCrypto
   const safeItems = b.items.filter(i => i.group === 'safe' && i.usd >= 0.005).map(i => `${i.label} ${fmt(i.usd)}`)
   const head = vi
-    ? `${n}. **Đầu tư theo tuổi của bạn, ${age}${est}:** Safety ${sSafe}%, Traditional ${sTrad}%, Crypto ${sCrypto}%. ${even ? 'Traditional và Crypto chia đôi là mặc định của MoonSafe, không phải quy tắc chuẩn; bạn có thể chọn tỷ lệ khác.' : `Traditional ${sTrad}% và Crypto ${sCrypto}% là tỷ lệ bạn chọn.`}` // lang-ok
-    : `${n}. **Investing, by your age, ${age}${est}:** Safety ${sSafe}%, Traditional ${sTrad}%, Crypto ${sCrypto}%. ${even ? 'An even Traditional / Crypto split is MoonSafe\'s default, not a standard rule; you can pick another.' : `Traditional ${sTrad}% and Crypto ${sCrypto}% is the split you chose.`}`
+    ? `${n}. **Đầu tư theo tuổi của bạn, ${age}${est}:** Safety ${sSafe}%, Traditional ${sTrad}%, Crypto ${sCrypto}%. ${even ? 'Traditional và Crypto chia đôi là mặc định của MoonSafe, không phải quy tắc chuẩn; bạn có thể giảm Crypto, ví dụ 70/30, nhưng Crypto không quá 50%.' : `Traditional ${sTrad}% và Crypto ${sCrypto}% là tỷ lệ bạn chọn.`}` // lang-ok
+    : `${n}. **Investing, by your age, ${age}${est}:** Safety ${sSafe}%, Traditional ${sTrad}%, Crypto ${sCrypto}%. ${even ? 'An even Traditional / Crypto split is MoonSafe\'s default, not a standard rule; you can lower Crypto, for example 70/30, but Crypto stays at 50% or less.' : `Traditional ${sTrad}% and Crypto ${sCrypto}% is the split you chose.`}`
   // Why Safety, in plain words, before any number (Hieu, 2026-11-01: the user must understand why they need it and decide it themselves).
   const why = vi
     ? '- **Safety** là phần rủi ro thấp của tài sản (tiền gửi, trái phiếu): lời ít hơn nhưng đều, không lên xuống theo cổ phiếu hay crypto, nên khi thị trường giảm thì tổng tài sản của bạn giảm ít hơn. Nó không phải tiền dùng lúc khẩn cấp (đó là quỹ dự phòng), và tiền gửi có kỳ hạn thường bị khoá đến ngày đáo hạn.' // lang-ok

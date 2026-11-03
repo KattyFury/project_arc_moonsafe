@@ -80,7 +80,7 @@ const money = (n: number) => `$${new Intl.NumberFormat('en-US', { maximumFractio
 /**
  * Question 2 of 2, after the month is told: what was noted, what it means for the emergency fund (target and what is left each
  * month, and where the fund money can come from), then what they hold in their own words and the Traditional / Crypto split
- * (MoonSafe's default 50/50, their call). Income steadiness left out is asked once here, in one short line.
+ * (MoonSafe's default 50/50; they can lower Crypto, never raise it above half). Income steadiness left out is asked once here, in one short line.
  */
 export function assetsAsk(p: FinancialProfile, fund: { floorUsd: number | null; floorMonths: number }, flow: { income: number | null; spending: number | null; debtPayments: number; surplus: number | null }, vi: boolean, _walletSeen: number | null = null, investingOpen = false): string {
   const noted: string[] = []
@@ -118,7 +118,7 @@ export function assetsAsk(p: FinancialProfile, fund: { floorUsd: number | null; 
     ? `Giờ tới phần bạn đang có. Bạn kể tự nhiên là được, ví dụ "5k tiền gửi có kỳ hạn, 0.5 oz vàng, 2k VOO, 0.02 BTC". Quỹ dự phòng trong app và cirBTC thì mình tự đọc trên chuỗi.` // lang-ok
     : `Now, what you hold, in your own words, for example "5k term deposit, 0.5 oz gold, 2k of VOO, 0.02 BTC". I read your emergency fund in the app and any cirBTC onchain myself.`)
   if (investingOpen) lines.push(vi
-    ? 'Thêm 1 câu: ngoài phần an toàn, bạn muốn chia giữa đầu tư truyền thống (cổ phiếu, vàng) và crypto thế nào? MoonSafe mặc định 50/50, bạn chọn khác cũng được.' // lang-ok
-    : 'And one more: outside Safety, how would you like to split between traditional investments (stocks, gold) and crypto? MoonSafe\'s default is 50/50; another split is fine.')
+    ? 'Thêm 1 câu: ngoài phần an toàn, bạn muốn chia giữa đầu tư truyền thống (cổ phiếu, vàng) và crypto thế nào? MoonSafe mặc định 50/50; bạn có thể giảm Crypto, ví dụ 70/30, nhưng Crypto không quá 50%.' // lang-ok
+    : 'And one more: outside Safety, how would you like to split between traditional investments (stocks, gold) and crypto? MoonSafe\'s default is 50/50; you can lower Crypto, for example 70/30, but Crypto stays at 50% or less.')
   return lines.join('\n\n')
 }

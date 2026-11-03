@@ -89,7 +89,7 @@
   "not_counted": ["State social insurance (BHXH): cannot be withdrawn at will, no set value"],
 
   "allocation": {
-    "formula": "safe (shown as Safety) = age %; rest r = 100 - age; traditional = r / 2; crypto = r / 2 by default, the user may choose another split of r (profile cryptoSplit, % of r in Crypto; Hieu 2026-10-31: MoonSafe default 50/50, say it is the app choice, not a standard rule), crypto as ONE bucket (even split, Hieu 2026-10-29: if crypto crashes Traditional can carry them, if stocks and gold fall crypto can, if both fall the emergency fund and Safety still stand; framework v2, Hieu 2026-10-27): explained as mostly BTC in words, no target for big caps, low caps or memecoins, so new crypto money is suggested as BTC. Continuous in age, no steps; computed, never looked up.",
+    "formula": "safe (shown as Safety) = age %; rest r = 100 - age; traditional = r / 2; crypto = r / 2 by default, the user may lower Crypto and lean to Traditional, never the reverse (profile cryptoSplit, % of r in Crypto, at most 50; Hieu 2026-11-03: MoonSafe default 50/50, say it is the app choice, not a standard rule), crypto as ONE bucket (even split, Hieu 2026-10-29: if crypto crashes Traditional can carry them, if stocks and gold fall crypto can, if both fall the emergency fund and Safety still stand; framework v2, Hieu 2026-10-27): explained as mostly BTC in words, no target for big caps, low caps or memecoins, so new crypto money is suggested as BTC. Continuous in age, no steps; computed, never looked up.",
     "rest_split": { "traditional": [1, 2], "crypto": [1, 2] },
     "crypto_split": { "btc": [1, 1], "large_cap": [0, 1], "altcoin": [0, 1] },
     "anchor": { "age": 30, "safe": 30, "traditional": 35, "btc": 35, "large_cap": 0, "altcoin": 0 },

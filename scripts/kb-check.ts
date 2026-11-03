@@ -446,8 +446,12 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   if (voo?.type !== 'us_stock' || voo?.symbol !== 'VOO' || voo?.quantity !== 10) fail('form: 10 shares of VOO')
   if (formToItems({ ...EMPTY_FORM, stocks: '10', stocksUnit: 'shares' }, null).length !== 0) fail('form: shares without a ticker are not saved as $10')
   if (formToItems({ ...EMPTY_FORM, bonds: '500', junkBonds: '300' }, null).map(i => (i.ops[0] as { holding?: Holding }).holding?.type).join() !== 'bond,junk_bond') fail('form: bonds (Safety) and high-yield bonds (Traditional)')
-  const split = formToItems({ ...EMPTY_FORM, cryptoSplit: '70' }, null)
-  if ((split[0]?.ops[0] as { fields?: { cryptoSplit?: number } }).fields?.cryptoSplit !== 70) fail('form: the split they pick is saved')
+  const split = formToItems({ ...EMPTY_FORM, cryptoSplit: '30' }, null)
+  if ((split[0]?.ops[0] as { fields?: { cryptoSplit?: number } }).fields?.cryptoSplit !== 30) fail('form: the split they pick is saved')
+  if (formToItems({ ...EMPTY_FORM, cryptoSplit: '70' }, null).length !== 0) fail('form: Crypto above 50% is not saved')
+  if (normalizeProfile({ v: 2, age: 30, cryptoSplit: 70 }).cryptoSplit !== 50) fail('a split saved above the cap reads as 50')
+  if (normalizeProfile({ v: 2, age: 30, cryptoSplit: 30 }).cryptoSplit !== 30) fail('a lower Crypto share is kept')
+  if (targetMix(30, 70).btc !== targetMix(30, 50).btc) fail('the target never gives Crypto more than half of the rest')
   // cirBTC bought in the app: recorded at what was paid; the onchain market value is no longer added on top.
   {
     const { cirBtcBuyOps } = await import('../src/lib/profile')

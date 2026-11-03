@@ -193,7 +193,7 @@ export function formToItems(v: FormValues, prices: Prices | null, now = Date.now
   else if (v.stocksUnit !== 'shares') holding('fund_bond', 'US stocks and ETFs', parseAmount(v.stocks))
   holding('vn_stock', 'Vietnamese stocks', parseAmount(v.vnStocks ?? ''))
   holding('junk_bond', 'High-yield bonds', parseAmount(v.junkBonds ?? ''))
-  const split = v.cryptoSplit === '30' || v.cryptoSplit === '50' || v.cryptoSplit === '70' ? Number(v.cryptoSplit) : null
+  const split = v.cryptoSplit === '30' || v.cryptoSplit === '50' ? Number(v.cryptoSplit) : null
   if (split !== null) add(`Outside Safety: Traditional ${100 - split}%, Crypto ${split}%`, { op: 'update_profile', fields: { cryptoSplit: split } })
   if (v.otherAssets === 'yes') {
     holding('home', 'Home or land', parseAmount(v.home))
