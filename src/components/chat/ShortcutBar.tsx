@@ -173,15 +173,15 @@ export function ShortcutBar({ disabled, onSaved, onCard }: {
   return (
     <div className="flex-shrink-0 flex flex-col gap-2 px-4 pt-2 lg:px-6" style={{ background: 'var(--chat-bg)' }}>
       {body && <div ref={panel} className="rounded-2xl p-4 overflow-y-auto no-scrollbar" style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-y2)', maxHeight: 'min(440px, 55dvh)' }}>{body}</div>}
-      <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 lg:mx-0 lg:px-0">
+      <div className="flex flex-wrap gap-2">
         {chips.map(({ id, label }) => {
           const Icon = ICONS[id]
           const on = open === id
           return (
             <button key={id} onClick={() => tap(id)} disabled={disabled} aria-pressed={on}
-              className="flex-shrink-0 h-10 px-4 rounded-full flex items-center gap-2 text-[14px] leading-5 font-semibold whitespace-nowrap transition-transform active:scale-[0.97] disabled:cursor-not-allowed"
+              className="h-10 px-4 rounded-full flex items-center gap-2 text-[14px] leading-5 font-semibold whitespace-nowrap transition-transform active:scale-[0.97] disabled:cursor-not-allowed"
               style={on ? { background: 'var(--accent)', color: 'white', border: '1px solid var(--accent)' } : { background: 'var(--bg)', color: disabled ? 'var(--muted)' : 'var(--ink)', border: '1px solid var(--line)' }}>
-              <Icon size={16} style={{ color: on ? 'white' : disabled ? 'var(--muted)' : 'var(--accent)' }} />{label}
+              <Icon size={16} className="hidden lg:block" style={{ color: on ? 'white' : disabled ? 'var(--muted)' : 'var(--accent)' }} />{label}
             </button>
           )
         })}
