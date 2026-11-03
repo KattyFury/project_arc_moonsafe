@@ -186,5 +186,14 @@ export function useAgent(hooks: AgentHooks) {
     setMessages([WELCOME])
   }, [])
 
-  return { messages, loading, sendMessage, clearChat }
+  /** A line from the app itself, no model call (the shortcuts above the message box): what was just saved, or the card shown under it. */
+  const addNote = useCallback((content: string): number => {
+    const timestamp = Date.now()
+    const next = [...messages.filter(m => !m.error), { role: 'assistant' as const, content, timestamp }]
+    setMessages(next)
+    writeChat(next)
+    return timestamp
+  }, [messages])
+
+  return { messages, loading, sendMessage, clearChat, addNote }
 }

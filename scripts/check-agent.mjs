@@ -4,6 +4,7 @@ const tests = [
   ['scripts/session-regression-check.ts'],
   ['scripts/response-quality-check.ts', '--no-report'],
   ['scripts/core-audit-check.ts'],
+  ['scripts/shortcuts-check.ts'],
   ['scripts/education-eval.ts', '--selftest'],
   ['scripts/part-choice-check.ts'],
   ['scripts/intake-assets-check.ts'],

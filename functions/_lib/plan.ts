@@ -361,7 +361,7 @@ export function buildPartAnswer({ b, vi, part, walletUsd }: { b: Balance; vi: bo
     const cents = (n: number) => Math.floor(n * 100) / 100
     const spend = cents(Math.max(0, walletUsd - 0.02))
     // cirBTC is the Bitcoin part of what is still to go; the rest is their pick, outside the app (Hieu, 2026-11-03).
-    const amount = Math.min(cents(row.left * BTC_GUIDE), spend)
+    const amount = Math.min(cents(row.left * BTC_GUIDE + 1e-6), spend)
     if (amount < 0.01) {
       return vi ? `Crypto: ${mine}, ${toGo}. Ví này chưa có USDC để mua, hãy thêm USDC vào ví rồi nói với mình nhé.` : `Crypto: ${mine}, ${toGo}. The wallet does not have USDC to spend yet, so add some and tell me.` // lang-ok
     }

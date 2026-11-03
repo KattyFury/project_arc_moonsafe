@@ -1,3 +1,9 @@
+# ▶ 2026-11-03 — NÚT TẮT TRÊN Ô CHAT (Hiếu chốt 6a) — CODE ĐÃ PUSH, CHƯA DEPLOY, CHỜ DUYỆT ẢNH
+
+- `src/components/chat/ShortcutBar.tsx` + `src/lib/shortcuts.ts`, kiểm bằng `scripts/shortcuts-check.ts` (trong `test:agent`). Không gọi model, có bước Confirm, lưu bằng các thao tác có sẵn; ghi một dòng vào chat qua `addNote` trong `useAgent`.
+- Ảnh duyệt: Desktop `MoonSafe-nut-tat-2026-11-03` (393×852 và 1440×900). Hiếu duyệt rồi mới chạy lệnh deploy ở mục ▶ MAINNET. Live hiện KHÔNG có nút này, nhưng `main` đã có: nếu cần deploy gấp việc khác thì nhớ điều này.
+- Chưa thử trên ví thật và tài khoản thật. Ảnh chụp từ dữ liệu giả.
+
 # ▶ 2026-11-03 — CRYPTO: 7 PHẦN BTC, 3 PHẦN TỰ CHỌN (Hiếu chốt 1a 2b 3a, ĐÃ DEPLOY)
 
 - Một thanh Crypto, mọi coin đều tính; 7/3 chỉ là hướng dẫn nói một lần, không theo dõi riêng; lệch là lựa chọn của người dùng, không nhắc, không khuyên bán. "Top" = top 10 vốn hoá, không tính stablecoin; agent không tự nêu tên coin ngoài BTC. Nút mua cirBTC đề nghị 7 phần số còn thiếu (`BTC_GUIDE` trong `src/kb/kb.ts`). Công thức `targetMix` không đổi. Nguồn chuẩn: `docs/CORE.md` mục 2.

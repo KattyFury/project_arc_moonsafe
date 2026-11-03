@@ -1,6 +1,6 @@
 // Screen 6 — chat with the agent. There is no declaration form: what the user tells the
 // agent (income, spending, debts, holdings…) is saved straight to the profile; they can read it
-// in Balance, correct it by telling the agent, or clear it in Menu.
+// in Balance, correct it by telling the agent or with the shortcuts above the message box, or clear it in Menu.
 
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Loader2, Send, Shield, TrendingUp, Wallet, type LucideIcon } from 'lucide-react'
@@ -19,6 +19,7 @@ import { ActionCard, type ChatAction } from '@/components/chat/ActionCard'
 import { RecordCard } from '@/components/chat/RecordCard'
 import { ItemsCard } from '@/components/chat/ItemsCard'
 import { IntakeFormCard } from '@/components/chat/IntakeFormCard'
+import { ShortcutBar } from '@/components/chat/ShortcutBar'
 import { EMPTY_FORM, formPriceNeeds, formToItems, type FormValues } from '@/lib/intakeForm'
 import type { Prices } from '@/lib/allocation'
 import { readOps } from '@/lib/profile'
@@ -144,7 +145,7 @@ export function ChatScreen({ onError, onActions, ask = null, onAsked }: { onErro
   const { power, setPower, verifyOwner, buy } = useAiPower()
   const [powerOpen, setPowerOpen] = useState(false)
   const outOfPower = isOutOfPower(power)
-  const { messages, loading, sendMessage } = useAgent({
+  const { messages, loading, sendMessage, addNote } = useAgent({
     // The server recomputes every figure and the buy lock from these (src/lib/allocation.ts computeBalance).
     getContext: () => ({
       profile: profile.profile,
@@ -257,6 +258,12 @@ export function ChatScreen({ onError, onActions, ask = null, onAsked }: { onErro
 
         {power && <PowerMeter power={power} onOpen={() => setPowerOpen(true)} />}
         {powerOpen && power && <PowerSheet power={power} verifyOwner={verifyOwner} buy={buy} onClose={() => setPowerOpen(false)} />}
+
+        <ShortcutBar disabled={loading} onSaved={note => { addNote(note) }}
+          onCard={(kind, amountUsd) => {
+            const at = addNote(kind === 'deposit' ? 'Here is the deposit into your emergency fund: check it and sign below.' : 'Here is the cirBTC buy: get a quote, check it and sign below.')
+            setExtras(x => ({ ...x, cards: [...x.cards, { id: at, at, kind, amount: BigInt(Math.round(amountUsd * 1_000_000)).toString() }].slice(-40) }))
+          }} />
 
         {/* Composer */}
         <div className="flex-shrink-0 flex px-4 pt-2 pb-4 lg:px-6 lg:pb-6" style={{ background: 'var(--chat-bg)' }}>

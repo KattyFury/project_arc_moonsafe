@@ -48,6 +48,7 @@ MoonSafe là **người giữ quỹ dự phòng**, rồi là **người tư vấ
 
 ## 4. Ghi dữ liệu
 
+- **Nút tắt trên ô chat (Hiếu 2026-11-03):** không phải thẻ khai báo, không ai bị ép bấm, vẫn gõ chat được. Quỹ chưa đầy hoặc còn nợ lãi cao: `Add to fund` · `Edit my month` · `Edit what I hold`. Đã mở đầu tư: `Add money` · `Edit Safety` · `Edit Traditional` · `Edit Crypto` · `Change split`. Chạy bằng code, không gọi model, vẫn có bước Confirm trước khi lưu (`src/lib/shortcuts.ts`).
 - Mỗi người dùng 1 bản ghi riêng (Cloudflare KV `u:<Privy id>`), trình duyệt giữ bản sao. Tài sản là danh sách món; ô của món suy ra từ loại + lựa chọn Safety của người dùng.
 - Mỗi tin nhắn: agent đọc lời người dùng, đối chiếu với dữ liệu, đề nghị thêm / sửa / chuyển ô / xoá. **Mọi thay đổi tài sản đều qua thẻ xác nhận**, kể cả lần khai đầu.
 - Người dùng kể thay đổi mà không nói số ("bán bớt ETH") → không ghi, hỏi đúng 1 câu. Số khai đã cũ → hỏi lại món cũ nhất, mỗi lần 1 món.
