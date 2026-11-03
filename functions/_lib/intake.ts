@@ -10,6 +10,7 @@
  */
 
 import type { FinancialProfile } from '../../src/types'
+import { fundMissingInputs } from './agentGuards'
 
 export const INTAKE_MIN_UNKNOWN = 3
 
@@ -18,8 +19,6 @@ export const BATCH_MARK = /Share whatever you(?:'|’)re comfortable with|thoả
 
 interface Bullet { key: string; en: string; vi: string; known: (p: FinancialProfile) => boolean }
 
-/** USDC the app sees in the connected wallet: said out loud, but only what the user declares counts (Hieu, 2026-10-28). */
-const seen = (n: number | null | undefined) => n !== null && n !== undefined && n >= 1 ? new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Math.floor(n)) : null
 
 export const ASSET_TYPES = ['savings', 'term_deposit', 'checking', 'cash', 'bond', 'junk_bond', 'stable_wallet', 'flexible_earn', 'locked_earn', 'defi_stable', 'btc', 'eth', 'top10', 'altcoin', 'crypto', 'staked_large_cap', 'nft', 'gold_physical', 'gold_token', 'us_stock', 'vn_stock', 'fund_bond']
 const OTHER_TYPES = ['home', 'car', 'rental_property', 'loan_given', 'business_stake']
@@ -83,7 +82,7 @@ const money = (n: number) => `$${new Intl.NumberFormat('en-US', { maximumFractio
  * month, and where the fund money can come from), then what they hold in their own words and the Traditional / Crypto split
  * (MoonSafe's default 50/50, their call). Income steadiness left out is asked once here, in one short line.
  */
-export function assetsAsk(p: FinancialProfile, fund: { floorUsd: number | null; floorMonths: number }, flow: { income: number | null; spending: number | null; debtPayments: number; surplus: number | null }, vi: boolean, walletSeen: number | null = null): string {
+export function assetsAsk(p: FinancialProfile, fund: { floorUsd: number | null; floorMonths: number }, flow: { income: number | null; spending: number | null; debtPayments: number; surplus: number | null }, vi: boolean, _walletSeen: number | null = null, investingOpen = false): string {
   const noted: string[] = []
   if (p.age !== null) noted.push(vi ? `tuổi ${p.age}` : `age ${p.age}`) // lang-ok
   if (flow.income !== null) noted.push(vi ? `thu nhập ${money(flow.income)}/tháng` : `income ${money(flow.income)} a month`) // lang-ok
@@ -95,6 +94,17 @@ export function assetsAsk(p: FinancialProfile, fund: { floorUsd: number | null; 
   if (p.debtsComplete && !p.debts.length) noted.push(vi ? 'không nợ' : 'no debt') // lang-ok
   const lines: string[] = []
   if (noted.length) lines.push(vi ? `Mình ghi lại: ${noted.join('; ')}.` : `Noted: ${noted.join('; ')}.`) // lang-ok
+  const missing = fundMissingInputs(p, flow.spending)
+  if (missing.length) {
+    const questions: Record<string, [string, string]> = {
+      'monthly spending': ['Roughly how much do you spend each month?', 'Mỗi tháng bạn chi tiêu khoảng bao nhiêu?'], // lang-ok
+      'income stability': ['Is your income about the same every month?', 'Thu nhập của bạn có đều hằng tháng không?'], // lang-ok
+      dependents: ['Does anyone rely on your income?', 'Có ai phụ thuộc vào thu nhập của bạn không?'], // lang-ok
+      'whether this is the only household income': ['Are you the only earner in your household?', 'Bạn có phải người kiếm tiền duy nhất trong gia đình không?'], // lang-ok
+    }
+    lines.push(questions[missing[0]][vi ? 1 : 0])
+    return lines.join('\n\n')
+  }
   if (fund.floorUsd !== null) {
     const left = flow.surplus
     const source = left === null ? '' : left > 0.5
@@ -104,13 +114,11 @@ export function assetsAsk(p: FinancialProfile, fund: { floorUsd: number | null; 
         : (vi ? ' Hiện mỗi tháng chưa dư đồng nào.' : ' Right now nothing is left at the end of the month.') // lang-ok
     lines.push(vi ? `Quỹ dự phòng của bạn nên là **${money(fund.floorUsd)}** = ${fund.floorMonths} tháng chi tiêu${flow.debtPayments > 0 ? ' (gồm cả tiền trả nợ, vì mất việc vẫn phải trả)' : ''}.${source}` : `Your emergency fund should be **${money(fund.floorUsd)}** = ${fund.floorMonths} months of spending${flow.debtPayments > 0 ? ' (debt payments included: they go on even if your income stops)' : ''}.${source}`) // lang-ok
   }
-  const s = seen(walletSeen)
   lines.push(vi
-    ? `Giờ tới phần bạn đang có. Bạn kể tự nhiên là được, ví dụ "5k tiền gửi có kỳ hạn, 0.5 oz vàng, 2k VOO, 0.02 BTC". Quỹ dự phòng trong app và cirBTC thì mình tự đọc trên chuỗi${s ? `; ví này đang có ${s} USDC, bạn nói giúp phần nào là của bạn` : ''}.` // lang-ok
+    ? `Giờ tới phần bạn đang có. Bạn kể tự nhiên là được, ví dụ "5k tiền gửi có kỳ hạn, 0.5 oz vàng, 2k VOO, 0.02 BTC". Quỹ dự phòng trong app và cirBTC thì mình tự đọc trên chuỗi.` // lang-ok
     : `Now, what you hold, in your own words, for example "5k term deposit, 0.5 oz gold, 2k of VOO, 0.02 BTC". I read your emergency fund in the app and any cirBTC onchain myself.`)
-  lines.push(vi
+  if (investingOpen) lines.push(vi
     ? 'Thêm 1 câu: ngoài phần an toàn, bạn muốn chia giữa đầu tư truyền thống (cổ phiếu, vàng) và crypto thế nào? MoonSafe mặc định 50/50, bạn chọn khác cũng được.' // lang-ok
     : 'And one more: outside Safety, how would you like to split between traditional investments (stocks, gold) and crypto? MoonSafe\'s default is 50/50; another split is fine.')
-  if (p.incomeStable === null && p.incomes.length) lines.push(vi ? 'Một câu nhanh: thu nhập của bạn có đều hằng tháng không?' : 'Quick one: is your income about the same every month?') // lang-ok
   return lines.join('\n\n')
 }

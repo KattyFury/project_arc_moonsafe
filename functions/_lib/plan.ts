@@ -9,6 +9,7 @@
 
 import { bucketStanding, type Balance, type Standing } from '../../src/lib/allocation'
 import { param } from '../../src/kb/kb'
+import { fundMissingInputs } from './agentGuards'
 import type { FinancialProfile } from '../../src/types'
 
 /** Monthly buys a part is spread over when the user does not trade by the charts (Hieu, 2026-10-29). */
@@ -112,6 +113,7 @@ export const planShares = (b: Balance): [number, number, number] | null => {
  * size; the others are topped up to follow it, from income or spare money, in any order the user likes. Spare money is not tracked.
  */
 export function splitSection(b: Balance, vi: boolean, n = 2): string | null {
+  if (!b.fund.met || b.debts.priorityCount > 0) return null
   const standing = bucketStanding(b)
   const shares = planShares(b)
   if (!shares) return null
@@ -151,7 +153,7 @@ export function splitSection(b: Balance, vi: boolean, n = 2): string | null {
 }
 
 export function buildPlan({ p, b, cover, partial = null, vi, hasVault = true, vaultFee = 1 }: PlanInput): string | null {
-  if (!b.target || b.fund.floorUsd === null || p.incomeStable === null) return null
+  if (!b.target || b.fund.floorUsd === null || fundMissingInputs(p, b.cashflow.spending).length) return null
   if (b.debts.priorityCount > 0) return null
   const vault = b.fundUsd ?? 0
   const fundNow = vault >= b.fund.floorUsd - 0.005
@@ -209,7 +211,7 @@ function monthsToClear(balance: number, ratePct: number, pay: number): number | 
  */
 export function buildDebtPlan({ p, b, shares, vi, walletUsd, hasVault = true, vaultFee = 1 }: { p: FinancialProfile; b: Balance; shares: [number, number, number]; vi: boolean; walletUsd: number; hasVault?: boolean; vaultFee?: number }): string | null {
   const pri = b.debts.lines.filter(l => l.priority)
-  if (!pri.length || b.fund.floorUsd === null || b.fund.starterUsd === null || p.incomeStable === null) return null
+  if (!pri.length || b.fund.floorUsd === null || b.fund.starterUsd === null || fundMissingInputs(p, b.cashflow.spending).length) return null
   if (pri.some(l => l.debt.ratePct === null || l.usd === null)) return null
   // A debt of untold type below the priority rate may be a cheap loan, not an expensive one: the agent asks what it is.
   if (pri.some(l => l.debt.type === 'unknown' && (l.debt.ratePct ?? 0) < param('priority_debt_rate_pct'))) return null
@@ -226,7 +228,6 @@ export function buildDebtPlan({ p, b, shares, vi, walletUsd, hasVault = true, va
   const pace = months === null ? '' : vi
     ? ` Trả ${fmt(pays + left)}/tháng${left > 0.5 ? ` (gồm ${fmt(left)} còn dư mỗi tháng)` : ''} thì khoảng ${months} tháng là hết.` // lang-ok
     : ` Paying ${fmt(pays + left)} a month${left > 0.5 ? ` (with the ${fmt(left)} left each month)` : ''} clears it in about ${months} months.`
-  const [sSafe, sTrad, sCrypto] = shares
   const starterGap = Math.max(0, starter - vault)
   const deposit = Math.floor(Math.min(starterGap, walletUsd))
   const ask = starterGap <= 0.005
@@ -241,7 +242,7 @@ export function buildDebtPlan({ p, b, shares, vi, walletUsd, hasVault = true, va
       `1. **Quỹ khởi đầu: ${fmt(starter)}** = 1 tháng chi tiêu, để một khoản bất ngờ không phải vay thêm. Hiện có ${fmt(vault)}.`, // lang-ok
       `2. **Trả nợ lãi cao: ${fmt(total)}** (${each}). Nó tốn khoảng ${fmt(interest)} tiền lãi mỗi tháng; trả nợ là khoản lời chắc chắn ${topRate}%/năm, cao hơn mức đầu tư nào hứa được.${pace}`, // lang-ok
       `3. **Hoàn tất quỹ dự phòng: ${fmt(b.fund.floorUsd)}** = ${b.fund.floorMonths} tháng chi tiêu, vì ${fundWhy(p, b.fund.floorMonths, true)}.`, // lang-ok
-      `4. Sau đó mới đầu tư theo tuổi: Safety ${sSafe}%, Truyền thống ${sTrad}%, Crypto ${sCrypto}%. Mua cirBTC trong app mở khi hết nợ lãi cao và quỹ đã đủ.`, // lang-ok
+      '4. Chỉ bàn cách đầu tư sau khi hết nợ lãi cao và quỹ dự phòng đã đủ.', // lang-ok
       'Đây là gợi ý, bạn quyết định.', // lang-ok
       ask,
     ]
@@ -250,7 +251,7 @@ export function buildDebtPlan({ p, b, shares, vi, walletUsd, hasVault = true, va
       `1. **Starter fund: ${fmt(starter)}** = 1 month of spending, so a surprise bill never means borrowing more. You have ${fmt(vault)}.`,
       `2. **Pay off the expensive debt: ${fmt(total)}** (${each}). It costs about ${fmt(interest)} a month in interest; paying it off is a sure ${topRate}% a year, more than any investment can promise.${pace}`,
       `3. **Finish the emergency fund: ${fmt(b.fund.floorUsd)}** = ${b.fund.floorMonths} months of spending, because ${fundWhy(p, b.fund.floorMonths, false)}.`,
-      `4. Then invest by your age: Safety ${sSafe}%, Traditional ${sTrad}%, Crypto ${sCrypto}%. Buying cirBTC in the app opens once the expensive debt is gone and the fund is full.`,
+      '4. Investing comes only after the expensive debt is gone and the emergency fund is full.',
       'A suggestion, your call.',
       ask,
     ]
@@ -262,11 +263,16 @@ export function buildDebtPlan({ p, b, shares, vi, walletUsd, hasVault = true, va
  * The emergency fund and Safety are different things and are never mixed (Hieu, 2026-10-28).
  */
 export function buildStanding({ p, b, vi }: { p: FinancialProfile; b: Balance; vi: boolean }): string | null {
+  if (fundMissingInputs(p, b.cashflow.spending).length) return null
   const standing = bucketStanding(b)
   const vault = b.fundUsd ?? 0
   const fundLine = b.fund.floorUsd !== null
     ? (vi ? `**Quỹ dự phòng:** ${fmt(vault)} trên ${fmt(b.fund.floorUsd)} (${b.fund.floorMonths} tháng chi tiêu)${vault >= b.fund.floorUsd - 0.005 ? ', đã đủ' : `, còn ${fmt(b.fund.floorUsd - vault)}`}.` : `**Emergency fund:** ${fmt(vault)} of ${fmt(b.fund.floorUsd)} (${b.fund.floorMonths} months of spending)${vault >= b.fund.floorUsd - 0.005 ? ', full' : `, ${fmt(b.fund.floorUsd - vault)} to go`}.`) // lang-ok
     : (vi ? `**Quỹ dự phòng:** ${fmt(vault)}; hãy cho mình biết chi tiêu hằng tháng để tính mức cần có.` : `**Emergency fund:** ${fmt(vault)}; tell me your monthly spending to work out how much it should be.`) // lang-ok
+  if (!b.fund.met || b.debts.priorityCount > 0) {
+    const crypto = b.byGroup.btc + b.byGroup.large_cap + b.byGroup.altcoin
+    return [fundLine, `Safety: ${fmt(b.byGroup.safe)}. Traditional: ${fmt(b.byGroup.traditional)}. Crypto: ${fmt(crypto)}.`].join('\n')
+  }
   const scope = p.planningScope === 'household' ? (vi ? 'Tổng quan gia đình:' : 'Household totals:') : null // lang-ok
   // Nothing in the three parts yet (spare money is not tracked, Hieu 2026-11-01): the fund, and that the parts start empty.
   if (!standing) return [scope, fundLine, vi ? 'Chưa có gì trong Safety, Traditional hay Crypto.' : 'Nothing is in Safety, Traditional or Crypto yet.'].filter(Boolean).join('\n') // lang-ok
@@ -400,6 +406,13 @@ export function buildAfterSign({ b, vi, kind, summary, cover = null, partial = n
       ? `${what} ${vi ? `Mình chuẩn bị một lệnh nạp **${tok(cover)}** từ ví để bạn ký nhé?` : `Shall I prepare a deposit of **${tok(cover)}** from your wallet for you to sign?`}` // lang-ok
       : partial !== null ? `${what} ${partialOffer(vi, partial)}`
       : `${what} ${vi ? 'Ví chưa có USDC để nạp, hãy thêm USDC vào ví rồi nói với mình nhé.' : 'The wallet has no USDC to add yet, so add some and tell me.'}` // lang-ok
+  }
+  if (b.debts.priorityCount > 0) {
+    const reserve = vi ? `Quỹ dự phòng hiện có ${fmt(vault)}.` : `Your emergency fund now holds ${fmt(vault)}.` // lang-ok
+    const next = b.fund.starterMet
+      ? (vi ? 'Quỹ khởi đầu một tháng đã đủ. Bước tiếp theo là trả nợ lãi cao, rồi hoàn tất quỹ dự phòng; chưa chuyển sang đầu tư.' : 'Your one-month starter fund is in place. Next comes the expensive debt, then the rest of the emergency fund; investing waits.') // lang-ok
+      : (vi ? `Mốc tiếp theo là quỹ khởi đầu một tháng: ${fmt(b.fund.starterUsd ?? 0)}. Vẫn trả khoản nợ tối thiểu; phần dư bổ sung quỹ khởi đầu trước.` : `The next milestone is the one-month starter fund: ${fmt(b.fund.starterUsd ?? 0)}. Maintain minimum debt repayments; extra money builds that starter fund first.`) // lang-ok
+    return `${reserve} ${next}`
   }
   if (kind === 'deposit') {
     // Not full yet: where the fund stands and that small amounts are fine. Nothing about cirBTC or buying (Hieu, 2026-10-30: after a

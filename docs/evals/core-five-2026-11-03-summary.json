@@ -1,0 +1,86 @@
+{
+  "authorization": 3000000,
+  "model": "claude-haiku-5-5",
+  "runs": [
+    {
+      "name": "core-five-r1-2026-11-03",
+      "input": 955535,
+      "output": 11171,
+      "cached": 671188,
+      "unknown": 0,
+      "calls": 80,
+      "turns": 37,
+      "completedTurns": 33,
+      "stopped": "budget-reservation",
+      "model": "claude-haiku-5-5"
+    },
+    {
+      "name": "core-five-r1b-2026-11-03",
+      "input": 254522,
+      "output": 2034,
+      "cached": 190704,
+      "unknown": 0,
+      "calls": 22,
+      "turns": 11,
+      "completedTurns": 10,
+      "stopped": "dataset-complete",
+      "model": "claude-haiku-5-5"
+    },
+    {
+      "name": "core-five-r2-2026-11-03",
+      "input": 951248,
+      "output": 10884,
+      "cached": 699169,
+      "unknown": 0,
+      "calls": 81,
+      "turns": 37,
+      "completedTurns": 31,
+      "stopped": "budget-reservation",
+      "model": "claude-haiku-5-5"
+    },
+    {
+      "name": "core-five-r3-2026-11-03",
+      "input": 704025,
+      "output": 6047,
+      "cached": 512462,
+      "unknown": 0,
+      "calls": 61,
+      "turns": 24,
+      "completedTurns": 22,
+      "stopped": "budget-reservation",
+      "model": "claude-haiku-5-5"
+    },
+    {
+      "name": "core-five-r4-value-2026-11-03",
+      "input": 32916,
+      "output": 143,
+      "cached": 26791,
+      "unknown": 0,
+      "calls": 3,
+      "turns": 2,
+      "completedTurns": 2,
+      "stopped": "dataset-complete",
+      "model": "claude-haiku-5-5"
+    },
+    {
+      "name": "core-five-r5-stability-2026-11-03",
+      "input": 21630,
+      "output": 131,
+      "cached": 20166,
+      "unknown": 0,
+      "calls": 2,
+      "turns": 1,
+      "completedTurns": 1,
+      "stopped": "dataset-complete",
+      "model": "claude-haiku-5-5"
+    }
+  ],
+  "totals": {
+    "tokens": 2950286,
+    "cached": 2120480,
+    "calls": 249,
+    "turns": 112,
+    "completedTurns": 99
+  },
+  "productionDeploy": false
+}

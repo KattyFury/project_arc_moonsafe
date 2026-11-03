@@ -4,6 +4,9 @@ import assert from 'node:assert/strict'
 import { writeFileSync } from 'node:fs'
 import { responseProblems, turnPolicy } from '../functions/_lib/agentGuards'
 import { educationAnswer } from '../functions/_lib/education'
+import { assetsAsk } from '../functions/_lib/intake'
+import { buildDebtPlan, buildAfterSign, splitSection } from '../functions/_lib/plan'
+import { computeBalance } from '../src/lib/allocation'
 import { SignJWT, exportJWK, generateKeyPair } from 'jose'
 import { normalizeProfile, applyOps, readOps } from '../src/lib/profile'
 
@@ -63,18 +66,18 @@ try {
   const mixedProfile = applyOps(normalizeProfile({ v: 2 }), readOps(proposed(mixed.data)))
   const btc = mixedProfile.holdings.find(h => h.type === 'btc')!
   assert.equal(btc.quantity, 0.02)
-  assert.equal(btc.value, 1600)
-  assert.equal(btc.priceSource, 'self')
+  assert.equal(btc.value, undefined, 'purchase cost is never the current value')
+  assert.equal(btc.priceSource, 'market')
   forcedTools = [tools('set_holding', { id: btc.id, worth: { amount: 1200, currency: 'USDC' } })]
   const market = await ask('The BTC is worth $1200 today. Does that change the money I originally invested?', true, [], { profile: mixedProfile })
   const afterMarket = applyOps(mixedProfile, readOps(proposed(market.data)))
-  assert.equal(afterMarket.holdings.find(h => h.id === btc.id)?.value, 1600)
+  assert.equal(afterMarket.holdings.find(h => h.id === btc.id)?.value, 1200)
   assert.equal(afterMarket.holdings.find(h => h.id === btc.id)?.quantity, 0.02)
   checks += 5
   forcedTools = []
   const viCost = await ask('Mình bỏ 60 triệu VND mua Bitcoin, giờ giá trị còn 42 triệu. Đó là vốn đã mua, không phải mình có 60 BTC.') // lang-ok
   const viProfile = applyOps(normalizeProfile({ v: 2 }), readOps(proposed(viCost.data)))
-  assert.equal(viProfile.holdings.find(h => h.type === 'btc')?.value, 60_000_000)
+  assert.equal(viProfile.holdings.find(h => h.type === 'btc')?.value, 42_000_000)
   assert.equal(viProfile.holdings.find(h => h.type === 'btc')?.quantity, undefined)
   checks += 2
   const debtor = normalizeProfile({ v: 2, debts: [{ id: 'relative', name: 'Relative loan', type: 'unknown', balance: 900, currency: 'USDC', ratePct: null, monthlyPayment: 75, updatedAt: 0 }] })
@@ -316,6 +319,60 @@ try {
     assert.deepEqual(result.data.actions, [])
     results.push({ name: `persistent bad output blocked: ${badReply}`, status: 'pass' })
     checks += 4
+  }
+  // 2026-11-03: regressions found by the five-person Claude Haiku run.
+  {
+    forcedTools = []
+    const debtProfile = normalizeProfile({ v: 2, age: 26, incomeStable: false, dependents: 0, debtsComplete: true,
+      incomes: [{ id: 'i', name: 'Freelance', monthly: 2500, currency: 'USDC', kind: 'active' }],
+      expenses: [{ id: 'e', name: 'Spending', monthly: 2200, currency: 'USDC', kind: 'fixed' }],
+      debts: [{ id: 'd', name: 'Card', type: 'credit_card', balance: 6000, currency: 'USDC', ratePct: 24, monthlyPayment: 180 }] })
+    const balance = (vaultUsd: number, profile = debtProfile) => computeBalance({ profile, vaultUsd, walletUsd: 200, cirBtcUsd: 0, prices: null, vndPerUsd: 25000 })
+    for (const vi of [false, true]) {
+      const debtPlan = buildDebtPlan({ p: debtProfile, b: balance(0), shares: [26, 37, 37], vi, walletUsd: 199 })!
+      assert.ok(debtPlan)
+      assert.doesNotMatch(debtPlan, /Safety 26%|Crypto 37%/)
+      assert.equal(splitSection(balance(0), vi), null)
+      assert.equal(splitSection(balance(20000), vi), null, 'full reserve does not erase expensive debt')
+      const signed = buildAfterSign({ b: balance(199), vi, kind: 'deposit' })!
+      assert.match(signed, /one-month starter|quỹ khởi đầu một tháng/i) // lang-ok
+      const funded = buildAfterSign({ b: balance(20000), vi, kind: 'deposit' })!
+      assert.doesNotMatch(funded, /Now on to investing|Giờ mình chuyển sang đầu tư/) // lang-ok
+      checks += 6
+    }
+    const unknown = normalizeProfile({ ...debtProfile, incomeStable: null })
+    const unknownB = balance(0, unknown)
+    const intake = assetsAsk(unknown, unknownB.fund, unknownB.cashflow, false, 200)
+    assert.match(intake, /is your income about the same every month/i)
+    assert.doesNotMatch(intake, /14,280|50\/50|Now, what you hold/)
+    assert.equal((intake.match(/\?/g) ?? []).length, 1)
+    assert.ok(responseProblems('Safety 26%, Traditional 37%, Crypto 37%.', false, false, false, true).length)
+    assert.ok(responseProblems('Put 37% into Crypto.', false, false, false, true).length)
+    assert.equal(responseProblems('Crypto can fall by 50%. Your card charges 24%.', false, false, false, true).length, 0)
+    fakeReply = 'A calm, honest conversation can help you agree on a household plan together.'
+    const spouse = await ask('vợ em chưa biết chuyện này, em có nên nói không', true, [{ role: 'user', content: 'help me plan' }, { role: 'assistant', content: "Share whatever you're comfortable with" }], { profile: { ...debtProfile, debts: [], dependents: 2, incomeStable: true }, vaultUsdc: 0 }) // lang-ok
+    assert.doesNotMatch(spouse.data.content ?? '', /Kế hoạch của bạn, theo thứ tự|Here is your plan/) // lang-ok
+    forcedTools = [tools('update_profile', { debts_complete: true }), tools('set_income', { name: 'Support from parents', monthly: { amount: 300, currency: 'USDC' }, kind: 'passive' })]
+    const support = await ask('em 19t, ko đi làm, bố mẹ cho 300$/tháng, tiêu khoảng 280, thỉnh thoảng có airdrop, ko nợ ai') // lang-ok
+    const income = readOps(proposed(support.data)).find(o => o.op === 'set_income')
+    assert.ok(income?.op === 'set_income' && income.income.monthly === 300 && income.income.kind === 'active', 'monthly parent support survives an unrelated airdrop mention')
+    assert.equal(applyOps(normalizeProfile({ v: 2 }), readOps(proposed(support.data))).debtsComplete, true, 'ko nợ ai is explicit no debt')
+    forcedTools = [tools('update_profile', { income_stable: true, dependents: 0, no_near_goal: true })]
+    const steadySupport = await ask('bố mẹ cho đều mỗi tháng, không ai phụ thuộc thu nhập của em, không có khoản chi lớn sắp tới', true, [], { profile: normalizeProfile({ v: 2, age: 19, incomes: [{ id: 'i', name: 'Parents', monthly: 300, currency: 'USDC', kind: 'active' }], expenses: [{ id: 'e', name: 'Spending', monthly: 280, currency: 'USDC', kind: 'fixed' }], debtsComplete: true }) }) // lang-ok
+    assert.ok(readOps(proposed(steadySupport.data)).some(o => o.op === 'update_profile' && o.fields.incomeStable === true))
+    forcedTools = []
+    fakeReply = 'Your deposit card is ready for you to sign.'
+    const falseCard = await ask('Explain the tradeoff only, no transaction.', true, [], { profile: debtProfile })
+    assert.notEqual(falseCard.data.content, fakeReply)
+    assert.deepEqual(falseCard.data.actions, [])
+    const debtHistory = [{ role: 'user', content: 'help me plan' }, { role: 'assistant', content: buildDebtPlan({ p: debtProfile, b: balance(0), shares: [26, 37, 37], vi: false, walletUsd: 199 })! }]
+    const beforeSigned = calls
+    const signedDebt = await ask('[app event] The user signed the card: Added 199 USDC to your emergency fund.', true, debtHistory, { profile: debtProfile, vaultUsdc: 199 })
+    assert.match(signedDebt.data.content ?? '', /one-month starter fund/)
+    assert.equal(calls, beforeSigned, 'debt plan remains recognized without allocation percentages')
+    forcedTools = []
+    checks += 14
+    results.push({ name: 'five-person Haiku: reserve/debt gate, unknown inputs, Vietnamese question and parent support', status: 'pass' })
   }
 } finally { globalThis.fetch = realFetch }
 if (!process.argv.includes('--no-report')) writeFileSync('docs/evals/response-quality-offline-2026-10-29.json', JSON.stringify({ mode: 'offline', paidCalls: 0, checks, mockCalls: calls, mockedExternal: external, results }, null, 2))

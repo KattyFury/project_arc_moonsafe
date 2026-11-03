@@ -1,0 +1,21 @@
+{
+  "url": "https://moonsafe.app",
+  "verifiedAt": "2026-11-03T05:03:01.617Z",
+  "homepage": 200,
+  "unauthenticatedChat": 401,
+  "factory": "0xA9A5447a1Dd9874c25238d69E285249Fa1c9E10A",
+  "bundles": [
+    {
+      "path": "/assets/index--R3BQKqW.js",
+      "mainnetFactory": true,
+      "matchesBuild": true
+    }
+  ],
+  "deployment": {
+    "id": "5b134dcc-bd5f-40f9-b879-3fe538caef2c",
+    "url": "https://5b134dcc.moonsafe.pages.dev",
+    "environment": "production",
+    "status": "success",
+    "created": "2026-11-03T05:02:49.031218Z"
+  }
+}

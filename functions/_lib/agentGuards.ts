@@ -1,5 +1,5 @@
 import type { FinancialProfile } from '../../src/types'
-import { investedBasis } from './mutationEvidence'
+import { currentValuation, investedBasis } from './mutationEvidence'
 
 /** Inputs needed to quote one personalized fund target, without changing the framework formula. */
 export function fundMissingInputs(p: FinancialProfile, spending: number | null): string[] {
@@ -95,7 +95,7 @@ export function factProposals(text: string, p: FinancialProfile): Proposal[] {
       ? { name: 'set_holding', args: { id: existing[0].id, worth: { amount, currency } } }
       : { name: 'add_holding', args: { type: 'savings', name: 'Bank savings', worth: { amount, currency } } })
   }
-  const basis = investedBasis(text, 'BTC')
+  const basis = currentValuation(text, 'BTC')
   if (basis !== null) {
     const btc = p.holdings.filter(h => h.type === 'btc')
     const quantity = text.match(/(?<![\d$])([\d]+(?:\.\d+)?)\s*BTC\b/iu)
@@ -108,8 +108,9 @@ export function factProposals(text: string, p: FinancialProfile): Proposal[] {
 
 export const TURN_POLICY = `WORKFLOW GUARD: Answer the user's actual question/concern first. When conversation-only is active: no intake, personal questionnaire, investment onboarding, bucket-choice question or unsolicited product/transaction offer. A negated mention of buying is not buy intent. Keep this preference until the user explicitly asks to start a plan or action. Record explicit current facts accurately even during teaching; say "noted" only for facts actually saved (or clearly label pending confirmation). Unknown targets/balances are unknown, not zero. Quote only computed financial targets; do not invent an "X of Y, Z to go". The vault balance is separate from available savings outside the app. Never turn a dollar cost into coin quantity.`
 /** Detect observable response failures; never treat model self-review as authoritative. */
-export function responseProblems(content: string, answerOnly: boolean, fundTargetUnknown = false, vi?: boolean): string[] {
+export function responseProblems(content: string, answerOnly: boolean, fundTargetUnknown = false, vi?: boolean, investingLocked = false): string[] {
   const problems: string[] = []
+  if (investingLocked && /(?:Safety|Traditional|Crypto|Truyền thống)\s*(?:(?:share|target|allocation|is|at)\s*|[:=]\s*)?\d+(?:[.,]\d+)?\s*%|\d+(?:[.,]\d+)?\s*%\s*(?:(?:to|in|for|into)\s+)?(?:Safety|Traditional|Crypto|Truyền thống)/iu.test(content)) problems.push('Investing is locked: omit allocation shares and split amounts until the onchain reserve is known and full and expensive debt is gone. Answer the current fund/debt step instead.') // lang-ok
   if (vi === true && /[a-z]{3}/iu.test(content) && !/[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]/iu.test(content)) problems.push('The real user wrote Vietnamese. Answer in Vietnamese, not English; keep technical symbols unchanged.') // lang-ok
   if (vi === false && /\bmình\b|\bbạn\b/iu.test(content)) problems.push('The real user wrote English. Remove Vietnamese conversational words.') // lang-ok
   if (/your latest (?:request|question)|the latest request|(?:already|have) answered|not going to repeat it|my last (?:draft|reply)|I shouldn.t have added/iu.test(content)) problems.push('Answer the actual question directly. Private drafts were never shown to the user; remove commentary claiming the answer was already given.')

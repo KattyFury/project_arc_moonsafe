@@ -53,4 +53,18 @@ export function investedBasis(text: string, symbol: string | undefined): { amoun
   return null
 }
 
+
+/** Explicit current valuation, never the historical amount spent buying it. */
+export function currentValuation(text: string, symbol?: string): { amount: number; currency: 'USDC' | 'VND' } | null {
+  for (const sentence of assertions(text)) {
+    const names = symbol === 'BTC' ? /BTC|Bitcoin/iu : symbol ? new RegExp(symbol.replace(/[^A-Z0-9]/giu, ''), 'iu') : null
+    if (names && (!names.test(text) || (!names.test(sentence) && !/^\s*(?:its\s+current\s+market value|giờ|giá trị)/iu.test(sentence)))) continue // lang-ok
+    const match = sentence.match(/(?:worth|market value|current value|giá trị (?:hiện tại|còn)|giờ (?:giá trị )?còn)\s*(?:(?:is|of|now|today|là)\s*)?[:=]?\s*\$?\s*([\d,]+(?:\.\d+)?)\s*(triệu|nghìn|VND|đồng|USD|USDC)?/iu) // lang-ok
+    if (!match) continue
+    const amount = Number(match[1].replace(/,/g, '')) * (match[2] === 'triệu' ? 1e6 : match[2] === 'nghìn' ? 1000 : 1) // lang-ok
+    if (Number.isFinite(amount) && amount >= 0) return { amount, currency: /triệu|nghìn|VND|đồng/iu.test(match[2] ?? '') ? 'VND' : 'USDC' } // lang-ok
+  }
+  return null
+}
+
 export const currentMarketValue = (text: string) => /market value|resale value|value (?:now|today)|worth (?:now|today)|worth\s*\$?[\d,]+\s+today|giá trị (?:hiện tại|còn)|giờ.*(?:còn|giá trị)/iu.test(text) // lang-ok

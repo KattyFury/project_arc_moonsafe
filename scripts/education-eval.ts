@@ -215,13 +215,13 @@ try {
     const btcCost = await ask('I invested $4000 into BTC. Its current market value is $2000 after a 50% fall.')
     const btcProfile = applyOps(normalizeProfile({ v: 2 }), readOps(proposed(btcCost.data)))
     assert.equal(btcProfile.holdings.length, 1)
-    assert.equal(btcProfile.holdings[0].value, 4000)
+    assert.equal(btcProfile.holdings[0].value, 2000)
     assert.equal(btcProfile.holdings[0].quantity, undefined)
     checks += 3
     forcedTools = [{ id: 'wrong-worth', type: 'function', function: { name: 'add_holding', arguments: JSON.stringify({ type: 'btc', symbol: 'BTC', worth: { amount: 2000, currency: 'USDC' } }) } }]
     const marketAsCost = await ask('I invested $4000 into BTC. Its current market value is $2000 after a 50% fall.')
     const marketProfile = applyOps(normalizeProfile({ v: 2 }), readOps(proposed(marketAsCost.data)))
-    assert.equal(marketProfile.holdings[0]?.value, 4000)
+    assert.equal(marketProfile.holdings[0]?.value, 2000)
     checks++
     forcedTools = []
     const actualRefusal = await ask('I do not want to share my age or bank balance. Can you help me budget?')

@@ -1,3 +1,20 @@
+# ▶ 2026-11-03 — DEPLOYED HAIKU CORE FIXES TO MAINNET
+
+- User explicitly requested deployment. Cloudflare Pages moonsafe production deployment: 5b134dcc-bd5f-40f9-b879-3fe538caef2c.
+- Live https://moonsafe.app verified: homepage 200, unauthenticated POST /api/chat 401, bundle /assets/index--R3BQKqW.js matches local build and contains mainnet factory 0xA9A5447a1Dd9874c25238d69E285249Fa1c9E10A.
+- Predeploy check:all, test:agent (6/6), chat tsc, mainnet env gate and build all passed. No contract transactions; no changes to production secrets or data bindings.
+- Deployment evidence: docs/evals/deploy-2026-11-03.json. Source changes remain uncommitted locally; push is separate from this direct-upload deployment.
+
+# ▶ 2026-11-03 — 5 PERSONAS / HAIKU CORE EVALUATION (LOCAL, NOT DEPLOYED)
+
+- Read docs/CORE.md first. User authorized 3M Haiku tokens including cache and separately approved sending internal prompts/tool schemas to Anthropic. Used **2,950,286 tokens**, 249 API calls; no production data or wallet execution.
+- Report: docs/evals/core-five-2026-11-03.md; six raw core-five-r*.json transcripts. Cases: original p1–p5 plus focused tails in scripts/persona-cases.ts. Some runs stopped at the conservative budget guard; report distinguishes this from completion.
+- Fixed allocation leakage before reserve/debt readiness; one-missing-input intake; Vietnamese “có nên” question routing; monthly parental support; “ko nợ”; parental-support stability; debt-plan recognition after percentages removed; correct starter→debt→reserve order after deposits; false ready-card claims; obsolete above/below-share prompt examples.
+- CORE §3 fix: tools now accept current crypto valuation via confirmation, preserve coin quantity, and do not store purchase cost as current portfolio value. Live ETH $3,000→$2,000 confirmed correctly. Updated old tests that enforced purchase-cost behavior.
+- Harness fix after report review: confirmation fixtures no longer invent a transfer from the first unrelated Safety holding. Old retiree-source totals retain that fixture limitation; see report.
+- Validation: full check:all PASS (Bun via npm exec), test:agent 6/6 PASS, chat tsc PASS, eval selftest PASS. No UI/contract changes, no deployment or push. Existing untracked .github/ left alone.
+- Remaining limits: fixed FX/no live prices, no browser/transaction QA; partial live tails and no exhaustive final-tree live rerun. Unsuccessful rewrites can still produce the reliable-explanation fallback. Do not report 100% CORE compliance.
+
 # ▶ 2026-11-01 (cuối) — DỌN REPO THEO CORE
 
 - `README.md` viết lại theo CORE (vai trò, quỹ onchain, 3 phần, luật mốc với ví dụ 30 tuổi, không theo dõi tiền nhàn rỗi, lộ trình vault ví + email), có ảnh `docs/images/` (balance mobile/desktop, invest mobile — bản Hiếu đã duyệt). Cập nhật ảnh khi đổi giao diện.

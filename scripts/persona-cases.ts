@@ -71,6 +71,34 @@ export const PERSONA_CASES = [
 // The persona turns the capped runs did not reach (2026-11-01), from saved profiles.
 const H = (o: Record<string, unknown>) => ({ priceSource: 'self', rebalanceable: true, updatedAt: 1, currency: 'USDC', ...o })
 export const PERSONA_TAIL_CASES = [
+  { id: 'p4-core-stability-vi', category: 'persona', wallet: 150, profile: { v: 2, age: 19, incomeStable: null, dependents: null, debtsComplete: true,
+    incomes: [{ id: 'i', name: 'Support from parents', monthly: 300, currency: 'USDC', kind: 'active', updatedAt: 1 }],
+    expenses: [{ id: 'e', name: 'Spending', monthly: 280, currency: 'USDC', kind: 'fixed', updatedAt: 1 }] }, lines: [
+      'bố mẹ cho đều mỗi tháng, không ai phụ thuộc thu nhập của em, không có khoản chi lớn sắp tới', // lang-ok
+    ] },
+  { id: 'p5-core-value-en', category: 'persona', wallet: 0, vault: 21000, profile: { v: 2, age: 40, incomeStable: true, dependents: 1, soleEarner: false, debtsComplete: true, noNearGoal: true,
+    incomes: [{ id: 'i', name: 'Salary', monthly: 5000, currency: 'USDC', kind: 'active', updatedAt: 1 }],
+    expenses: [{ id: 'e', name: 'Spending', monthly: 3500, currency: 'USDC', kind: 'fixed', updatedAt: 1 }],
+    holdings: [H({ id: 'eth', type: 'eth', name: 'ETH', symbol: 'ETH', value: 3000 })] }, lines: [
+      'My ETH is worth $2000 today. Please update its current value and keep it in Crypto.', '@review-all',
+    ] },
+  { id: 'p1-core-stage-en', category: 'persona', wallet: 200, profile: { v: 2, age: 26, incomeStable: false, dependents: 0, debtsComplete: true, noNearGoal: true,
+    incomes: [{ id: 'i', name: 'Freelance', monthly: 2500, currency: 'USDC', kind: 'active', updatedAt: 1 }],
+    expenses: [{ id: 'e', name: 'Spending', monthly: 2200, currency: 'USDC', kind: 'fixed', updatedAt: 1 }],
+    debts: [{ id: 'd', name: 'Card', type: 'credit_card', balance: 6000, currency: 'USDC', ratePct: 24, monthlyPayment: 180, updatedAt: 1 }] }, lines: [
+      'I have 200 USDC in this wallet, nothing else invested.',
+      'ok lets start the starter fund then', '@sign-deposit',
+      'What do I do with the $120 left next payday?',
+      '@deposit 2380', 'What comes next now?',
+      '@deposit 20000', 'Can I invest now even though I still owe the card?',
+    ] },
+  { id: 'p4-core-clarified-vi', category: 'persona', wallet: 150, lines: [ // lang-ok
+    'hi, em là sinh viên, muốn tập đầu tư', // lang-ok
+    'em 19t, ko đi làm, bố mẹ cho 300$/tháng, tiêu khoảng 280, thỉnh thoảng có airdrop, ko nợ ai', // lang-ok
+    'bố mẹ cho đều mỗi tháng, không ai phụ thuộc thu nhập của em, không có khoản chi lớn sắp tới', // lang-ok
+    'ok nạp 149 USDC đi', '@sign-deposit', // lang-ok
+    'vừa có airdrop 500$ nè, chia sao', // lang-ok
+  ] },
   { id: 'p3-tail-en', category: 'persona', wallet: 0, vault: 20000, profile: { v: 2, age: 63, incomeStable: true, dependents: 1, debtsComplete: true, noNearGoal: true,
     incomes: [{ id: 'r', name: 'Rent', monthly: 3000, currency: 'USDC', kind: 'passive', updatedAt: 1 }, { id: 'd', name: 'Dividends', monthly: 800, currency: 'USDC', kind: 'passive', updatedAt: 1 }],
     expenses: [{ id: 'e', name: 'Spending', monthly: 2500, currency: 'USDC', kind: 'variable', updatedAt: 1 }],

@@ -163,7 +163,8 @@ try {
         const a = lastActions.find(x => x.type === 'confirm_record')
         if (!a?.amount || !a.holdingType || !a.name) { report.transcript.push({ case: scenario.id, turn: i + 1, user, skipped: 'no record box to confirm' }); continue }
         const req: RecordRequest = { amountUsd: a.amount.amount, holdingType: a.holdingType as AssetType, name: a.name, source: a.source ?? null, ...(a.safety ? { safety: true } : {}) }
-        const opt = sourceOptions(profile, req, 25000)[0]
+        // A fixture must not invent a transfer from an unrelated term deposit.
+        const opt = sourceOptions(profile, req, 25000).find(h => h.type === req.holdingType)
         const src: RecordSource = presetSource(req, profile) ?? (opt ? { kind: 'holding', id: opt.id } : { kind: 'new' })
         const summary = recordSummary(req, src, profile)
         reviewedOps = buildRecordOps(profile, req, src, 25000)
