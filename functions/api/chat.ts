@@ -83,6 +83,8 @@ ${KB.principles.map(p => `- ${p}`).join('\n')}
 - The emergency fund (USDC in the MoonSafe vault) stands apart. Floor in months of spending (fixed + essential variable + debt payments): 3 stable income; 6 stable with dependents or irregular without; 9 irregular with dependents; 12 if also the sole earner.
 - Priority debt: credit card, consumer / payday loan, crypto margin, or any debt at ${param('priority_debt_rate_pct')}%/year or more. Interest-free debt never blocks.
 - cirBTC buying in the app opens only with no priority debt AND the fund at its floor. Nothing else is ever blocked.
+- Expensive debt, fund or investing, always in this one order, stated once and never reversed in the next sentence: a starter fund of 1 month, then the expensive debt, then the rest of the fund, then investing.
+- Fund not full or expensive debt open, and they ask to skip it and buy: never answer "yes". The app's buy stays locked until then and no chat message opens it; say what is missing. What they do outside the app is their own decision, but you advise the fund first and give no investing advice before that.
 - The emergency fund is the only must. The split above is a reference the user MAY consider: "you could consider", never "recommended" / "you need to".
 - When money is short, the order is a suggestion: ${KB.priority_order.join(' → ')}. ${KB.priority_rules.slice(1).join(' ')}
 ## Voice
@@ -113,7 +115,7 @@ const NOT_INVESTING = /(not|never|don'?t|do not|no)\s+(yet\s+)?(invest|investing
 // A number paid per month or towards a debt: never the total owed ("200$ to repay my debt" became a 200 debt, real chat 2026-10-26).
 const PAYMENT_NUM = /(\d[\d.,]*\d|\d)\s{0,3}k?\s{0,3}(?:\$|usdc?|usdt|dollars?|đô)?\s{0,3}(?:a month|per month|\/\s*month|monthly|each month|every month|to repay|to pay (?:it )?(?:back|off)|for (?:my |the )?(?:debt|loan)|mỗi tháng|một tháng|\/\s*tháng|trả nợ|trả góp)/giu // lang-ok
 const APP_WALLET = /(this|the app|my app|moonsafe)\s+wallet|in (the|this) app|ví (này|app|moonsafe)/i // lang-ok
-const QUESTIONS_US = /\?|(?<!\p{L})(why|you mean|wrong|how come|sao|tại sao|sai)(?!\p{L})/iu // lang-ok
+const QUESTIONS_US = /\?|(?<!\p{L})(why|you mean|wrong|how come|what (?:do|should) i do|sao|tại sao|sai|làm gì)(?!\p{L})/iu // lang-ok
 // "my mom not using interest on me" was not read as 0% (real chat 2026-10-26).
 const DEBT_PAY_NAME = /loan|debt|repay|mortgage|installment|credit card|(?<!\p{L})(mom|dad|mother|father)(?!\p{L})|nợ|trả góp/iu // lang-ok
 // A plain "no" to an offer (real chat 2026-10-29: "no" to the deposit offer got the same offer again). Short answers only, so
@@ -215,12 +217,18 @@ const TEACH_ONCE: { term: RegExp; taught: RegExp; plain: string }[] = [
 const PLAN_GIVEN = /You have high-interest debt, so the plan goes in this order|Bạn đang có nợ lãi cao, nên kế hoạch đi theo thứ tự này|Here is your plan, in order|Kế hoạch của bạn, theo thứ tự|Traditional[^\n]{0,80}\d+(\.\d+)?\s*%|Truyền thống[^\n]{0,80}\d+(\.\d+)?\s*%/i // lang-ok
 // "Not at all" answering "does it charge interest?" (real chat 2026-10-27: the question came back three times).
 const PAID_Q = /paid (it )?off|still owe|trả hết|còn nợ/i // lang-ok
-const SOLE_WORDS = /(only|sole|single|main)[^.?!\n]{0,20}(earner|income|breadwinner|one (who )?work)|breadwinner|trụ cột|một mình (kiếm|lo)|duy nhất (kiếm|có thu nhập)/i // lang-ok
+const SOLE_WORDS = /(only|sole|single|main)[^.?!\n]{0,20}(earner|income|breadwinner|one (who )?work)|breadwinner|trụ cột|một mình\s*(anh|chị|em|mình|tôi|tui)?\s*(kiếm|lo|đi làm)|duy nhất (kiếm|có thu nhập)/i // lang-ok
 const NO_DEBT = /(no|not any|zero|without)\s+(other\s+)?(debts?|loans?)|(?:don'?t|do not|doesn'?t) (?:have|owe)\s+(?:any\s+|a\s+)?(?:other\s+)?(?:debts?|loans?)|(?<![\d.,])0\s+(?:debts?|loans?)|(?:have|got)\s+no\s+(?:debts?|loans?)|debt[- ]free|(không|chưa|ko)\s+(còn\s+)?(nợ|vay)|hết nợ/i // lang-ok
 const LOCK_TALK = /(open|unlock|opens)[^.?!\n]{0,30}cirBTC|cirBTC (buying|buy)|buy lock|mở (khóa|khoá)? ?mua cirBTC/i // lang-ok
 const KNOWS_NOTHING = /(don'?t|do not) know (anything|much|where to start|what to do)|no idea|i'?m (lost|confused|new to)|never (managed|done this)|beginner|(không|chả|chẳng) biết (gì|bắt đầu)|mới bắt đầu/i // lang-ok
 // The month question (Balance Sheet v2): the cash flow that sizes the emergency fund, asked again as one block when the fund comes up.
 const FUND_TALK = /emergency|rainy[- ]day|safety net|(my|the|a|build|start|size of|how big)[^.?!\n]{0,20}\bfund\b|quỹ dự phòng|quỹ khẩn cấp/i // lang-ok
+// "I already have a fund on Binance", "the fund is full", "150 triệu là quỹ khẩn cấp": answered, never met with a form or the next intake question (audit 2026-11-03). // lang-ok
+const CLAIMS_FUND = /(already|i|we) (have|got|keep)[^.?!\n]{0,30}(emergency|\bfund\b)|\bfund\b[^.?!\n]{0,30}(is )?(full|done|sorted|covered)|skip[^.?!\n]{0,20}(\bfund\b|that part)|quỹ[^.?!\n]{0,30}(rồi|đủ|đầy)|là quỹ|khỏi cần vault/iu // lang-ok
+// "If somebody steals my wallet can they take my emergency fund?" got the month form (audit 2026-11-03). // lang-ok
+const SECURITY_TALK = /steal|stolen|hack|two[- ]?factor|\b2fa\b|\b(?:is|are) (?:my|the)[^.?!\n]{0,30}\bsafe\b|shut ?down|lose my|lost my|mất ví|bị (?:hack|trộm|lấy)|an toàn không/iu // lang-ok
+// "i do food delivery, about 1100 a month" was recorded as spending, then they were told to cut it (audit 2026-11-03).
+const earnedFrom = (text: string, name: string) => { const n = name.trim().toLowerCase(); return n.length >= 3 && new RegExp(`\\bi(?:'m| am)? (?:do|doing|work(?:ing)?(?: in| as| at| for)?|drive|driving|deliver|run|teach|sell)\\b[^.,;!?\\n]{0,20}${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i').test(text) }
 const EXPLAIN_ONLY = /\bexplain\b|how (does|do|would|will) [^?.!\n]{0,40}\bwork|what (is|are|'s) (an? |the )?(emergency|rainy)|why (do|should|would) [^?.!\n]{0,30}(need|have)|giải thích|là gì|hoạt động (thế|như) nào|tại sao|vì sao/i // lang-ok
 const INTERNAL_LABEL = /(?<!\p{L})(floor|surplus|liquid assets?|idle( money| cash)?|priority debt)(?!\p{L})/iu
 const OTHER_SCRIPT = /[\u0400-\u04FF\u0590-\u06FF\u0E00-\u0E7F\u3040-\u30FF\u4E00-\u9FFF\uAC00-\uD7AF]/ // Cyrillic, Hebrew, Arabic, Thai, Japanese, Chinese, Korean
@@ -255,6 +263,9 @@ const HOLDING_CHANGE = /(?<!\p{L})(bought|buy more|sold|sell(?:ing)? some|added|
 const SAYS_VND = /(?<!\p{L})(vnd|đồng|triệu|tr|nghìn|ngàn|củ)(?!\p{L})|₫/iu // lang-ok
 // Part of a holding, not all of it: "sold some", "a bit", "part of", "bán bớt", "một ít".
 const PART_OF = /(?<!\p{L})(some|a bit|a little|part of|half|a few|bớt|một ít|một phần|một nửa)(?!\p{L})/iu // lang-ok
+// Only low-volatility forms can be Safety; these are recorded in their own part, with the reason (CORE 2).
+const TRADITIONAL_RISKY = new Set<string>(['gold_physical', 'gold_token', 'us_stock', 'vn_stock'])
+const NEVER_SAFETY = new Set<string>([...TRADITIONAL_RISKY, 'btc', 'eth', 'top10', 'altcoin', 'crypto', 'staked_large_cap', 'nft'])
 const SAFETY_WORD = /(?<!\p{L})(safety|safe part|an toàn)(?!\p{L})/iu // lang-ok
 // Words for each kind of spare money, to find the one the user named as Safety.
 const KIND_WORDS: Partial<Record<AssetType, RegExp>> = {
@@ -281,7 +292,7 @@ const ASKS_HOW_MUCH = /how much|bao nhiêu/i // lang-ok
 const SAYS_LOCKED = /lock|kho[áa]|khóa|(to open|để mở)/i // lang-ok
 const SAFE_AS_FUND = /safe fund|deposit[^.?!\n]{0,40}(into|to) (the |your )?safe (part|fund|bucket)|quỹ an toàn|nạp[^.?!\n]{0,40}(vào |phần )an toàn/i // lang-ok
 // never_say (spec 8.2): world standards / experts / Fidelity / Vanguard, "you should buy", selling, leverage, promised returns.
-const NEVER_SAY = /world standards?|international standards?|experts? (say|suggest|recommend|advise)|according to experts|financial experts|fidelity|vanguard|you should (buy|sell)|(you (could|should|can|might)|consider|I('d)? suggest|try) (selling|to sell|sell)\b|sell (some|part|half|a bit) of|(use|try|add|take on) (some )?leverage|guaranteed (returns?|profit)|will (go up|moon|rise) |chuẩn (thế giới|quốc tế)|theo (các )?chuyên gia|nên (mua|bán) ngay|(nên|hãy|có thể) bán (bớt|một phần|đi)|dùng đòn bẩy|lợi nhuận đảm bảo/i // lang-ok
+const NEVER_SAY = /\btrim(?:ming)?\b|closer to the (?:reference|target)|world standards?|international standards?|experts? (say|suggest|recommend|advise)|according to experts|financial experts|fidelity|vanguard|you should (buy|sell)|(you (could|should|can|might)|consider|I('d)? suggest|try) (selling|to sell|sell)\b|sell (some|part|half|a bit) of|(use|try|add|take on) (some )?leverage|guaranteed (returns?|profit)|will (go up|moon|rise) |chuẩn (thế giới|quốc tế)|theo (các )?chuyên gia|nên (mua|bán) ngay|(nên|hãy|có thể) bán (bớt|một phần|đi)|dùng đòn bẩy|lợi nhuận đảm bảo/i // lang-ok
 const SPLIT_AS_MUST = /(recommended|you need to|you must|you have to|you should)[^.?!\n]{0,60}(split|allocation|target|rebalanc|diversif|%)|(\d\s*%|target|split|allocation)[^.?!\n]{0,40}recommended|(nên|cần|phải)\s+(là|chia|có|giữ)[^.?!\n]{0,30}%/iu // lang-ok
 // The disclaimer lives on the cards and "Before you start" only (spec 8.4).
 const DISCLAIMER = /not (financial|investment) advice|only invest (money )?(what |that )?you can afford to lose|không phải lời khuyên đầu tư|chỉ đầu tư số tiền/i // lang-ok
@@ -340,10 +351,16 @@ Reply in the language of the user's latest message (default English). ${VI_VOICE
 - If they ask how to begin managing money, explain the roadmap briefly: understand cash flow, build an emergency reserve, address expensive debt, then consider investing. If they ask for one concept or one small task, answer just that. Being a beginner is not consent to intake or a full plan.
 
 ## Words that must never be mixed (Hieu, 2026-10-28: "you confuse Safety with the emergency fund")
-- **Emergency fund** = accessible money reserved for unexpected costs or lost income. MoonSafe tracks an onchain portion in a USDC vault, sized by its framework in MONTHS OF SPENDING (3, 6, 9 or 12). A zero vault does not mean no reserves elsewhere. Keep outside savings and the vault distinct; never count the same money twice. Always say "emergency fund", never "Safety".
-- **Safety** = one of the three parts, OUTSIDE the app: the low-risk part (term deposits, government bonds, or stablecoins, cash or a bank account the user CHOSE to keep as Safety). Plain bank money and stablecoins are spare money, NOT tracked, until the user chooses to keep some as Safety. If they ask you to track their bank account or spare money, say plainly MoonSafe does not track spare money, and stop there: do NOT suggest turning that bank money or those stablecoins into Safety (never Safety by default, Hieu 2026-11-01); only if THEY say a specific amount is their Safety is it recorded. Safety never has months, is never the emergency fund and is not money to take out any time.
+- **Emergency fund** = USDC in the user's own MoonSafe vault, sized in MONTHS OF SPENDING (3, 6, 9 or 12). Always say "emergency fund", never "Safety". ONLY the vault balance counts (CORE 1). Money they say they keep elsewhere (an exchange, a bank, a term deposit, cash, "under my mattress") NEVER counts: not toward the target, not to open investing, not "once you tell me", not "as a temporary reserve". Their money stays theirs and they may keep it anywhere; say that without calling them a liar, then say why the fund is onchain: it is the one balance the app can check, so nobody can talk themselves past it into coins or stocks. Then give the real state (vault $X of $Y). Never say outside money "counts", "covers" the target, or that they could "leave the vault as it is".
+- **Safety** = one of the three parts, OUTSIDE the app: the low-risk part (term deposits, government bonds, or stablecoins, cash or a bank account the user CHOSE to keep as Safety). Plain bank money and stablecoins are spare money, NOT tracked, until the user chooses to keep some as Safety. If they ask you to track their bank account or spare money, say plainly MoonSafe does not track spare money, and stop there: do NOT suggest turning that bank money or those stablecoins into Safety (never Safety by default, Hieu 2026-11-01); only if THEY say a specific amount is their Safety is it recorded. Safety never has months, is never the emergency fund and is not money to take out any time. Never ask how much cash or bank money they have: spare money is not asked about at all (CORE 2).
+- Nothing is ever "over" or "too big" (CORE 3). Asked whether to sell because a part looks too large: say no part is ever over, the others simply follow it, so the plan never calls for selling; selling is only their own decision. Never say trimming or selling would bring them closer to anything.
 - Months of spending belong ONLY to the emergency fund. When the emergency fund is full, say "your emergency fund is full"; never "Safety is full" for it.
-- When all three figures are verified, give a part as its share now against its target with the money next to it ("Safety 35% of what the investments need ($210,000), target 100%: below; Traditional 86% of the investments ($300,000), target 50%: above"; CORE §3: the balance is tracked by shares, not totals); the amount still missing only when they ask how much. If any figure is unknown or pending confirmation, say what is known and what remains undetermined; never fill the gap with zero or an illustrative target.
+- A part's standing is ONLY its money against its bar: "$10,000 of $13,000, $3,000 to go", or "furthest ahead, it sets the size" (CORE 3). NEVER a % for how far along a part is, NEVER the three parts' total as 100%, NEVER "above" or "below" target; asked for percentages, say the app does not show them and give the money figures. The age shares (Safety 35%, Traditional 32.5%, Crypto 32.5%) are the only percentages. Asked why the part furthest ahead is the full bar and not the total: the total changes all the time, and against the total one part would always look short; what matters is whether the parts keep up with each other for their age, so the others follow the one furthest ahead, and nothing ever has to be sold. If any figure is unknown or pending confirmation, say what is known and what remains undetermined; never fill the gap with zero or an illustrative target.
+
+## Security, when they ask (CORE 6): the truth about the vault today
+- Only their wallet can withdraw. MoonSafe never holds their keys and cannot see secrets or move their money. If MoonSafe shut down, the vault stays onchain and their wallet can still withdraw from the contract directly.
+- The other side, said plainly: the wallet is the ONLY key. There is NO two-factor and no second step today. Whoever gets their wallet's key or seed phrase can take the whole fund at once, to any address; nobody can reverse it. Losing the wallet with no seed phrase means losing access. So guard the seed phrase, and never share it.
+- A stronger design (wallet + email as two keys) is planned, NOT built, and has no date: mention it only as a plan. Never promise insurance, an audit, or that funds are "safe". The vault pays no interest: it holds USDC and nothing else.
 
 ## Request precedence
 The current request controls the reply. Education, listening, a correction, refusal or a request for one small step takes precedence over the advice path below. A phase, matching situation or missing profile field is context, not permission to onboard. Answer the requested parts, then stop unless a missing fact is necessary for the invited task. Unknown is neither zero nor nonzero; do not invent balances, access, cadence or available money. A confirmation card is a proposal, never a saved fact or completed transaction.
@@ -418,7 +435,7 @@ You are MoonSafe's action planner. Read the user's LATEST message (earlier ones 
 - Money moved between their own places ("I moved 1,000 from my wallet into savings") → move. Money PUT / moved into savings, the bank or Safe ("I put 1,000 in my bank", "1,000 more in savings from outside", "I got X and put it in the bank") → record NOTHING and call no_action: the app shows a confirmation box where the user picks the source and the app saves it. An amount with "more", "extra", "new" or "outside" is an ADDITION, never the new total: never set_holding it over an existing amount.
 - Each debt → add_debt (type, balance, yearly rate and monthly payment if said, lender for family). Changes → update_debt; paid off → remove_debt. Unknown type → type "unknown".
 - In a household plan, give each partner's salary a distinct name. A combined salary total is an alternative to component salaries, never an additional income source. Transfers between partners are not extra household earnings. A working partner is not automatically a dependent.
-- Each income source → set_income: active (salary, side jobs, content), passive (interest, staking, rent, dividends, interest on loans given), irregular (trading, bonuses) ONLY when the user gives a monthly figure. Airdrops, trading wins and anything that "comes a few times a year" / "sometimes" is a WINDFALL: it is not a job and is not counted as monthly income, so do NOT call set_income for it and never ask for a monthly figure; call update_profile with has_windfalls true. A new number for a listed one → same tool with its id.
+- Money from work they do ("I do food delivery, about 1100 a month", "I drive for Grab") is INCOME, never spending. Each income source → set_income: active (salary, side jobs, content), passive (interest, staking, rent, dividends, interest on loans given), irregular (trading, bonuses) ONLY when the user gives a monthly figure. Airdrops, trading wins and anything that "comes a few times a year" / "sometimes" is a WINDFALL: it is not a job and is not counted as monthly income, so do NOT call set_income for it and never ask for a monthly figure; call update_profile with has_windfalls true. A new number for a listed one → same tool with its id.
 - Spending → set_expense: fixed (rent, bills, subscriptions, school fees) or variable (food, transport, other essentials). One total ("I spend 1,000 a month") → one fixed line named "Monthly spending". Debt payments belong on the debt (monthly_payment), never as an expense. A total that includes debt payments ("600 in all: 400 must-pay and 200 to repay my debt") → set_expense with ONLY the non-debt part (400), once. A payment on a debt whose total owed was not said → record no debt (the agent asks how much is still owed).
 - USDC in THIS app wallet ("in this wallet", "in the app") is declared like any other place: stable_wallet with where "app wallet". The app also SEES the real balance and shows it to you as "seen", but the totals use only what the user declares (people use several wallets). Never copy the seen number into the profile on your own: record what the user says they hold.
 - Money "in the bank" without saying checking / current account → savings (it is their Safe part). They say an item is in the wrong place ("I told you I have 1000$ in the bank" while it shows as idle) → set_holding with its id and the right type.
@@ -503,7 +520,7 @@ const ALL_PLAN_TOOLS = [
     type: { type: 'string', enum: DEBT_TYPES },
     lender: { type: 'string', description: 'Family member / friend, for family debts' },
     balance: MONEY,
-    rate_pct: { type: 'number', description: 'Yearly interest %, 0 = no interest; leave out if not said' },
+    rate_pct: { type: 'number', description: 'Yearly interest %, 0 = no interest; a monthly rate × 12 (15% a month = 180); leave out if not said' },
     monthly_payment: { ...MONEY, description: 'Paid per month (interest-free: what they actually pay)' },
     term: { type: 'string', enum: ['short', 'long'] },
     required: { type: 'boolean', description: 'false = flexible, pay when they can' },
@@ -759,7 +776,7 @@ const TOPICS: { key: string; ask: string; asked: RegExp; known: (p: FinancialPro
   { key: 'spending', ask: 'Roughly how much do you spend a month?', asked: /spend[^.?!\n]{0,40}\?|chi tiêu[^.?!\n]{0,40}\?/i, known: p => p.expenses.length > 0 }, // lang-ok
   { key: 'stability', ask: 'Is your income stable, and does anyone rely on it?', asked: /(stable|steady|rely|depend)[^.?!\n]{0,60}\?|(ổn định|phụ thuộc)[^.?!\n]{0,60}\?/i, known: p => p.incomeStable !== null && p.dependents !== null }, // lang-ok
   // Framework v2 (2026-10-27): money for a goal within 5 years stays in Safety, not invested.
-  { key: 'goal', ask: 'In the next 5 years, is there a big expense you are saving for (a car, a wedding, school fees)? Roughly how much, and when?', asked: /(next 5 years|next five years|big expense|5 năm)[^?\n]{0,120}\?/i, known: p => !!p.nearGoal || !!p.noNearGoal }, // lang-ok
+  { key: 'goal', ask: 'In the next 5 years, is there a big expense you are saving for (a car, a wedding, school fees), and if so roughly how much and when?', asked: /(next 5 years|next five years|big expense|5 năm)[^?\n]{0,120}\?/i, known: p => !!p.nearGoal || !!p.noNearGoal }, // lang-ok
   { key: 'insurance', ask: 'Do you have health or life insurance that would protect the people who rely on you?', asked: /insurance[^.?!\n]{0,80}\?|bảo hiểm[^.?!\n]{0,80}\?/i, known: p => !((p.dependents ?? 0) > 0 || p.soleEarner === true) || (p.insured !== null && p.insured !== undefined) }, // lang-ok
   // Spare money is not tracked (Hieu, 2026-11-01): only what the user keeps as Safety.
   { key: 'safety', ask: 'Do you keep any money set aside as Safety: a term deposit, bonds, or cash or stablecoins you keep apart? Roughly how much?', asked: /(set aside|safety|term deposit|bonds?|an toàn|tiền gửi có kỳ hạn)[^.?!\n]{0,80}\?/i, known: p => p.holdings.some(h => categoryOf(h) === 'safe') }, // lang-ok
@@ -1428,6 +1445,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       record({ op: 'remove_debt', id: d.id }, `${d.name} paid off`)
       done.push(`Removed debt ${d.name}.`)
     } else if (name === 'set_income' || name === 'set_expense') {
+      if (name === 'set_expense' && earnedFrom(lastUserText, String(a.name ?? ''))) return 'Not recorded as spending: this is work they do, so it is what they earn. Record it with set_income.'
       const m = moneyArg(a.monthly)
       if (!m || !stated(m.amount)) return 'Not recorded: the amount is not in the user\'s words.'
       // "my other income is airdrop" became "airdrop 0 USDC a month" (real chat 2026-10-28): a line needs an amount above zero.
@@ -1673,9 +1691,13 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   const touchesHoldings = readbackOps.some(list => list.some(o => o.op === 'add_holding' || o.op === 'set_holding' || o.op === 'remove_holding'))
   if (!appEvent && readback.length && (touchesHoldings || (hadDataBefore && readback.length >= CONFIRM_MIN_ITEMS))) {
     const items = readback.map((text, i) => ({ text: text.charAt(0).toUpperCase() + text.slice(1), ops: readbackOps[i] }))
-    const content = vi
+    const riskyTypes = readbackOps.flat().flatMap(o => o.op === 'add_holding' && NEVER_SAFETY.has(o.holding.type) ? [o.holding.type] : [])
+    const notSafety = !SAFETY_WORD.test(lastUserText) || !riskyTypes.length ? '' : vi
+      ? `Phần này không tính là Safety được: giá ${riskyTypes.every(t => TRADITIONAL_RISKY.has(t)) ? 'của nó' : 'của coin'} lên xuống mạnh, còn Safety là phần giữ ổn định khi thị trường giảm. Mình ghi vào ${riskyTypes.every(t => TRADITIONAL_RISKY.has(t)) ? 'Traditional' : 'Crypto'} nếu bạn đồng ý.\n\n` // lang-ok
+      : `This can't be Safety: its price swings, and Safety is the part that stays steady when markets fall. If you agree, I'll record it under ${riskyTypes.every(t => TRADITIONAL_RISKY.has(t)) ? 'Traditional' : 'Crypto'} instead.\n\n`
+    const content = notSafety + (vi
       ? `Mình nhận được ${items.length} mục. Xác nhận hoặc hủy từng mục bên dưới; chưa có gì được lưu cho đến khi bạn xác nhận.` // lang-ok
-      : items.length === 1 ? `I picked up 1 change. Confirm or cancel it below; nothing is saved until you do.` : `I picked up ${items.length} things. Confirm or cancel each one below; nothing is saved until you do.`
+      : items.length === 1 ? `I picked up 1 change. Confirm or cancel it below; nothing is saved until you do.` : `I picked up ${items.length} things. Confirm or cancel each one below; nothing is saved until you do.`)
     // Answer questions from saved state while new declarations await confirmation.
     // Cards computed from provisional data must not accompany the pending records.
     // A record box already shown stays (it carries the source choice); the other cards are replaced by the confirm card.
@@ -1773,7 +1795,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   // coach on), kept question 2 from being asked. Only a card waiting for the user, or a question of theirs, holds it back now.
   const holdsDeclared = profile.holdings.some(h => ASSET_TYPES.includes(h.type))
   const waitingCard = actions.some(a => /^(confirm_|prepare_|propose_)/.test(String(a.type)))
-  if (batchAsked && !holdsDeclared && !assistantTexts.some(a => ASSETS_MARK.test(a)) && !pending && !toAsk.length && !waitingCard && !placement && (!appEvent || itemsEvent) && !policy.answerFirst && !directQuestion && !correctingFact && !DECLINES.test(lastUserText)) {
+  if (batchAsked && !holdsDeclared && !CLAIMS_FUND.test(lastUserText) && !assistantTexts.some(a => ASSETS_MARK.test(a)) && !pending && !toAsk.length && !waitingCard && !placement && (!appEvent || itemsEvent) && !policy.answerFirst && !directQuestion && !correctingFact && !DECLINES.test(lastUserText)) {
     const heard = coach.active ? (vi ? 'Mình hiểu. Chuyện đã qua thì để lại phía sau, mình lo phần phía trước cùng bạn nhé.\n\n' : 'I hear you. What is behind you stays behind; let\'s look after what comes next together.\n\n') : '' // lang-ok
     return json({ content: heard + assetsAsk(profile, balance.fund, balance.cashflow, vi, wallet, balance.lock.open && fundMissingInputs(profile, balance.cashflow.spending).length === 0), ops, dcaStop, actions })
   }
@@ -1792,7 +1814,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   // A split above the cap gets the same answer every time, never the model's wording (Hieu, 2026-11-03).
   if (cryptoSplitRefused && !ops.length && !appEvent) {
     const c = profile.cryptoSplit ?? 50
-    return json({ content: vi ? `Crypto giữ ở mức tối đa ${MAX_CRYPTO_SPLIT}% phần tiền ngoài Safety: crypto biến động rất mạnh, vượt mức này thì việc cân lại các phần sẽ rất mệt. Mình giữ nguyên tỷ lệ Traditional ${100 - c}% / Crypto ${c}%. Bạn vẫn có thể giảm Crypto, ví dụ Traditional 70% / Crypto 30%.` : `Crypto stays at ${MAX_CRYPTO_SPLIT}% or less of the money outside Safety: it swings so much that above that, keeping your parts in balance gets exhausting. I kept your split at Traditional ${100 - c}% / Crypto ${c}%. You can still lower Crypto, for example Traditional 70% / Crypto 30%.`, ops, dcaStop, actions }) // lang-ok
+    return json({ content: vi ? `Crypto giữ ở mức tối đa ${MAX_CRYPTO_SPLIT}% phần tiền ngoài Safety: crypto biến động rất mạnh, vượt mức này thì việc cân lại các phần sẽ rất mệt. Mình giữ nguyên tỷ lệ Traditional ${100 - c}% / Crypto ${c}%. ${c > 30 ? 'Bạn vẫn có thể giảm Crypto, ví dụ Traditional 70% / Crypto 30%.' : 'Bạn vẫn có thể giảm Crypto thêm nếu muốn.'}` : `Crypto stays at ${MAX_CRYPTO_SPLIT}% or less of the money outside Safety: it swings so much that above that, keeping your parts in balance gets exhausting. I kept your split at Traditional ${100 - c}% / Crypto ${c}%. ${c > 30 ? 'You can still lower Crypto, for example Traditional 70% / Crypto 30%.' : 'You can still lower Crypto further if you like.'}`, ops, dcaStop, actions }) // lang-ok
   }
   // A split changed this turn is confirmed by the server (Haiku runs 2026-11-01: the model twice said "already set, no change").
   {
@@ -1803,7 +1825,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     }
   }
   // "How much is in my Safety / bank / crypto?": answered from the numbers, with the totals (Hieu, 2026-10-28), never by the model.
-  if (!appEvent && !placement && !ops.length && !readback.length && balance.declared && balance.target && ASKS_AMOUNT.test(lastUserText) && AMOUNT_TOPIC.test(lastUserText)) {
+  if (!appEvent && !placement && !ops.length && !readback.length && balance.declared && balance.target && ASKS_AMOUNT.test(lastUserText) && AMOUNT_TOPIC.test(lastUserText) && !ASKS_WHY.test(lastUserText)) {
     const standingText = buildStanding({ p: profile, b: balance, vi })
     if (standingText) return json({ content: standingText, ops, dcaStop, actions })
   }
@@ -1829,7 +1851,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   // The emergency fund needs the month as one block, not questions one by one (Hieu, 2026-10-31): talking about the fund while the
   // spending is still unknown brings the month question back, at most once more. Not when they only ask how a fund works (the lesson
   // comes first), nor over a card waiting for their confirmation.
-  if (profile.expenses.length === 0 && FUND_TALK.test(lastUserText) && !EXPLAIN_ONLY.test(lastUserText) && !actions.length && !placement && !appEvent && !DECLINES.test(lastUserText) && assistantTexts.filter(a => BATCH_MARK.test(a)).length < 2) {
+  if (profile.expenses.length === 0 && FUND_TALK.test(lastUserText) && !SECURITY_TALK.test(lastUserText) && !CLAIMS_FUND.test(lastUserText) && !EXPLAIN_ONLY.test(lastUserText) && !actions.length && !placement && !appEvent && !DECLINES.test(lastUserText) && assistantTexts.filter(a => BATCH_MARK.test(a)).length < 2) {
     return json({ content: cashflowAsk(vi, { en: 'size your emergency fund', vi: 'tính quỹ dự phòng cho đúng' }), ops, dcaStop, actions: [...actions, { type: 'intake_form', keys: cashflowKeys(profile), seen: wallet }] }) // lang-ok
   }
 
@@ -1955,6 +1977,8 @@ ${ending}` })
       }
       if ((content.match(/\?/g) ?? []).length > 1) problems.push('only ONE question is allowed, drop the others')
       if (ASKS_STABLE.test(prevAssistant) && ASKS_STABLE.test(content) && !recordedStable) problems.push('the last reply already asked whether their income is stable and they did not answer; do NOT ask it again, answer what they are asking')
+      if (balance.debts.priorityCount > 0 && balance.fund.starterUsd !== null && (balance.fundUsd ?? 0) < balance.fund.starterUsd && ((DEBT_WORD.test(lastUserText) && /fund|quỹ/iu.test(lastUserText) && !/starter|khởi đầu/iu.test(plain.split(/(?<=[.!?])\s+/)[0] ?? '')) || (/(?:pay|paying|clear)[^.?!\n]{0,40}\bfirst\b|trả[^.?!\n]{0,40}trước/iu.test(plain) && !/starter|khởi đầu/iu.test(plain)))) problems.push('Open with the one order: first the starter fund of 1 month, then the expensive debt, then the rest of the fund. Never say the debt comes first and then correct it.') // lang-ok
+      if (!balance.lock.open && INVEST_INTENT.test(lastUserText) && /^\W*(yes|yeah|sure|of course|you can|có thể|có|được)(?!\p{L})/iu.test(plain)) problems.push(`never answer yes to buying while investing is locked: ${balance.lock.text}. Say what is missing; no chat message opens it.`) // lang-ok
       if (wantsInvestLocked && !SAYS_LOCKED.test(content)) problems.push(`say that cirBTC buying is locked, what is missing ("${balance.lock.text}") and why the lock protects them`)
       if (!ops.length && SAYS_NOTED.test(content)) problems.push('nothing was recorded this turn, drop "Noted"')
       if (userAsks && !ops.length && YOU_ARE_RIGHT.test(content)) problems.push('do not say they are right: nothing changed. Answer their question by showing how the number is made from ASSET & FUND FIGURES (spending lines + debt payments = spending a month; months × spending = floor)')
@@ -2028,6 +2052,7 @@ ${ending}` })
       if (vi && /(?<!\p{L})(floor|options?)(?!\p{L})/iu.test(plain)) problems.push('this reply is in Vietnamese: write "mức tối thiểu" for floor and "lựa chọn" for option') // lang-ok
       if (!balance.lock.open && balance.lock.missing.some(m => m.startsWith('pay off')) && plain.split(/(?<=[.;!?])\s+/).some(x => UNLOCKS.test(x) && !DEBT_WORD.test(x))) problems.push(`cirBTC stays locked while there is priority debt: adding to the fund alone does not open it (${balance.lock.text})`)
       if (!balance.lock.open && /(prepare|chuẩn bị|tạo)[^.?!\n]{0,60}cirBTC/i.test(plain)) problems.push(`cirBTC buying is locked, so there is no cirBTC card to offer (${balance.lock.text})`) // lang-ok
+      if (/card[^.?!\n]{0,40}(?:either part|traditional|safety)|(?:traditional|safety)[^.?!\n]{0,40}\bcard\b|thẻ[^.?!\n]{0,40}(?:traditional|safety|an toàn)/iu.test(plain) && !/\b(?:no|not|never)\b|không/iu.test(plain)) problems.push('the app has no card for Traditional or Safety: those are done outside the app, then they tell you and you record it. Cards exist only for the fund, withdrawing, cirBTC and DCA.') // lang-ok
       if (DEBT_CARD.test(plain)) problems.push('the app has no card to pay a debt: they pay it themselves; only offer cards for the fund, withdraw, cirBTC or DCA')
       // gpt-5.4-mini once dropped a Persian word into a Vietnamese reply (test 2026-10-27).
       if (OTHER_SCRIPT.test(content)) problems.push(`write only in ${replyLang}: a word in another script slipped in`)

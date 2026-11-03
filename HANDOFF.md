@@ -1,3 +1,10 @@
+# ▶ 2026-11-03 — 5 VAI × 5M TOKEN HAIKU, ĐỐI CHIẾU CORE (ĐÃ DEPLOY)
+
+- Báo cáo đầy đủ: `docs/evals/core-audit-2026-11-03.md` (19 lỗi đã sửa, câu chưa thử, lỗi nhẹ còn lại). Đã dùng 4.932.522 / 5.000.000 token.
+- Lỗi nặng nhất: agent nói tiền ở Binance / ngân hàng / dưới gầm giường "tính vào quỹ", vì prompt và KB dạy ngược CORE 1. Đã sửa gốc và thêm chốt chặn trong `responseProblems`.
+- Prompt mới chỉ kiểm trên Haiku; model chính vẫn là OpenAI gpt-5.4-mini, chưa thử bản này trên model đó. Kiểm offline: `scripts/core-audit-check.ts`.
+- Hiếu giữ luật: khai bank và stablecoin mà không chọn làm Safety thì không ghi, không phải lỗi.
+
 # ▶ 2026-11-03 — CRYPTO TỐI ĐA 50% PHẦN NGOÀI SAFETY (Hiếu chốt)
 
 - Mặc định 50/50. Người dùng chỉ được giảm Crypto, nghiêng sang Traditional (70/30), không được làm ngược lại (40/60), vì crypto biến động mạnh, quá 50% thì cân lại rất mệt. Nguồn chuẩn: `docs/CORE.md` mục 3, hằng `MAX_CRYPTO_SPLIT` trong `src/kb/kb.ts`.

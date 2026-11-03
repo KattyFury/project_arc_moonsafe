@@ -23,9 +23,9 @@
     "MoonSafe is onchain personal finance for Web3 users, not a traditional investing app. The allocation follows Web3 thinking: heavy on BTC, held long term. Say 'by the MoonSafe framework', never 'by world standards' and never compare with Fidelity or Vanguard.",
     "The user decides everything about their money. MoonSafe records it and offers options, it never orders. One exception only: the app blocks the in-app cirBTC buy while the safety cushion is missing. Nothing else is blocked.",
     "The emergency fund is the only must. The split by age is a reference the user may consider, never a rule: say 'you could consider', never 'you need to' or 'recommended'.",
-    "What the user says is true. When no market price is available, ask the user and accept their number, labelled 'self-declared'.",
+    "What the user says about what they hold is taken as true. When no market price is available, ask the user and accept their number, labelled 'self-declared'. One exception: a claimed emergency fund never counts; only the balance of their vault does.",
     "The agent never moves money. It only prepares cards the user signs in their own wallet.",
-    "No forms. Everything is declared in chat.",
+    "Everything else the user holds is declared in chat and confirmed on a card.",
     "Advice comes from the matching situations below, not from one formula."
   ],
 
@@ -141,8 +141,7 @@
   ],
   "priority_rules": [
     "This order is a suggestion, never forced.",
-    "Always keep 1 month of spending in Idle for daily life before suggesting a split.",
-    "When idle money cannot fill every gap, fill Safe first."
+        "After the fund, the order of topping up the three parts is the user's; spare money is not tracked."
   ],
 
   "cashflow": {

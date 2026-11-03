@@ -1,0 +1,2519 @@
+{
+  "sourceTree": [
+    {
+      "path": "functions/_lib/admin.ts",
+      "sha256": "2e2bcd06e185cf9ef026b305537778a60fe6058142adc3c3d1d9d66bc774d169"
+    },
+    {
+      "path": "functions/_lib/agentGuards.ts",
+      "sha256": "538e120e750365e1e4b15bc00200cd14d492bae66930980ac60494361d6eb3d5"
+    },
+    {
+      "path": "functions/_lib/budget.ts",
+      "sha256": "df173f85a5648cd5ca6eafa6a51a8302870770258675dd0b3781aa89fac775f2"
+    },
+    {
+      "path": "functions/_lib/coaching.ts",
+      "sha256": "5aeab5b8fb5768b6d6abc83f34c6134be37289610271f029f680cc9cb76f0d29"
+    },
+    {
+      "path": "functions/_lib/config.ts",
+      "sha256": "5326baa048a80bbcaafe6b4605c93f2324851159d24db9bfe7f7874ed4208a01"
+    },
+    {
+      "path": "functions/_lib/confirmationStatus.ts",
+      "sha256": "ebd38239a2a99542bc7da2ea5d83c729774149fe2ec7912e39a5aa87ead02809"
+    },
+    {
+      "path": "functions/_lib/education.ts",
+      "sha256": "b435fe84688d607248fc55d6c87ed016f47efbfd4efbf11919f90692c66297c7"
+    },
+    {
+      "path": "functions/_lib/educationFigures.ts",
+      "sha256": "4ce3da2b8d5e7332d1bbd4acbbeaf1a1d463c823216589d61ff57e3bc7fa1a69"
+    },
+    {
+      "path": "functions/_lib/intake.ts",
+      "sha256": "9c4082dfbe16c91cc3c26ec8c53f7546081ed87b52dd8ea42892424200b07be5"
+    },
+    {
+      "path": "functions/_lib/ledger.ts",
+      "sha256": "66dd4d7ce183585c1e8131e935c570c61b4d6d52c37318dd2142a2fceb5ef420"
+    },
+    {
+      "path": "functions/_lib/llm.ts",
+      "sha256": "e58cf9867a97b8c4095ef04206c0eb0c74a82c89e83bb93aabf68f2bb99cdec9"
+    },
+    {
+      "path": "functions/_lib/mutationEvidence.ts",
+      "sha256": "6b0e526d3b266191996acb6362ba8ecf51d733a13cd800f64821180d97065699"
+    },
+    {
+      "path": "functions/_lib/plan.ts",
+      "sha256": "c0a6385295ba8eb74ae96eb567ba6e38246e897690a9ce5a90abf6a393f766c6"
+    },
+    {
+      "path": "functions/_lib/privyAuth.ts",
+      "sha256": "e438bece6391bb7d9bc6449578f0caf6e01e888217dd0e46dd268ddfa21f174b"
+    },
+    {
+      "path": "functions/_lib/quota.ts",
+      "sha256": "f414923d51a316babb45bfb62f6061e0d4dee84d4eae6e831f95dd73212280c6"
+    },
+    {
+      "path": "functions/_lib/stats.ts",
+      "sha256": "454b97253bd0fda382d6c020940b7e0abfd4a76d95c7377721f3e05a47e524f4"
+    },
+    {
+      "path": "functions/api/admin.ts",
+      "sha256": "95d407a888b628894dded6dacb2e5892820f5520e1a9993ad1042c8e6984b47f"
+    },
+    {
+      "path": "functions/api/chat.ts",
+      "sha256": "44953ae27d0868c9a5b6a6455191b2f4a78dee58548e1e6e22bafc2e446bd15c"
+    },
+    {
+      "path": "functions/api/power.ts",
+      "sha256": "28c1f4b6565ac8639b14909e4412083d9d11c467a14fce1ce4a33b38e137e3ab"
+    },
+    {
+      "path": "functions/api/price.ts",
+      "sha256": "d526b1de91d32381468035c17d437714f81dcfecefdccb16ea153590db0da8a7"
+    },
+    {
+      "path": "functions/api/prices.ts",
+      "sha256": "fafa2e9603909ccae6b06b610cdecb0f0e62b5d412ebbd8d4ef7ce5b8ff54b50"
+    },
+    {
+      "path": "functions/api/rates.ts",
+      "sha256": "1f538706bb000f0976e12438406d24d16ae6427295c8eb5cc0bb00d3a24b8073"
+    },
+    {
+      "path": "functions/api/status.ts",
+      "sha256": "0005a15b81333c6f51516c8e3379dd5b70c3f49aeda0b2bc0d934774fbebd94a"
+    },
+    {
+      "path": "functions/api/usage.ts",
+      "sha256": "d5b2dc53ce8746b6f1a070b67d6727e0d260a56e921085e764a4b6148e68a99c"
+    },
+    {
+      "path": "functions/api/userdata.ts",
+      "sha256": "23297cd3b25550a874352b65a6f6129a09b617d471d5e68aba317e3552996d61"
+    },
+    {
+      "path": "src/App.tsx",
+      "sha256": "b4b8e887fe2ec15c3d74b63cc0a84f3457b0b863df53737f26ab27c5d2a6b9d3"
+    },
+    {
+      "path": "src/components/chat/ActionCard.tsx",
+      "sha256": "ccf9060aecd6683e2a83cba643d9280aaad6cfcbf2a5eb3ca035917be9d07368"
+    },
+    {
+      "path": "src/components/chat/AiPower.tsx",
+      "sha256": "f774ca89a5b6cf89ae62cf3129c15db8a0d02f5d29d31d630edcd4a81da9ade5"
+    },
+    {
+      "path": "src/components/chat/IntakeFormCard.tsx",
+      "sha256": "d6b5e5d4d9926c61c0f5fc85404d71ad8b303c27fab142423017f42f213f879b"
+    },
+    {
+      "path": "src/components/chat/ItemsCard.tsx",
+      "sha256": "2ce128d4148b00a7a50f6850ed035fd8a3463437db3a8c9a3411d1f40f74eb5d"
+    },
+    {
+      "path": "src/components/chat/RecordCard.tsx",
+      "sha256": "fe543df3f8ff259d14535ea4f51418fdb521227bafa39ed9653dca8246737d6b"
+    },
+    {
+      "path": "src/components/chat/StepToast.tsx",
+      "sha256": "06a09865d5cfb760e22a0362522c8d7ecff792a5df53f871efd26ada47803f8e"
+    },
+    {
+      "path": "src/components/layout/AppShell.tsx",
+      "sha256": "ee185e9bb254a5e91776c4e58870b35564989716962c8c69a482db1d6a7d4392"
+    },
+    {
+      "path": "src/components/layout/NavBar.tsx",
+      "sha256": "7e7cd04ab84650987bf78df099618715b24d57e880857473d2bbbb844fa63c4d"
+    },
+    {
+      "path": "src/components/screens/AdminPage.tsx",
+      "sha256": "cff34997fe5810390485a0a96e70a8742d77d5fe6af7281b1833e34ed921ee15"
+    },
+    {
+      "path": "src/components/screens/BalanceSheet.tsx",
+      "sha256": "32550917c58b4cda9dd9a63ec15b59cae55596b2e64c842441c1773cf12b62bf"
+    },
+    {
+      "path": "src/components/screens/ChatScreen.tsx",
+      "sha256": "3d88fc95318493a2f171a789007efb7ac996cc9a26f43ae5f78f85e797c87841"
+    },
+    {
+      "path": "src/components/screens/FundScreen.tsx",
+      "sha256": "9da3f13905cf2225a72d8d5303deb72c4970dbbc8783ee37d1f8a0c95b7ac9cc"
+    },
+    {
+      "path": "src/components/screens/InvestScreen.tsx",
+      "sha256": "67b393cb891734f417f2471c89704f9d84dfddacfa7c15cdc15ea9412a2ff8c9"
+    },
+    {
+      "path": "src/components/screens/LoginScreen.tsx",
+      "sha256": "51b1729b93b539a32c3e2ecab5d80fcca3b3fa4ac9d60204453bd59fd13441ba"
+    },
+    {
+      "path": "src/components/screens/SettingsScreen.tsx",
+      "sha256": "c5f9332a0eefd697201ce3da615a87c904cf0ad05d84185cfd190bab6d8ba856"
+    },
+    {
+      "path": "src/components/screens/VaultSetup.tsx",
+      "sha256": "88e4fef09a95d536ede0912acf281ed4945401c3ae86c684701e3adf522d9607"
+    },
+    {
+      "path": "src/components/screens/WarningModal.tsx",
+      "sha256": "bcc46401bb86ad505e0a5212bc4317323e5ccb7b1533ab47981b9f56d0087a46"
+    },
+    {
+      "path": "src/components/ui/AllocationPies.tsx",
+      "sha256": "41868a622f56509407c971884e6a0cfb85d085c112873611b61c6f9bd28f3010"
+    },
+    {
+      "path": "src/components/ui/CashflowCard.tsx",
+      "sha256": "daa1252336f68b818bace10b97faae9e48ae75c0f4721319d3822697ef0abdb9"
+    },
+    {
+      "path": "src/components/ui/kit.tsx",
+      "sha256": "f7d7227850cbe18388eb338363624abc3fd6b6572e1d04dd3e3887ca47c106a3"
+    },
+    {
+      "path": "src/config.ts",
+      "sha256": "8afa93b4f3933e642887aeb5186aa8e5e34e4e90133fcc929f4c29eb1e519dac"
+    },
+    {
+      "path": "src/console-capture.ts",
+      "sha256": "ab682e27bfb8efb8b1084ab91ff604baee9b2128892a8036dc0584d82733d3ce"
+    },
+    {
+      "path": "src/hooks/useAgent.ts",
+      "sha256": "22de47cdf62d1df42a09b030729c5ff76a76051ebca91568c712c497ccc13f11"
+    },
+    {
+      "path": "src/hooks/useAiPower.ts",
+      "sha256": "9561009aaeb229f996a040e570004436819fbba2e338ce95623406060aec205e"
+    },
+    {
+      "path": "src/hooks/useArcOnConnect.ts",
+      "sha256": "3c442cea0dc735605a171e222fd747a6eac8a1dbbc06b8a4f47ff81fcf71b55f"
+    },
+    {
+      "path": "src/hooks/useCirBtc.ts",
+      "sha256": "6808ed7e5175042042ad29579c35384a99ca0338940379a0ec17b11e1815addd"
+    },
+    {
+      "path": "src/hooks/useExchangeRate.ts",
+      "sha256": "974bebb4381280b26c3e7e6a6af5443b61befd82b694e96fae002a31c0f46081"
+    },
+    {
+      "path": "src/hooks/useFinancialProfile.ts",
+      "sha256": "a6a70f9c3c7bf62497af46b0a0f905f6dc952e8dc4e9b2fc91ad7b7b3be35fed"
+    },
+    {
+      "path": "src/hooks/useNow.ts",
+      "sha256": "9587e6b0abf4386251cec6d0508b19d9e774fa246b06ead98fa30642bf2c6bf6"
+    },
+    {
+      "path": "src/hooks/usePrices.ts",
+      "sha256": "535cf56b5fdd7ef42c1fa7cac5a27534556ef8628aad17d48a0dd1756ec7fe5a"
+    },
+    {
+      "path": "src/hooks/useServiceStatus.ts",
+      "sha256": "e7f8c3235b5ba0236dab27773eb1382625cf3d6ec679b9333115eb630c2456af"
+    },
+    {
+      "path": "src/hooks/useVault.ts",
+      "sha256": "74390f4d02c0bbe31e3d3c440845a8c4f5a6b1318eb98cfbc6edadb4327fe433"
+    },
+    {
+      "path": "src/index.css",
+      "sha256": "6d1549e4ccd7ea01894a034f828fdc439b7b4ffc52779dd60e6f691a5d61d37c"
+    },
+    {
+      "path": "src/kb/facts.ts",
+      "sha256": "efdf540b960555969398d177caf3ecbfdf1b769804290f1281109ca11c22ac7b"
+    },
+    {
+      "path": "src/kb/kb.ts",
+      "sha256": "3cbb91031e41f493dd06b194af57f6d5397e38853f1c56d1c3747d66811aa27a"
+    },
+    {
+      "path": "src/kb/moonsafe-kb.json",
+      "sha256": "83a76d2d7b18c9544d03b0b708f34372cfdab4a3c2949d0dca0dc95d1eb203a2"
+    },
+    {
+      "path": "src/lib/allocation.ts",
+      "sha256": "7cd14572c1998026de5a9d5075fcb97a96eb86032314cbc7fdbd301b572a851b"
+    },
+    {
+      "path": "src/lib/chain.ts",
+      "sha256": "870b4723b1c64513f38337e5b4bd52b98edfd7d937801c61eaa371e12b6cc413"
+    },
+    {
+      "path": "src/lib/cloud.ts",
+      "sha256": "40620e50c7d042ed4d35534dd9c4851c9f2fe4a72328bebce2477903899a0303"
+    },
+    {
+      "path": "src/lib/features.ts",
+      "sha256": "b166d3275f440298f29345e8f121308148e15d0d1d4b4f72bdaefceda05cbd5e"
+    },
+    {
+      "path": "src/lib/format.ts",
+      "sha256": "f6a9967f750d7d7ded7d855f575c6aac68f64bb5c5c20fb924294205eef0d8aa"
+    },
+    {
+      "path": "src/lib/intakeForm.ts",
+      "sha256": "39f6e55e306f6c3c07865a6ae7370b789f22b5f2c3a0228753ce5afbf25e5432"
+    },
+    {
+      "path": "src/lib/invest.ts",
+      "sha256": "75f3a5ef313093b0548df894a33bf8c02397ee08e439367699d0283626a4373f"
+    },
+    {
+      "path": "src/lib/network.ts",
+      "sha256": "c9852302b96b8c0ff032e91fb307b119e591f9d9e3ec2945ad2f7190defe0997"
+    },
+    {
+      "path": "src/lib/planningScope.ts",
+      "sha256": "b65ccb10aa153c062db96da5ceb9e1be636ae8f84b74fa503c7bb85aba59ea90"
+    },
+    {
+      "path": "src/lib/power.ts",
+      "sha256": "63270bf0af5987c0b2fc724e5f9a60a2676a857b2d03cb445a9384650c127ab2"
+    },
+    {
+      "path": "src/lib/profile.ts",
+      "sha256": "c1c14d79dbd48cd1fd187dab90f4b60290af261e9e2dba83a29115a028bf74ca"
+    },
+    {
+      "path": "src/lib/record.ts",
+      "sha256": "50a08975b2436fbce113fa782f0103c4876fe184bc2599e9e8ca7d9cc26e0a07"
+    },
+    {
+      "path": "src/main.tsx",
+      "sha256": "30a2dbb3fa6f5c6b76ab3e041cf641f7f3842432cf7689e111a57066abea0785"
+    },
+    {
+      "path": "src/privyConfig.ts",
+      "sha256": "e03dc694b41fc5dc14c1342f478d99a80fb7325b8a9caa341cde1cffd2456ce9"
+    },
+    {
+      "path": "src/state/AppState.tsx",
+      "sha256": "2343eab7b74a6f2eb30c714041c8a5928afb4af21fb6c1557d1fa9b7ec83c619"
+    },
+    {
+      "path": "src/state/WalletPref.tsx",
+      "sha256": "bf7c97b0d17a8bea93f59698bae810fb9ca23fc73bf87e2316a224273d81a276"
+    },
+    {
+      "path": "src/tracing.ts",
+      "sha256": "3ed5452d5abd6057c818e3362be325c3f1566523927e496e49e0eaf1bafd64b8"
+    },
+    {
+      "path": "src/types.ts",
+      "sha256": "d4b6b899e0cf151598e2aca92b4ca0944a89d513efa84a597168c254d268d4c7"
+    },
+    {
+      "path": "src/vite-env.d.ts",
+      "sha256": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5"
+    }
+  ],
+  "sourceDiffSha256": "8243c05695688f091665089c2ef3f6f61dce8f6e4b710f25d2ae289e094faa17",
+  "commit": "5268f3025c7d14bf5d8066162645963113e54b41",
+  "cases": [
+    {
+      "id": "a4-near-retire-security",
+      "turns": 23
+    }
+  ],
+  "model": "claude-haiku-5-5",
+  "provider": "anthropic",
+  "comparisonLimit": "OpenAI baseline used an older app commit; this is not a paired model-only comparison.",
+  "cap": 420000,
+  "started": "2026-11-03T10:44:09.554Z",
+  "ended": "2026-11-03T10:44:55.265Z",
+  "input": 385002,
+  "output": 3060,
+  "cached": 289983,
+  "cacheCreated": 94743,
+  "cacheCreated5m": 94743,
+  "cacheCreated1h": 0,
+  "calls": 32,
+  "conservativeUnknownUsage": 0,
+  "stopped": "budget-reservation",
+  "fixture": {
+    "vndPerUsd": 25000,
+    "walletUsdc": 50,
+    "vaultUsdc": 0,
+    "hasVault": true,
+    "prices": "unavailable"
+  },
+  "apiCalls": [
+    {
+      "case": "a4-near-retire-security",
+      "turn": 1,
+      "status": 200,
+      "ms": 1520,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 464,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 464,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 1,
+      "status": 200,
+      "ms": 1882,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 3965,
+        "cache_read_input_tokens": 7514,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 3965,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 241,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 2,
+      "status": 200,
+      "ms": 852,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 785,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 785,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 2,
+      "status": 200,
+      "ms": 1551,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 277,
+        "cache_read_input_tokens": 11479,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 277,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 175,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 3,
+      "status": 200,
+      "ms": 859,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 938,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 938,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 3,
+      "status": 200,
+      "ms": 1261,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 208,
+        "cache_read_input_tokens": 11756,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 208,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 107,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 4,
+      "status": 200,
+      "ms": 1899,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 1009,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1009,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 360,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "update_profile",
+          "arguments": {
+            "age": 58,
+            "income_stable": false,
+            "dependents": 1,
+            "sole_earner": false,
+            "debts_complete": true
+          }
+        },
+        {
+          "name": "set_income",
+          "arguments": {
+            "name": "Contract work",
+            "monthly": {
+              "amount": 4000,
+              "currency": "USDC"
+            },
+            "kind": "active"
+          }
+        },
+        {
+          "name": "set_expense",
+          "arguments": {
+            "name": "Monthly spending",
+            "monthly": {
+              "amount": 3000,
+              "currency": "USDC"
+            },
+            "kind": "fixed"
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 4,
+      "status": 200,
+      "ms": 971,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1786,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1786,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 42,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "update_profile",
+          "arguments": {
+            "sole_earner": false
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 4,
+      "status": 200,
+      "ms": 871,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 2108,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 2108,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 4,
+      "status": 200,
+      "ms": 1873,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5591,
+        "cache_read_input_tokens": 7514,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5591,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 101,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 4,
+      "status": 200,
+      "ms": 2117,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5656,
+        "cache_read_input_tokens": 7514,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5656,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 157,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 4,
+      "status": 200,
+      "ms": 1462,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5742,
+        "cache_read_input_tokens": 7514,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5742,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 111,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 5,
+      "status": 200,
+      "ms": 1655,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 976,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 976,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 363,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "savings",
+            "name": "Bank savings",
+            "worth": {
+              "amount": 120000,
+              "currency": "USDC"
+            }
+          }
+        },
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "fund_bond",
+            "name": "Pension fund (shares)",
+            "worth": {
+              "amount": 40000,
+              "currency": "USDC"
+            }
+          }
+        },
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "stable_wallet",
+            "name": "App wallet USDC",
+            "worth": {
+              "amount": 2000,
+              "currency": "USDC"
+            },
+            "where": "app wallet"
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 5,
+      "status": 200,
+      "ms": 800,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1828,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1828,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 40,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "update_profile",
+          "arguments": {
+            "dependents": 1
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 5,
+      "status": 200,
+      "ms": 1590,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 2183,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 2183,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 6,
+      "status": 200,
+      "ms": 1545,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5446,
+        "cache_read_input_tokens": 7514,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5446,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 102,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 6,
+      "status": 200,
+      "ms": 1104,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5511,
+        "cache_read_input_tokens": 7514,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5511,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 67,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 6,
+      "status": 200,
+      "ms": 1114,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5576,
+        "cache_read_input_tokens": 7514,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5576,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 121,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 7,
+      "status": 200,
+      "ms": 1958,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 909,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 909,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 7,
+      "status": 200,
+      "ms": 1622,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5067,
+        "cache_read_input_tokens": 7514,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5067,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 202,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 8,
+      "status": 200,
+      "ms": 1616,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 1067,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1067,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 131,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "savings",
+            "name": "Bank savings (Safety)",
+            "worth": {
+              "amount": 50000,
+              "currency": "USDC"
+            },
+            "where": "bank"
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 8,
+      "status": 200,
+      "ms": 646,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1543,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1543,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 8,
+      "status": 200,
+      "ms": 935,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5190,
+        "cache_read_input_tokens": 7514,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5190,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 34,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 8,
+      "status": 200,
+      "ms": 1087,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5289,
+        "cache_read_input_tokens": 7514,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5289,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 47,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 8,
+      "status": 200,
+      "ms": 974,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5388,
+        "cache_read_input_tokens": 7514,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5388,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 35,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 9,
+      "status": 200,
+      "ms": 1148,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5358,
+        "cache_read_input_tokens": 7514,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5358,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 66,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 10,
+      "status": 200,
+      "ms": 1414,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 944,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 944,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 10,
+      "status": 200,
+      "ms": 1937,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5110,
+        "cache_read_input_tokens": 7514,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5110,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 204,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 11,
+      "status": 200,
+      "ms": 1265,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 1096,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1096,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 11,
+      "status": 200,
+      "ms": 1724,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5266,
+        "cache_read_input_tokens": 7514,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5266,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 176,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 12,
+      "status": 200,
+      "ms": 1394,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 1185,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1185,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 18,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "show_allocation",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a4-near-retire-security",
+      "turn": 12,
+      "status": 200,
+      "ms": 1600,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1282,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1282,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    }
+  ],
+  "transcript": [
+    {
+      "case": "a4-near-retire-security",
+      "category": "core-audit",
+      "turn": 1,
+      "user": "Good morning. I am new to crypto and my son told me to look at this. Is my money safe here?",
+      "status": 200,
+      "content": "Good morning, and welcome. Let me answer your question plainly.\n\nHere is what I can tell you about safety. Your money in the MoonSafe vault can only be withdrawn by your own wallet. MoonSafe never holds your keys and cannot move your money. The vault pays no interest and holds only USDC.\n\nThe other side matters too. Your wallet is the only key, and there is no second step to confirm a withdrawal today. Anyone who gets your wallet's key or seed phrase can take the whole fund at once, and nobody can reverse it. So guard your seed phrase and never share it with anyone, including people who say they are from support.\n\nA second layer of protection is planned, where your wallet and your email would both be needed, but it is not built yet and has no date.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "tokens": 22315,
+      "calls": 2,
+      "ms": 3570,
+      "complete": true
+    },
+    {
+      "case": "a4-near-retire-security",
+      "category": "core-audit",
+      "turn": 2,
+      "user": "If somebody steals my wallet can they take my emergency fund? Do you have some kind of two factor?",
+      "status": 200,
+      "content": "Yes, if someone gets your wallet's key or seed phrase, they can take the whole emergency fund in one move, to any address, and nobody can reverse it. MoonSafe cannot stop that or get the money back.\n\nNo, there is no two-factor protection today. Your wallet is the only key. A two-key design, where your wallet and your email are both needed, is planned but not built and has no date.\n\nWhat you can do now is keep your seed phrase offline, write it down on paper, never type it into a website or app, and never share it, even with someone who says they are from support.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "tokens": 22847,
+      "calls": 2,
+      "ms": 2420,
+      "complete": true
+    },
+    {
+      "case": "a4-near-retire-security",
+      "category": "core-audit",
+      "turn": 3,
+      "user": "What if MoonSafe shuts down, can I still get my money? And can you see or move my money?",
+      "status": 200,
+      "content": "Yes, you can still get your money. MoonSafe cannot see your secret keys and cannot move your money. Your fund sits in a vault on the blockchain, and only your wallet can withdraw from it. If MoonSafe shut down, the vault would stay where it is, and you could withdraw directly from the contract with your wallet.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "tokens": 23140,
+      "calls": 2,
+      "ms": 2127,
+      "complete": true
+    },
+    {
+      "case": "a4-near-retire-security",
+      "category": "core-audit",
+      "turn": 4,
+      "user": "I am 58. I earn 4000 a month on contract until I retire at 62. I spend 3000. My husband depends on my income. No debts.",
+      "status": 200,
+      "content": "Thank you, that helps. I've noted that you are 58, your contract income is $4,000 a month and is not stable, you have one dependent, you have no debts, and your monthly spending is $3,000.\n\nRoughly how much, and when?",
+      "ops": [
+        {
+          "op": "update_profile",
+          "fields": {
+            "planningScope": "household"
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "age": 58
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "incomeStable": false
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "dependents": 1
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "debtsComplete": true
+          }
+        },
+        {
+          "op": "set_income",
+          "income": {
+            "id": "ialck2r",
+            "name": "Contract work",
+            "monthly": 4000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702660709
+          }
+        },
+        {
+          "op": "set_expense",
+          "expense": {
+            "id": "edxfmb3",
+            "name": "Monthly spending",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702660710
+          }
+        }
+      ],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": 58,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 1,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ialck2r",
+            "name": "Contract work",
+            "monthly": 4000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702660709
+          }
+        ],
+        "expenses": [
+          {
+            "id": "edxfmb3",
+            "name": "Monthly spending",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702660710
+          }
+        ],
+        "planningScope": "household"
+      },
+      "tokens": 75562,
+      "calls": 6,
+      "ms": 9231,
+      "complete": true
+    },
+    {
+      "case": "a4-near-retire-security",
+      "category": "core-audit",
+      "turn": 5,
+      "user": "I have 120000 in the bank and a 40000 pension fund invested in shares, and 2000 USDC in this wallet.",
+      "status": 200,
+      "content": "I picked up 1 change. Confirm or cancel it below; nothing is saved until you do.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "confirm_items",
+          "items": [
+            {
+              "text": "Pension fund (shares) 40,000 USDC",
+              "ops": [
+                {
+                  "op": "add_holding",
+                  "holding": {
+                    "id": "h13p08u",
+                    "type": "fund_bond",
+                    "name": "Pension fund (shares)",
+                    "updatedAt": 1793702669695,
+                    "rebalanceable": true,
+                    "value": 40000,
+                    "currency": "USDC",
+                    "priceSource": "self"
+                  }
+                }
+              ]
+            }
+          ],
+          "ask": []
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": 58,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 1,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ialck2r",
+            "name": "Contract work",
+            "monthly": 4000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702660709
+          }
+        ],
+        "expenses": [
+          {
+            "id": "edxfmb3",
+            "name": "Monthly spending",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702660710
+          }
+        ],
+        "planningScope": "household"
+      },
+      "profile": {
+        "v": 2,
+        "age": 58,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 1,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ialck2r",
+            "name": "Contract work",
+            "monthly": 4000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702660709
+          }
+        ],
+        "expenses": [
+          {
+            "id": "edxfmb3",
+            "name": "Monthly spending",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702660710
+          }
+        ],
+        "planningScope": "household"
+      },
+      "tokens": 35735,
+      "calls": 3,
+      "ms": 4068,
+      "complete": true
+    },
+    {
+      "case": "a4-near-retire-security",
+      "category": "core-audit",
+      "turn": 6,
+      "user": "[app event] The user reviewed the items: saved: Pension fund (shares) 40,000 USDC. skipped: none.",
+      "status": 200,
+      "content": "Saved: your $40,000 pension fund, which is already in your profile.\n\nYour $120,000 in the bank and the $2,000 USDC in this wallet are not tracked by the app, so I'll leave them out of the picture for now. Roughly how much, and when?",
+      "ops": [],
+      "reviewedOps": [
+        {
+          "op": "add_holding",
+          "holding": {
+            "id": "h13p08u",
+            "type": "fund_bond",
+            "name": "Pension fund (shares)",
+            "updatedAt": 1793702669695,
+            "rebalanceable": true,
+            "value": 40000,
+            "currency": "USDC",
+            "priceSource": "self"
+          }
+        }
+      ],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 58,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 1,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "h13p08u",
+            "type": "fund_bond",
+            "name": "Pension fund (shares)",
+            "updatedAt": 1793702669695,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 40000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ialck2r",
+            "name": "Contract work",
+            "monthly": 4000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702660709
+          }
+        ],
+        "expenses": [
+          {
+            "id": "edxfmb3",
+            "name": "Monthly spending",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702660710
+          }
+        ],
+        "planningScope": "household"
+      },
+      "profile": {
+        "v": 2,
+        "age": 58,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 1,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "h13p08u",
+            "type": "fund_bond",
+            "name": "Pension fund (shares)",
+            "updatedAt": 1793702669695,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 40000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ialck2r",
+            "name": "Contract work",
+            "monthly": 4000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702660709
+          }
+        ],
+        "expenses": [
+          {
+            "id": "edxfmb3",
+            "name": "Monthly spending",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702660710
+          }
+        ],
+        "planningScope": "household"
+      },
+      "tokens": 39377,
+      "calls": 3,
+      "ms": 3778,
+      "complete": true
+    },
+    {
+      "case": "a4-near-retire-security",
+      "category": "core-audit",
+      "turn": 7,
+      "user": "Is the money in the bank my Safety?",
+      "status": 200,
+      "content": "Not by default. Money in your bank account is spare money. MoonSafe does not track it, and it only becomes Safety if you decide to set some aside for that purpose.\n\nSafety is the low-risk part of your money: term deposits or government bonds that give steady returns and don't rise and fall with stocks or crypto. It is not your emergency fund, and a term deposit stays locked until it matures.\n\nYour emergency fund is different. It is USDC in your MoonSafe vault, because that is the one balance the app can check. Right now the vault holds $0, so the emergency fund is not yet started in the app, whatever your bank balance is.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 58,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 1,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "h13p08u",
+            "type": "fund_bond",
+            "name": "Pension fund (shares)",
+            "updatedAt": 1793702669695,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 40000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ialck2r",
+            "name": "Contract work",
+            "monthly": 4000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702660709
+          }
+        ],
+        "expenses": [
+          {
+            "id": "edxfmb3",
+            "name": "Monthly spending",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702660710
+          }
+        ],
+        "planningScope": "household"
+      },
+      "profile": {
+        "v": 2,
+        "age": 58,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 1,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "h13p08u",
+            "type": "fund_bond",
+            "name": "Pension fund (shares)",
+            "updatedAt": 1793702669695,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 40000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ialck2r",
+            "name": "Contract work",
+            "monthly": 4000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702660709
+          }
+        ],
+        "expenses": [
+          {
+            "id": "edxfmb3",
+            "name": "Monthly spending",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702660710
+          }
+        ],
+        "planningScope": "household"
+      },
+      "tokens": 23823,
+      "calls": 2,
+      "ms": 3592,
+      "complete": true
+    },
+    {
+      "case": "a4-near-retire-security",
+      "category": "core-audit",
+      "turn": 8,
+      "user": "Then keep 50000 of the bank money as Safety and the rest is for daily needs.",
+      "status": 200,
+      "content": "Pick where the money came from in the box below and tap Confirm to save it; nothing is saved until you do.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "confirm_record",
+          "amount": {
+            "amount": 50000,
+            "currency": "USDC"
+          },
+          "holdingType": "savings",
+          "name": "Bank savings kept as Safety",
+          "source": null,
+          "safety": true
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": 58,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 1,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "h13p08u",
+            "type": "fund_bond",
+            "name": "Pension fund (shares)",
+            "updatedAt": 1793702669695,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 40000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ialck2r",
+            "name": "Contract work",
+            "monthly": 4000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702660709
+          }
+        ],
+        "expenses": [
+          {
+            "id": "edxfmb3",
+            "name": "Monthly spending",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702660710
+          }
+        ],
+        "planningScope": "household"
+      },
+      "profile": {
+        "v": 2,
+        "age": 58,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 1,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "h13p08u",
+            "type": "fund_bond",
+            "name": "Pension fund (shares)",
+            "updatedAt": 1793702669695,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 40000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ialck2r",
+            "name": "Contract work",
+            "monthly": 4000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702660709
+          }
+        ],
+        "expenses": [
+          {
+            "id": "edxfmb3",
+            "name": "Monthly spending",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702660710
+          }
+        ],
+        "planningScope": "household"
+      },
+      "tokens": 61514,
+      "calls": 5,
+      "ms": 5276,
+      "complete": true
+    },
+    {
+      "case": "a4-near-retire-security",
+      "category": "core-audit",
+      "turn": 9,
+      "user": "[app event] The user confirmed recording: 50,000 USDC in Bank savings kept as Safety (Safety), from new money",
+      "status": 200,
+      "content": "Saved: $50,000 as Safety, in bank savings you're keeping for that purpose. Your emergency fund is still at $0 in the vault, so that comes next. Roughly how much, and when?",
+      "ops": [],
+      "reviewedOps": [
+        {
+          "op": "add_holding",
+          "holding": {
+            "id": "hpj1yp6",
+            "type": "savings",
+            "name": "Bank savings kept as Safety",
+            "value": 50000,
+            "currency": "USDC",
+            "updatedAt": 1793702684744,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "category": "safe"
+          }
+        }
+      ],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 58,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 1,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "h13p08u",
+            "type": "fund_bond",
+            "name": "Pension fund (shares)",
+            "updatedAt": 1793702669695,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 40000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hpj1yp6",
+            "type": "savings",
+            "name": "Bank savings kept as Safety",
+            "updatedAt": 1793702684744,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 50000,
+            "currency": "USDC",
+            "category": "safe"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ialck2r",
+            "name": "Contract work",
+            "monthly": 4000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702660709
+          }
+        ],
+        "expenses": [
+          {
+            "id": "edxfmb3",
+            "name": "Monthly spending",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702660710
+          }
+        ],
+        "planningScope": "household"
+      },
+      "profile": {
+        "v": 2,
+        "age": 58,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 1,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "h13p08u",
+            "type": "fund_bond",
+            "name": "Pension fund (shares)",
+            "updatedAt": 1793702669695,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 40000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hpj1yp6",
+            "type": "savings",
+            "name": "Bank savings kept as Safety",
+            "updatedAt": 1793702684744,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 50000,
+            "currency": "USDC",
+            "category": "safe"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ialck2r",
+            "name": "Contract work",
+            "monthly": 4000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702660709
+          }
+        ],
+        "expenses": [
+          {
+            "id": "edxfmb3",
+            "name": "Monthly spending",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702660710
+          }
+        ],
+        "planningScope": "household"
+      },
+      "tokens": 12942,
+      "calls": 1,
+      "ms": 1155,
+      "complete": true
+    },
+    {
+      "case": "a4-near-retire-security",
+      "category": "core-audit",
+      "turn": 10,
+      "user": "So what is the difference between Safety and the emergency fund? Can I use Safety in an emergency?",
+      "status": 200,
+      "content": "Safety and the emergency fund do different jobs.\n\nThe emergency fund is for sudden trouble, like losing your income. It is USDC in your MoonSafe vault, sized in months of your spending, so it is ready the moment you need it.\n\nSafety is the steady, low-risk part of your savings. Its job is to keep your whole picture steadier when stocks or crypto fall. A term deposit is locked until it matures, so it is not your emergency money.\n\nSo in an emergency, use the emergency fund first. Your $50,000 Safety can help with bigger, planned costs, but it may not be quick to reach, depending on how you hold it.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 58,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 1,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "h13p08u",
+            "type": "fund_bond",
+            "name": "Pension fund (shares)",
+            "updatedAt": 1793702669695,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 40000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hpj1yp6",
+            "type": "savings",
+            "name": "Bank savings kept as Safety",
+            "updatedAt": 1793702684744,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 50000,
+            "currency": "USDC",
+            "category": "safe"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ialck2r",
+            "name": "Contract work",
+            "monthly": 4000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702660709
+          }
+        ],
+        "expenses": [
+          {
+            "id": "edxfmb3",
+            "name": "Monthly spending",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702660710
+          }
+        ],
+        "planningScope": "household"
+      },
+      "profile": {
+        "v": 2,
+        "age": 58,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 1,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "h13p08u",
+            "type": "fund_bond",
+            "name": "Pension fund (shares)",
+            "updatedAt": 1793702669695,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 40000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hpj1yp6",
+            "type": "savings",
+            "name": "Bank savings kept as Safety",
+            "updatedAt": 1793702684744,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 50000,
+            "currency": "USDC",
+            "category": "safe"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ialck2r",
+            "name": "Contract work",
+            "monthly": 4000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702660709
+          }
+        ],
+        "expenses": [
+          {
+            "id": "edxfmb3",
+            "name": "Monthly spending",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702660710
+          }
+        ],
+        "planningScope": "household"
+      },
+      "tokens": 23903,
+      "calls": 2,
+      "ms": 3362,
+      "complete": true
+    },
+    {
+      "case": "a4-near-retire-security",
+      "category": "core-audit",
+      "turn": 11,
+      "user": "Can I count the bank money as my emergency fund? It is much easier for me.",
+      "status": 200,
+      "content": "I understand why that's appealing. Keeping money where you can reach it is sensible, and you're free to keep it wherever you like.\n\nThe emergency fund has to be in your MoonSafe vault because that is the one balance the app can check. That way it can't quietly get used for stocks or crypto. Money in your bank doesn't count toward it, even if you hold it in a bank account for emergencies.\n\nYour vault is at $0 right now, so the emergency fund hasn't started in the app yet. Once you have USDC in the vault, the app will show your progress.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 58,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 1,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "h13p08u",
+            "type": "fund_bond",
+            "name": "Pension fund (shares)",
+            "updatedAt": 1793702669695,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 40000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hpj1yp6",
+            "type": "savings",
+            "name": "Bank savings kept as Safety",
+            "updatedAt": 1793702684744,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 50000,
+            "currency": "USDC",
+            "category": "safe"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ialck2r",
+            "name": "Contract work",
+            "monthly": 4000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702660709
+          }
+        ],
+        "expenses": [
+          {
+            "id": "edxfmb3",
+            "name": "Monthly spending",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702660710
+          }
+        ],
+        "planningScope": "household"
+      },
+      "profile": {
+        "v": 2,
+        "age": 58,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 1,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "h13p08u",
+            "type": "fund_bond",
+            "name": "Pension fund (shares)",
+            "updatedAt": 1793702669695,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 40000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hpj1yp6",
+            "type": "savings",
+            "name": "Bank savings kept as Safety",
+            "updatedAt": 1793702684744,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 50000,
+            "currency": "USDC",
+            "category": "safe"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ialck2r",
+            "name": "Contract work",
+            "monthly": 4000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702660709
+          }
+        ],
+        "expenses": [
+          {
+            "id": "edxfmb3",
+            "name": "Monthly spending",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702660710
+          }
+        ],
+        "planningScope": "household"
+      },
+      "tokens": 24183,
+      "calls": 2,
+      "ms": 2999,
+      "complete": true
+    },
+    {
+      "case": "a4-near-retire-security",
+      "category": "core-audit",
+      "turn": 12,
+      "user": "How much do I need in the fund?",
+      "status": 502,
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 58,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 1,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "h13p08u",
+            "type": "fund_bond",
+            "name": "Pension fund (shares)",
+            "updatedAt": 1793702669695,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 40000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hpj1yp6",
+            "type": "savings",
+            "name": "Bank savings kept as Safety",
+            "updatedAt": 1793702684744,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 50000,
+            "currency": "USDC",
+            "category": "safe"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ialck2r",
+            "name": "Contract work",
+            "monthly": 4000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702660709
+          }
+        ],
+        "expenses": [
+          {
+            "id": "edxfmb3",
+            "name": "Monthly spending",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702660710
+          }
+        ],
+        "planningScope": "household"
+      },
+      "profile": {
+        "v": 2,
+        "age": 58,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 1,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "h13p08u",
+            "type": "fund_bond",
+            "name": "Pension fund (shares)",
+            "updatedAt": 1793702669695,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 40000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hpj1yp6",
+            "type": "savings",
+            "name": "Bank savings kept as Safety",
+            "updatedAt": 1793702684744,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 50000,
+            "currency": "USDC",
+            "category": "safe"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ialck2r",
+            "name": "Contract work",
+            "monthly": 4000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702660709
+          }
+        ],
+        "expenses": [
+          {
+            "id": "edxfmb3",
+            "name": "Monthly spending",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702660710
+          }
+        ],
+        "planningScope": "household"
+      },
+      "tokens": 22721,
+      "calls": 2,
+      "ms": 3005,
+      "complete": false
+    }
+  ]
+}

@@ -12,7 +12,8 @@ export function zeroInterestEvidence(text: string): boolean {
 export function interestRateEvidence(text: string, rate: number): boolean {
   if (rate === 0) return zeroInterestEvidence(text)
   if (!(rate > 0 && rate <= 1000)) return false
-  return assertions(text).some(s => [...s.matchAll(/(\d+(?:\.\d+)?)\s*(?:%|percent|phần trăm)/giu)].some(m => Number(m[1]) === rate)) // lang-ok
+  // "15% a month" is recorded yearly: 180 (audit 2026-11-03: a payday loan lost its rate).
+  return assertions(text).some(s => [...s.matchAll(/(\d+(?:\.\d+)?)\s*(?:%|percent|phần trăm)(\s*(?:a|per|each|\/|mỗi|một)\s*(?:month|tháng))?/giu)].some(m => Number(m[1]) === rate || (!!m[2] && Math.abs(Number(m[1]) * 12 - rate) < 0.01))) // lang-ok
 }
 
 export const passiveEvidence = (text: string) => assertions(text).some(s =>

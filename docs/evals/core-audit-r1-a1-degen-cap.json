@@ -1,0 +1,2776 @@
+{
+  "sourceTree": [
+    {
+      "path": "functions/_lib/admin.ts",
+      "sha256": "2e2bcd06e185cf9ef026b305537778a60fe6058142adc3c3d1d9d66bc774d169"
+    },
+    {
+      "path": "functions/_lib/agentGuards.ts",
+      "sha256": "b600f6b98f436efeb4c92a876aa537d82a4c8e2d0ab16c96b694971e9a42e78a"
+    },
+    {
+      "path": "functions/_lib/budget.ts",
+      "sha256": "df173f85a5648cd5ca6eafa6a51a8302870770258675dd0b3781aa89fac775f2"
+    },
+    {
+      "path": "functions/_lib/coaching.ts",
+      "sha256": "5aeab5b8fb5768b6d6abc83f34c6134be37289610271f029f680cc9cb76f0d29"
+    },
+    {
+      "path": "functions/_lib/config.ts",
+      "sha256": "5326baa048a80bbcaafe6b4605c93f2324851159d24db9bfe7f7874ed4208a01"
+    },
+    {
+      "path": "functions/_lib/confirmationStatus.ts",
+      "sha256": "ebd38239a2a99542bc7da2ea5d83c729774149fe2ec7912e39a5aa87ead02809"
+    },
+    {
+      "path": "functions/_lib/education.ts",
+      "sha256": "b435fe84688d607248fc55d6c87ed016f47efbfd4efbf11919f90692c66297c7"
+    },
+    {
+      "path": "functions/_lib/educationFigures.ts",
+      "sha256": "4ce3da2b8d5e7332d1bbd4acbbeaf1a1d463c823216589d61ff57e3bc7fa1a69"
+    },
+    {
+      "path": "functions/_lib/intake.ts",
+      "sha256": "fb42ee8bb58f19899ce6468e9cfc4125b429c25cdd9b767d79aeabb74a65639e"
+    },
+    {
+      "path": "functions/_lib/ledger.ts",
+      "sha256": "66dd4d7ce183585c1e8131e935c570c61b4d6d52c37318dd2142a2fceb5ef420"
+    },
+    {
+      "path": "functions/_lib/llm.ts",
+      "sha256": "e58cf9867a97b8c4095ef04206c0eb0c74a82c89e83bb93aabf68f2bb99cdec9"
+    },
+    {
+      "path": "functions/_lib/mutationEvidence.ts",
+      "sha256": "6b0e526d3b266191996acb6362ba8ecf51d733a13cd800f64821180d97065699"
+    },
+    {
+      "path": "functions/_lib/plan.ts",
+      "sha256": "c0a6385295ba8eb74ae96eb567ba6e38246e897690a9ce5a90abf6a393f766c6"
+    },
+    {
+      "path": "functions/_lib/privyAuth.ts",
+      "sha256": "e438bece6391bb7d9bc6449578f0caf6e01e888217dd0e46dd268ddfa21f174b"
+    },
+    {
+      "path": "functions/_lib/quota.ts",
+      "sha256": "f414923d51a316babb45bfb62f6061e0d4dee84d4eae6e831f95dd73212280c6"
+    },
+    {
+      "path": "functions/_lib/stats.ts",
+      "sha256": "454b97253bd0fda382d6c020940b7e0abfd4a76d95c7377721f3e05a47e524f4"
+    },
+    {
+      "path": "functions/api/admin.ts",
+      "sha256": "95d407a888b628894dded6dacb2e5892820f5520e1a9993ad1042c8e6984b47f"
+    },
+    {
+      "path": "functions/api/chat.ts",
+      "sha256": "47b2d11ae775ffff1933bfa077ff1b4b4b4a1a9e1c462e16d90e7a2b1132ab9f"
+    },
+    {
+      "path": "functions/api/power.ts",
+      "sha256": "28c1f4b6565ac8639b14909e4412083d9d11c467a14fce1ce4a33b38e137e3ab"
+    },
+    {
+      "path": "functions/api/price.ts",
+      "sha256": "d526b1de91d32381468035c17d437714f81dcfecefdccb16ea153590db0da8a7"
+    },
+    {
+      "path": "functions/api/prices.ts",
+      "sha256": "fafa2e9603909ccae6b06b610cdecb0f0e62b5d412ebbd8d4ef7ce5b8ff54b50"
+    },
+    {
+      "path": "functions/api/rates.ts",
+      "sha256": "1f538706bb000f0976e12438406d24d16ae6427295c8eb5cc0bb00d3a24b8073"
+    },
+    {
+      "path": "functions/api/status.ts",
+      "sha256": "0005a15b81333c6f51516c8e3379dd5b70c3f49aeda0b2bc0d934774fbebd94a"
+    },
+    {
+      "path": "functions/api/usage.ts",
+      "sha256": "d5b2dc53ce8746b6f1a070b67d6727e0d260a56e921085e764a4b6148e68a99c"
+    },
+    {
+      "path": "functions/api/userdata.ts",
+      "sha256": "23297cd3b25550a874352b65a6f6129a09b617d471d5e68aba317e3552996d61"
+    },
+    {
+      "path": "src/App.tsx",
+      "sha256": "b4b8e887fe2ec15c3d74b63cc0a84f3457b0b863df53737f26ab27c5d2a6b9d3"
+    },
+    {
+      "path": "src/components/chat/ActionCard.tsx",
+      "sha256": "ccf9060aecd6683e2a83cba643d9280aaad6cfcbf2a5eb3ca035917be9d07368"
+    },
+    {
+      "path": "src/components/chat/AiPower.tsx",
+      "sha256": "f774ca89a5b6cf89ae62cf3129c15db8a0d02f5d29d31d630edcd4a81da9ade5"
+    },
+    {
+      "path": "src/components/chat/IntakeFormCard.tsx",
+      "sha256": "d6b5e5d4d9926c61c0f5fc85404d71ad8b303c27fab142423017f42f213f879b"
+    },
+    {
+      "path": "src/components/chat/ItemsCard.tsx",
+      "sha256": "2ce128d4148b00a7a50f6850ed035fd8a3463437db3a8c9a3411d1f40f74eb5d"
+    },
+    {
+      "path": "src/components/chat/RecordCard.tsx",
+      "sha256": "fe543df3f8ff259d14535ea4f51418fdb521227bafa39ed9653dca8246737d6b"
+    },
+    {
+      "path": "src/components/chat/StepToast.tsx",
+      "sha256": "06a09865d5cfb760e22a0362522c8d7ecff792a5df53f871efd26ada47803f8e"
+    },
+    {
+      "path": "src/components/layout/AppShell.tsx",
+      "sha256": "ee185e9bb254a5e91776c4e58870b35564989716962c8c69a482db1d6a7d4392"
+    },
+    {
+      "path": "src/components/layout/NavBar.tsx",
+      "sha256": "7e7cd04ab84650987bf78df099618715b24d57e880857473d2bbbb844fa63c4d"
+    },
+    {
+      "path": "src/components/screens/AdminPage.tsx",
+      "sha256": "cff34997fe5810390485a0a96e70a8742d77d5fe6af7281b1833e34ed921ee15"
+    },
+    {
+      "path": "src/components/screens/BalanceSheet.tsx",
+      "sha256": "32550917c58b4cda9dd9a63ec15b59cae55596b2e64c842441c1773cf12b62bf"
+    },
+    {
+      "path": "src/components/screens/ChatScreen.tsx",
+      "sha256": "3d88fc95318493a2f171a789007efb7ac996cc9a26f43ae5f78f85e797c87841"
+    },
+    {
+      "path": "src/components/screens/FundScreen.tsx",
+      "sha256": "9da3f13905cf2225a72d8d5303deb72c4970dbbc8783ee37d1f8a0c95b7ac9cc"
+    },
+    {
+      "path": "src/components/screens/InvestScreen.tsx",
+      "sha256": "67b393cb891734f417f2471c89704f9d84dfddacfa7c15cdc15ea9412a2ff8c9"
+    },
+    {
+      "path": "src/components/screens/LoginScreen.tsx",
+      "sha256": "51b1729b93b539a32c3e2ecab5d80fcca3b3fa4ac9d60204453bd59fd13441ba"
+    },
+    {
+      "path": "src/components/screens/SettingsScreen.tsx",
+      "sha256": "c5f9332a0eefd697201ce3da615a87c904cf0ad05d84185cfd190bab6d8ba856"
+    },
+    {
+      "path": "src/components/screens/VaultSetup.tsx",
+      "sha256": "88e4fef09a95d536ede0912acf281ed4945401c3ae86c684701e3adf522d9607"
+    },
+    {
+      "path": "src/components/screens/WarningModal.tsx",
+      "sha256": "bcc46401bb86ad505e0a5212bc4317323e5ccb7b1533ab47981b9f56d0087a46"
+    },
+    {
+      "path": "src/components/ui/AllocationPies.tsx",
+      "sha256": "41868a622f56509407c971884e6a0cfb85d085c112873611b61c6f9bd28f3010"
+    },
+    {
+      "path": "src/components/ui/CashflowCard.tsx",
+      "sha256": "daa1252336f68b818bace10b97faae9e48ae75c0f4721319d3822697ef0abdb9"
+    },
+    {
+      "path": "src/components/ui/kit.tsx",
+      "sha256": "f7d7227850cbe18388eb338363624abc3fd6b6572e1d04dd3e3887ca47c106a3"
+    },
+    {
+      "path": "src/config.ts",
+      "sha256": "8afa93b4f3933e642887aeb5186aa8e5e34e4e90133fcc929f4c29eb1e519dac"
+    },
+    {
+      "path": "src/console-capture.ts",
+      "sha256": "ab682e27bfb8efb8b1084ab91ff604baee9b2128892a8036dc0584d82733d3ce"
+    },
+    {
+      "path": "src/hooks/useAgent.ts",
+      "sha256": "22de47cdf62d1df42a09b030729c5ff76a76051ebca91568c712c497ccc13f11"
+    },
+    {
+      "path": "src/hooks/useAiPower.ts",
+      "sha256": "9561009aaeb229f996a040e570004436819fbba2e338ce95623406060aec205e"
+    },
+    {
+      "path": "src/hooks/useArcOnConnect.ts",
+      "sha256": "3c442cea0dc735605a171e222fd747a6eac8a1dbbc06b8a4f47ff81fcf71b55f"
+    },
+    {
+      "path": "src/hooks/useCirBtc.ts",
+      "sha256": "6808ed7e5175042042ad29579c35384a99ca0338940379a0ec17b11e1815addd"
+    },
+    {
+      "path": "src/hooks/useExchangeRate.ts",
+      "sha256": "974bebb4381280b26c3e7e6a6af5443b61befd82b694e96fae002a31c0f46081"
+    },
+    {
+      "path": "src/hooks/useFinancialProfile.ts",
+      "sha256": "a6a70f9c3c7bf62497af46b0a0f905f6dc952e8dc4e9b2fc91ad7b7b3be35fed"
+    },
+    {
+      "path": "src/hooks/useNow.ts",
+      "sha256": "9587e6b0abf4386251cec6d0508b19d9e774fa246b06ead98fa30642bf2c6bf6"
+    },
+    {
+      "path": "src/hooks/usePrices.ts",
+      "sha256": "535cf56b5fdd7ef42c1fa7cac5a27534556ef8628aad17d48a0dd1756ec7fe5a"
+    },
+    {
+      "path": "src/hooks/useServiceStatus.ts",
+      "sha256": "e7f8c3235b5ba0236dab27773eb1382625cf3d6ec679b9333115eb630c2456af"
+    },
+    {
+      "path": "src/hooks/useVault.ts",
+      "sha256": "74390f4d02c0bbe31e3d3c440845a8c4f5a6b1318eb98cfbc6edadb4327fe433"
+    },
+    {
+      "path": "src/index.css",
+      "sha256": "6d1549e4ccd7ea01894a034f828fdc439b7b4ffc52779dd60e6f691a5d61d37c"
+    },
+    {
+      "path": "src/kb/facts.ts",
+      "sha256": "efdf540b960555969398d177caf3ecbfdf1b769804290f1281109ca11c22ac7b"
+    },
+    {
+      "path": "src/kb/kb.ts",
+      "sha256": "3cbb91031e41f493dd06b194af57f6d5397e38853f1c56d1c3747d66811aa27a"
+    },
+    {
+      "path": "src/kb/moonsafe-kb.json",
+      "sha256": "a8bc2dd04f33d5da6c94c6fd1f3c987459e1a380f8d88e34869ec4863cdec57c"
+    },
+    {
+      "path": "src/lib/allocation.ts",
+      "sha256": "7cd14572c1998026de5a9d5075fcb97a96eb86032314cbc7fdbd301b572a851b"
+    },
+    {
+      "path": "src/lib/chain.ts",
+      "sha256": "870b4723b1c64513f38337e5b4bd52b98edfd7d937801c61eaa371e12b6cc413"
+    },
+    {
+      "path": "src/lib/cloud.ts",
+      "sha256": "40620e50c7d042ed4d35534dd9c4851c9f2fe4a72328bebce2477903899a0303"
+    },
+    {
+      "path": "src/lib/features.ts",
+      "sha256": "b166d3275f440298f29345e8f121308148e15d0d1d4b4f72bdaefceda05cbd5e"
+    },
+    {
+      "path": "src/lib/format.ts",
+      "sha256": "f6a9967f750d7d7ded7d855f575c6aac68f64bb5c5c20fb924294205eef0d8aa"
+    },
+    {
+      "path": "src/lib/intakeForm.ts",
+      "sha256": "39f6e55e306f6c3c07865a6ae7370b789f22b5f2c3a0228753ce5afbf25e5432"
+    },
+    {
+      "path": "src/lib/invest.ts",
+      "sha256": "75f3a5ef313093b0548df894a33bf8c02397ee08e439367699d0283626a4373f"
+    },
+    {
+      "path": "src/lib/network.ts",
+      "sha256": "c9852302b96b8c0ff032e91fb307b119e591f9d9e3ec2945ad2f7190defe0997"
+    },
+    {
+      "path": "src/lib/planningScope.ts",
+      "sha256": "b65ccb10aa153c062db96da5ceb9e1be636ae8f84b74fa503c7bb85aba59ea90"
+    },
+    {
+      "path": "src/lib/power.ts",
+      "sha256": "63270bf0af5987c0b2fc724e5f9a60a2676a857b2d03cb445a9384650c127ab2"
+    },
+    {
+      "path": "src/lib/profile.ts",
+      "sha256": "c1c14d79dbd48cd1fd187dab90f4b60290af261e9e2dba83a29115a028bf74ca"
+    },
+    {
+      "path": "src/lib/record.ts",
+      "sha256": "50a08975b2436fbce113fa782f0103c4876fe184bc2599e9e8ca7d9cc26e0a07"
+    },
+    {
+      "path": "src/main.tsx",
+      "sha256": "30a2dbb3fa6f5c6b76ab3e041cf641f7f3842432cf7689e111a57066abea0785"
+    },
+    {
+      "path": "src/privyConfig.ts",
+      "sha256": "e03dc694b41fc5dc14c1342f478d99a80fb7325b8a9caa341cde1cffd2456ce9"
+    },
+    {
+      "path": "src/state/AppState.tsx",
+      "sha256": "2343eab7b74a6f2eb30c714041c8a5928afb4af21fb6c1557d1fa9b7ec83c619"
+    },
+    {
+      "path": "src/state/WalletPref.tsx",
+      "sha256": "bf7c97b0d17a8bea93f59698bae810fb9ca23fc73bf87e2316a224273d81a276"
+    },
+    {
+      "path": "src/tracing.ts",
+      "sha256": "3ed5452d5abd6057c818e3362be325c3f1566523927e496e49e0eaf1bafd64b8"
+    },
+    {
+      "path": "src/types.ts",
+      "sha256": "d4b6b899e0cf151598e2aca92b4ca0944a89d513efa84a597168c254d268d4c7"
+    },
+    {
+      "path": "src/vite-env.d.ts",
+      "sha256": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5"
+    }
+  ],
+  "sourceDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "commit": "5268f3025c7d14bf5d8066162645963113e54b41",
+  "cases": [
+    {
+      "id": "a1-degen-cap",
+      "turns": 22
+    }
+  ],
+  "model": "claude-haiku-5-5",
+  "provider": "anthropic",
+  "comparisonLimit": "OpenAI baseline used an older app commit; this is not a paired model-only comparison.",
+  "cap": 350000,
+  "started": "2026-11-03T10:38:31.035Z",
+  "ended": "2026-11-03T10:39:06.205Z",
+  "input": 313595,
+  "output": 3185,
+  "cached": 228812,
+  "cacheCreated": 84531,
+  "cacheCreated5m": 84531,
+  "cacheCreated1h": 0,
+  "calls": 27,
+  "conservativeUnknownUsage": 0,
+  "stopped": "budget-reservation",
+  "fixture": {
+    "vndPerUsd": 25000,
+    "walletUsdc": 50,
+    "vaultUsdc": 0,
+    "hasVault": true,
+    "prices": "unavailable"
+  },
+  "apiCalls": [
+    {
+      "case": "a1-degen-cap",
+      "turn": 1,
+      "status": 200,
+      "ms": 1600,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 10887,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 10887,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 80,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a1-degen-cap",
+      "turn": 2,
+      "status": 200,
+      "ms": 1644,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 567,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 567,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 338,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "update_profile",
+          "arguments": {
+            "age": 24,
+            "income_stable": false,
+            "dependents": 0,
+            "debts_complete": true
+          }
+        },
+        {
+          "name": "set_income",
+          "arguments": {
+            "name": "Part-time dev work",
+            "monthly": {
+              "amount": 3000,
+              "currency": "USDC"
+            },
+            "kind": "active"
+          }
+        },
+        {
+          "name": "set_expense",
+          "arguments": {
+            "name": "Monthly spending",
+            "monthly": {
+              "amount": 1500,
+              "currency": "USDC"
+            },
+            "kind": "fixed"
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a1-degen-cap",
+      "turn": 2,
+      "status": 200,
+      "ms": 1559,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1330,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1330,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a1-degen-cap",
+      "turn": 3,
+      "status": 200,
+      "ms": 1314,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 779,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 779,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 206,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "add_holding",
+          "arguments": {
+            "category": "safe",
+            "type": "flexible_earn",
+            "name": "Binance emergency fund",
+            "worth": {
+              "amount": 10000,
+              "currency": "USDC"
+            },
+            "where": "Binance"
+          }
+        },
+        {
+          "name": "update_profile",
+          "arguments": {
+            "has_windfalls": true
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a1-degen-cap",
+      "turn": 3,
+      "status": 200,
+      "ms": 1065,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1373,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1373,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 156,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "add_holding",
+          "arguments": {
+            "category": "safe",
+            "type": "stable_wallet",
+            "name": "Binance emergency fund",
+            "worth": {
+              "amount": 10000,
+              "currency": "USDC"
+            },
+            "where": "Binance"
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a1-degen-cap",
+      "turn": 4,
+      "status": 200,
+      "ms": 1680,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 862,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 862,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 382,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "stable_wallet",
+            "name": "USDC in app wallet",
+            "worth": {
+              "amount": 9000,
+              "currency": "USDC"
+            },
+            "where": "app wallet"
+          }
+        },
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "eth",
+            "name": "ETH",
+            "symbol": "ETH",
+            "worth": {
+              "amount": 20000,
+              "currency": "USDC"
+            }
+          }
+        },
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "altcoin",
+            "name": "Memecoins",
+            "worth": {
+              "amount": 5000,
+              "currency": "USDC"
+            }
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a1-degen-cap",
+      "turn": 4,
+      "status": 200,
+      "ms": 1146,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1720,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1720,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 136,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "altcoin",
+            "name": "Memecoins",
+            "worth": {
+              "amount": 5000,
+              "currency": "USDC"
+            },
+            "symbol": "<UNKNOWN>"
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a1-degen-cap",
+      "turn": 4,
+      "status": 200,
+      "ms": 1035,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 2199,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 2199,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 135,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "stable_wallet",
+            "name": "USDC in app wallet",
+            "worth": {
+              "amount": 9000,
+              "currency": "USDC"
+            },
+            "where": "app wallet"
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a1-degen-cap",
+      "turn": 6,
+      "status": 200,
+      "ms": 1757,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 946,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 946,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a1-degen-cap",
+      "turn": 6,
+      "status": 200,
+      "ms": 1436,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5349,
+        "cache_read_input_tokens": 6726,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5349,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 145,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a1-degen-cap",
+      "turn": 6,
+      "status": 200,
+      "ms": 1499,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5481,
+        "cache_read_input_tokens": 6726,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5481,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 154,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a1-degen-cap",
+      "turn": 6,
+      "status": 200,
+      "ms": 1619,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5564,
+        "cache_read_input_tokens": 6726,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5564,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 148,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a1-degen-cap",
+      "turn": 7,
+      "status": 200,
+      "ms": 920,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 985,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 985,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 18,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "show_allocation",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a1-degen-cap",
+      "turn": 7,
+      "status": 200,
+      "ms": 1014,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1082,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1082,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 154,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "add_holding",
+          "arguments": {
+            "category": "safe",
+            "type": "stable_wallet",
+            "name": "Binance USDC",
+            "worth": {
+              "amount": 10000,
+              "currency": "USDC"
+            },
+            "where": "Binance"
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a1-degen-cap",
+      "turn": 7,
+      "status": 200,
+      "ms": 990,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1599,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1599,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 132,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "stable_wallet",
+            "name": "Binance USDC",
+            "worth": {
+              "amount": 10000,
+              "currency": "USDC"
+            },
+            "where": "Binance"
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a1-degen-cap",
+      "turn": 7,
+      "status": 200,
+      "ms": 1609,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5372,
+        "cache_read_input_tokens": 6726,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5372,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 144,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a1-degen-cap",
+      "turn": 7,
+      "status": 200,
+      "ms": 1291,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5441,
+        "cache_read_input_tokens": 6726,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5441,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 137,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a1-degen-cap",
+      "turn": 7,
+      "status": 200,
+      "ms": 1575,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5599,
+        "cache_read_input_tokens": 6726,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5599,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 172,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a1-degen-cap",
+      "turn": 8,
+      "status": 200,
+      "ms": 988,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 909,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 909,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 60,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "prepare_deposit",
+          "arguments": {
+            "amount": {
+              "amount": 4500,
+              "currency": "USDC"
+            }
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a1-degen-cap",
+      "turn": 8,
+      "status": 200,
+      "ms": 989,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1081,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1081,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 60,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "prepare_deposit",
+          "arguments": {
+            "amount": {
+              "amount": 4500,
+              "currency": "USDC"
+            }
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a1-degen-cap",
+      "turn": 8,
+      "status": 200,
+      "ms": 1462,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5418,
+        "cache_read_input_tokens": 6726,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5418,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 110,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a1-degen-cap",
+      "turn": 10,
+      "status": 200,
+      "ms": 1130,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 774,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 774,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a1-degen-cap",
+      "turn": 10,
+      "status": 200,
+      "ms": 1100,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5251,
+        "cache_read_input_tokens": 6726,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5251,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 72,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a1-degen-cap",
+      "turn": 10,
+      "status": 200,
+      "ms": 1156,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5400,
+        "cache_read_input_tokens": 6726,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5400,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 121,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a1-degen-cap",
+      "turn": 12,
+      "status": 200,
+      "ms": 810,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 1235,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1235,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 18,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "show_allocation",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a1-degen-cap",
+      "turn": 12,
+      "status": 200,
+      "ms": 841,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1332,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1332,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a1-degen-cap",
+      "turn": 12,
+      "status": 200,
+      "ms": 1066,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5996,
+        "cache_read_input_tokens": 6726,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5996,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 43,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    }
+  ],
+  "transcript": [
+    {
+      "case": "a1-degen-cap",
+      "category": "core-audit",
+      "turn": 1,
+      "user": "yo. what is this app actually for",
+      "status": 200,
+      "content": "Hey! MoonSafe helps you see where your money goes, build an emergency fund you can reach quickly, and then invest step by step, all onchain in your own vault.\n\nWhat's your main goal right now: getting your spending under control, or saving up for something?",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "tokens": 10971,
+      "calls": 1,
+      "ms": 1726,
+      "complete": true
+    },
+    {
+      "case": "a1-degen-cap",
+      "category": "core-audit",
+      "turn": 2,
+      "user": "24, trader and part time dev, make around 3k a month but it jumps around a lot. burn 1500. no debt no kids",
+      "status": 200,
+      "content": "Noted: age 24, income irregular, 0 dependents, no other debt, Part-time dev work 3,000 USDC a month (active), Monthly spending 1,500 USDC a month (fixed).\n\nTo build a plan for your money, fill in your month below. An estimate is fine. Share whatever you're comfortable with; leave the rest blank.",
+      "ops": [
+        {
+          "op": "update_profile",
+          "fields": {
+            "age": 24
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "incomeStable": false
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "dependents": 0
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "debtsComplete": true
+          }
+        },
+        {
+          "op": "set_income",
+          "income": {
+            "id": "ie9v3z2",
+            "name": "Part-time dev work",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702315002
+          }
+        },
+        {
+          "op": "set_expense",
+          "expense": {
+            "id": "efvus3c",
+            "name": "Monthly spending",
+            "monthly": 1500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702315003
+          }
+        }
+      ],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "intake_form",
+          "keys": [
+            "goal"
+          ],
+          "seen": 9000
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": 24,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ie9v3z2",
+            "name": "Part-time dev work",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702315002
+          }
+        ],
+        "expenses": [
+          {
+            "id": "efvus3c",
+            "name": "Monthly spending",
+            "monthly": 1500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702315003
+          }
+        ]
+      },
+      "tokens": 22471,
+      "calls": 2,
+      "ms": 3234,
+      "complete": true
+    },
+    {
+      "case": "a1-degen-cap",
+      "category": "core-audit",
+      "turn": 3,
+      "user": "i already have an emergency fund, 10k sitting on binance so we can skip that part",
+      "status": 200,
+      "content": "Noted: age 24; income $3,000 a month; spending $1,500 a month; nobody relying on your income; no debt.\n\nYour emergency fund should be **$9,000** = 6 months of spending. You have $1,500 left each month, which can fill it over time.\n\nNow, what you hold, in your own words, for example \"5k term deposit, 0.5 oz gold, 2k of VOO, 0.02 BTC\". I read your emergency fund in the app and any cirBTC onchain myself.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 24,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ie9v3z2",
+            "name": "Part-time dev work",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702315002
+          }
+        ],
+        "expenses": [
+          {
+            "id": "efvus3c",
+            "name": "Monthly spending",
+            "monthly": 1500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702315003
+          }
+        ]
+      },
+      "profile": {
+        "v": 2,
+        "age": 24,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ie9v3z2",
+            "name": "Part-time dev work",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702315002
+          }
+        ],
+        "expenses": [
+          {
+            "id": "efvus3c",
+            "name": "Monthly spending",
+            "monthly": 1500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702315003
+          }
+        ]
+      },
+      "tokens": 22734,
+      "calls": 2,
+      "ms": 2396,
+      "complete": true
+    },
+    {
+      "case": "a1-degen-cap",
+      "category": "core-audit",
+      "turn": 4,
+      "user": "i hold 9000 usdc in this wallet, 20000 of eth, 5000 in memecoins. no stocks no gold",
+      "status": 200,
+      "content": "I picked up 2 things. Confirm or cancel each one below; nothing is saved until you do.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "confirm_items",
+          "items": [
+            {
+              "text": "ETH 20,000 USDC",
+              "ops": [
+                {
+                  "op": "add_holding",
+                  "holding": {
+                    "id": "hthxkxm",
+                    "type": "eth",
+                    "name": "ETH",
+                    "symbol": "ETH",
+                    "updatedAt": 1793702320652,
+                    "rebalanceable": true,
+                    "value": 20000,
+                    "currency": "USDC",
+                    "priceSource": "self"
+                  }
+                }
+              ]
+            },
+            {
+              "text": "Memecoins 5,000 USDC",
+              "ops": [
+                {
+                  "op": "add_holding",
+                  "holding": {
+                    "id": "hkm08wr",
+                    "type": "altcoin",
+                    "name": "Memecoins",
+                    "symbol": "<UNKNOWN>",
+                    "updatedAt": 1793702321800,
+                    "rebalanceable": true,
+                    "value": 5000,
+                    "currency": "USDC",
+                    "priceSource": "self"
+                  }
+                }
+              ]
+            }
+          ],
+          "ask": [
+            "no coin was named. Dollars with no coin named are stable_wallet; otherwise ask which coin."
+          ]
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": 24,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ie9v3z2",
+            "name": "Part-time dev work",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702315002
+          }
+        ],
+        "expenses": [
+          {
+            "id": "efvus3c",
+            "name": "Monthly spending",
+            "monthly": 1500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702315003
+          }
+        ]
+      },
+      "profile": {
+        "v": 2,
+        "age": 24,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ie9v3z2",
+            "name": "Part-time dev work",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702315002
+          }
+        ],
+        "expenses": [
+          {
+            "id": "efvus3c",
+            "name": "Monthly spending",
+            "monthly": 1500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702315003
+          }
+        ]
+      },
+      "tokens": 35763,
+      "calls": 3,
+      "ms": 3872,
+      "complete": true
+    },
+    {
+      "case": "a1-degen-cap",
+      "category": "core-audit",
+      "turn": 5,
+      "user": "[app event] The user reviewed the items: saved: ETH 20,000 USDC; Memecoins 5,000 USDC. skipped: none. Still to ask: no coin was named. Dollars with no coin named are stable_wallet; otherwise ask which coin..",
+      "status": 200,
+      "content": "Here is your plan, in order:\n\n1. **Emergency fund: $9,000** = 6 months of spending, because your income is irregular, so the cushion is longer: one slow month must never force you to sell investments. You have $0. It goes in as USDC: stablecoins straight in, bank money once changed to USDC, or what is left each month.\n\n2. **Investing comes once the fund is full.** The fund sits onchain in your own vault, so it is really there if work stops or things get hard; once it is full I will show how to place the rest by your age.\n\nReady to start? Your wallet can start the fund with **8,999 USDC** now and the rest can follow: shall I prepare a deposit of **8,999 USDC** for you to sign?",
+      "ops": [],
+      "reviewedOps": [
+        {
+          "op": "add_holding",
+          "holding": {
+            "id": "hthxkxm",
+            "type": "eth",
+            "name": "ETH",
+            "symbol": "ETH",
+            "updatedAt": 1793702320652,
+            "rebalanceable": true,
+            "value": 20000,
+            "currency": "USDC",
+            "priceSource": "self"
+          }
+        },
+        {
+          "op": "add_holding",
+          "holding": {
+            "id": "hkm08wr",
+            "type": "altcoin",
+            "name": "Memecoins",
+            "symbol": "<UNKNOWN>",
+            "updatedAt": 1793702321800,
+            "rebalanceable": true,
+            "value": 5000,
+            "currency": "USDC",
+            "priceSource": "self"
+          }
+        }
+      ],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 24,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hthxkxm",
+            "type": "eth",
+            "name": "ETH",
+            "updatedAt": 1793702320652,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "ETH",
+            "value": 20000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hkm08wr",
+            "type": "altcoin",
+            "name": "Memecoins",
+            "updatedAt": 1793702321800,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "<UNKNOWN>",
+            "value": 5000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ie9v3z2",
+            "name": "Part-time dev work",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702315002
+          }
+        ],
+        "expenses": [
+          {
+            "id": "efvus3c",
+            "name": "Monthly spending",
+            "monthly": 1500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702315003
+          }
+        ]
+      },
+      "profile": {
+        "v": 2,
+        "age": 24,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hthxkxm",
+            "type": "eth",
+            "name": "ETH",
+            "updatedAt": 1793702320652,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "ETH",
+            "value": 20000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hkm08wr",
+            "type": "altcoin",
+            "name": "Memecoins",
+            "updatedAt": 1793702321800,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "<UNKNOWN>",
+            "value": 5000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ie9v3z2",
+            "name": "Part-time dev work",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702315002
+          }
+        ],
+        "expenses": [
+          {
+            "id": "efvus3c",
+            "name": "Monthly spending",
+            "monthly": 1500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702315003
+          }
+        ]
+      },
+      "tokens": 0,
+      "calls": 0,
+      "ms": 5,
+      "complete": true
+    },
+    {
+      "case": "a1-degen-cap",
+      "category": "core-audit",
+      "turn": 6,
+      "user": "so why do you still want me to fund a vault, i told you i have 10k",
+      "status": 200,
+      "content": "Your $10,000 on Binance matters, and it counts as your reserve. The vault is separate: it is the part of the fund held onchain in your own wallet, and right now it holds $0, so the app cannot see the Binance money.\n\nIf you keep the Binance money there, you could leave the vault as it is and tell me the amount you will keep as your emergency fund. Another option is to move some of it into the vault, which would be on the in-app track too. You decide which works for you.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 24,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hthxkxm",
+            "type": "eth",
+            "name": "ETH",
+            "updatedAt": 1793702320652,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "ETH",
+            "value": 20000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hkm08wr",
+            "type": "altcoin",
+            "name": "Memecoins",
+            "updatedAt": 1793702321800,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "<UNKNOWN>",
+            "value": 5000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ie9v3z2",
+            "name": "Part-time dev work",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702315002
+          }
+        ],
+        "expenses": [
+          {
+            "id": "efvus3c",
+            "name": "Monthly spending",
+            "monthly": 1500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702315003
+          }
+        ]
+      },
+      "profile": {
+        "v": 2,
+        "age": 24,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hthxkxm",
+            "type": "eth",
+            "name": "ETH",
+            "updatedAt": 1793702320652,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "ETH",
+            "value": 20000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hkm08wr",
+            "type": "altcoin",
+            "name": "Memecoins",
+            "updatedAt": 1793702321800,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "<UNKNOWN>",
+            "value": 5000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ie9v3z2",
+            "name": "Part-time dev work",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702315002
+          }
+        ],
+        "expenses": [
+          {
+            "id": "efvus3c",
+            "name": "Monthly spending",
+            "monthly": 1500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702315003
+          }
+        ]
+      },
+      "tokens": 48104,
+      "calls": 4,
+      "ms": 6329,
+      "complete": true
+    },
+    {
+      "case": "a1-degen-cap",
+      "category": "core-audit",
+      "turn": 7,
+      "user": "fine how much exactly and why that number",
+      "status": 200,
+      "content": "The number is **$9,000**, which is 6 months of spending: your spending is $1,500 a month, and 6 × $1,500 = $9,000.\n\nWhy 6 months: your income is irregular, so a slow month could come with no pay for a while. Six months of spending gives you time to cover bills without selling investments at a bad moment.\n\nYour $10,000 on Binance covers that $9,000 target, with $1,000 to spare. The app cannot see that money, so it is your call whether to keep it there or move $9,000 into the vault.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "show_allocation"
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": 24,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hthxkxm",
+            "type": "eth",
+            "name": "ETH",
+            "updatedAt": 1793702320652,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "ETH",
+            "value": 20000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hkm08wr",
+            "type": "altcoin",
+            "name": "Memecoins",
+            "updatedAt": 1793702321800,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "<UNKNOWN>",
+            "value": 5000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ie9v3z2",
+            "name": "Part-time dev work",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702315002
+          }
+        ],
+        "expenses": [
+          {
+            "id": "efvus3c",
+            "name": "Monthly spending",
+            "monthly": 1500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702315003
+          }
+        ]
+      },
+      "profile": {
+        "v": 2,
+        "age": 24,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hthxkxm",
+            "type": "eth",
+            "name": "ETH",
+            "updatedAt": 1793702320652,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "ETH",
+            "value": 20000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hkm08wr",
+            "type": "altcoin",
+            "name": "Memecoins",
+            "updatedAt": 1793702321800,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "<UNKNOWN>",
+            "value": 5000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ie9v3z2",
+            "name": "Part-time dev work",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702315002
+          }
+        ],
+        "expenses": [
+          {
+            "id": "efvus3c",
+            "name": "Monthly spending",
+            "monthly": 1500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702315003
+          }
+        ]
+      },
+      "tokens": 71354,
+      "calls": 6,
+      "ms": 7430,
+      "complete": true
+    },
+    {
+      "case": "a1-degen-cap",
+      "category": "core-audit",
+      "turn": 8,
+      "user": "ok put 4500 in",
+      "status": 200,
+      "content": "I've prepared a card to add **4,500 USDC** to your emergency fund. It isn't deposited until you sign it in your wallet. Once it goes in, your vault holds half of the $9,000 target, so about 3 months of spending is covered onchain. The remaining $4,500 can come from your Binance money or from future monthly savings.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "amount": {
+            "amount": 4500,
+            "currency": "USDC"
+          },
+          "type": "prepare_deposit"
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": 24,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hthxkxm",
+            "type": "eth",
+            "name": "ETH",
+            "updatedAt": 1793702320652,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "ETH",
+            "value": 20000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hkm08wr",
+            "type": "altcoin",
+            "name": "Memecoins",
+            "updatedAt": 1793702321800,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "<UNKNOWN>",
+            "value": 5000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ie9v3z2",
+            "name": "Part-time dev work",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702315002
+          }
+        ],
+        "expenses": [
+          {
+            "id": "efvus3c",
+            "name": "Monthly spending",
+            "monthly": 1500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702315003
+          }
+        ]
+      },
+      "profile": {
+        "v": 2,
+        "age": 24,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hthxkxm",
+            "type": "eth",
+            "name": "ETH",
+            "updatedAt": 1793702320652,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "ETH",
+            "value": 20000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hkm08wr",
+            "type": "altcoin",
+            "name": "Memecoins",
+            "updatedAt": 1793702321800,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "<UNKNOWN>",
+            "value": 5000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ie9v3z2",
+            "name": "Part-time dev work",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702315002
+          }
+        ],
+        "expenses": [
+          {
+            "id": "efvus3c",
+            "name": "Monthly spending",
+            "monthly": 1500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702315003
+          }
+        ]
+      },
+      "tokens": 34588,
+      "calls": 3,
+      "ms": 3458,
+      "complete": true
+    },
+    {
+      "case": "a1-degen-cap",
+      "category": "core-audit",
+      "turn": 9,
+      "user": "[app event] The user signed the card: Added 4500 USDC to your emergency fund.",
+      "status": 200,
+      "content": "Your emergency fund is now $4,500 of $9,000 (6 months of spending). Keep adding a little at a time, whenever it suits you.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 24,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hthxkxm",
+            "type": "eth",
+            "name": "ETH",
+            "updatedAt": 1793702320652,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "ETH",
+            "value": 20000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hkm08wr",
+            "type": "altcoin",
+            "name": "Memecoins",
+            "updatedAt": 1793702321800,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "<UNKNOWN>",
+            "value": 5000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ie9v3z2",
+            "name": "Part-time dev work",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702315002
+          }
+        ],
+        "expenses": [
+          {
+            "id": "efvus3c",
+            "name": "Monthly spending",
+            "monthly": 1500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702315003
+          }
+        ]
+      },
+      "profile": {
+        "v": 2,
+        "age": 24,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hthxkxm",
+            "type": "eth",
+            "name": "ETH",
+            "updatedAt": 1793702320652,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "ETH",
+            "value": 20000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hkm08wr",
+            "type": "altcoin",
+            "name": "Memecoins",
+            "updatedAt": 1793702321800,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "<UNKNOWN>",
+            "value": 5000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ie9v3z2",
+            "name": "Part-time dev work",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702315002
+          }
+        ],
+        "expenses": [
+          {
+            "id": "efvus3c",
+            "name": "Monthly spending",
+            "monthly": 1500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702315003
+          }
+        ]
+      },
+      "tokens": 0,
+      "calls": 0,
+      "ms": 4,
+      "complete": true
+    },
+    {
+      "case": "a1-degen-cap",
+      "category": "core-audit",
+      "turn": 10,
+      "user": "and the rest, can i just buy btc with it now",
+      "status": 200,
+      "content": "Not yet. cirBTC is Bitcoin you can buy and hold in this app, and buying is locked until your emergency fund is full. You are $4,500 short: to open cirBTC buying, add $4,500 to the emergency fund (6 months of spending). That lock protects you: if BTC drops right when you need cash, you would otherwise have to sell at a loss.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 24,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hthxkxm",
+            "type": "eth",
+            "name": "ETH",
+            "updatedAt": 1793702320652,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "ETH",
+            "value": 20000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hkm08wr",
+            "type": "altcoin",
+            "name": "Memecoins",
+            "updatedAt": 1793702321800,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "<UNKNOWN>",
+            "value": 5000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ie9v3z2",
+            "name": "Part-time dev work",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702315002
+          }
+        ],
+        "expenses": [
+          {
+            "id": "efvus3c",
+            "name": "Monthly spending",
+            "monthly": 1500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702315003
+          }
+        ]
+      },
+      "profile": {
+        "v": 2,
+        "age": 24,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hthxkxm",
+            "type": "eth",
+            "name": "ETH",
+            "updatedAt": 1793702320652,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "ETH",
+            "value": 20000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hkm08wr",
+            "type": "altcoin",
+            "name": "Memecoins",
+            "updatedAt": 1793702321800,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "<UNKNOWN>",
+            "value": 5000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ie9v3z2",
+            "name": "Part-time dev work",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702315002
+          }
+        ],
+        "expenses": [
+          {
+            "id": "efvus3c",
+            "name": "Monthly spending",
+            "monthly": 1500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702315003
+          }
+        ]
+      },
+      "tokens": 35205,
+      "calls": 3,
+      "ms": 3398,
+      "complete": true
+    },
+    {
+      "case": "a1-degen-cap",
+      "category": "core-audit",
+      "turn": 11,
+      "user": "[app event] The user signed the card: Added 4500 USDC to your emergency fund.",
+      "status": 200,
+      "content": "Your emergency fund is now $9,000 of $9,000 (6 months of spending): full. Now on to investing.\n\n1. **Investing, by your age, 24:** Safety 24%, Traditional 38%, Crypto 38%. An even Traditional / Crypto split is MoonSafe's default, not a standard rule; you can lower Crypto, for example 70/30, but Crypto stays at 50% or less.\n- **Safety** is the low-risk part of what you own (deposits, bonds): it earns less but steadily and does not move with stocks or crypto, so when markets fall your whole picture falls less. It is not emergency money (that is the emergency fund), and a term deposit is usually locked until it matures.\n- The part furthest ahead of its share sets the size; the others follow it:\n  - **Safety** (low-volatility): $0 of $15,789, $15,789 to go.\n  - **Traditional** (index funds such as VOO, gold): $0 of $25,000, $25,000 to go.\n  - **Crypto** (mostly Bitcoin, which can halve on the way): $25,000: furthest ahead for your age, so it sets the size.\nTop up the parts still short from your income or spare money, in any order you like. Safety can sit anywhere low-volatility (a term deposit, government bonds, or stablecoins or cash you keep apart). When you have, tell me (for example \"I keep 500 USDC as Safety\") and I will record it.\n\nWhich part would you like to fill first: Safety ($0 of $15,789) or Traditional ($0 of $25,000)?",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 24,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hthxkxm",
+            "type": "eth",
+            "name": "ETH",
+            "updatedAt": 1793702320652,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "ETH",
+            "value": 20000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hkm08wr",
+            "type": "altcoin",
+            "name": "Memecoins",
+            "updatedAt": 1793702321800,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "<UNKNOWN>",
+            "value": 5000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ie9v3z2",
+            "name": "Part-time dev work",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702315002
+          }
+        ],
+        "expenses": [
+          {
+            "id": "efvus3c",
+            "name": "Monthly spending",
+            "monthly": 1500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702315003
+          }
+        ]
+      },
+      "profile": {
+        "v": 2,
+        "age": 24,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hthxkxm",
+            "type": "eth",
+            "name": "ETH",
+            "updatedAt": 1793702320652,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "ETH",
+            "value": 20000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hkm08wr",
+            "type": "altcoin",
+            "name": "Memecoins",
+            "updatedAt": 1793702321800,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "<UNKNOWN>",
+            "value": 5000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ie9v3z2",
+            "name": "Part-time dev work",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702315002
+          }
+        ],
+        "expenses": [
+          {
+            "id": "efvus3c",
+            "name": "Monthly spending",
+            "monthly": 1500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702315003
+          }
+        ]
+      },
+      "tokens": 0,
+      "calls": 0,
+      "ms": 4,
+      "complete": true
+    },
+    {
+      "case": "a1-degen-cap",
+      "category": "core-audit",
+      "turn": 12,
+      "user": "ok fund done. what now",
+      "status": 200,
+      "content": "Good. You could fill Safety or Traditional next, in any order you like; both are done outside the app. Which one do you want to start with?",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "show_allocation"
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": 24,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hthxkxm",
+            "type": "eth",
+            "name": "ETH",
+            "updatedAt": 1793702320652,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "ETH",
+            "value": 20000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hkm08wr",
+            "type": "altcoin",
+            "name": "Memecoins",
+            "updatedAt": 1793702321800,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "<UNKNOWN>",
+            "value": 5000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ie9v3z2",
+            "name": "Part-time dev work",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702315002
+          }
+        ],
+        "expenses": [
+          {
+            "id": "efvus3c",
+            "name": "Monthly spending",
+            "monthly": 1500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702315003
+          }
+        ]
+      },
+      "profile": {
+        "v": 2,
+        "age": 24,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hthxkxm",
+            "type": "eth",
+            "name": "ETH",
+            "updatedAt": 1793702320652,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "ETH",
+            "value": 20000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hkm08wr",
+            "type": "altcoin",
+            "name": "Memecoins",
+            "updatedAt": 1793702321800,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "<UNKNOWN>",
+            "value": 5000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ie9v3z2",
+            "name": "Part-time dev work",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702315002
+          }
+        ],
+        "expenses": [
+          {
+            "id": "efvus3c",
+            "name": "Monthly spending",
+            "monthly": 1500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702315003
+          }
+        ]
+      },
+      "tokens": 35590,
+      "calls": 3,
+      "ms": 2728,
+      "complete": true
+    },
+    {
+      "case": "a1-degen-cap",
+      "category": "core-audit",
+      "turn": 13,
+      "user": "i want my split to be 40 traditional 60 crypto",
+      "status": 502,
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 24,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hthxkxm",
+            "type": "eth",
+            "name": "ETH",
+            "updatedAt": 1793702320652,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "ETH",
+            "value": 20000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hkm08wr",
+            "type": "altcoin",
+            "name": "Memecoins",
+            "updatedAt": 1793702321800,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "<UNKNOWN>",
+            "value": 5000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ie9v3z2",
+            "name": "Part-time dev work",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702315002
+          }
+        ],
+        "expenses": [
+          {
+            "id": "efvus3c",
+            "name": "Monthly spending",
+            "monthly": 1500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702315003
+          }
+        ]
+      },
+      "profile": {
+        "v": 2,
+        "age": 24,
+        "ageDeclined": false,
+        "incomeStable": false,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hthxkxm",
+            "type": "eth",
+            "name": "ETH",
+            "updatedAt": 1793702320652,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "ETH",
+            "value": 20000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hkm08wr",
+            "type": "altcoin",
+            "name": "Memecoins",
+            "updatedAt": 1793702321800,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "<UNKNOWN>",
+            "value": 5000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "ie9v3z2",
+            "name": "Part-time dev work",
+            "monthly": 3000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702315002
+          }
+        ],
+        "expenses": [
+          {
+            "id": "efvus3c",
+            "name": "Monthly spending",
+            "monthly": 1500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702315003
+          }
+        ]
+      },
+      "tokens": 0,
+      "calls": 0,
+      "ms": 5,
+      "complete": false
+    }
+  ]
+}

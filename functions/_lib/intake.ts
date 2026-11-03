@@ -68,6 +68,7 @@ export function cashflowAsk(vi: boolean, why = purpose('')): string {
  */
 export function buildIntake(p: FinancialProfile, userText: string, vi: boolean, readback: string[], _walletSeen: number | null = null): string | null {
   if (unknownBullets(p).length < INTAKE_MIN_UNKNOWN) return null
+  if (p.incomes.length > 0 && p.expenses.length > 0) return null // They just told the month; the form would ask it again (audit 2026-11-03).
   const noted = readback.length ? (vi ? `Mình ghi: ${readback.join(', ')}.\n\n` : `Noted: ${readback.join(', ')}.\n\n`) : '' // lang-ok
   return noted + cashflowAsk(vi, purpose(userText))
 }
@@ -82,6 +83,9 @@ const money = (n: number) => `$${new Intl.NumberFormat('en-US', { maximumFractio
  * month, and where the fund money can come from), then what they hold in their own words and the Traditional / Crypto split
  * (MoonSafe's default 50/50; they can lower Crypto, never raise it above half). Income steadiness left out is asked once here, in one short line.
  */
+/** A debt in its own currency (audit 2026-11-03: "$800,000,000" for a mortgage in VND). */
+const debtMoney = (n: number, currency: string) => currency === 'VND' ? `${(n / 1e6).toLocaleString('en-US', { maximumFractionDigits: 1 })}M VND` : money(n)
+
 export function assetsAsk(p: FinancialProfile, fund: { floorUsd: number | null; floorMonths: number }, flow: { income: number | null; spending: number | null; debtPayments: number; surplus: number | null }, vi: boolean, _walletSeen: number | null = null, investingOpen = false): string {
   const noted: string[] = []
   if (p.age !== null) noted.push(vi ? `tuổi ${p.age}` : `age ${p.age}`) // lang-ok
@@ -90,7 +94,7 @@ export function assetsAsk(p: FinancialProfile, fund: { floorUsd: number | null; 
   if (flow.spending !== null) noted.push(vi ? `chi tiêu ${money(flow.spending - flow.debtPayments)}/tháng` : `spending ${money(flow.spending - flow.debtPayments)} a month`) // lang-ok
   if (p.dependents !== null) noted.push(vi ? (p.dependents ? `${p.dependents} người sống dựa vào bạn` : 'không ai sống dựa vào thu nhập của bạn') : (p.dependents ? `${p.dependents} relying on you` : 'nobody relying on your income')) // lang-ok
   // "Nợ mẹ" is already a debt's name: no "nợ Nợ mẹ" (Haiku run 2026-10-31).
-  for (const d of p.debts) noted.push(`${/^(nợ|debt|loan)\b/iu.test(d.name) ? '' : vi ? 'nợ ' : 'debt '}${d.name} ${money(d.balance)}${d.ratePct === 0 ? (vi ? ', không lãi' : ', no interest') : d.ratePct ? `, ${d.ratePct}%` : ''}${d.monthlyPayment ? (vi ? `, trả ${money(d.monthlyPayment)}/tháng` : `, ${money(d.monthlyPayment)} a month`) : ''}`) // lang-ok
+  for (const d of p.debts) noted.push(`${/^(nợ|debt|loan)\b/iu.test(d.name) ? '' : vi ? 'nợ ' : 'debt '}${d.name} ${debtMoney(d.balance, d.currency)}${d.ratePct === 0 ? (vi ? ', không lãi' : ', no interest') : d.ratePct ? `, ${d.ratePct}%` : ''}${d.monthlyPayment ? (vi ? `, trả ${debtMoney(d.monthlyPayment, d.currency)}/tháng` : `, ${debtMoney(d.monthlyPayment, d.currency)} a month`) : ''}`) // lang-ok
   if (p.debtsComplete && !p.debts.length) noted.push(vi ? 'không nợ' : 'no debt') // lang-ok
   const lines: string[] = []
   if (noted.length) lines.push(vi ? `Mình ghi lại: ${noted.join('; ')}.` : `Noted: ${noted.join('; ')}.`) // lang-ok

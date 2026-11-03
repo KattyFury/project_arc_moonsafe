@@ -1,0 +1,3032 @@
+{
+  "sourceTree": [
+    {
+      "path": "functions/_lib/admin.ts",
+      "sha256": "2e2bcd06e185cf9ef026b305537778a60fe6058142adc3c3d1d9d66bc774d169"
+    },
+    {
+      "path": "functions/_lib/agentGuards.ts",
+      "sha256": "b600f6b98f436efeb4c92a876aa537d82a4c8e2d0ab16c96b694971e9a42e78a"
+    },
+    {
+      "path": "functions/_lib/budget.ts",
+      "sha256": "df173f85a5648cd5ca6eafa6a51a8302870770258675dd0b3781aa89fac775f2"
+    },
+    {
+      "path": "functions/_lib/coaching.ts",
+      "sha256": "5aeab5b8fb5768b6d6abc83f34c6134be37289610271f029f680cc9cb76f0d29"
+    },
+    {
+      "path": "functions/_lib/config.ts",
+      "sha256": "5326baa048a80bbcaafe6b4605c93f2324851159d24db9bfe7f7874ed4208a01"
+    },
+    {
+      "path": "functions/_lib/confirmationStatus.ts",
+      "sha256": "ebd38239a2a99542bc7da2ea5d83c729774149fe2ec7912e39a5aa87ead02809"
+    },
+    {
+      "path": "functions/_lib/education.ts",
+      "sha256": "b435fe84688d607248fc55d6c87ed016f47efbfd4efbf11919f90692c66297c7"
+    },
+    {
+      "path": "functions/_lib/educationFigures.ts",
+      "sha256": "4ce3da2b8d5e7332d1bbd4acbbeaf1a1d463c823216589d61ff57e3bc7fa1a69"
+    },
+    {
+      "path": "functions/_lib/intake.ts",
+      "sha256": "fb42ee8bb58f19899ce6468e9cfc4125b429c25cdd9b767d79aeabb74a65639e"
+    },
+    {
+      "path": "functions/_lib/ledger.ts",
+      "sha256": "66dd4d7ce183585c1e8131e935c570c61b4d6d52c37318dd2142a2fceb5ef420"
+    },
+    {
+      "path": "functions/_lib/llm.ts",
+      "sha256": "e58cf9867a97b8c4095ef04206c0eb0c74a82c89e83bb93aabf68f2bb99cdec9"
+    },
+    {
+      "path": "functions/_lib/mutationEvidence.ts",
+      "sha256": "6b0e526d3b266191996acb6362ba8ecf51d733a13cd800f64821180d97065699"
+    },
+    {
+      "path": "functions/_lib/plan.ts",
+      "sha256": "c0a6385295ba8eb74ae96eb567ba6e38246e897690a9ce5a90abf6a393f766c6"
+    },
+    {
+      "path": "functions/_lib/privyAuth.ts",
+      "sha256": "e438bece6391bb7d9bc6449578f0caf6e01e888217dd0e46dd268ddfa21f174b"
+    },
+    {
+      "path": "functions/_lib/quota.ts",
+      "sha256": "f414923d51a316babb45bfb62f6061e0d4dee84d4eae6e831f95dd73212280c6"
+    },
+    {
+      "path": "functions/_lib/stats.ts",
+      "sha256": "454b97253bd0fda382d6c020940b7e0abfd4a76d95c7377721f3e05a47e524f4"
+    },
+    {
+      "path": "functions/api/admin.ts",
+      "sha256": "95d407a888b628894dded6dacb2e5892820f5520e1a9993ad1042c8e6984b47f"
+    },
+    {
+      "path": "functions/api/chat.ts",
+      "sha256": "47b2d11ae775ffff1933bfa077ff1b4b4b4a1a9e1c462e16d90e7a2b1132ab9f"
+    },
+    {
+      "path": "functions/api/power.ts",
+      "sha256": "28c1f4b6565ac8639b14909e4412083d9d11c467a14fce1ce4a33b38e137e3ab"
+    },
+    {
+      "path": "functions/api/price.ts",
+      "sha256": "d526b1de91d32381468035c17d437714f81dcfecefdccb16ea153590db0da8a7"
+    },
+    {
+      "path": "functions/api/prices.ts",
+      "sha256": "fafa2e9603909ccae6b06b610cdecb0f0e62b5d412ebbd8d4ef7ce5b8ff54b50"
+    },
+    {
+      "path": "functions/api/rates.ts",
+      "sha256": "1f538706bb000f0976e12438406d24d16ae6427295c8eb5cc0bb00d3a24b8073"
+    },
+    {
+      "path": "functions/api/status.ts",
+      "sha256": "0005a15b81333c6f51516c8e3379dd5b70c3f49aeda0b2bc0d934774fbebd94a"
+    },
+    {
+      "path": "functions/api/usage.ts",
+      "sha256": "d5b2dc53ce8746b6f1a070b67d6727e0d260a56e921085e764a4b6148e68a99c"
+    },
+    {
+      "path": "functions/api/userdata.ts",
+      "sha256": "23297cd3b25550a874352b65a6f6129a09b617d471d5e68aba317e3552996d61"
+    },
+    {
+      "path": "src/App.tsx",
+      "sha256": "b4b8e887fe2ec15c3d74b63cc0a84f3457b0b863df53737f26ab27c5d2a6b9d3"
+    },
+    {
+      "path": "src/components/chat/ActionCard.tsx",
+      "sha256": "ccf9060aecd6683e2a83cba643d9280aaad6cfcbf2a5eb3ca035917be9d07368"
+    },
+    {
+      "path": "src/components/chat/AiPower.tsx",
+      "sha256": "f774ca89a5b6cf89ae62cf3129c15db8a0d02f5d29d31d630edcd4a81da9ade5"
+    },
+    {
+      "path": "src/components/chat/IntakeFormCard.tsx",
+      "sha256": "d6b5e5d4d9926c61c0f5fc85404d71ad8b303c27fab142423017f42f213f879b"
+    },
+    {
+      "path": "src/components/chat/ItemsCard.tsx",
+      "sha256": "2ce128d4148b00a7a50f6850ed035fd8a3463437db3a8c9a3411d1f40f74eb5d"
+    },
+    {
+      "path": "src/components/chat/RecordCard.tsx",
+      "sha256": "fe543df3f8ff259d14535ea4f51418fdb521227bafa39ed9653dca8246737d6b"
+    },
+    {
+      "path": "src/components/chat/StepToast.tsx",
+      "sha256": "06a09865d5cfb760e22a0362522c8d7ecff792a5df53f871efd26ada47803f8e"
+    },
+    {
+      "path": "src/components/layout/AppShell.tsx",
+      "sha256": "ee185e9bb254a5e91776c4e58870b35564989716962c8c69a482db1d6a7d4392"
+    },
+    {
+      "path": "src/components/layout/NavBar.tsx",
+      "sha256": "7e7cd04ab84650987bf78df099618715b24d57e880857473d2bbbb844fa63c4d"
+    },
+    {
+      "path": "src/components/screens/AdminPage.tsx",
+      "sha256": "cff34997fe5810390485a0a96e70a8742d77d5fe6af7281b1833e34ed921ee15"
+    },
+    {
+      "path": "src/components/screens/BalanceSheet.tsx",
+      "sha256": "32550917c58b4cda9dd9a63ec15b59cae55596b2e64c842441c1773cf12b62bf"
+    },
+    {
+      "path": "src/components/screens/ChatScreen.tsx",
+      "sha256": "3d88fc95318493a2f171a789007efb7ac996cc9a26f43ae5f78f85e797c87841"
+    },
+    {
+      "path": "src/components/screens/FundScreen.tsx",
+      "sha256": "9da3f13905cf2225a72d8d5303deb72c4970dbbc8783ee37d1f8a0c95b7ac9cc"
+    },
+    {
+      "path": "src/components/screens/InvestScreen.tsx",
+      "sha256": "67b393cb891734f417f2471c89704f9d84dfddacfa7c15cdc15ea9412a2ff8c9"
+    },
+    {
+      "path": "src/components/screens/LoginScreen.tsx",
+      "sha256": "51b1729b93b539a32c3e2ecab5d80fcca3b3fa4ac9d60204453bd59fd13441ba"
+    },
+    {
+      "path": "src/components/screens/SettingsScreen.tsx",
+      "sha256": "c5f9332a0eefd697201ce3da615a87c904cf0ad05d84185cfd190bab6d8ba856"
+    },
+    {
+      "path": "src/components/screens/VaultSetup.tsx",
+      "sha256": "88e4fef09a95d536ede0912acf281ed4945401c3ae86c684701e3adf522d9607"
+    },
+    {
+      "path": "src/components/screens/WarningModal.tsx",
+      "sha256": "bcc46401bb86ad505e0a5212bc4317323e5ccb7b1533ab47981b9f56d0087a46"
+    },
+    {
+      "path": "src/components/ui/AllocationPies.tsx",
+      "sha256": "41868a622f56509407c971884e6a0cfb85d085c112873611b61c6f9bd28f3010"
+    },
+    {
+      "path": "src/components/ui/CashflowCard.tsx",
+      "sha256": "daa1252336f68b818bace10b97faae9e48ae75c0f4721319d3822697ef0abdb9"
+    },
+    {
+      "path": "src/components/ui/kit.tsx",
+      "sha256": "f7d7227850cbe18388eb338363624abc3fd6b6572e1d04dd3e3887ca47c106a3"
+    },
+    {
+      "path": "src/config.ts",
+      "sha256": "8afa93b4f3933e642887aeb5186aa8e5e34e4e90133fcc929f4c29eb1e519dac"
+    },
+    {
+      "path": "src/console-capture.ts",
+      "sha256": "ab682e27bfb8efb8b1084ab91ff604baee9b2128892a8036dc0584d82733d3ce"
+    },
+    {
+      "path": "src/hooks/useAgent.ts",
+      "sha256": "22de47cdf62d1df42a09b030729c5ff76a76051ebca91568c712c497ccc13f11"
+    },
+    {
+      "path": "src/hooks/useAiPower.ts",
+      "sha256": "9561009aaeb229f996a040e570004436819fbba2e338ce95623406060aec205e"
+    },
+    {
+      "path": "src/hooks/useArcOnConnect.ts",
+      "sha256": "3c442cea0dc735605a171e222fd747a6eac8a1dbbc06b8a4f47ff81fcf71b55f"
+    },
+    {
+      "path": "src/hooks/useCirBtc.ts",
+      "sha256": "6808ed7e5175042042ad29579c35384a99ca0338940379a0ec17b11e1815addd"
+    },
+    {
+      "path": "src/hooks/useExchangeRate.ts",
+      "sha256": "974bebb4381280b26c3e7e6a6af5443b61befd82b694e96fae002a31c0f46081"
+    },
+    {
+      "path": "src/hooks/useFinancialProfile.ts",
+      "sha256": "a6a70f9c3c7bf62497af46b0a0f905f6dc952e8dc4e9b2fc91ad7b7b3be35fed"
+    },
+    {
+      "path": "src/hooks/useNow.ts",
+      "sha256": "9587e6b0abf4386251cec6d0508b19d9e774fa246b06ead98fa30642bf2c6bf6"
+    },
+    {
+      "path": "src/hooks/usePrices.ts",
+      "sha256": "535cf56b5fdd7ef42c1fa7cac5a27534556ef8628aad17d48a0dd1756ec7fe5a"
+    },
+    {
+      "path": "src/hooks/useServiceStatus.ts",
+      "sha256": "e7f8c3235b5ba0236dab27773eb1382625cf3d6ec679b9333115eb630c2456af"
+    },
+    {
+      "path": "src/hooks/useVault.ts",
+      "sha256": "74390f4d02c0bbe31e3d3c440845a8c4f5a6b1318eb98cfbc6edadb4327fe433"
+    },
+    {
+      "path": "src/index.css",
+      "sha256": "6d1549e4ccd7ea01894a034f828fdc439b7b4ffc52779dd60e6f691a5d61d37c"
+    },
+    {
+      "path": "src/kb/facts.ts",
+      "sha256": "efdf540b960555969398d177caf3ecbfdf1b769804290f1281109ca11c22ac7b"
+    },
+    {
+      "path": "src/kb/kb.ts",
+      "sha256": "3cbb91031e41f493dd06b194af57f6d5397e38853f1c56d1c3747d66811aa27a"
+    },
+    {
+      "path": "src/kb/moonsafe-kb.json",
+      "sha256": "a8bc2dd04f33d5da6c94c6fd1f3c987459e1a380f8d88e34869ec4863cdec57c"
+    },
+    {
+      "path": "src/lib/allocation.ts",
+      "sha256": "7cd14572c1998026de5a9d5075fcb97a96eb86032314cbc7fdbd301b572a851b"
+    },
+    {
+      "path": "src/lib/chain.ts",
+      "sha256": "870b4723b1c64513f38337e5b4bd52b98edfd7d937801c61eaa371e12b6cc413"
+    },
+    {
+      "path": "src/lib/cloud.ts",
+      "sha256": "40620e50c7d042ed4d35534dd9c4851c9f2fe4a72328bebce2477903899a0303"
+    },
+    {
+      "path": "src/lib/features.ts",
+      "sha256": "b166d3275f440298f29345e8f121308148e15d0d1d4b4f72bdaefceda05cbd5e"
+    },
+    {
+      "path": "src/lib/format.ts",
+      "sha256": "f6a9967f750d7d7ded7d855f575c6aac68f64bb5c5c20fb924294205eef0d8aa"
+    },
+    {
+      "path": "src/lib/intakeForm.ts",
+      "sha256": "39f6e55e306f6c3c07865a6ae7370b789f22b5f2c3a0228753ce5afbf25e5432"
+    },
+    {
+      "path": "src/lib/invest.ts",
+      "sha256": "75f3a5ef313093b0548df894a33bf8c02397ee08e439367699d0283626a4373f"
+    },
+    {
+      "path": "src/lib/network.ts",
+      "sha256": "c9852302b96b8c0ff032e91fb307b119e591f9d9e3ec2945ad2f7190defe0997"
+    },
+    {
+      "path": "src/lib/planningScope.ts",
+      "sha256": "b65ccb10aa153c062db96da5ceb9e1be636ae8f84b74fa503c7bb85aba59ea90"
+    },
+    {
+      "path": "src/lib/power.ts",
+      "sha256": "63270bf0af5987c0b2fc724e5f9a60a2676a857b2d03cb445a9384650c127ab2"
+    },
+    {
+      "path": "src/lib/profile.ts",
+      "sha256": "c1c14d79dbd48cd1fd187dab90f4b60290af261e9e2dba83a29115a028bf74ca"
+    },
+    {
+      "path": "src/lib/record.ts",
+      "sha256": "50a08975b2436fbce113fa782f0103c4876fe184bc2599e9e8ca7d9cc26e0a07"
+    },
+    {
+      "path": "src/main.tsx",
+      "sha256": "30a2dbb3fa6f5c6b76ab3e041cf641f7f3842432cf7689e111a57066abea0785"
+    },
+    {
+      "path": "src/privyConfig.ts",
+      "sha256": "e03dc694b41fc5dc14c1342f478d99a80fb7325b8a9caa341cde1cffd2456ce9"
+    },
+    {
+      "path": "src/state/AppState.tsx",
+      "sha256": "2343eab7b74a6f2eb30c714041c8a5928afb4af21fb6c1557d1fa9b7ec83c619"
+    },
+    {
+      "path": "src/state/WalletPref.tsx",
+      "sha256": "bf7c97b0d17a8bea93f59698bae810fb9ca23fc73bf87e2316a224273d81a276"
+    },
+    {
+      "path": "src/tracing.ts",
+      "sha256": "3ed5452d5abd6057c818e3362be325c3f1566523927e496e49e0eaf1bafd64b8"
+    },
+    {
+      "path": "src/types.ts",
+      "sha256": "d4b6b899e0cf151598e2aca92b4ca0944a89d513efa84a597168c254d268d4c7"
+    },
+    {
+      "path": "src/vite-env.d.ts",
+      "sha256": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5"
+    }
+  ],
+  "sourceDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "commit": "5268f3025c7d14bf5d8066162645963113e54b41",
+  "cases": [
+    {
+      "id": "a3-leader-rule",
+      "turns": 22
+    }
+  ],
+  "model": "claude-haiku-5-5",
+  "provider": "anthropic",
+  "comparisonLimit": "OpenAI baseline used an older app commit; this is not a paired model-only comparison.",
+  "cap": 350000,
+  "started": "2026-11-03T10:38:30.977Z",
+  "ended": "2026-11-03T10:39:03.873Z",
+  "input": 323515,
+  "output": 2065,
+  "cached": 249022,
+  "cacheCreated": 74195,
+  "cacheCreated5m": 74195,
+  "cacheCreated1h": 0,
+  "calls": 28,
+  "conservativeUnknownUsage": 0,
+  "stopped": "budget-reservation",
+  "fixture": {
+    "vndPerUsd": 25000,
+    "walletUsdc": 50,
+    "vaultUsdc": 0,
+    "hasVault": true,
+    "prices": "unavailable"
+  },
+  "apiCalls": [
+    {
+      "case": "a3-leader-rule",
+      "turn": 2,
+      "status": 200,
+      "ms": 2160,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 10651,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 10651,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 360,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "update_profile",
+          "arguments": {
+            "age": 35,
+            "income_stable": true,
+            "dependents": 0,
+            "debts_complete": true,
+            "no_near_goal": true
+          }
+        },
+        {
+          "name": "set_income",
+          "arguments": {
+            "name": "Salary",
+            "monthly": {
+              "amount": 5000,
+              "currency": "USDC"
+            },
+            "kind": "active"
+          }
+        },
+        {
+          "name": "set_expense",
+          "arguments": {
+            "name": "Monthly spending",
+            "monthly": {
+              "amount": 2500,
+              "currency": "USDC"
+            },
+            "kind": "fixed"
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a3-leader-rule",
+      "turn": 2,
+      "status": 200,
+      "ms": 867,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1340,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1340,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 18,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "show_allocation",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a3-leader-rule",
+      "turn": 2,
+      "status": 200,
+      "ms": 985,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1435,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1435,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 42,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "update_profile",
+          "arguments": {
+            "sole_earner": true
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a3-leader-rule",
+      "turn": 2,
+      "status": 200,
+      "ms": 910,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1756,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1756,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a3-leader-rule",
+      "turn": 3,
+      "status": 200,
+      "ms": 1165,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5327,
+        "cache_read_input_tokens": 6726,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5327,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 76,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a3-leader-rule",
+      "turn": 3,
+      "status": 200,
+      "ms": 882,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5406,
+        "cache_read_input_tokens": 6726,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5406,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 87,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a3-leader-rule",
+      "turn": 3,
+      "status": 200,
+      "ms": 1132,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5485,
+        "cache_read_input_tokens": 6726,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5485,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 94,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a3-leader-rule",
+      "turn": 4,
+      "status": 200,
+      "ms": 1797,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 828,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 828,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 382,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "term_deposit",
+            "name": "Term savings deposit",
+            "worth": {
+              "amount": 14000,
+              "currency": "USDC"
+            }
+          }
+        },
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "us_stock",
+            "name": "VOO",
+            "symbol": "VOO",
+            "worth": {
+              "amount": 10000,
+              "currency": "USDC"
+            }
+          }
+        },
+        {
+          "name": "add_holding",
+          "arguments": {
+            "type": "btc",
+            "name": "Bitcoin",
+            "symbol": "BTC",
+            "worth": {
+              "amount": 6500,
+              "currency": "USDC"
+            }
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a3-leader-rule",
+      "turn": 4,
+      "status": 200,
+      "ms": 672,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1704,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1704,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 18,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "show_allocation",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a3-leader-rule",
+      "turn": 4,
+      "status": 200,
+      "ms": 747,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1799,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1799,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a3-leader-rule",
+      "turn": 6,
+      "status": 200,
+      "ms": 1962,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 1333,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1333,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 18,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "show_allocation",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a3-leader-rule",
+      "turn": 6,
+      "status": 200,
+      "ms": 729,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1430,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1430,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a3-leader-rule",
+      "turn": 6,
+      "status": 200,
+      "ms": 1224,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5891,
+        "cache_read_input_tokens": 6726,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5891,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 154,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a3-leader-rule",
+      "turn": 7,
+      "status": 200,
+      "ms": 1061,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 1416,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1416,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a3-leader-rule",
+      "turn": 8,
+      "status": 200,
+      "ms": 1182,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 912,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 912,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 18,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "show_allocation",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a3-leader-rule",
+      "turn": 8,
+      "status": 200,
+      "ms": 736,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1009,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1009,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a3-leader-rule",
+      "turn": 8,
+      "status": 200,
+      "ms": 1223,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5922,
+        "cache_read_input_tokens": 6726,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5922,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 128,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a3-leader-rule",
+      "turn": 9,
+      "status": 200,
+      "ms": 1020,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 884,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 884,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 18,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "show_allocation",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a3-leader-rule",
+      "turn": 9,
+      "status": 200,
+      "ms": 716,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 981,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 981,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a3-leader-rule",
+      "turn": 9,
+      "status": 200,
+      "ms": 1664,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5949,
+        "cache_read_input_tokens": 6726,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5949,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 136,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a3-leader-rule",
+      "turn": 10,
+      "status": 200,
+      "ms": 1470,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 899,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 899,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 42,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "update_profile",
+          "arguments": {
+            "crypto_split": 30
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a3-leader-rule",
+      "turn": 10,
+      "status": 200,
+      "ms": 819,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1368,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1368,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a3-leader-rule",
+      "turn": 11,
+      "status": 200,
+      "ms": 1445,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 790,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 790,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 18,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "show_allocation",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a3-leader-rule",
+      "turn": 11,
+      "status": 200,
+      "ms": 823,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 887,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 887,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 42,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "update_profile",
+          "arguments": {
+            "crypto_split": 30
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a3-leader-rule",
+      "turn": 11,
+      "status": 200,
+      "ms": 782,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1292,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1292,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a3-leader-rule",
+      "turn": 11,
+      "status": 200,
+      "ms": 1341,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5350,
+        "cache_read_input_tokens": 6726,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5350,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 202,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "a3-leader-rule",
+      "turn": 12,
+      "status": 200,
+      "ms": 1613,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 860,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 860,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 42,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "update_profile",
+          "arguments": {
+            "crypto_split": 60
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "a3-leader-rule",
+      "turn": 12,
+      "status": 200,
+      "ms": 853,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1291,
+        "cache_read_input_tokens": 10097,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1291,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 42,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "update_profile",
+          "arguments": {
+            "crypto_split": 50
+          }
+        }
+      ],
+      "finish": "tool_use"
+    }
+  ],
+  "transcript": [
+    {
+      "case": "a3-leader-rule",
+      "category": "core-audit",
+      "turn": 1,
+      "user": "Hi, I want to see if my investments are balanced.",
+      "status": 200,
+      "content": "To build a plan to invest the right way, fill in your month below. An estimate is fine. Share whatever you're comfortable with; leave the rest blank.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "intake_form",
+          "keys": [
+            "age",
+            "income",
+            "spending",
+            "stability",
+            "goal",
+            "debt"
+          ],
+          "seen": 1000
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "tokens": 0,
+      "calls": 0,
+      "ms": 100,
+      "complete": true
+    },
+    {
+      "case": "a3-leader-rule",
+      "category": "core-audit",
+      "turn": 2,
+      "user": "I'm 35, salary 5000 a month, steady job. I spend 2500. No dependents, no debts, nothing big planned in the next 5 years.",
+      "status": 200,
+      "content": "Noted: age 35; income $5,000 a month; spending $2,500 a month; nobody relying on your income; no debt.\n\nYour emergency fund should be **$7,500** = 3 months of spending. You have $2,500 left each month, which can fill it over time.\n\nNow, what you hold, in your own words, for example \"5k term deposit, 0.5 oz gold, 2k of VOO, 0.02 BTC\". I read your emergency fund in the app and any cirBTC onchain myself.",
+      "ops": [
+        {
+          "op": "update_profile",
+          "fields": {
+            "age": 35
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "incomeStable": true
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "dependents": 0
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "debtsComplete": true
+          }
+        },
+        {
+          "op": "update_profile",
+          "fields": {
+            "noNearGoal": true
+          }
+        },
+        {
+          "op": "set_income",
+          "income": {
+            "id": "idyuqky",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702313891
+          }
+        },
+        {
+          "op": "set_expense",
+          "expense": {
+            "id": "epks1dg",
+            "name": "Monthly spending",
+            "monthly": 2500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702313892
+          }
+        }
+      ],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "show_allocation"
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": null,
+        "ageDeclined": false,
+        "incomeStable": null,
+        "dependents": null,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": false,
+        "incomes": [],
+        "expenses": []
+      },
+      "profile": {
+        "v": 2,
+        "age": 35,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "idyuqky",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702313891
+          }
+        ],
+        "expenses": [
+          {
+            "id": "epks1dg",
+            "name": "Monthly spending",
+            "monthly": 2500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702313892
+          }
+        ],
+        "noNearGoal": true
+      },
+      "tokens": 45959,
+      "calls": 4,
+      "ms": 4973,
+      "complete": true
+    },
+    {
+      "case": "a3-leader-rule",
+      "category": "core-audit",
+      "turn": 3,
+      "user": "[app event] The user signed the card: Added 7500 USDC to your emergency fund.",
+      "status": 200,
+      "content": "Your emergency fund now holds **$7,500**, which is 3 months of spending, so it is full.\n\nInvesting is now open. Next, tell me what you hold, and we can see how it is divided. Safety, Traditional and Crypto each have a target by the MoonSafe framework at your age.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 35,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "idyuqky",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702313891
+          }
+        ],
+        "expenses": [
+          {
+            "id": "epks1dg",
+            "name": "Monthly spending",
+            "monthly": 2500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702313892
+          }
+        ],
+        "noNearGoal": true
+      },
+      "profile": {
+        "v": 2,
+        "age": 35,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "idyuqky",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702313891
+          }
+        ],
+        "expenses": [
+          {
+            "id": "epks1dg",
+            "name": "Monthly spending",
+            "monthly": 2500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702313892
+          }
+        ],
+        "noNearGoal": true
+      },
+      "tokens": 36665,
+      "calls": 3,
+      "ms": 3202,
+      "complete": true
+    },
+    {
+      "case": "a3-leader-rule",
+      "category": "core-audit",
+      "turn": 4,
+      "user": "I have a 14000 term deposit, 10000 in VOO and 6500 of bitcoin.",
+      "status": 200,
+      "content": "I picked up 3 things. Confirm or cancel each one below; nothing is saved until you do.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "confirm_items",
+          "items": [
+            {
+              "text": "Term savings deposit 14,000 USDC",
+              "ops": [
+                {
+                  "op": "add_holding",
+                  "holding": {
+                    "id": "hiy55gz",
+                    "type": "term_deposit",
+                    "name": "Term savings deposit",
+                    "updatedAt": 1793702321685,
+                    "rebalanceable": true,
+                    "value": 14000,
+                    "currency": "USDC",
+                    "priceSource": "self"
+                  }
+                }
+              ]
+            },
+            {
+              "text": "VOO 10,000 USDC",
+              "ops": [
+                {
+                  "op": "add_holding",
+                  "holding": {
+                    "id": "h24511r",
+                    "type": "us_stock",
+                    "name": "VOO",
+                    "symbol": "VOO",
+                    "updatedAt": 1793702321685,
+                    "rebalanceable": true,
+                    "value": 10000,
+                    "currency": "USDC",
+                    "priceSource": "self"
+                  }
+                }
+              ]
+            },
+            {
+              "text": "Bitcoin 6,500 USDC",
+              "ops": [
+                {
+                  "op": "add_holding",
+                  "holding": {
+                    "id": "hcoas5g",
+                    "type": "btc",
+                    "name": "Bitcoin",
+                    "symbol": "BTC",
+                    "updatedAt": 1793702321686,
+                    "rebalanceable": true,
+                    "value": 6500,
+                    "currency": "USDC",
+                    "priceSource": "self"
+                  }
+                }
+              ]
+            }
+          ],
+          "ask": []
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": 35,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "idyuqky",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702313891
+          }
+        ],
+        "expenses": [
+          {
+            "id": "epks1dg",
+            "name": "Monthly spending",
+            "monthly": 2500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702313892
+          }
+        ],
+        "noNearGoal": true
+      },
+      "profile": {
+        "v": 2,
+        "age": 35,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "idyuqky",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702313891
+          }
+        ],
+        "expenses": [
+          {
+            "id": "epks1dg",
+            "name": "Monthly spending",
+            "monthly": 2500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702313892
+          }
+        ],
+        "noNearGoal": true
+      },
+      "tokens": 35076,
+      "calls": 3,
+      "ms": 3244,
+      "complete": true
+    },
+    {
+      "case": "a3-leader-rule",
+      "category": "core-audit",
+      "turn": 5,
+      "user": "[app event] The user reviewed the items: saved: Term savings deposit 14,000 USDC; VOO 10,000 USDC; Bitcoin 6,500 USDC. skipped: none.",
+      "status": 200,
+      "content": "Here is your plan, in order:\n\n1. **Emergency fund: $7,500** = 3 months of spending, because your income is steady and nobody relies on it, so a few months is enough to cover a pause without selling anything. You have $7,500: full.\n\n2. **Investing, by your age, 35:** Safety 35%, Traditional 32.5%, Crypto 32.5%. An even Traditional / Crypto split is MoonSafe's default, not a standard rule; you can lower Crypto, for example 70/30, but Crypto stays at 50% or less.\n- **Safety** is the low-risk part of what you own (deposits, bonds): it earns less but steadily and does not move with stocks or crypto, so when markets fall your whole picture falls less. It is not emergency money (that is the emergency fund), and a term deposit is usually locked until it matures.\n- Already Safety: Term savings deposit $14,000. It is set aside and does not follow stock or crypto prices, which is exactly Safety's job: keeping your whole picture steadier.\n- The part furthest ahead of its share sets the size; the others follow it:\n  - **Safety** (low-volatility): $14,000: furthest ahead for your age, so it sets the size.\n  - **Traditional** (index funds such as VOO, gold): $10,000 of $13,000, $3,000 to go.\n  - **Crypto** (mostly Bitcoin, which can halve on the way): $6,500 of $13,000, $6,500 to go.\nTop up the parts still short from your income or spare money, in any order you like. Safety can sit anywhere low-volatility (a term deposit, government bonds, or stablecoins or cash you keep apart). When you have, tell me (for example \"I keep 500 USDC as Safety\") and I will record it.\n\nWhich part would you like to fill first: Traditional ($10,000 of $13,000) or Crypto ($6,500 of $13,000)?",
+      "ops": [],
+      "reviewedOps": [
+        {
+          "op": "add_holding",
+          "holding": {
+            "id": "hiy55gz",
+            "type": "term_deposit",
+            "name": "Term savings deposit",
+            "updatedAt": 1793702321685,
+            "rebalanceable": true,
+            "value": 14000,
+            "currency": "USDC",
+            "priceSource": "self"
+          }
+        },
+        {
+          "op": "add_holding",
+          "holding": {
+            "id": "h24511r",
+            "type": "us_stock",
+            "name": "VOO",
+            "symbol": "VOO",
+            "updatedAt": 1793702321685,
+            "rebalanceable": true,
+            "value": 10000,
+            "currency": "USDC",
+            "priceSource": "self"
+          }
+        },
+        {
+          "op": "add_holding",
+          "holding": {
+            "id": "hcoas5g",
+            "type": "btc",
+            "name": "Bitcoin",
+            "symbol": "BTC",
+            "updatedAt": 1793702321686,
+            "rebalanceable": true,
+            "value": 6500,
+            "currency": "USDC",
+            "priceSource": "self"
+          }
+        }
+      ],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 35,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hiy55gz",
+            "type": "term_deposit",
+            "name": "Term savings deposit",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 14000,
+            "currency": "USDC"
+          },
+          {
+            "id": "h24511r",
+            "type": "us_stock",
+            "name": "VOO",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "VOO",
+            "value": 10000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hcoas5g",
+            "type": "btc",
+            "name": "Bitcoin",
+            "updatedAt": 1793702321686,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "BTC",
+            "value": 6500,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "idyuqky",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702313891
+          }
+        ],
+        "expenses": [
+          {
+            "id": "epks1dg",
+            "name": "Monthly spending",
+            "monthly": 2500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702313892
+          }
+        ],
+        "noNearGoal": true
+      },
+      "profile": {
+        "v": 2,
+        "age": 35,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hiy55gz",
+            "type": "term_deposit",
+            "name": "Term savings deposit",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 14000,
+            "currency": "USDC"
+          },
+          {
+            "id": "h24511r",
+            "type": "us_stock",
+            "name": "VOO",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "VOO",
+            "value": 10000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hcoas5g",
+            "type": "btc",
+            "name": "Bitcoin",
+            "updatedAt": 1793702321686,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "BTC",
+            "value": 6500,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "idyuqky",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702313891
+          }
+        ],
+        "expenses": [
+          {
+            "id": "epks1dg",
+            "name": "Monthly spending",
+            "monthly": 2500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702313892
+          }
+        ],
+        "noNearGoal": true
+      },
+      "tokens": 0,
+      "calls": 0,
+      "ms": 12,
+      "complete": true
+    },
+    {
+      "case": "a3-leader-rule",
+      "category": "core-audit",
+      "turn": 6,
+      "user": "Am I balanced? Give me the exact numbers.",
+      "status": 200,
+      "content": "Not exactly. Against the MoonSafe framework at age 35, your shares of the three parts are:\n\n- **Safety**: $14,000, the furthest ahead for your age, so it sets the size.\n- **Traditional**: $10,000 of $13,000, $3,000 to go.\n- **Crypto**: $6,500 of $13,000, $6,500 to go.\n\nTraditional and Crypto are short of their bars, so new money could go to either. Your choice on the order.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "show_allocation"
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": 35,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hiy55gz",
+            "type": "term_deposit",
+            "name": "Term savings deposit",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 14000,
+            "currency": "USDC"
+          },
+          {
+            "id": "h24511r",
+            "type": "us_stock",
+            "name": "VOO",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "VOO",
+            "value": 10000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hcoas5g",
+            "type": "btc",
+            "name": "Bitcoin",
+            "updatedAt": 1793702321686,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "BTC",
+            "value": 6500,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "idyuqky",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702313891
+          }
+        ],
+        "expenses": [
+          {
+            "id": "epks1dg",
+            "name": "Monthly spending",
+            "monthly": 2500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702313892
+          }
+        ],
+        "noNearGoal": true
+      },
+      "profile": {
+        "v": 2,
+        "age": 35,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hiy55gz",
+            "type": "term_deposit",
+            "name": "Term savings deposit",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 14000,
+            "currency": "USDC"
+          },
+          {
+            "id": "h24511r",
+            "type": "us_stock",
+            "name": "VOO",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "VOO",
+            "value": 10000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hcoas5g",
+            "type": "btc",
+            "name": "Bitcoin",
+            "updatedAt": 1793702321686,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "BTC",
+            "value": 6500,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "idyuqky",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702313891
+          }
+        ],
+        "expenses": [
+          {
+            "id": "epks1dg",
+            "name": "Monthly spending",
+            "monthly": 2500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702313892
+          }
+        ],
+        "noNearGoal": true
+      },
+      "tokens": 35792,
+      "calls": 3,
+      "ms": 3927,
+      "complete": true
+    },
+    {
+      "case": "a3-leader-rule",
+      "category": "core-audit",
+      "turn": 7,
+      "user": "Why is the term deposit the full bar? Why not use the total of everything as 100%?",
+      "status": 200,
+      "content": "**Emergency fund:** $7,500 of $7,500 (3 months of spending), full.\n**Safety:** $14,000: furthest ahead for your age, so it sets the size (Term savings deposit $14,000).\n**Traditional:** $10,000 of $13,000, $3,000 to go.\n**Crypto:** $6,500 of $13,000, $6,500 to go.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 35,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hiy55gz",
+            "type": "term_deposit",
+            "name": "Term savings deposit",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 14000,
+            "currency": "USDC"
+          },
+          {
+            "id": "h24511r",
+            "type": "us_stock",
+            "name": "VOO",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "VOO",
+            "value": 10000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hcoas5g",
+            "type": "btc",
+            "name": "Bitcoin",
+            "updatedAt": 1793702321686,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "BTC",
+            "value": 6500,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "idyuqky",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702313891
+          }
+        ],
+        "expenses": [
+          {
+            "id": "epks1dg",
+            "name": "Monthly spending",
+            "monthly": 2500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702313892
+          }
+        ],
+        "noNearGoal": true
+      },
+      "profile": {
+        "v": 2,
+        "age": 35,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hiy55gz",
+            "type": "term_deposit",
+            "name": "Term savings deposit",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 14000,
+            "currency": "USDC"
+          },
+          {
+            "id": "h24511r",
+            "type": "us_stock",
+            "name": "VOO",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "VOO",
+            "value": 10000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hcoas5g",
+            "type": "btc",
+            "name": "Bitcoin",
+            "updatedAt": 1793702321686,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "BTC",
+            "value": 6500,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "idyuqky",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702313891
+          }
+        ],
+        "expenses": [
+          {
+            "id": "epks1dg",
+            "name": "Monthly spending",
+            "monthly": 2500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702313892
+          }
+        ],
+        "noNearGoal": true
+      },
+      "tokens": 11543,
+      "calls": 1,
+      "ms": 1068,
+      "complete": true
+    },
+    {
+      "case": "a3-leader-rule",
+      "category": "core-audit",
+      "turn": 8,
+      "user": "What percentage of each part am I at?",
+      "status": 200,
+      "content": "Your shares of the three parts, out of $30,500 in total:\n\n- **Safety**: 46% of the three parts ($14,000), target 35%: above.\n- **Traditional**: 33% ($10,000), target 32.5%: close to target.\n- **Crypto**: 21% ($6,500), target 32.5%: below.\n\nYour emergency fund is kept apart and is not in these shares.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "show_allocation"
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": 35,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hiy55gz",
+            "type": "term_deposit",
+            "name": "Term savings deposit",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 14000,
+            "currency": "USDC"
+          },
+          {
+            "id": "h24511r",
+            "type": "us_stock",
+            "name": "VOO",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "VOO",
+            "value": 10000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hcoas5g",
+            "type": "btc",
+            "name": "Bitcoin",
+            "updatedAt": 1793702321686,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "BTC",
+            "value": 6500,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "idyuqky",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702313891
+          }
+        ],
+        "expenses": [
+          {
+            "id": "epks1dg",
+            "name": "Monthly spending",
+            "monthly": 2500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702313892
+          }
+        ],
+        "noNearGoal": true
+      },
+      "profile": {
+        "v": 2,
+        "age": 35,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hiy55gz",
+            "type": "term_deposit",
+            "name": "Term savings deposit",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 14000,
+            "currency": "USDC"
+          },
+          {
+            "id": "h24511r",
+            "type": "us_stock",
+            "name": "VOO",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "VOO",
+            "value": 10000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hcoas5g",
+            "type": "btc",
+            "name": "Bitcoin",
+            "updatedAt": 1793702321686,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "BTC",
+            "value": 6500,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "idyuqky",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702313891
+          }
+        ],
+        "expenses": [
+          {
+            "id": "epks1dg",
+            "name": "Monthly spending",
+            "monthly": 2500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702313892
+          }
+        ],
+        "noNearGoal": true
+      },
+      "tokens": 34955,
+      "calls": 3,
+      "ms": 3155,
+      "complete": true
+    },
+    {
+      "case": "a3-leader-rule",
+      "category": "core-audit",
+      "turn": 9,
+      "user": "My Safety is too big then, should I sell some of it and buy bitcoin?",
+      "status": 200,
+      "content": "Selling isn't needed. Your Safety is the part furthest ahead, so it sets the size, and the framework only suggests where new money could go, not that you move existing money. If you'd like Crypto to catch up, one option is to add new money to Crypto over time, for example in equal monthly amounts (dollar-cost averaging). That spreads your buying over time, though it doesn't guarantee a profit or protect against losses.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "show_allocation"
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": 35,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hiy55gz",
+            "type": "term_deposit",
+            "name": "Term savings deposit",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 14000,
+            "currency": "USDC"
+          },
+          {
+            "id": "h24511r",
+            "type": "us_stock",
+            "name": "VOO",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "VOO",
+            "value": 10000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hcoas5g",
+            "type": "btc",
+            "name": "Bitcoin",
+            "updatedAt": 1793702321686,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "BTC",
+            "value": 6500,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "idyuqky",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702313891
+          }
+        ],
+        "expenses": [
+          {
+            "id": "epks1dg",
+            "name": "Monthly spending",
+            "monthly": 2500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702313892
+          }
+        ],
+        "noNearGoal": true
+      },
+      "profile": {
+        "v": 2,
+        "age": 35,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hiy55gz",
+            "type": "term_deposit",
+            "name": "Term savings deposit",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 14000,
+            "currency": "USDC"
+          },
+          {
+            "id": "h24511r",
+            "type": "us_stock",
+            "name": "VOO",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "VOO",
+            "value": 10000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hcoas5g",
+            "type": "btc",
+            "name": "Bitcoin",
+            "updatedAt": 1793702321686,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "BTC",
+            "value": 6500,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "idyuqky",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702313891
+          }
+        ],
+        "expenses": [
+          {
+            "id": "epks1dg",
+            "name": "Monthly spending",
+            "monthly": 2500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702313892
+          }
+        ],
+        "noNearGoal": true
+      },
+      "tokens": 34934,
+      "calls": 3,
+      "ms": 3411,
+      "complete": true
+    },
+    {
+      "case": "a3-leader-rule",
+      "category": "core-audit",
+      "turn": 10,
+      "user": "Make it 70 traditional and 30 crypto.",
+      "status": 200,
+      "content": "Done: outside Safety your split is now Traditional 70% / Crypto 30%, as you chose.",
+      "ops": [
+        {
+          "op": "update_profile",
+          "fields": {
+            "cryptoSplit": 30
+          }
+        }
+      ],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 35,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hiy55gz",
+            "type": "term_deposit",
+            "name": "Term savings deposit",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 14000,
+            "currency": "USDC"
+          },
+          {
+            "id": "h24511r",
+            "type": "us_stock",
+            "name": "VOO",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "VOO",
+            "value": 10000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hcoas5g",
+            "type": "btc",
+            "name": "Bitcoin",
+            "updatedAt": 1793702321686,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "BTC",
+            "value": 6500,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "idyuqky",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702313891
+          }
+        ],
+        "expenses": [
+          {
+            "id": "epks1dg",
+            "name": "Monthly spending",
+            "monthly": 2500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702313892
+          }
+        ],
+        "noNearGoal": true
+      },
+      "profile": {
+        "v": 2,
+        "age": 35,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hiy55gz",
+            "type": "term_deposit",
+            "name": "Term savings deposit",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 14000,
+            "currency": "USDC"
+          },
+          {
+            "id": "h24511r",
+            "type": "us_stock",
+            "name": "VOO",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "VOO",
+            "value": 10000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hcoas5g",
+            "type": "btc",
+            "name": "Bitcoin",
+            "updatedAt": 1793702321686,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "BTC",
+            "value": 6500,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "idyuqky",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702313891
+          }
+        ],
+        "expenses": [
+          {
+            "id": "epks1dg",
+            "name": "Monthly spending",
+            "monthly": 2500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702313892
+          }
+        ],
+        "noNearGoal": true,
+        "cryptoSplit": 30
+      },
+      "tokens": 22545,
+      "calls": 2,
+      "ms": 2299,
+      "complete": true
+    },
+    {
+      "case": "a3-leader-rule",
+      "category": "core-audit",
+      "turn": 11,
+      "user": "So what are the numbers now?",
+      "status": 200,
+      "content": "Your numbers with the 70/30 split:\n\n- **Emergency fund:** $7,500 of $7,500 (3 months of spending), full.\n- **Safety:** $14,000, furthest ahead for your age, so it sets the size.\n- **Traditional:** $10,000 of $18,200, $8,200 to go.\n- **Crypto:** $6,500 of $7,800, $1,300 to go.\n\nYour shares of the three parts, out of $30,500: Safety 46% (target 35%, above), Traditional 33% (target 45.5%, below), Crypto 21% (target 19.5%, close to target).",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "show_allocation"
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": 35,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hiy55gz",
+            "type": "term_deposit",
+            "name": "Term savings deposit",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 14000,
+            "currency": "USDC"
+          },
+          {
+            "id": "h24511r",
+            "type": "us_stock",
+            "name": "VOO",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "VOO",
+            "value": 10000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hcoas5g",
+            "type": "btc",
+            "name": "Bitcoin",
+            "updatedAt": 1793702321686,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "BTC",
+            "value": 6500,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "idyuqky",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702313891
+          }
+        ],
+        "expenses": [
+          {
+            "id": "epks1dg",
+            "name": "Monthly spending",
+            "monthly": 2500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702313892
+          }
+        ],
+        "noNearGoal": true,
+        "cryptoSplit": 30
+      },
+      "profile": {
+        "v": 2,
+        "age": 35,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hiy55gz",
+            "type": "term_deposit",
+            "name": "Term savings deposit",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 14000,
+            "currency": "USDC"
+          },
+          {
+            "id": "h24511r",
+            "type": "us_stock",
+            "name": "VOO",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "VOO",
+            "value": 10000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hcoas5g",
+            "type": "btc",
+            "name": "Bitcoin",
+            "updatedAt": 1793702321686,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "BTC",
+            "value": 6500,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "idyuqky",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702313891
+          }
+        ],
+        "expenses": [
+          {
+            "id": "epks1dg",
+            "name": "Monthly spending",
+            "monthly": 2500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702313892
+          }
+        ],
+        "noNearGoal": true,
+        "cryptoSplit": 30
+      },
+      "tokens": 45656,
+      "calls": 4,
+      "ms": 4403,
+      "complete": true
+    },
+    {
+      "case": "a3-leader-rule",
+      "category": "core-audit",
+      "turn": 12,
+      "user": "Actually can I do 40 traditional 60 crypto instead?",
+      "status": 200,
+      "content": "Crypto stays at 50% or less of the money outside Safety: it swings so much that above that, keeping your parts in balance gets exhausting. I kept your split at Traditional 70% / Crypto 30%. You can still lower Crypto, for example Traditional 70% / Crypto 30%.",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 35,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hiy55gz",
+            "type": "term_deposit",
+            "name": "Term savings deposit",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 14000,
+            "currency": "USDC"
+          },
+          {
+            "id": "h24511r",
+            "type": "us_stock",
+            "name": "VOO",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "VOO",
+            "value": 10000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hcoas5g",
+            "type": "btc",
+            "name": "Bitcoin",
+            "updatedAt": 1793702321686,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "BTC",
+            "value": 6500,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "idyuqky",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702313891
+          }
+        ],
+        "expenses": [
+          {
+            "id": "epks1dg",
+            "name": "Monthly spending",
+            "monthly": 2500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702313892
+          }
+        ],
+        "noNearGoal": true,
+        "cryptoSplit": 30
+      },
+      "profile": {
+        "v": 2,
+        "age": 35,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hiy55gz",
+            "type": "term_deposit",
+            "name": "Term savings deposit",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 14000,
+            "currency": "USDC"
+          },
+          {
+            "id": "h24511r",
+            "type": "us_stock",
+            "name": "VOO",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "VOO",
+            "value": 10000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hcoas5g",
+            "type": "btc",
+            "name": "Bitcoin",
+            "updatedAt": 1793702321686,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "BTC",
+            "value": 6500,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "idyuqky",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702313891
+          }
+        ],
+        "expenses": [
+          {
+            "id": "epks1dg",
+            "name": "Monthly spending",
+            "monthly": 2500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702313892
+          }
+        ],
+        "noNearGoal": true,
+        "cryptoSplit": 30
+      },
+      "tokens": 22455,
+      "calls": 2,
+      "ms": 2473,
+      "complete": true
+    },
+    {
+      "case": "a3-leader-rule",
+      "category": "core-audit",
+      "turn": 13,
+      "user": "I bought my bitcoin for 9000 but you have 6500, which one counts?",
+      "status": 502,
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 35,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hiy55gz",
+            "type": "term_deposit",
+            "name": "Term savings deposit",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 14000,
+            "currency": "USDC"
+          },
+          {
+            "id": "h24511r",
+            "type": "us_stock",
+            "name": "VOO",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "VOO",
+            "value": 10000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hcoas5g",
+            "type": "btc",
+            "name": "Bitcoin",
+            "updatedAt": 1793702321686,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "BTC",
+            "value": 6500,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "idyuqky",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702313891
+          }
+        ],
+        "expenses": [
+          {
+            "id": "epks1dg",
+            "name": "Monthly spending",
+            "monthly": 2500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702313892
+          }
+        ],
+        "noNearGoal": true,
+        "cryptoSplit": 30
+      },
+      "profile": {
+        "v": 2,
+        "age": 35,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 0,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "hiy55gz",
+            "type": "term_deposit",
+            "name": "Term savings deposit",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 14000,
+            "currency": "USDC"
+          },
+          {
+            "id": "h24511r",
+            "type": "us_stock",
+            "name": "VOO",
+            "updatedAt": 1793702321685,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "VOO",
+            "value": 10000,
+            "currency": "USDC"
+          },
+          {
+            "id": "hcoas5g",
+            "type": "btc",
+            "name": "Bitcoin",
+            "updatedAt": 1793702321686,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "BTC",
+            "value": 6500,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "idyuqky",
+            "name": "Salary",
+            "monthly": 5000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793702313891
+          }
+        ],
+        "expenses": [
+          {
+            "id": "epks1dg",
+            "name": "Monthly spending",
+            "monthly": 2500,
+            "currency": "USDC",
+            "kind": "fixed",
+            "updatedAt": 1793702313892
+          }
+        ],
+        "noNearGoal": true,
+        "cryptoSplit": 30
+      },
+      "tokens": 0,
+      "calls": 0,
+      "ms": 3,
+      "complete": false
+    }
+  ]
+}
