@@ -2,7 +2,7 @@
 
 - Trước đây app chỉ đổi mạng lúc gửi giao dịch. `src/hooks/useArcOnConnect.ts` (gọi trong `AppShell`) yêu cầu ví đổi sang Arc ngay khi vào app, 1 lần cho mỗi ví mỗi lần tải trang; từ chối thì không hỏi lại, giao dịch sau `ensureArcChain` hỏi tiếp.
 - Đã thử hook thật + wagmi thật với ví giả (đồng ý / từ chối / đã ở Arc / ví chưa có mạng). CHƯA thử bằng OKX thật: chờ Hiếu mở app và xem popup.
-- `.github/workflows/agent-regression.yml` vẫn chưa push: token `KattyFury` thiếu quyền `workflow`, chạy `gh auth refresh -h github.com -s workflow` rồi commit file này.
+- `.github/workflows/agent-regression.yml` đã push (38e7107) sau khi token `KattyFury` có quyền `workflow`.
 
 # ▶ 2026-11-03 — DEPLOYED HAIKU CORE FIXES TO MAINNET
 
