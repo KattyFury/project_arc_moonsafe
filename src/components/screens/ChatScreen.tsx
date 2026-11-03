@@ -90,7 +90,8 @@ export function ChatScreen({ onError, onActions, ask = null, onAsked }: { onErro
         : { ...base, kind: a.type === 'prepare_deposit' ? 'deposit' : a.type === 'prepare_withdraw' ? 'withdraw' : 'buy' })
     }
     if (next.length || shown.length) setExtras(x => ({
-      cards: [...x.cards, ...next].slice(-40),
+      // "Yes do it" brought the same withdrawal card back (audit 2026-11-03): only the newest of two identical unsigned cards stays, so one signature can't be given twice.
+      cards: [...x.cards.filter(c => c.status || !next.some(n => 'amount' in n && 'amount' in c && n.kind === c.kind && n.amount === c.amount)), ...next].slice(-40),
       charts: [...x.charts, ...shown.map(a => ({ at, kind: a.type === 'show_cashflow' ? 'cashflow' as const : 'allocation' as const }))].slice(-40),
     }))
   }

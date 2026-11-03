@@ -170,6 +170,13 @@ try {
     assert.match(lowerSplit.data.content ?? '', /^Done: outside Safety your split is now Traditional 70% \/ Crypto 30%, as you chose\.$/)
     forcedTools = []
     checks++
+    // Money to place, through the whole handler, with no model reply (audit 2026-11-03).
+    forcedTools = []
+    const placedProfile = normalizeProfile({ v: 2, age: 31, incomeStable: true, dependents: 1, debtsComplete: true, noNearGoal: true, incomes: [{ id: 'i', name: 'Pay', monthly: 600, currency: 'USDC', kind: 'active', updatedAt: 1 }], expenses: [{ id: 'e', name: 'Spending', monthly: 600, currency: 'USDC', kind: 'fixed', updatedAt: 1 }], holdings: [{ id: 'g', type: 'fund_bond', name: 'VOO', value: 2000, currency: 'USDC', priceSource: 'self', rebalanceable: true, updatedAt: 1 }] })
+    const placedReply = await ask('an airdrop of 3000 just landed, what do i do with it', true, [], { profile: placedProfile })
+    assert.match(placedReply.data.content ?? '', /Your emergency fund is at .* of \$3,600/, 'money to place gets the plan order')
+    assert.doesNotMatch(placedReply.data.content ?? '', /\?/, 'no question back')
+    checks++
     // The answer to "how much did you sell?" goes on the card: ETH 3,000 − 1,000 = 2,000.
     forcedTools = []
     const sold = await ask('about 1000 worth', true, [{ role: 'user', content: 'i sold some eth last week' }, { role: 'assistant', content: 'How much ETH did you sell, and roughly what was it worth in dollars?' }], { profile: eth })

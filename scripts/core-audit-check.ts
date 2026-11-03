@@ -1,10 +1,10 @@
 // What the 5M Haiku audit (2026-11-03) fixed, kept fixed without paying for a model. See docs/evals/core-audit-2026-11-03.md.
 import assert from 'node:assert/strict'
-import { defersOffer, quantityEvidence, responseProblems } from '../functions/_lib/agentGuards'
-import { debtIsPriority } from '../src/lib/allocation'
+import { defersOffer, isCrisis, quantityEvidence, responseProblems } from '../functions/_lib/agentGuards'
+import { computeBalance, debtIsPriority } from '../src/lib/allocation'
 import { interestRateEvidence } from '../functions/_lib/mutationEvidence'
 import { buildIntake } from '../functions/_lib/intake'
-import { spareSource } from '../functions/_lib/plan'
+import { bareAmount, buildPlacement, spareSource } from '../functions/_lib/plan'
 import { targetMix } from '../src/kb/kb'
 import { normalizeProfile } from '../src/lib/profile'
 
@@ -58,6 +58,27 @@ assert.equal(spareSource(['2000 in gold']), null)
 assert.equal(spareSource(['keep 3000 usdc as safety']), null)
 assert.equal(spareSource(['do i need a bank?']), null)
 assert.equal(spareSource(['[app event] The user signed the card: Added 5 USDC to your emergency fund.']), null)
+assert.equal(spareSource(['50 triệu không kỳ hạn']), 'bank') // lang-ok
+assert.ok(flagged('I can\'t help move your emergency fund into Bitcoin.'))
+// Someone in crisis gets the fixed answer; figures of speech do not.
+for (const t of ['i lost everything. i dont see the point of going on anymore', 'mình không muốn sống nữa', 'i want to end my life', 'I am suicidal', "i can't go on"]) assert.ok(isCrisis(t), t) // lang-ok
+for (const t of ['kill my debt', 'this stock is suicide lol', 'end my subscription', 'i dont want to go on a trip', 'i see no point in buying gold', 'tức muốn chết']) assert.ok(!isCrisis(t), t) // lang-ok
+// Money to place is answered from the numbers (audit 2026-11-03).
+assert.equal(bareAmount('i want to add 500000 next month from selling a business, how would you place it'), 500000)
+assert.equal(bareAmount('an airdrop of 3000 just landed, what do i do with it'), 3000)
+assert.equal(bareAmount('got 5k in 2 years at 10%, how should i split it'), 5000)
+assert.equal(bareAmount('what do i do with it'), null)
+{
+  const person = { v: 2, age: 31, incomeStable: true, dependents: 1, debtsComplete: true, noNearGoal: true,
+    incomes: [{ id: 'i', name: 'Pay', monthly: 600, currency: 'USDC', kind: 'active', updatedAt: 1 }], expenses: [{ id: 'e', name: 'Spending', monthly: 600, currency: 'USDC', kind: 'fixed', updatedAt: 1 }],
+    holdings: [{ id: 'g', type: 'fund_bond', name: 'VOO', value: 2000, currency: 'USDC', priceSource: 'self', rebalanceable: true, updatedAt: 1 }] }
+  const answer = (vault: number, amount: number, extra = {}) => { const p = normalizeProfile({ ...person, ...extra }); return buildPlacement({ p, b: computeBalance({ profile: p, walletUsd: 0, vaultUsd: vault, cirBtcUsd: 0, prices: { usd: {}, goldUsdPerOz: null }, vndPerUsd: 25000 }), vi: false, amount }) ?? '' }
+  assert.match(answer(37, 3000), /\$37 of \$3,600, so all of this \$3,000 could go in first/)
+  assert.match(answer(3000, 1000), /so \$600 of this \$1,000 could fill it\. The other \$400 could go by your age: Safety \$124, Traditional \$138, Crypto \$138/)
+  assert.match(answer(3600, 500), /can go to the parts still short: Safety \(\$1,797 to go\) and Crypto \(\$2,000 to go\)\. Nothing needs selling/)
+  assert.match(answer(3600, 1000, { holdings: [] }), /could go by your age: Safety \$310, Traditional \$345, Crypto \$345/)
+  assert.match(answer(0, 500, { debts: [{ id: 'd', name: 'Card', type: 'credit_card', balance: 900, currency: 'USDC', ratePct: 24, monthlyPayment: 50, updatedAt: 1 }] }), /first the starter fund .* then the expensive debt/)
+}
 // What people actually type.
 assert.ok(interestRateEvidence('they charge like 15% a month', 180))
 assert.ok(interestRateEvidence('lãi 30%/năm', 30)) // lang-ok

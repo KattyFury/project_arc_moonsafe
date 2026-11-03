@@ -1,3 +1,25 @@
+# ▶ Handoff — 2026-11-03 (cuối ngày) — ĐỌC MỤC NÀY TRƯỚC
+
+**Trạng thái:** mọi thứ đã push và deploy, live = commit mới nhất trên `main`. Lần chạy thử cuối dùng Haiku, chưa thử trên OpenAI gpt-5.4-mini là model chính, và chưa thử bằng ví thật.
+
+**Đã làm hôm nay (Hiếu chốt, đừng đổi ngược):**
+- Crypto tối đa 50% phần ngoài Safety, mặc định 50/50, chỉ được nghiêng sang Traditional (`MAX_CRYPTO_SPLIT`).
+- Trong Crypto: mọi coin đều tính, một thanh duy nhất; hướng dẫn "$7 trên mỗi $10 vào Bitcoin, còn lại tự chọn, ưu tiên top 10" nói một lần, không theo dõi, không ép. Agent không tự nêu tên coin ngoài BTC. Nút mua cirBTC đề nghị 7 phần số còn thiếu (`BTC_GUIDE`).
+- Đọc coin EVM trong ví: để SAU hackathon (4c), hiện vẫn tự khai.
+- Nút tắt trên ô chat: tối đa 3 nút, `Add to fund` hoặc `Add money` · `Edit portfolio` · `Edit month` (`ShortcutBar.tsx`, `src/lib/shortcuts.ts`). Không gọi model, có bước Confirm. Thiếu chỗ thì xuống hàng.
+- Tiền bank và stablecoin không chọn làm Safety: vẫn không ghi. Nhưng nếu họ tự kể và quỹ chưa đầy, kế hoạch nói một câu rằng tiền đó có thể nạp quỹ trước, không nêu số (8a, `spareSource`).
+- Nợ khai ở form đi theo lãi suất đã khai; nợ dưới 10%/năm không khoá mua cirBTC.
+- Người có ý định tự tử nhận câu trả lời cố định (`isCrisis`, `CRISIS_REPLY`). Có khoản tiền cần đặt thì trả lời bằng số (`buildPlacement`).
+
+**Thử bằng Haiku:** 5M + 2M + 2M token, báo cáo đầy đủ ở `docs/evals/core-audit-2026-11-03.md`. Trước khi deploy chạy `bun run check:all` và `bun run test:agent`.
+
+**Việc tiếp theo, theo thứ tự:**
+1. Hiếu test bằng ví và tài khoản thật: nhập số khi bàn phím điện thoại bật lên, thẻ nạp và thẻ mua mở từ nút tắt, chat sau khi sửa bằng nút.
+2. Chạy lại trên model thật các câu chưa kiểm sau khi sửa: "how would you place it" với số không có $, "I can't give you the split", và các câu chưa chạm tới trong báo cáo.
+3. Thử một đợt trên gpt-5.4-mini, vì mọi đợt hôm nay đều chạy Haiku.
+4. Lỗi nhẹ còn lại: số tiền hiện "$227.5" (hàm định dạng dùng chung, Hiếu chưa chốt đổi); "ok bắt đầu nạp" hỏi lại thay vì hiện thẻ; bảng `Edit portfolio` phải cuộn khi nhiều món; agent nhận biết tiền nhàn rỗi bằng từ khoá nên có thể bỏ sót ("2k trên Binance").
+5. Việc mở từ trước (`docs/CORE.md`): vault v3 sau hackathon, xếp bất động sản và vốn doanh nghiệp, giới hạn đăng ký Privy, rate-limit Cloudflare.
+
 # ▶ 2026-11-03 — SỬA THEO CHAT THẬT CỦA HIẾU (ĐÃ DEPLOY)
 
 - Nợ khai ở form có kiểu `unknown`: giờ đi theo lãi suất đã khai (từ 10%/năm mới là nợ lãi cao), không còn khoá mua cirBTC khi lãi thấp, không hỏi lại lãi đã có. Chưa có lãi thì vẫn hỏi và vẫn coi là nợ đắt.

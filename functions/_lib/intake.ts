@@ -70,7 +70,9 @@ export function buildIntake(p: FinancialProfile, userText: string, vi: boolean, 
   if (unknownBullets(p).length < INTAKE_MIN_UNKNOWN) return null
   if (p.incomes.length > 0 && p.expenses.length > 0) return null // They just told the month; the form would ask it again (audit 2026-11-03).
   const noted = readback.length ? (vi ? `Mình ghi: ${readback.join(', ')}.\n\n` : `Noted: ${readback.join(', ')}.\n\n`) : '' // lang-ok
-  return noted + cashflowAsk(vi, purpose(userText))
+  // A plain "hi" gets a hello before the form (audit 2026-11-03).
+  const hello = /^\s*(hi|hello|hey|yo|chào(?: bạn| em| anh| chị)?|xin chào|alo)[\s!.,]*$/iu.test(userText) ? (vi ? 'Chào bạn!\n\n' : 'Hi!\n\n') : '' // lang-ok
+  return hello + noted + cashflowAsk(vi, purpose(userText))
 }
 
 /** Marks question 2 (what they hold) as sent. */

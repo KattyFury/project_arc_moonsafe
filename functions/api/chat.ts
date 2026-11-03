@@ -23,7 +23,7 @@ import { getPrices } from './prices'
 import { educationAnswer, EDUCATION_POLICY } from '../_lib/education'
 import { salaryRemainder } from '../_lib/educationFigures'
 import { confirmationStatus } from '../_lib/confirmationStatus'
-import { defersOffer, explicitAgeRefusal, factProposals, quantityEvidence, turnPolicy, TURN_POLICY, responseProblems, REPLY_DISCIPLINE, fundMissingInputs } from '../_lib/agentGuards'
+import { defersOffer, explicitAgeRefusal, isCrisis, factProposals, quantityEvidence, turnPolicy, TURN_POLICY, responseProblems, REPLY_DISCIPLINE, fundMissingInputs } from '../_lib/agentGuards'
 import { coachingBrief, recordingEvidence, COACH_POLICY, ALTCOIN_CHECK } from '../_lib/coaching'
 import { assertions, currentValuation, investedBasis, interestRateEvidence, passiveEvidence, zeroInterestEvidence, repaymentEvidence, incompleteExpenses } from '../_lib/mutationEvidence'
 import { dependentEvidence, householdDefault, incomeUpdate, profileAgeAllowed, scopeBrief, scopeChoice, scopeQuestion } from '../../src/lib/planningScope'
@@ -35,7 +35,7 @@ import { POWER_PER_PURCHASE } from '../../src/lib/power'
 import { recordStats } from '../_lib/stats'
 import { ASSET_TYPES, ASSETS_MARK, BATCH_MARK, INTAKE_MIN_UNKNOWN, assetsAsk, buildIntake, cashflowAsk, cashflowKeys, unknownBullets } from '../_lib/intake'
 import { getConfig, isBlocked, effectiveEnv } from '../_lib/config'
-import { buildAfterSign, buildDebtPlan, buildPartAnswer, buildPlan, buildStanding, detectPartChoice, openVaultOffer, spareSource } from '../_lib/plan'
+import { bareAmount, buildAfterSign, buildDebtPlan, buildPartAnswer, buildPlacement, buildPlan, buildStanding, detectPartChoice, openVaultOffer, spareSource } from '../_lib/plan'
 import { BTC_GUIDE, KB, MAX_CRYPTO_SPLIT, matchPatterns, patternBrief, param } from '../../src/kb/kb'
 import { computeFacts, displayFacts, amountsUsd } from '../../src/kb/facts'
 import { pctText, bucketStanding, computeBalance, holdingUsd, priceKey, symbolOf, toUsd, GOLD_UNITS_TO_OZ, GROUP_LABEL, type Balance, type Prices } from '../../src/lib/allocation'
@@ -83,6 +83,8 @@ ${KB.principles.map(p => `- ${p}`).join('\n')}
 - The emergency fund (USDC in the MoonSafe vault) stands apart. Floor in months of spending (fixed + essential variable + debt payments): 3 stable income; 6 stable with dependents or irregular without; 9 irregular with dependents; 12 if also the sole earner.
 - Priority debt: credit card, consumer / payday loan, crypto margin, or any debt at ${param('priority_debt_rate_pct')}%/year or more. Interest-free debt never blocks.
 - cirBTC buying in the app opens only with no priority debt AND the fund at its floor. Nothing else is ever blocked.
+- Withdrawing from the fund is always their right and only their wallet can do it: never refuse, never say you cannot help. If they want to, say plainly what it does with their numbers (the fund drops, cirBTC buying in the app locks again until it is refilled, and the cushion is gone if income stops), and that buying because a price is pumping is a poor reason; then prepare_withdraw when they ask for it or confirm.
+- An amount they name, even money still to come: answer straight away with what each part is still short of, or the age shares of that amount. Never say you cannot place money that has not arrived, and never ask unrelated details about where it comes from.
 - Expensive debt, fund or investing, always in this one order, stated once and never reversed in the next sentence: a starter fund of 1 month, then the expensive debt, then the rest of the fund, then investing.
 - Fund not full or expensive debt open, and they ask to skip it and buy: never answer "yes". The app's buy stays locked until then and no chat message opens it; say what is missing. What they do outside the app is their own decision, but you advise the fund first and give no investing advice before that.
 - The emergency fund is the only must. The split above is a reference the user MAY consider: "you could consider", never "recommended" / "you need to".
@@ -192,7 +194,9 @@ function tidyQuestions(text: string, dropStable: boolean): string {
   const lines = text.split('\n').map(line => line.split(/(?<=[.!?])\s+/))
   if (dropStable) for (const parts of lines) for (let i = parts.length - 1; i >= 0; i--) if (ASKS_STABLE.test(parts[i].trim())) parts.splice(i, 1)
   const questions = lines.flatMap((parts, li) => parts.map((p, pi) => ({ li, pi, q: p.replace(/\*+$/, '').trim().endsWith('?') }))).filter(x => x.q)
-  for (const x of questions.slice(0, -1)) lines[x.li][x.pi] = ''
+  const last = questions[questions.length - 1]
+  const followUp = !!last && /^\W*(roughly|if so|if yes|and\b|how much\b)/i.test(lines[last.li][last.pi])
+  for (const x of questions.slice(0, followUp ? -2 : -1)) lines[x.li][x.pi] = ''
   return lines.map(parts => parts.filter(Boolean).join(' ')).join('\n').replace(/\n{3,}/g, '\n\n').trim()
 }
 
@@ -231,6 +235,13 @@ const SECURITY_TALK = /steal|stolen|hack|two[- ]?factor|\b2fa\b|\b(?:is|are) (?:
 const earnedFrom = (text: string, name: string) => { const n = name.trim().toLowerCase(); return n.length >= 3 && new RegExp(`\\bi(?:'m| am)? (?:do|doing|work(?:ing)?(?: in| as| at| for)?|drive|driving|deliver|run|teach|sell)\\b[^.,;!?\\n]{0,20}${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i').test(text) }
 const INSIDE_CRYPTO = /(?<!\p{L})(btc|bitcoin|eth|ethereum|sol|solana|bnb|xrp|altcoins?|memecoins?|coins?|inside crypto|within crypto|trong crypto)(?!\p{L})/iu // lang-ok
 const NAMES_TRADITIONAL = /traditional|tradfi|truyền thống|(?<!\p{L})(stocks?|cổ phiếu|voo)(?!\p{L})/iu // lang-ok
+// Someone who may be thinking of ending their life: no model, no money talk (audit 2026-11-03: the prompt had no rule for this, and people here may have just lost a lot).
+const CRISIS_REPLY = {
+  en: "I'm really sorry you're carrying this. Losing money can feel like losing everything, but it isn't, and you don't have to get through this alone.\n\nThe money can wait; you matter more. Please talk to someone now: a person you trust, or a crisis line. In the US you can call or text 988, and findahelpline.com lists free lines in other countries. If you might act on these thoughts, call your local emergency number.\n\nNothing needs deciding today. When you're ready, I'm here to go through the money side with you, one small step at a time.",
+  vi: 'Mình rất tiếc vì bạn đang phải chịu đựng điều này. Mất tiền có thể khiến mình thấy như mất tất cả, nhưng không phải vậy, và bạn không phải vượt qua chuyện này một mình.\n\nChuyện tiền có thể đợi, bạn quan trọng hơn. Bạn hãy nói chuyện với ai đó ngay bây giờ: một người bạn tin tưởng, hoặc một đường dây hỗ trợ. Trang findahelpline.com có danh sách đường dây miễn phí theo từng nước. Nếu bạn có thể làm gì đó với những suy nghĩ này, hãy gọi ngay số cấp cứu ở nơi bạn sống.\n\nHôm nay không cần quyết định gì cả. Khi nào sẵn sàng, mình sẽ cùng bạn xem lại chuyện tiền, từng bước nhỏ một.', // lang-ok
+}
+const PLACE_MONEY = /how (?:would|should|do|can) (?:you|i|we)[^.?!\n]{0,30}(?:place|split|divide|allocate|put|use|invest)|what (?:do|should|can) (?:i|we) do with|where (?:should|do|can) (?:i|we) put|chia (?:sao|thế nào|như nào|ra sao)|làm gì với|nên (?:để|bỏ) (?:vào )?đâu/iu // lang-ok
+const ASKS_GUARANTEE = /(?<!\p{L})(guarantee(?:d|s)?|cam kết|đảm bảo|bảo đảm)(?!\p{L})[^.?!\n]{0,40}(\d\s*%|returns?|profit|lợi nhuận|lãi|lời)/iu // lang-ok
 const EXPLAIN_ONLY = /\bexplain\b|how (does|do|would|will) [^?.!\n]{0,40}\bwork|what (is|are|'s) (an? |the )?(emergency|rainy)|why (do|should|would) [^?.!\n]{0,30}(need|have)|giải thích|là gì|hoạt động (thế|như) nào|tại sao|vì sao/i // lang-ok
 const INTERNAL_LABEL = /(?<!\p{L})(floor|surplus|liquid assets?|idle( money| cash)?|priority debt)(?!\p{L})/iu
 const OTHER_SCRIPT = /[\u0400-\u04FF\u0590-\u06FF\u0E00-\u0E7F\u3040-\u30FF\u4E00-\u9FFF\uAC00-\uD7AF]/ // Cyrillic, Hebrew, Arabic, Thai, Japanese, Chinese, Korean
@@ -363,6 +374,9 @@ Reply in the language of the user's latest message (default English). ${VI_VOICE
 - Only their wallet can withdraw. MoonSafe never holds their keys and cannot see secrets or move their money. If MoonSafe shut down, the vault stays onchain and their wallet can still withdraw from the contract directly.
 - The other side, said plainly: the wallet is the ONLY key. There is NO two-factor and no second step today. Whoever gets their wallet's key or seed phrase can take the whole fund at once, to any address; nobody can reverse it. Losing the wallet with no seed phrase means losing access. So guard the seed phrase, and never share it.
 - A stronger design (wallet + email as two keys) is planned, NOT built, and has no date: mention it only as a plan. Never promise insurance, an audit, or that funds are "safe". The vault pays no interest: it holds USDC and nothing else.
+
+## The app itself
+Above the message box are shortcuts that save without typing: Add to fund or Add money (by stage), Edit portfolio (Safety, Traditional, Crypto and the Traditional / Crypto split) and Edit month (income, spending, debts). Lines starting "Saved:" in the chat were written by the app after the user confirmed one; those changes are real and already in the figures. Mention shortcuts only when asked.
 
 ## Request precedence
 The current request controls the reply. Education, listening, a correction, refusal or a request for one small step takes precedence over the advice path below. A phase, matching situation or missing profile field is context, not permission to onboard. Answer the requested parts, then stop unless a missing fact is necessary for the invited task. Unknown is neither zero nor nonzero; do not invent balances, access, cadence or available money. A confirmation card is a proposal, never a saved fact or completed transaction.
@@ -781,7 +795,7 @@ const TOPICS: { key: string; ask: string; asked: RegExp; known: (p: FinancialPro
   { key: 'goal', ask: 'In the next 5 years, is there a big expense you are saving for (a car, a wedding, school fees), and if so roughly how much and when?', asked: /(next 5 years|next five years|big expense|5 năm)[^?\n]{0,120}\?/i, known: p => !!p.nearGoal || !!p.noNearGoal }, // lang-ok
   { key: 'insurance', ask: 'Do you have health or life insurance that would protect the people who rely on you?', asked: /insurance[^.?!\n]{0,80}\?|bảo hiểm[^.?!\n]{0,80}\?/i, known: p => !((p.dependents ?? 0) > 0 || p.soleEarner === true) || (p.insured !== null && p.insured !== undefined) }, // lang-ok
   // Spare money is not tracked (Hieu, 2026-11-01): only what the user keeps as Safety.
-  { key: 'safety', ask: 'Do you keep any money set aside as Safety: a term deposit, bonds, or cash or stablecoins you keep apart? Roughly how much?', asked: /(set aside|safety|term deposit|bonds?|an toàn|tiền gửi có kỳ hạn)[^.?!\n]{0,80}\?/i, known: p => p.holdings.some(h => categoryOf(h) === 'safe') }, // lang-ok
+  { key: 'safety', ask: 'Do you keep any money set aside as Safety: a term deposit, bonds, or cash or stablecoins you keep apart, and if so roughly how much?', asked: /(set aside|safety|term deposit|bonds?|an toàn|tiền gửi có kỳ hạn)[^.?!\n]{0,80}\?/i, known: p => p.holdings.some(h => categoryOf(h) === 'safe') }, // lang-ok
   { key: 'crypto', ask: 'How much do you hold in Bitcoin, and how much in altcoins?', asked: /(coins?|crypto|BTC|ETH|bitcoin|altcoins?)[^.?!\n]{0,60}\?/i, known: p => p.holdings.some(h => ['btc', 'eth', 'top10', 'altcoin', 'crypto', 'staked_large_cap', 'nft'].includes(h.type)) },
   { key: 'traditional', ask: 'Do you hold any gold or stocks?', asked: /(gold|stocks?|ETF|vàng|cổ phiếu)[^.?!\n]{0,60}\?/i, known: p => p.holdings.some(h => ['gold_physical', 'gold_token', 'us_stock', 'vn_stock', 'fund_bond'].includes(h.type)) }, // lang-ok
   { key: 'property', ask: 'Do you own a home, land or a car?', asked: /(home|house|property|land|car|nhà|đất|xe)[^.?!\n]{0,60}\?/i, known: p => p.holdings.some(h => ['home', 'car', 'rental_property'].includes(h.type)) }, // lang-ok
@@ -813,7 +827,7 @@ function nextQuestion(p: FinancialProfile, assistantTexts: string[], userTexts: 
     return 'You mentioned paying back a debt: how much do you still owe, and to whom?'
   // A debt without its rate keeps cirBTC buying locked (allocation.ts debtIsPriority): ask it right away, once per debt.
   const untold = p.debts.find(d => d.ratePct === null && d.type !== 'family_no_interest' && !questions.some(q => INTEREST_Q.test(q) && (q.includes(d.name) || DEBT_WORD.test(q))))
-  if (untold) return `Does "${untold.name}" charge you any interest? If yes, roughly how much a year?`
+  if (untold) return `Does "${untold.name}" charge you any interest, and if so roughly how much a year?`
   // The last debt question is asked once; asked again it reads like the agent was not listening (real chat 2026-10-26).
   const lastDebtAsked = questions.some(q => q.includes(KB.collection.last_debt_question.slice(0, 40)) || q.includes(VI_DEBT_Q.slice(0, 30)))
   for (const t of TOPICS) {
@@ -962,6 +976,9 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   // a Vietnamese user got the plan in English right after the form).
   const lastTyped = [...messages].reverse().find(m => m.role === 'user' && !m.content.startsWith('[app event]'))?.content ?? lastUserText
   const vi = VI_LETTERS.test(lastTyped)
+  // "Guarantee me 20% a year" ended in the failed-answer line: nobody can promise a return, so it gets the plain answer (audit 2026-11-03).
+  if (!lastUserText.startsWith('[app event]') && ASKS_GUARANTEE.test(lastUserText)) return json({ content: vi ? 'Không ai có thể cam kết lợi nhuận một cách trung thực, kể cả mình, và ai hứa chắc một mức lời mỗi năm là dấu hiệu đáng ngờ. MoonSafe không hứa lợi nhuận. Điều mình làm được là giúp bạn có quỹ dự phòng trước, rồi chia phần còn lại theo tuổi để một cú giảm không làm bạn phải bán tháo.' : 'Nobody can honestly promise a return, me included, and anyone who guarantees a yearly figure is a warning sign. MoonSafe promises no returns. What I can do is help you build your emergency fund first, then divide the rest by your age, so one bad fall never forces you to sell.', ops: [], dcaStop: false, actions: [] }) // lang-ok
+  if (!lastUserText.startsWith('[app event]') && isCrisis(lastUserText)) return json({ content: vi ? CRISIS_REPLY.vi : CRISIS_REPLY.en, ops: [], dcaStop: false, actions: [] })
   // No vault yet (the app sends hasVault): "yes" to the opening offer, or asking to open one, gets the opening card (no model call).
   const hasVault = ctx.hasVault !== false
   const vaultFee = typeof ctx.vaultFeeUsdc === 'number' && ctx.vaultFeeUsdc > 0 ? ctx.vaultFeeUsdc : 1
@@ -1817,6 +1834,12 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     if (built) return json({ content: built, ops, dcaStop, actions })
   }
 
+  // "I got $3,000, what do I do with it?": the plan's order with their numbers, no model and no question back (audit 2026-11-03).
+  if (!appEvent && !placement && PLACE_MONEY.test(lastUserText) && !ops.some(o => o.op !== 'update_profile')) {
+    const named = amountsUsd(lastUserText, rate).find(n => n > 0) ?? bareAmount(lastUserText)
+    const answer = named ? buildPlacement({ p: profile, b: balance, vi, amount: named }) : null
+    if (answer) return json({ content: answer, ops, dcaStop, actions })
+  }
   // A split above the cap gets the same answer every time, never the model's wording (Hieu, 2026-11-03).
   if (cryptoSplitRefused && !ops.length && !appEvent) {
     const c = profile.cryptoSplit ?? 50

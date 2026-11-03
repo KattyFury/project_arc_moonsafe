@@ -1,0 +1,1306 @@
+{
+  "sourceTree": [
+    {
+      "path": "functions/_lib/admin.ts",
+      "sha256": "2e2bcd06e185cf9ef026b305537778a60fe6058142adc3c3d1d9d66bc774d169"
+    },
+    {
+      "path": "functions/_lib/agentGuards.ts",
+      "sha256": "f32fcde9c27e7f98c15ea7c4d34fbf963907349f5f40753a5d3f5230dbd2e32f"
+    },
+    {
+      "path": "functions/_lib/budget.ts",
+      "sha256": "df173f85a5648cd5ca6eafa6a51a8302870770258675dd0b3781aa89fac775f2"
+    },
+    {
+      "path": "functions/_lib/coaching.ts",
+      "sha256": "5aeab5b8fb5768b6d6abc83f34c6134be37289610271f029f680cc9cb76f0d29"
+    },
+    {
+      "path": "functions/_lib/config.ts",
+      "sha256": "5326baa048a80bbcaafe6b4605c93f2324851159d24db9bfe7f7874ed4208a01"
+    },
+    {
+      "path": "functions/_lib/confirmationStatus.ts",
+      "sha256": "ebd38239a2a99542bc7da2ea5d83c729774149fe2ec7912e39a5aa87ead02809"
+    },
+    {
+      "path": "functions/_lib/education.ts",
+      "sha256": "b435fe84688d607248fc55d6c87ed016f47efbfd4efbf11919f90692c66297c7"
+    },
+    {
+      "path": "functions/_lib/educationFigures.ts",
+      "sha256": "4ce3da2b8d5e7332d1bbd4acbbeaf1a1d463c823216589d61ff57e3bc7fa1a69"
+    },
+    {
+      "path": "functions/_lib/intake.ts",
+      "sha256": "64a218eeb2b8332a2390f860947e77211f11038ebf039e78f464c1cb352841b7"
+    },
+    {
+      "path": "functions/_lib/ledger.ts",
+      "sha256": "66dd4d7ce183585c1e8131e935c570c61b4d6d52c37318dd2142a2fceb5ef420"
+    },
+    {
+      "path": "functions/_lib/llm.ts",
+      "sha256": "e58cf9867a97b8c4095ef04206c0eb0c74a82c89e83bb93aabf68f2bb99cdec9"
+    },
+    {
+      "path": "functions/_lib/mutationEvidence.ts",
+      "sha256": "3268ac8efbbf277dee2ee751a24241db2f951e595f36094374bd4be6f3499e68"
+    },
+    {
+      "path": "functions/_lib/plan.ts",
+      "sha256": "b058323c55bcc722c6dd2900ac0599e9ed34a158e3459d377c7cd164a716bb2b"
+    },
+    {
+      "path": "functions/_lib/privyAuth.ts",
+      "sha256": "e438bece6391bb7d9bc6449578f0caf6e01e888217dd0e46dd268ddfa21f174b"
+    },
+    {
+      "path": "functions/_lib/quota.ts",
+      "sha256": "f414923d51a316babb45bfb62f6061e0d4dee84d4eae6e831f95dd73212280c6"
+    },
+    {
+      "path": "functions/_lib/stats.ts",
+      "sha256": "454b97253bd0fda382d6c020940b7e0abfd4a76d95c7377721f3e05a47e524f4"
+    },
+    {
+      "path": "functions/api/admin.ts",
+      "sha256": "95d407a888b628894dded6dacb2e5892820f5520e1a9993ad1042c8e6984b47f"
+    },
+    {
+      "path": "functions/api/chat.ts",
+      "sha256": "1cab4507e894377fa72c55aa1e46b7307bd53e38951ce8f668a0cee23d0bd97c"
+    },
+    {
+      "path": "functions/api/power.ts",
+      "sha256": "28c1f4b6565ac8639b14909e4412083d9d11c467a14fce1ce4a33b38e137e3ab"
+    },
+    {
+      "path": "functions/api/price.ts",
+      "sha256": "d526b1de91d32381468035c17d437714f81dcfecefdccb16ea153590db0da8a7"
+    },
+    {
+      "path": "functions/api/prices.ts",
+      "sha256": "fafa2e9603909ccae6b06b610cdecb0f0e62b5d412ebbd8d4ef7ce5b8ff54b50"
+    },
+    {
+      "path": "functions/api/rates.ts",
+      "sha256": "1f538706bb000f0976e12438406d24d16ae6427295c8eb5cc0bb00d3a24b8073"
+    },
+    {
+      "path": "functions/api/status.ts",
+      "sha256": "0005a15b81333c6f51516c8e3379dd5b70c3f49aeda0b2bc0d934774fbebd94a"
+    },
+    {
+      "path": "functions/api/usage.ts",
+      "sha256": "d5b2dc53ce8746b6f1a070b67d6727e0d260a56e921085e764a4b6148e68a99c"
+    },
+    {
+      "path": "functions/api/userdata.ts",
+      "sha256": "23297cd3b25550a874352b65a6f6129a09b617d471d5e68aba317e3552996d61"
+    },
+    {
+      "path": "src/App.tsx",
+      "sha256": "b4b8e887fe2ec15c3d74b63cc0a84f3457b0b863df53737f26ab27c5d2a6b9d3"
+    },
+    {
+      "path": "src/components/chat/ActionCard.tsx",
+      "sha256": "ccf9060aecd6683e2a83cba643d9280aaad6cfcbf2a5eb3ca035917be9d07368"
+    },
+    {
+      "path": "src/components/chat/AiPower.tsx",
+      "sha256": "f774ca89a5b6cf89ae62cf3129c15db8a0d02f5d29d31d630edcd4a81da9ade5"
+    },
+    {
+      "path": "src/components/chat/IntakeFormCard.tsx",
+      "sha256": "d6b5e5d4d9926c61c0f5fc85404d71ad8b303c27fab142423017f42f213f879b"
+    },
+    {
+      "path": "src/components/chat/ItemsCard.tsx",
+      "sha256": "2ce128d4148b00a7a50f6850ed035fd8a3463437db3a8c9a3411d1f40f74eb5d"
+    },
+    {
+      "path": "src/components/chat/RecordCard.tsx",
+      "sha256": "fe543df3f8ff259d14535ea4f51418fdb521227bafa39ed9653dca8246737d6b"
+    },
+    {
+      "path": "src/components/chat/ShortcutBar.tsx",
+      "sha256": "a7624477661db194d8162b5cd23e326d4ec044e811422371b51b39c1b5a3c706"
+    },
+    {
+      "path": "src/components/chat/StepToast.tsx",
+      "sha256": "06a09865d5cfb760e22a0362522c8d7ecff792a5df53f871efd26ada47803f8e"
+    },
+    {
+      "path": "src/components/layout/AppShell.tsx",
+      "sha256": "ee185e9bb254a5e91776c4e58870b35564989716962c8c69a482db1d6a7d4392"
+    },
+    {
+      "path": "src/components/layout/NavBar.tsx",
+      "sha256": "7e7cd04ab84650987bf78df099618715b24d57e880857473d2bbbb844fa63c4d"
+    },
+    {
+      "path": "src/components/screens/AdminPage.tsx",
+      "sha256": "cff34997fe5810390485a0a96e70a8742d77d5fe6af7281b1833e34ed921ee15"
+    },
+    {
+      "path": "src/components/screens/BalanceSheet.tsx",
+      "sha256": "32550917c58b4cda9dd9a63ec15b59cae55596b2e64c842441c1773cf12b62bf"
+    },
+    {
+      "path": "src/components/screens/ChatScreen.tsx",
+      "sha256": "b9801c0e576ce19aa24a11f9d2f72d38655727451218c4d5a1c11dc48f2f0456"
+    },
+    {
+      "path": "src/components/screens/FundScreen.tsx",
+      "sha256": "9da3f13905cf2225a72d8d5303deb72c4970dbbc8783ee37d1f8a0c95b7ac9cc"
+    },
+    {
+      "path": "src/components/screens/InvestScreen.tsx",
+      "sha256": "67b393cb891734f417f2471c89704f9d84dfddacfa7c15cdc15ea9412a2ff8c9"
+    },
+    {
+      "path": "src/components/screens/LoginScreen.tsx",
+      "sha256": "51b1729b93b539a32c3e2ecab5d80fcca3b3fa4ac9d60204453bd59fd13441ba"
+    },
+    {
+      "path": "src/components/screens/SettingsScreen.tsx",
+      "sha256": "c5f9332a0eefd697201ce3da615a87c904cf0ad05d84185cfd190bab6d8ba856"
+    },
+    {
+      "path": "src/components/screens/VaultSetup.tsx",
+      "sha256": "88e4fef09a95d536ede0912acf281ed4945401c3ae86c684701e3adf522d9607"
+    },
+    {
+      "path": "src/components/screens/WarningModal.tsx",
+      "sha256": "bcc46401bb86ad505e0a5212bc4317323e5ccb7b1533ab47981b9f56d0087a46"
+    },
+    {
+      "path": "src/components/ui/AllocationPies.tsx",
+      "sha256": "41868a622f56509407c971884e6a0cfb85d085c112873611b61c6f9bd28f3010"
+    },
+    {
+      "path": "src/components/ui/CashflowCard.tsx",
+      "sha256": "daa1252336f68b818bace10b97faae9e48ae75c0f4721319d3822697ef0abdb9"
+    },
+    {
+      "path": "src/components/ui/kit.tsx",
+      "sha256": "f7d7227850cbe18388eb338363624abc3fd6b6572e1d04dd3e3887ca47c106a3"
+    },
+    {
+      "path": "src/config.ts",
+      "sha256": "8afa93b4f3933e642887aeb5186aa8e5e34e4e90133fcc929f4c29eb1e519dac"
+    },
+    {
+      "path": "src/console-capture.ts",
+      "sha256": "ab682e27bfb8efb8b1084ab91ff604baee9b2128892a8036dc0584d82733d3ce"
+    },
+    {
+      "path": "src/hooks/useAgent.ts",
+      "sha256": "a2d49ccea8922926668585f9dfb77417280d81af3955d1044850d22b2a3db5a9"
+    },
+    {
+      "path": "src/hooks/useAiPower.ts",
+      "sha256": "9561009aaeb229f996a040e570004436819fbba2e338ce95623406060aec205e"
+    },
+    {
+      "path": "src/hooks/useArcOnConnect.ts",
+      "sha256": "3c442cea0dc735605a171e222fd747a6eac8a1dbbc06b8a4f47ff81fcf71b55f"
+    },
+    {
+      "path": "src/hooks/useCirBtc.ts",
+      "sha256": "6808ed7e5175042042ad29579c35384a99ca0338940379a0ec17b11e1815addd"
+    },
+    {
+      "path": "src/hooks/useExchangeRate.ts",
+      "sha256": "974bebb4381280b26c3e7e6a6af5443b61befd82b694e96fae002a31c0f46081"
+    },
+    {
+      "path": "src/hooks/useFinancialProfile.ts",
+      "sha256": "a6a70f9c3c7bf62497af46b0a0f905f6dc952e8dc4e9b2fc91ad7b7b3be35fed"
+    },
+    {
+      "path": "src/hooks/useNow.ts",
+      "sha256": "9587e6b0abf4386251cec6d0508b19d9e774fa246b06ead98fa30642bf2c6bf6"
+    },
+    {
+      "path": "src/hooks/usePrices.ts",
+      "sha256": "535cf56b5fdd7ef42c1fa7cac5a27534556ef8628aad17d48a0dd1756ec7fe5a"
+    },
+    {
+      "path": "src/hooks/useServiceStatus.ts",
+      "sha256": "e7f8c3235b5ba0236dab27773eb1382625cf3d6ec679b9333115eb630c2456af"
+    },
+    {
+      "path": "src/hooks/useVault.ts",
+      "sha256": "74390f4d02c0bbe31e3d3c440845a8c4f5a6b1318eb98cfbc6edadb4327fe433"
+    },
+    {
+      "path": "src/index.css",
+      "sha256": "6d1549e4ccd7ea01894a034f828fdc439b7b4ffc52779dd60e6f691a5d61d37c"
+    },
+    {
+      "path": "src/kb/facts.ts",
+      "sha256": "efdf540b960555969398d177caf3ecbfdf1b769804290f1281109ca11c22ac7b"
+    },
+    {
+      "path": "src/kb/kb.ts",
+      "sha256": "11d09972b031076483d4d24be0b97aabc03c445b6bc6ae398f9a3cefde127e0e"
+    },
+    {
+      "path": "src/kb/moonsafe-kb.json",
+      "sha256": "b211f715de39954180f3dc2f06ef82cec4fae8cf9006cf06f20be66c20e65f10"
+    },
+    {
+      "path": "src/lib/allocation.ts",
+      "sha256": "64a8dd7a3908a0095f1da78218fda44463bf28376733530e16823216989848d5"
+    },
+    {
+      "path": "src/lib/chain.ts",
+      "sha256": "870b4723b1c64513f38337e5b4bd52b98edfd7d937801c61eaa371e12b6cc413"
+    },
+    {
+      "path": "src/lib/cloud.ts",
+      "sha256": "40620e50c7d042ed4d35534dd9c4851c9f2fe4a72328bebce2477903899a0303"
+    },
+    {
+      "path": "src/lib/features.ts",
+      "sha256": "b166d3275f440298f29345e8f121308148e15d0d1d4b4f72bdaefceda05cbd5e"
+    },
+    {
+      "path": "src/lib/format.ts",
+      "sha256": "f6a9967f750d7d7ded7d855f575c6aac68f64bb5c5c20fb924294205eef0d8aa"
+    },
+    {
+      "path": "src/lib/intakeForm.ts",
+      "sha256": "39f6e55e306f6c3c07865a6ae7370b789f22b5f2c3a0228753ce5afbf25e5432"
+    },
+    {
+      "path": "src/lib/invest.ts",
+      "sha256": "75f3a5ef313093b0548df894a33bf8c02397ee08e439367699d0283626a4373f"
+    },
+    {
+      "path": "src/lib/network.ts",
+      "sha256": "c9852302b96b8c0ff032e91fb307b119e591f9d9e3ec2945ad2f7190defe0997"
+    },
+    {
+      "path": "src/lib/planningScope.ts",
+      "sha256": "b65ccb10aa153c062db96da5ceb9e1be636ae8f84b74fa503c7bb85aba59ea90"
+    },
+    {
+      "path": "src/lib/power.ts",
+      "sha256": "63270bf0af5987c0b2fc724e5f9a60a2676a857b2d03cb445a9384650c127ab2"
+    },
+    {
+      "path": "src/lib/profile.ts",
+      "sha256": "c1c14d79dbd48cd1fd187dab90f4b60290af261e9e2dba83a29115a028bf74ca"
+    },
+    {
+      "path": "src/lib/record.ts",
+      "sha256": "50a08975b2436fbce113fa782f0103c4876fe184bc2599e9e8ca7d9cc26e0a07"
+    },
+    {
+      "path": "src/lib/shortcuts.ts",
+      "sha256": "19ba021cc1a7bc384b2cce70973fa57188728439b48b8088c89b7551cd33b065"
+    },
+    {
+      "path": "src/main.tsx",
+      "sha256": "30a2dbb3fa6f5c6b76ab3e041cf641f7f3842432cf7689e111a57066abea0785"
+    },
+    {
+      "path": "src/privyConfig.ts",
+      "sha256": "e03dc694b41fc5dc14c1342f478d99a80fb7325b8a9caa341cde1cffd2456ce9"
+    },
+    {
+      "path": "src/state/AppState.tsx",
+      "sha256": "2343eab7b74a6f2eb30c714041c8a5928afb4af21fb6c1557d1fa9b7ec83c619"
+    },
+    {
+      "path": "src/state/WalletPref.tsx",
+      "sha256": "bf7c97b0d17a8bea93f59698bae810fb9ca23fc73bf87e2316a224273d81a276"
+    },
+    {
+      "path": "src/tracing.ts",
+      "sha256": "3ed5452d5abd6057c818e3362be325c3f1566523927e496e49e0eaf1bafd64b8"
+    },
+    {
+      "path": "src/types.ts",
+      "sha256": "d4b6b899e0cf151598e2aca92b4ca0944a89d513efa84a597168c254d268d4c7"
+    },
+    {
+      "path": "src/vite-env.d.ts",
+      "sha256": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5"
+    }
+  ],
+  "sourceDiffSha256": "7f3c7d9c1614e03ea5889b976c7b25e9f75b160dd4b1cb3b7c3630bfa16c9a41",
+  "commit": "fb44768d9eb50d91d3c7b99e05f6fdd128303556",
+  "cases": [
+    {
+      "id": "v3-couple",
+      "turns": 5
+    }
+  ],
+  "model": "claude-haiku-5-5",
+  "provider": "anthropic",
+  "comparisonLimit": "OpenAI baseline used an older app commit; this is not a paired model-only comparison.",
+  "cap": 150000,
+  "started": "2026-11-03T13:10:26.614Z",
+  "ended": "2026-11-03T13:10:38.507Z",
+  "input": 106597,
+  "output": 405,
+  "cached": 87608,
+  "cacheCreated": 18891,
+  "cacheCreated5m": 18891,
+  "cacheCreated1h": 0,
+  "calls": 9,
+  "conservativeUnknownUsage": 0,
+  "stopped": "budget-reservation",
+  "fixture": {
+    "vndPerUsd": 25000,
+    "walletUsdc": 50,
+    "vaultUsdc": 0,
+    "hasVault": true,
+    "prices": "unavailable"
+  },
+  "apiCalls": [
+    {
+      "case": "v3-couple",
+      "turn": 1,
+      "status": 200,
+      "ms": 2324,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 825,
+        "cache_read_input_tokens": 10158,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 825,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 154,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "update_profile",
+          "arguments": {
+            "sole_earner": false
+          }
+        },
+        {
+          "name": "set_income",
+          "arguments": {
+            "name": "Partner's salary",
+            "monthly": {
+              "amount": 4000,
+              "currency": "USDC"
+            },
+            "kind": "active"
+          }
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "v3-couple",
+      "turn": 1,
+      "status": 200,
+      "ms": 1607,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1503,
+        "cache_read_input_tokens": 10158,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1503,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 19,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "show_cashflow",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "v3-couple",
+      "turn": 1,
+      "status": 200,
+      "ms": 804,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1600,
+        "cache_read_input_tokens": 10158,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1600,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 18,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "show_allocation",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "v3-couple",
+      "turn": 1,
+      "status": 200,
+      "ms": 805,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1695,
+        "cache_read_input_tokens": 10158,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1695,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "v3-couple",
+      "turn": 1,
+      "status": 200,
+      "ms": 1048,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5145,
+        "cache_read_input_tokens": 8251,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5145,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 45,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "v3-couple",
+      "turn": 2,
+      "status": 200,
+      "ms": 865,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 918,
+        "cache_read_input_tokens": 10158,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 918,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "v3-couple",
+      "turn": 2,
+      "status": 200,
+      "ms": 1337,
+      "corrections": [],
+      "phase": "reply",
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 5018,
+        "cache_read_input_tokens": 8251,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 5018,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 103,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [],
+      "finish": "end_turn"
+    },
+    {
+      "case": "v3-couple",
+      "turn": 3,
+      "status": 200,
+      "ms": 959,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 1045,
+        "cache_read_input_tokens": 10158,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1045,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 18,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "show_allocation",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    },
+    {
+      "case": "v3-couple",
+      "turn": 3,
+      "status": 200,
+      "ms": 1357,
+      "corrections": [],
+      "phase": "planner",
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 1142,
+        "cache_read_input_tokens": 10158,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1142,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "tools": [
+        {
+          "name": "no_action",
+          "arguments": {}
+        }
+      ],
+      "finish": "tool_use"
+    }
+  ],
+  "transcript": [
+    {
+      "case": "v3-couple",
+      "category": "core-audit",
+      "turn": 1,
+      "user": "she makes 4k too, plan for our household",
+      "status": 200,
+      "content": "Thanks, I've added her $4,000 a month to your household income. Do you have health or life insurance that would protect the people who rely on you?",
+      "ops": [
+        {
+          "op": "update_profile",
+          "fields": {
+            "planningScope": "household"
+          }
+        },
+        {
+          "op": "set_income",
+          "income": {
+            "id": "ipg4b6p",
+            "name": "Partner's salary",
+            "monthly": 4000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793711429640
+          }
+        }
+      ],
+      "reviewedOps": [],
+      "actions": [
+        {
+          "type": "show_cashflow"
+        },
+        {
+          "type": "show_allocation"
+        }
+      ],
+      "beforeProfile": {
+        "v": 2,
+        "age": 40,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 2,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "a",
+            "type": "term_deposit",
+            "name": "Term deposits",
+            "updatedAt": 1,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 40000,
+            "currency": "USDC"
+          },
+          {
+            "id": "b",
+            "type": "fund_bond",
+            "name": "Index funds",
+            "updatedAt": 1,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 25000,
+            "currency": "USDC"
+          },
+          {
+            "id": "d",
+            "type": "btc",
+            "name": "Bitcoin",
+            "updatedAt": 1,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "BTC",
+            "value": 5000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [
+          {
+            "id": "m",
+            "name": "Mortgage",
+            "type": "mortgage",
+            "balance": 300000,
+            "currency": "USDC",
+            "ratePct": 5,
+            "monthlyPayment": 2000,
+            "updatedAt": 1
+          },
+          {
+            "id": "c",
+            "name": "Car loan",
+            "type": "unknown",
+            "balance": 12000,
+            "currency": "USDC",
+            "ratePct": 7,
+            "monthlyPayment": 400,
+            "updatedAt": 1
+          }
+        ],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "i",
+            "name": "Your salary",
+            "monthly": 6000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e",
+            "name": "Household spending",
+            "monthly": 7000,
+            "currency": "USDC",
+            "kind": "variable",
+            "updatedAt": 1
+          }
+        ],
+        "nearGoal": {
+          "name": "car",
+          "amount": 30000,
+          "currency": "USDC",
+          "years": 2
+        }
+      },
+      "profile": {
+        "v": 2,
+        "age": 40,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 2,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "a",
+            "type": "term_deposit",
+            "name": "Term deposits",
+            "updatedAt": 1,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 40000,
+            "currency": "USDC"
+          },
+          {
+            "id": "b",
+            "type": "fund_bond",
+            "name": "Index funds",
+            "updatedAt": 1,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 25000,
+            "currency": "USDC"
+          },
+          {
+            "id": "d",
+            "type": "btc",
+            "name": "Bitcoin",
+            "updatedAt": 1,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "BTC",
+            "value": 5000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [
+          {
+            "id": "m",
+            "name": "Mortgage",
+            "type": "mortgage",
+            "balance": 300000,
+            "currency": "USDC",
+            "ratePct": 5,
+            "monthlyPayment": 2000,
+            "updatedAt": 1
+          },
+          {
+            "id": "c",
+            "name": "Car loan",
+            "type": "unknown",
+            "balance": 12000,
+            "currency": "USDC",
+            "ratePct": 7,
+            "monthlyPayment": 400,
+            "updatedAt": 1
+          }
+        ],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "i",
+            "name": "Your salary",
+            "monthly": 6000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1
+          },
+          {
+            "id": "ipg4b6p",
+            "name": "Partner's salary",
+            "monthly": 4000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793711429640
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e",
+            "name": "Household spending",
+            "monthly": 7000,
+            "currency": "USDC",
+            "kind": "variable",
+            "updatedAt": 1
+          }
+        ],
+        "nearGoal": {
+          "name": "car",
+          "amount": 30000,
+          "currency": "USDC",
+          "years": 2
+        },
+        "planningScope": "household"
+      },
+      "tokens": 59957,
+      "calls": 5,
+      "ms": 6714,
+      "complete": true
+    },
+    {
+      "case": "v3-couple",
+      "category": "core-audit",
+      "turn": 2,
+      "user": "can we count her salary if she might stop working next year?",
+      "status": 200,
+      "content": "Yes, you can count it now, but only for the months it's paid. If she stops working next year, her $4,000 goes away then, and the household budget would need to cover the gap from your $6,000 salary. Planning on a dependable income means looking at what's left if her pay ends. Would you like me to work out that version of the numbers?",
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 40,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 2,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "a",
+            "type": "term_deposit",
+            "name": "Term deposits",
+            "updatedAt": 1,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 40000,
+            "currency": "USDC"
+          },
+          {
+            "id": "b",
+            "type": "fund_bond",
+            "name": "Index funds",
+            "updatedAt": 1,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 25000,
+            "currency": "USDC"
+          },
+          {
+            "id": "d",
+            "type": "btc",
+            "name": "Bitcoin",
+            "updatedAt": 1,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "BTC",
+            "value": 5000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [
+          {
+            "id": "m",
+            "name": "Mortgage",
+            "type": "mortgage",
+            "balance": 300000,
+            "currency": "USDC",
+            "ratePct": 5,
+            "monthlyPayment": 2000,
+            "updatedAt": 1
+          },
+          {
+            "id": "c",
+            "name": "Car loan",
+            "type": "unknown",
+            "balance": 12000,
+            "currency": "USDC",
+            "ratePct": 7,
+            "monthlyPayment": 400,
+            "updatedAt": 1
+          }
+        ],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "i",
+            "name": "Your salary",
+            "monthly": 6000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1
+          },
+          {
+            "id": "ipg4b6p",
+            "name": "Partner's salary",
+            "monthly": 4000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793711429640
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e",
+            "name": "Household spending",
+            "monthly": 7000,
+            "currency": "USDC",
+            "kind": "variable",
+            "updatedAt": 1
+          }
+        ],
+        "nearGoal": {
+          "name": "car",
+          "amount": 30000,
+          "currency": "USDC",
+          "years": 2
+        },
+        "planningScope": "household"
+      },
+      "profile": {
+        "v": 2,
+        "age": 40,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 2,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "a",
+            "type": "term_deposit",
+            "name": "Term deposits",
+            "updatedAt": 1,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 40000,
+            "currency": "USDC"
+          },
+          {
+            "id": "b",
+            "type": "fund_bond",
+            "name": "Index funds",
+            "updatedAt": 1,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 25000,
+            "currency": "USDC"
+          },
+          {
+            "id": "d",
+            "type": "btc",
+            "name": "Bitcoin",
+            "updatedAt": 1,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "BTC",
+            "value": 5000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [
+          {
+            "id": "m",
+            "name": "Mortgage",
+            "type": "mortgage",
+            "balance": 300000,
+            "currency": "USDC",
+            "ratePct": 5,
+            "monthlyPayment": 2000,
+            "updatedAt": 1
+          },
+          {
+            "id": "c",
+            "name": "Car loan",
+            "type": "unknown",
+            "balance": 12000,
+            "currency": "USDC",
+            "ratePct": 7,
+            "monthlyPayment": 400,
+            "updatedAt": 1
+          }
+        ],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "i",
+            "name": "Your salary",
+            "monthly": 6000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1
+          },
+          {
+            "id": "ipg4b6p",
+            "name": "Partner's salary",
+            "monthly": 4000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793711429640
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e",
+            "name": "Household spending",
+            "monthly": 7000,
+            "currency": "USDC",
+            "kind": "variable",
+            "updatedAt": 1
+          }
+        ],
+        "nearGoal": {
+          "name": "car",
+          "amount": 30000,
+          "currency": "USDC",
+          "years": 2
+        },
+        "planningScope": "household"
+      },
+      "tokens": 24482,
+      "calls": 2,
+      "ms": 2230,
+      "complete": true
+    },
+    {
+      "case": "v3-couple",
+      "category": "core-audit",
+      "turn": 3,
+      "user": "how much do we need in the fund? why so much?",
+      "status": 502,
+      "ops": [],
+      "reviewedOps": [],
+      "actions": [],
+      "beforeProfile": {
+        "v": 2,
+        "age": 40,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 2,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "a",
+            "type": "term_deposit",
+            "name": "Term deposits",
+            "updatedAt": 1,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 40000,
+            "currency": "USDC"
+          },
+          {
+            "id": "b",
+            "type": "fund_bond",
+            "name": "Index funds",
+            "updatedAt": 1,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 25000,
+            "currency": "USDC"
+          },
+          {
+            "id": "d",
+            "type": "btc",
+            "name": "Bitcoin",
+            "updatedAt": 1,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "BTC",
+            "value": 5000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [
+          {
+            "id": "m",
+            "name": "Mortgage",
+            "type": "mortgage",
+            "balance": 300000,
+            "currency": "USDC",
+            "ratePct": 5,
+            "monthlyPayment": 2000,
+            "updatedAt": 1
+          },
+          {
+            "id": "c",
+            "name": "Car loan",
+            "type": "unknown",
+            "balance": 12000,
+            "currency": "USDC",
+            "ratePct": 7,
+            "monthlyPayment": 400,
+            "updatedAt": 1
+          }
+        ],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "i",
+            "name": "Your salary",
+            "monthly": 6000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1
+          },
+          {
+            "id": "ipg4b6p",
+            "name": "Partner's salary",
+            "monthly": 4000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793711429640
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e",
+            "name": "Household spending",
+            "monthly": 7000,
+            "currency": "USDC",
+            "kind": "variable",
+            "updatedAt": 1
+          }
+        ],
+        "nearGoal": {
+          "name": "car",
+          "amount": 30000,
+          "currency": "USDC",
+          "years": 2
+        },
+        "planningScope": "household"
+      },
+      "profile": {
+        "v": 2,
+        "age": 40,
+        "ageDeclined": false,
+        "incomeStable": true,
+        "dependents": 2,
+        "soleEarner": null,
+        "holdings": [
+          {
+            "id": "a",
+            "type": "term_deposit",
+            "name": "Term deposits",
+            "updatedAt": 1,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 40000,
+            "currency": "USDC"
+          },
+          {
+            "id": "b",
+            "type": "fund_bond",
+            "name": "Index funds",
+            "updatedAt": 1,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "value": 25000,
+            "currency": "USDC"
+          },
+          {
+            "id": "d",
+            "type": "btc",
+            "name": "Bitcoin",
+            "updatedAt": 1,
+            "priceSource": "self",
+            "rebalanceable": true,
+            "symbol": "BTC",
+            "value": 5000,
+            "currency": "USDC"
+          }
+        ],
+        "debts": [
+          {
+            "id": "m",
+            "name": "Mortgage",
+            "type": "mortgage",
+            "balance": 300000,
+            "currency": "USDC",
+            "ratePct": 5,
+            "monthlyPayment": 2000,
+            "updatedAt": 1
+          },
+          {
+            "id": "c",
+            "name": "Car loan",
+            "type": "unknown",
+            "balance": 12000,
+            "currency": "USDC",
+            "ratePct": 7,
+            "monthlyPayment": 400,
+            "updatedAt": 1
+          }
+        ],
+        "debtsComplete": true,
+        "incomes": [
+          {
+            "id": "i",
+            "name": "Your salary",
+            "monthly": 6000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1
+          },
+          {
+            "id": "ipg4b6p",
+            "name": "Partner's salary",
+            "monthly": 4000,
+            "currency": "USDC",
+            "kind": "active",
+            "updatedAt": 1793711429640
+          }
+        ],
+        "expenses": [
+          {
+            "id": "e",
+            "name": "Household spending",
+            "monthly": 7000,
+            "currency": "USDC",
+            "kind": "variable",
+            "updatedAt": 1
+          }
+        ],
+        "nearGoal": {
+          "name": "car",
+          "amount": 30000,
+          "currency": "USDC",
+          "years": 2
+        },
+        "planningScope": "household"
+      },
+      "tokens": 22563,
+      "calls": 2,
+      "ms": 2341,
+      "complete": false
+    }
+  ]
+}

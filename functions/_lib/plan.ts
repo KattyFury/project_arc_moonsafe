@@ -164,13 +164,77 @@ export function spareSource(userTexts: string[]): SpareSource | null {
   const sentences = userTexts.filter(t => !t.startsWith('[app event]')).flatMap(t => t.split(/[.!?;,\n]+/))
     .filter(x => /[1-9]/.test(x) && !/safety|an toàn/iu.test(x)) // lang-ok
   const stable = sentences.some(x => /(?<!\p{L})(usdt|usdc|dai|stablecoins?|stable)(?!\p{L})/iu.test(x))
-  const bank = sentences.some(x => /(?<!\p{L})(bank|checking|cash|ngân hàng|tiền mặt)(?!\p{L})/iu.test(x)) // lang-ok
+  const bank = sentences.some(x => /(?<!\p{L})(bank|checking|cash|current account|ngân hàng|tiền mặt|không kỳ hạn)(?!\p{L})/iu.test(x)) // lang-ok
   return stable && bank ? 'both' : stable ? 'stable' : bank ? 'bank' : null
 }
 const spareLine = (spare: SpareSource | null | undefined, vi: boolean): string => {
   if (!spare) return ''
   if (vi) return ` Nếu số ${spare === 'both' ? 'stablecoin hoặc tiền ngân hàng' : spare === 'stable' ? 'stablecoin' : 'tiền ngân hàng'} bạn vừa kể đang rảnh, có thể nạp vào quỹ trước.` // lang-ok
   return spare === 'bank' ? ' If the bank money you mentioned is free to use, it can go into the fund first.' : ` If the ${spare === 'both' ? 'stablecoins or bank money' : 'stablecoins'} you mentioned are free to use, they can go into the fund first.`
+}
+
+/** The amount in "an airdrop of 3000, what do I do with it": people often leave out the $. Percents, years and months are not money. */
+export function bareAmount(text: string): number | null {
+  const found = [...text.matchAll(/(?<![\d.,])(\d[\d,.]*\d|\d)\s?(k|m)?(?!\p{L})(?!\s?%)(?!\s*(?:years?|months?|yrs?|năm|tháng|tuổi)(?!\p{L}))/giu)] // lang-ok
+    .map(m => Number(m[1].replace(/,/g, '')) * (m[2]?.toLowerCase() === 'k' ? 1e3 : m[2]?.toLowerCase() === 'm' ? 1e6 : 1))
+    .filter(n => Number.isFinite(n) && n > 0)
+  return found.length ? Math.max(...found) : null
+}
+
+/**
+ * "I got $3,000, what do I do with it?": answered from the numbers, in the plan's order, never with a question back (audit 2026-11-03:
+ * the model kept asking what form the money was in). Null when the fund target is not known yet.
+ */
+export function buildPlacement({ p, b, vi, amount }: { p: FinancialProfile; b: Balance; vi: boolean; amount: number }): string | null {
+  const floor = b.fund.floorUsd
+  if (floor === null || fundMissingInputs(p, b.cashflow.spending).length) return null
+  const vault = b.fundUsd ?? 0
+  const a = fmt(amount)
+  const closing = vi ? ' Khi đã làm xong, bạn báo mình để mình ghi lại. Quyết định là của bạn.' : ' When you have placed it, tell me and I will record it. Your call.' // lang-ok
+  if (b.debts.priorityCount > 0) {
+    const starter = b.fund.starterUsd ?? 0
+    const gap = Math.max(0, starter - vault)
+    if (gap > 0.005) return vi
+      ? `${a} này có thể đi theo đúng thứ tự: trước là quỹ khởi đầu (còn thiếu ${fmt(gap)}), rồi tới nợ lãi cao, sau đó hoàn tất quỹ dự phòng. Đầu tư để sau cùng.${closing}` // lang-ok
+      : `This ${a} can follow the plan's order: first the starter fund (${fmt(gap)} to go), then the expensive debt, then the rest of your emergency fund. Investing comes last.${closing}`
+    return vi
+      ? `Quỹ khởi đầu đã có, nên ${a} này có thể đi vào nợ lãi cao trước, vì nó tốn tiền mỗi tháng. Sau đó tới phần còn lại của quỹ dự phòng.${closing}` // lang-ok
+      : `Your starter fund is in place, so this ${a} can go to the expensive debt first, because it costs you every month. After that comes the rest of your emergency fund.${closing}`
+  }
+  const gap = Math.max(0, floor - vault)
+  const fundLine = vi ? `Quỹ dự phòng của bạn đang ${fmt(vault)} trên ${fmt(floor)}` : `Your emergency fund is at ${fmt(vault)} of ${fmt(floor)}` // lang-ok
+  const standing = bucketStanding(b)
+  const empty = !standing || standing.every(r => r.have < 0.005)
+  const byAge = (n: number) => {
+    const t = b.target
+    if (!t) return ''
+    const c = t.btc + t.large_cap + t.altcoin
+    const share = (x: number) => fmt(Math.round(n * x) / 100)
+    return vi ? `theo tuổi của bạn: Safety ${share(t.safe)}, Traditional ${share(t.traditional)}, Crypto ${share(c)}` : `by your age: Safety ${share(t.safe)}, Traditional ${share(t.traditional)}, Crypto ${share(c)}` // lang-ok
+  }
+  if (gap > 0.005) {
+    if (amount <= gap + 0.005) return vi
+      ? `${fundLine}, nên cả ${a} này có thể vào quỹ trước. Quỹ đầy rồi mới tới đầu tư.${closing}` // lang-ok
+      : `${fundLine}, so all of this ${a} could go in first. Investing comes once it is full.${closing}`
+    const rest = amount - gap
+    const after = byAge(rest)
+    return vi
+      ? `${fundLine}, nên ${fmt(gap)} trong số ${a} này có thể làm đầy quỹ. ${fmt(rest)} còn lại có thể chia${after ? ` ${after}` : ' theo kế hoạch'}.${closing}` // lang-ok
+      : `${fundLine}, so ${fmt(gap)} of this ${a} could fill it. The other ${fmt(rest)} could go${after ? ` ${after}` : ' by your plan'}.${closing}`
+  }
+  if (empty) {
+    const after = byAge(amount)
+    return vi ? `Quỹ dự phòng đã đầy, nên ${a} này có thể chia ${after || 'theo kế hoạch'}. Thứ tự là do bạn.${closing}` : `Your emergency fund is full, so this ${a} could go ${after || 'by your plan'}. The order is yours.${closing}` // lang-ok
+  }
+  const short = standing!.filter(r => r.share > 0 && r.left > 0.005)
+  if (!short.length) {
+    const after = byAge(amount)
+    return vi ? `Quỹ dự phòng đã đầy và các phần đang cân nhau, nên ${a} này có thể chia ${after}. Thứ tự là do bạn.${closing}` : `Your emergency fund is full and your parts are level, so this ${a} could go ${after}. The order is yours.${closing}` // lang-ok
+  }
+  const list = short.map(r => `${r.name} (${fmt(r.left)} ${vi ? 'còn thiếu' : 'to go'})`).join(vi ? ' và ' : ' and ') // lang-ok
+  return vi
+    ? `Quỹ dự phòng đã đầy, nên ${a} này có thể vào các phần còn thiếu: ${list}. Không cần bán gì, và thứ tự là do bạn.${closing}` // lang-ok
+    : `Your emergency fund is full, so this ${a} can go to the parts still short: ${list}. Nothing needs selling, and the order is yours.${closing}`
 }
 
 export function buildPlan({ p, b, cover, partial = null, vi, hasVault = true, vaultFee = 1, spare = null }: PlanInput): string | null {
