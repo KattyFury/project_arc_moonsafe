@@ -54,6 +54,8 @@ const WHY = {
 }
 
 export interface PlanInput {
+  /** Spare money they named in this chat, a source for the fund (spareSource). Never stored. */
+  spare?: SpareSource | null
   p: FinancialProfile
   b: Balance
   /** Shares in %, rounded to sum to 100: Safety, Traditional, Crypto. */
@@ -152,7 +154,26 @@ export function splitSection(b: Balance, vi: boolean, n = 2): string | null {
   return [head, why, safeLine, rule, part(safe), part(trad), part(crypto), how].filter(Boolean).join('\n')
 }
 
-export function buildPlan({ p, b, cover, partial = null, vi, hasVault = true, vaultFee = 1 }: PlanInput): string | null {
+/**
+ * Spare money the user named in this chat ("2000$ in stablecoin, maybe 1000$ in bank"). It is not asked about, recorded or shown (CORE 2),
+ * but the plan may say it can go into the fund first (Hieu, 2026-11-03, 8a), without the amount: telling them to wait for an airdrop when they
+ * just named $3,000 was correct and useless. Money they keep as Safety is theirs to keep there, so it is left out.
+ */
+export type SpareSource = 'stable' | 'bank' | 'both'
+export function spareSource(userTexts: string[]): SpareSource | null {
+  const sentences = userTexts.filter(t => !t.startsWith('[app event]')).flatMap(t => t.split(/[.!?;,\n]+/))
+    .filter(x => /[1-9]/.test(x) && !/safety|an toàn/iu.test(x)) // lang-ok
+  const stable = sentences.some(x => /(?<!\p{L})(usdt|usdc|dai|stablecoins?|stable)(?!\p{L})/iu.test(x))
+  const bank = sentences.some(x => /(?<!\p{L})(bank|checking|cash|ngân hàng|tiền mặt)(?!\p{L})/iu.test(x)) // lang-ok
+  return stable && bank ? 'both' : stable ? 'stable' : bank ? 'bank' : null
+}
+const spareLine = (spare: SpareSource | null | undefined, vi: boolean): string => {
+  if (!spare) return ''
+  if (vi) return ` Nếu số ${spare === 'both' ? 'stablecoin hoặc tiền ngân hàng' : spare === 'stable' ? 'stablecoin' : 'tiền ngân hàng'} bạn vừa kể đang rảnh, có thể nạp vào quỹ trước.` // lang-ok
+  return spare === 'bank' ? ' If the bank money you mentioned is free to use, it can go into the fund first.' : ` If the ${spare === 'both' ? 'stablecoins or bank money' : 'stablecoins'} you mentioned are free to use, they can go into the fund first.`
+}
+
+export function buildPlan({ p, b, cover, partial = null, vi, hasVault = true, vaultFee = 1, spare = null }: PlanInput): string | null {
   if (!b.target || b.fund.floorUsd === null || fundMissingInputs(p, b.cashflow.spending).length) return null
   if (b.debts.priorityCount > 0) return null
   const vault = b.fundUsd ?? 0
@@ -163,7 +184,7 @@ export function buildPlan({ p, b, cover, partial = null, vi, hasVault = true, va
       ? openVaultOffer(vi, vaultFee)
     : cover !== null
       ? (vi ? `Sẵn sàng bắt đầu chưa? Bước đầu là quỹ dự phòng: mình chuẩn bị một lệnh nạp **${tok(cover)}** từ ví để bạn ký nhé?` : `Ready to start? The first step is your emergency fund: shall I prepare a deposit of **${tok(cover)}** from your wallet for you to sign?`) // lang-ok
-      : partial !== null ? partialOffer(vi, partial, !!p.hasWindfalls && (b.cashflow.surplus ?? 0) <= 0.5)
+      : partial !== null ? partialOffer(vi, partial, !!p.hasWindfalls && (b.cashflow.surplus ?? 0) <= 0.5 && !spare)
       : (vi ? 'Bước đầu là quỹ dự phòng. Ví chưa có USDC để nạp, nên hãy thêm USDC vào ví rồi nói với mình nhé.' : 'The first step is your emergency fund. The wallet has no USDC to add yet, so add some and tell me.') // lang-ok
   // Airdrops and other bursts are not a job: said once, here, because the plan is built only on steady income.
   const windfall = p.hasWindfalls
@@ -186,8 +207,8 @@ export function buildPlan({ p, b, cover, partial = null, vi, hasVault = true, va
   const lines = [
     vi ? 'Kế hoạch của bạn, theo thứ tự:' : 'Here is your plan, in order:', // lang-ok
     vi // lang-ok
-      ? `1. **Quỹ dự phòng: ${fmt(b.fund.floorUsd)}** = ${b.fund.floorMonths} tháng chi tiêu, vì ${fundWhy(p, b.fund.floorMonths, true)}. Hiện có ${fmt(vault)}${fundNow ? ': đã đủ' : ''}.${source}` // lang-ok
-      : `1. **Emergency fund: ${fmt(b.fund.floorUsd)}** = ${b.fund.floorMonths} months of spending, because ${fundWhy(p, b.fund.floorMonths, false)}. You have ${fmt(vault)}${fundNow ? ': full' : ''}.${source}`,
+      ? `1. **Quỹ dự phòng: ${fmt(b.fund.floorUsd)}** = ${b.fund.floorMonths} tháng chi tiêu, vì ${fundWhy(p, b.fund.floorMonths, true)}. Hiện có ${fmt(vault)}${fundNow ? ': đã đủ' : ''}.${source}${fundNow ? '' : spareLine(spare, true)}` // lang-ok
+      : `1. **Emergency fund: ${fmt(b.fund.floorUsd)}** = ${b.fund.floorMonths} months of spending, because ${fundWhy(p, b.fund.floorMonths, false)}. You have ${fmt(vault)}${fundNow ? ': full' : ''}.${source}${fundNow ? '' : spareLine(spare, false)}`,
     ...(goalLine ? [goalLine] : []),
     split,
     ...(windfall ? [windfall] : []),
@@ -209,7 +230,7 @@ function monthsToClear(balance: number, ratePct: number, pay: number): number | 
  * fund of one month, then the expensive debt, then the rest of the emergency fund, then the split. Null when a debt is priority only
  * because its rate is not told (the agent asks the rate first) or when the plain plan applies.
  */
-export function buildDebtPlan({ p, b, shares, vi, walletUsd, hasVault = true, vaultFee = 1 }: { p: FinancialProfile; b: Balance; shares: [number, number, number]; vi: boolean; walletUsd: number; hasVault?: boolean; vaultFee?: number }): string | null {
+export function buildDebtPlan({ p, b, shares, vi, walletUsd, hasVault = true, vaultFee = 1, spare = null }: { p: FinancialProfile; b: Balance; shares: [number, number, number]; vi: boolean; walletUsd: number; hasVault?: boolean; vaultFee?: number; spare?: SpareSource | null }): string | null {
   const pri = b.debts.lines.filter(l => l.priority)
   if (!pri.length || b.fund.floorUsd === null || b.fund.starterUsd === null || fundMissingInputs(p, b.cashflow.spending).length) return null
   if (pri.some(l => l.debt.ratePct === null || l.usd === null)) return null
@@ -239,7 +260,7 @@ export function buildDebtPlan({ p, b, shares, vi, walletUsd, hasVault = true, va
   const lines = vi
     ? [ // lang-ok
       'Bạn đang có nợ lãi cao, nên kế hoạch đi theo thứ tự này:', // lang-ok
-      `1. **Quỹ khởi đầu: ${fmt(starter)}** = 1 tháng chi tiêu, để một khoản bất ngờ không phải vay thêm. Hiện có ${fmt(vault)}.`, // lang-ok
+      `1. **Quỹ khởi đầu: ${fmt(starter)}** = 1 tháng chi tiêu, để một khoản bất ngờ không phải vay thêm. Hiện có ${fmt(vault)}.${starterGap > 0.005 ? spareLine(spare, true) : ''}`, // lang-ok
       `2. **Trả nợ lãi cao: ${fmt(total)}** (${each}). Nó tốn khoảng ${fmt(interest)} tiền lãi mỗi tháng; trả nợ là khoản lời chắc chắn ${topRate}%/năm, cao hơn mức đầu tư nào hứa được.${pace}`, // lang-ok
       `3. **Hoàn tất quỹ dự phòng: ${fmt(b.fund.floorUsd)}** = ${b.fund.floorMonths} tháng chi tiêu, vì ${fundWhy(p, b.fund.floorMonths, true)}.`, // lang-ok
       '4. Chỉ bàn cách đầu tư sau khi hết nợ lãi cao và quỹ dự phòng đã đủ.', // lang-ok
@@ -248,7 +269,7 @@ export function buildDebtPlan({ p, b, shares, vi, walletUsd, hasVault = true, va
     ]
     : [
       'You have high-interest debt, so the plan goes in this order:',
-      `1. **Starter fund: ${fmt(starter)}** = 1 month of spending, so a surprise bill never means borrowing more. You have ${fmt(vault)}.`,
+      `1. **Starter fund: ${fmt(starter)}** = 1 month of spending, so a surprise bill never means borrowing more. You have ${fmt(vault)}.${starterGap > 0.005 ? spareLine(spare, false) : ''}`,
       `2. **Pay off the expensive debt: ${fmt(total)}** (${each}). It costs about ${fmt(interest)} a month in interest; paying it off is a sure ${topRate}% a year, more than any investment can promise.${pace}`,
       `3. **Finish the emergency fund: ${fmt(b.fund.floorUsd)}** = ${b.fund.floorMonths} months of spending, because ${fundWhy(p, b.fund.floorMonths, false)}.`,
       '4. Investing comes only after the expensive debt is gone and the emergency fund is full.',

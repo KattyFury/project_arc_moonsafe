@@ -35,7 +35,7 @@ import { POWER_PER_PURCHASE } from '../../src/lib/power'
 import { recordStats } from '../_lib/stats'
 import { ASSET_TYPES, ASSETS_MARK, BATCH_MARK, INTAKE_MIN_UNKNOWN, assetsAsk, buildIntake, cashflowAsk, cashflowKeys, unknownBullets } from '../_lib/intake'
 import { getConfig, isBlocked, effectiveEnv } from '../_lib/config'
-import { buildAfterSign, buildDebtPlan, buildPartAnswer, buildPlan, buildStanding, detectPartChoice, openVaultOffer } from '../_lib/plan'
+import { buildAfterSign, buildDebtPlan, buildPartAnswer, buildPlan, buildStanding, detectPartChoice, openVaultOffer, spareSource } from '../_lib/plan'
 import { BTC_GUIDE, KB, MAX_CRYPTO_SPLIT, matchPatterns, patternBrief, param } from '../../src/kb/kb'
 import { computeFacts, displayFacts, amountsUsd } from '../../src/kb/facts'
 import { pctText, bucketStanding, computeBalance, holdingUsd, priceKey, symbolOf, toUsd, GOLD_UNITS_TO_OZ, GROUP_LABEL, type Balance, type Prices } from '../../src/lib/allocation'
@@ -1810,9 +1810,10 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     const t = balance.target
     const half = (x: number) => Math.round(x * 2) / 2
     const [ps, pt, pc] = [half(t.safe), half(t.traditional), half(t.btc + t.large_cap + t.altcoin)]
-    const built = buildPlan({ p: profile, b: balance, shares: [ps, pt, pc], cover, partial, vi, hasVault, vaultFee })
+    const spare = spareSource(messages.filter(m => m.role === 'user').map(m => m.content))
+    const built = buildPlan({ p: profile, b: balance, shares: [ps, pt, pc], cover, partial, vi, hasVault, vaultFee, spare })
       // Expensive debt is paid first (Hieu, 2026-10-31): starter fund, the debt, the rest of the fund, then the split.
-      ?? buildDebtPlan({ p: profile, b: balance, shares: [ps, pt, pc], vi, walletUsd: Math.max(0, (wallet ?? 0) - GAS_RESERVE_USDC), hasVault, vaultFee })
+      ?? buildDebtPlan({ p: profile, b: balance, shares: [ps, pt, pc], vi, walletUsd: Math.max(0, (wallet ?? 0) - GAS_RESERVE_USDC), hasVault, vaultFee, spare })
     if (built) return json({ content: built, ops, dcaStop, actions })
   }
 

@@ -2,7 +2,7 @@
 
 - Nợ khai ở form có kiểu `unknown`: giờ đi theo lãi suất đã khai (từ 10%/năm mới là nợ lãi cao), không còn khoá mua cirBTC khi lãi thấp, không hỏi lại lãi đã có. Chưa có lãi thì vẫn hỏi và vẫn coi là nợ đắt.
 - "No. I will consider..." được coi là từ chối như "no"; câu về kế hoạch gia đình và "1 person relying on you" viết lại.
-- CHƯA LÀM, chờ Hiếu chốt: kế hoạch có nên nhắc stablecoin và tiền ngân hàng người dùng vừa kể như nguồn nạp quỹ không (khác với việc theo dõi chúng).
+- Hiếu chốt 8a: nếu người dùng tự kể stablecoin hoặc tiền ngân hàng trong chat và quỹ chưa đầy, kế hoạch nói một câu rằng tiền đó có thể nạp vào quỹ trước (`spareSource` trong `functions/_lib/plan.ts`), không nêu số, không ghi.
 
 # ▶ 2026-11-03 — NÚT TẮT TRÊN Ô CHAT (Hiếu chốt 6a) — ĐÃ DEPLOY
 

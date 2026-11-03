@@ -4,6 +4,7 @@ import { defersOffer, quantityEvidence, responseProblems } from '../functions/_l
 import { debtIsPriority } from '../src/lib/allocation'
 import { interestRateEvidence } from '../functions/_lib/mutationEvidence'
 import { buildIntake } from '../functions/_lib/intake'
+import { spareSource } from '../functions/_lib/plan'
 import { targetMix } from '../src/kb/kb'
 import { normalizeProfile } from '../src/lib/profile'
 
@@ -49,6 +50,14 @@ assert.ok(!defersOffer("i think i'll do it"))
 assert.ok(defersOffer("i'll think about it"))
 assert.ok(!defersOffer('no I already have savings'))
 assert.ok(!defersOffer('should I consider it?'))
+// Spare money they named can be pointed at the fund; nothing named, or kept as Safety, stays out of it (Hieu, 2026-11-03).
+assert.equal(spareSource(['I have 2000$ in stablecoin, 2000$ in gold at current price. Maybe 1000$ in bank account.']), 'both')
+assert.equal(spareSource(['500 usdt on binance']), 'stable')
+assert.equal(spareSource(['100 triệu ngân hàng']), 'bank')
+assert.equal(spareSource(['2000 in gold']), null)
+assert.equal(spareSource(['keep 3000 usdc as safety']), null)
+assert.equal(spareSource(['do i need a bank?']), null)
+assert.equal(spareSource(['[app event] The user signed the card: Added 5 USDC to your emergency fund.']), null)
 // What people actually type.
 assert.ok(interestRateEvidence('they charge like 15% a month', 180))
 assert.ok(interestRateEvidence('lãi 30%/năm', 30)) // lang-ok
