@@ -69,10 +69,12 @@ export type MixKey = 'safe' | 'traditional' | 'btc' | 'large_cap' | 'altcoin'
 
 /** The most of the money outside Safety that can go to Crypto (Hieu, 2026-11-03): it swings so much that above half, keeping the parts in balance is exhausting. */
 export const MAX_CRYPTO_SPLIT = 50
+/** The guide inside Crypto (Hieu, 2026-11-03): about 7 parts BTC, 3 parts their pick, top-10 coins first. Said once, never tracked: it only sizes the cirBTC offer. */
+export const BTC_GUIDE = 0.7
 
 /**
  * Target shares in % (spec 4): safe = age; the rest split evenly between traditional and crypto as one bucket (Hieu, 2026-10-29),
- * or by `cryptoSplit` (% of the rest in Crypto) when the user chose a lower Crypto share (never above MAX_CRYPTO_SPLIT); all of crypto is BTC
+ * or by `cryptoSplit` (% of the rest in Crypto) when the user chose a lower Crypto share (never above MAX_CRYPTO_SPLIT); Crypto is one bar, every coin counts (BTC_GUIDE is only a guide)
  * (framework v2: no big-cap / low-cap target).
  */
 export function targetMix(age: number, cryptoSplit?: number | null): Record<MixKey, number> {

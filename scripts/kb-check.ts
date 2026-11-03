@@ -475,7 +475,7 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   // Fund full (Hieu, 2026-11-01): the part furthest ahead of its share sets the size. Gold $2,000 is Traditional's 34.5%, so the scale
   // is 2,000 / 34.5% and Safety is full at $1,797, Crypto at $2,000. Bank $500 and USDC $1,900 are spare money: not tracked, not shown.
   const fullPlan = buildPlan({ p: base, b: bal(base, 1900, 450), shares, cover: null, vi: false })!
-  for (const [what, re] of [['safety', /\*\*Safety\*\* \(low-volatility\): \$0 of \$1,797, \$1,797 to go\./], ['traditional', /\*\*Traditional\*\* \(index funds such as VOO, gold\): \$2,000: furthest ahead for your age, so it sets the size\./], ['crypto', /\*\*Crypto\*\* \(mostly Bitcoin, which can halve on the way\): \$0 of \$2,000, \$2,000 to go\./]] as const) if (!re.test(fullPlan)) fail(`plan: ${what} against the part that sets the size\n${fullPlan}`)
+  for (const [what, re] of [['safety', /\*\*Safety\*\* \(low-volatility\): \$0 of \$1,797, \$1,797 to go\./], ['traditional', /\*\*Traditional\*\* \(index funds such as VOO, gold\): \$2,000: furthest ahead for your age, so it sets the size\./], ['crypto', /\*\*Crypto\*\* \(about 7 parts Bitcoin, 3 parts your pick; it can halve on the way\): \$0 of \$2,000, \$2,000 to go\./]] as const) if (!re.test(fullPlan)) fail(`plan: ${what} against the part that sets the size\n${fullPlan}`)
   if (!/\*\*Safety\*\* is the low-risk part[^\n]*It is not emergency money \(that is the emergency fund\), and a term deposit is usually locked until it matures/.test(fullPlan)) fail('plan: why Safety, before any number')
   if (/not doing anything yet|keep \$150|\$1,900|\$500|above its share|no need to sell/.test(fullPlan)) fail(`plan: spare money is not tracked, and nothing is ever above its bar\n${fullPlan}`)
   if (!/Top up the parts still short from your income or spare money, in any order you like/.test(fullPlan)) fail('plan: the user tops up as they like')
@@ -574,6 +574,12 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   const b = computeBalance({ profile: p, walletUsd: 5, vaultUsd: 0.6, cirBtcUsd: 0, prices: { goldUsdPerOz: null, usd: {} }, vndPerUsd: 25000 })
   const crypto = bucketStanding(b)?.find(x => x.key === 'crypto')
   if (!crypto || crypto.full || crypto.target >= 1) fail(`small plan: Crypto 0 of a target under 1 USDC must not be full (got ${JSON.stringify(crypto)})`)
+  // The cirBTC offer is 7 parts of what Crypto still needs (Hieu, 2026-11-03), not all of it.
+  {
+    const left = bucketStanding(b)?.find(x => x.key === 'crypto')?.left ?? 0
+    const offered = Number(/cirBTC buy of \*\*([\d.,]+) USDC\*\*/.exec(buildPartAnswer({ b, vi: false, part: 'crypto', walletUsd: 1000 }) ?? '')?.[1]?.replace(/,/g, ''))
+    if (!(Math.abs(offered - Math.floor(left * 0.7 * 100) / 100) < 0.011)) fail(`cirBTC offer is 7 parts of what Crypto needs: offered ${offered} of ${left}`)
+  }
   if (!/prepare a cirBTC buy of \*\*0\.\d+ USDC\*\*/.test(buildPartAnswer({ b, vi: false, part: 'crypto', walletUsd: 5 }) ?? '')) fail('small plan: the cirBTC offer is in cents, not "the wallet has no USDC"')
   if (/All three parts are at their targets/.test(pickQuestion(bucketStanding(b) ?? [], false))) fail('small plan: Crypto with room is not "all full"')
 }

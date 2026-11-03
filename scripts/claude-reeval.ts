@@ -19,6 +19,7 @@ import { CORE_AUDIT_CASES } from './core-audit-cases'
 import { CORE_AUDIT_TAILS } from './core-audit-tails'
 import { CORE_AUDIT_FINALS } from './core-audit-finals'
 import { CORE_AUDIT_RECHECKS } from './core-audit-rechecks'
+import { CORE_AUDIT_GUIDE } from './core-audit-guide'
 import { BALANCE_CASES, BALANCE_TAIL_CASES } from './balance-cases'
 import { walletMoveOps } from '../src/lib/profile'
 import { buildRecordOps, presetSource, recordSummary, sourceOptions, type RecordRequest, type RecordSource } from '../src/lib/record'
@@ -30,7 +31,7 @@ const label = flag('--run') ?? 'claude-reeval-2026-10-29'
 if (!/^[a-z0-9-]+$/.test(label)) throw new Error('Run label must contain only lowercase letters, digits and hyphens.')
 const OUT = 'docs/evals/' + label + '.json'
 const priority = ['cost-basis', 'irregular-family', 'no-consent', 'loss-listening', 'beginner-vi', 'shared-transfers']
-const ordered = [...CORE_AUDIT_CASES, ...CORE_AUDIT_TAILS, ...CORE_AUDIT_FINALS, ...CORE_AUDIT_RECHECKS, ...BALANCE_CASES, ...BALANCE_TAIL_CASES, ...PERSONA_CASES, ...PERSONA_TAIL_CASES, ...SAFETY_CASES, ...SAFETY_SEEDED_CASES, ...E2_INTAKE_CASES, ...SESSION_EVAL_CASES, ...FRAMEWORK_CASES.filter(c => priority.includes(c.id)), ...FRAMEWORK_CASES.filter(c => !priority.includes(c.id)), ...REEVAL_CASES, ...CYCLE_FRESH_CASES, ...DAY_EVAL_CASES]
+const ordered = [...CORE_AUDIT_CASES, ...CORE_AUDIT_TAILS, ...CORE_AUDIT_FINALS, ...CORE_AUDIT_RECHECKS, ...CORE_AUDIT_GUIDE, ...BALANCE_CASES, ...BALANCE_TAIL_CASES, ...PERSONA_CASES, ...PERSONA_TAIL_CASES, ...SAFETY_CASES, ...SAFETY_SEEDED_CASES, ...E2_INTAKE_CASES, ...SESSION_EVAL_CASES, ...FRAMEWORK_CASES.filter(c => priority.includes(c.id)), ...FRAMEWORK_CASES.filter(c => !priority.includes(c.id)), ...REEVAL_CASES, ...CYCLE_FRESH_CASES, ...DAY_EVAL_CASES]
 const selected = flag('--only')?.split(',')
 const cases = selected ? selected.flatMap(id => ordered.filter(c => c.id === id)) : ordered
 if (selected && (new Set(selected).size !== selected.length || cases.length !== selected.length)) throw new Error('Unknown or duplicate case id.')

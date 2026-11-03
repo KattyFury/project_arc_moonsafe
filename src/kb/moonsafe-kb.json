@@ -94,9 +94,9 @@
     "crypto_split": { "btc": [1, 1], "large_cap": [0, 1], "altcoin": [0, 1] },
     "anchor": { "age": 30, "safe": 30, "traditional": 35, "btc": 35, "large_cap": 0, "altcoin": 0 },
     "rules": [
-      "BTC never goes to 0 at any age: on purpose, it is held for good.",
+      "Crypto never defaults to 0 at any age; only the user can choose 0.",
       "Nothing but age changes these shares. Irregular income, dependents, debt, a near-term goal or a no to the 50% drop question only change the fund floor, the buy lock and the advice (the agent may suggest less crypto; the user decides).",
-      "Crypto is one bucket, shown as one share and explained as mostly BTC. Coins already held (ETH, small coins) are tracked and count in Crypto, never turned into a buy target.",
+      "Crypto is one bar and every coin held counts in it. The guide, said once, is about 7 parts BTC and 3 parts their pick, top-10 coins by market cap first, no stablecoins (Hieu 2026-11-03). Holding something else is their choice: the guide is not tracked, never pressed, and never a reason to sell.",
       "Ages 18 to 90 in the formula (older counts as 90, Hieu 2026-10-25). Age unknown: ask for it before talking about shares. Declined: use 30 and say it is the default."
     ]
   },
