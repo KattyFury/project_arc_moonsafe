@@ -23,7 +23,7 @@ import { getPrices } from './prices'
 import { educationAnswer, EDUCATION_POLICY } from '../_lib/education'
 import { salaryRemainder } from '../_lib/educationFigures'
 import { confirmationStatus } from '../_lib/confirmationStatus'
-import { explicitAgeRefusal, factProposals, quantityEvidence, turnPolicy, TURN_POLICY, responseProblems, REPLY_DISCIPLINE, fundMissingInputs } from '../_lib/agentGuards'
+import { defersOffer, explicitAgeRefusal, factProposals, quantityEvidence, turnPolicy, TURN_POLICY, responseProblems, REPLY_DISCIPLINE, fundMissingInputs } from '../_lib/agentGuards'
 import { coachingBrief, recordingEvidence, COACH_POLICY, ALTCOIN_CHECK } from '../_lib/coaching'
 import { assertions, currentValuation, investedBasis, interestRateEvidence, passiveEvidence, zeroInterestEvidence, repaymentEvidence, incompleteExpenses } from '../_lib/mutationEvidence'
 import { dependentEvidence, householdDefault, incomeUpdate, profileAgeAllowed, scopeBrief, scopeChoice, scopeQuestion } from '../../src/lib/planningScope'
@@ -812,7 +812,7 @@ function nextQuestion(p: FinancialProfile, assistantTexts: string[], userTexts: 
   if (knownSoFar && !p.debts.length && !p.debtsComplete && userTexts.some(t => DEBT_WORD.test(t) || /repay|pay (it )?back|trả nợ/i.test(t)) && !questions.some(q => OWED_Q.test(q))) // lang-ok
     return 'You mentioned paying back a debt: how much do you still owe, and to whom?'
   // A debt without its rate keeps cirBTC buying locked (allocation.ts debtIsPriority): ask it right away, once per debt.
-  const untold = p.debts.find(d => (d.ratePct === null || d.type === 'unknown') && d.type !== 'family_no_interest' && !questions.some(q => INTEREST_Q.test(q) && (q.includes(d.name) || DEBT_WORD.test(q))))
+  const untold = p.debts.find(d => d.ratePct === null && d.type !== 'family_no_interest' && !questions.some(q => INTEREST_Q.test(q) && (q.includes(d.name) || DEBT_WORD.test(q))))
   if (untold) return `Does "${untold.name}" charge you any interest? If yes, roughly how much a year?`
   // The last debt question is asked once; asked again it reads like the agent was not listening (real chat 2026-10-26).
   const lastDebtAsked = questions.some(q => q.includes(KB.collection.last_debt_question.slice(0, 40)) || q.includes(VI_DEBT_Q.slice(0, 30)))
@@ -1069,7 +1069,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       }
     }
   }
-  if (SAYS_NO.test(lastUserText) && OFFERS_ACTION.test(prevAssistantText)) {
+  if ((SAYS_NO.test(lastUserText) || defersOffer(lastUserText)) && OFFERS_ACTION.test(prevAssistantText)) {
     return json({
       content: vi
         ? 'Không sao, đây là quyết định của bạn. Kế hoạch vẫn ở đây khi bạn cần. Muốn hỏi thêm, đổi một con số hay bắt đầu sau này thì cứ nhắn mình.' // lang-ok

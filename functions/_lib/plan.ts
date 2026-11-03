@@ -193,7 +193,7 @@ export function buildPlan({ p, b, cover, partial = null, vi, hasVault = true, va
     ...(windfall ? [windfall] : []),
     ask,
   ]
-  const basis = p.planningScope === 'household' ? (vi ? 'Kế hoạch gia đình: dùng thu nhập và chi tiêu chung đã khai, mỗi khoản tính một lần. Tỷ lệ tham khảo vẫn theo tuổi của bạn.' : 'Household plan: uses the shared income and spending you declared, counted once. The reference split still uses your age.') : null // lang-ok
+  const basis = p.planningScope === 'household' ? (vi ? 'Kế hoạch này tính cho cả gia đình, theo thu nhập và chi tiêu chung bạn đã khai.' : 'This plan is for your household: it uses the shared income and spending you told me.') : null // lang-ok
   return [basis, ...lines].filter(Boolean).join('\n\n')
 }
 

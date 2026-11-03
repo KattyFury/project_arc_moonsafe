@@ -116,7 +116,7 @@ const month = normalizeProfile({ v: 2, age: 31, dependents: 1, hasWindfalls: tru
 const q2 = await call([{ role: 'user', content: 'investing' }, { role: 'assistant', content: hello.body.content ?? '' }, { role: 'user', content: 'ok' }], month, 0)
 const q2Text = q2.body.content ?? ''
 console.log('\nstep 0c:\n' + q2Text)
-expect(/Noted: age 31; income \$600 a month; money now and then \(airdrops…\); spending \$400 a month; 1 relying on you; debt Mom \$20,000, no interest, \$200 a month\./.test(q2Text), 'question 2 says what was noted, spending without the debt payment')
+expect(/Noted: age 31; income \$600 a month; money now and then \(airdrops…\); spending \$400 a month; 1 person relying on you; debt Mom \$20,000, no interest, \$200 a month\./.test(q2Text), 'question 2 says what was noted, spending without the debt payment')
 expect(!/\*\*\$3,600\*\*|6 months of spending/.test(q2Text), 'income stability is unknown: no target from default months')
 expect(/is your income about the same every month\?/i.test(q2Text) && (q2Text.match(/\?/g) ?? []).length === 1 && !/50\/50|Here is your plan/.test(q2Text), 'ask the one missing reserve input before assets or investing')
 const q2Again = await call([{ role: 'user', content: 'investing' }, { role: 'assistant', content: hello.body.content ?? '' }, { role: 'user', content: 'ok' }, { role: 'assistant', content: q2Text }, { role: 'user', content: 'nothing else' }], month, 0)

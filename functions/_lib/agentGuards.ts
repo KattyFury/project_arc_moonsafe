@@ -108,6 +108,10 @@ export function factProposals(text: string, p: FinancialProfile): Proposal[] {
 
 export const TURN_POLICY = `WORKFLOW GUARD: Answer the user's actual question/concern first. When conversation-only is active: no intake, personal questionnaire, investment onboarding, bucket-choice question or unsolicited product/transaction offer. A negated mention of buying is not buy intent. Keep this preference until the user explicitly asks to start a plan or action. Record explicit current facts accurately even during teaching; say "noted" only for facts actually saved (or clearly label pending confirmation). Unknown targets/balances are unknown, not zero. Quote only computed financial targets; do not invent an "X of Y, Z to go". The vault balance is separate from available savings outside the app. Never turn a dollar cost into coin quantity.`
 /** Detect observable response failures; never treat model self-review as authoritative. */
+/** "No. I will consider it", "not yet, let me think", "để mình suy nghĩ": a no to the offer for now, answered like a plain no (real chat 2026-11-03). */ // lang-ok
+export const defersOffer = (text: string) => text.length <= 120 && !/\d|\?/.test(text)
+  && /^\s*(?:(?:no|nope|not yet|not now|maybe later|later|chưa|không|thôi)(?!\p{L})[\s,.!]*(?:(?:i(?:'ll| will| need to| have to| want to)?|let me|để (?:mình|tôi|em|anh)|(?:mình|tôi|em|anh) (?:sẽ|cần))\s+)?(?:consider|think|decide|suy nghĩ|cân nhắc|xem lại)|let me (?:think|consider|decide)|i(?:'ll| will| need to| have to| want to) (?:think|consider|decide)|để (?:mình|tôi|em|anh) (?:suy nghĩ|cân nhắc|xem lại))/iu.test(text) // lang-ok
+
 // CORE 1: money kept outside the vault never counts as the emergency fund. CORE 3: no % per part, no total as 100%.
 const OUTSIDE_MONEY = /binance|okx|bybit|exchange|bank|mattress|cash|savings?|term deposit|ngân hàng|tiết kiệm|tiền mặt|(?<!\p{L})sàn(?!\p{L})|(?<!\p{L})sổ(?!\p{L})/iu // lang-ok
 const COUNTS_AS_FUND = /counts?\s+(?:as|toward|towards)|can count|covers?\s+(?:that|the|your)|(?:as|is) your (?:reserve|emergency)|leave the vault|tính vào|được tính|xem[^.?!\n]{0,40}là|một phần dự phòng|dự phòng tạm thời|làm quỹ/iu // lang-ok

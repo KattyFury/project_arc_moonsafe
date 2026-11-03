@@ -92,7 +92,7 @@ export function assetsAsk(p: FinancialProfile, fund: { floorUsd: number | null; 
   if (flow.income !== null) noted.push(vi ? `thu nhập ${money(flow.income)}/tháng` : `income ${money(flow.income)} a month`) // lang-ok
   if (p.hasWindfalls) noted.push(vi ? 'có khoản thu lâu lâu (airdrop…)' : 'money now and then (airdrops…)') // lang-ok
   if (flow.spending !== null) noted.push(vi ? `chi tiêu ${money(flow.spending - flow.debtPayments)}/tháng` : `spending ${money(flow.spending - flow.debtPayments)} a month`) // lang-ok
-  if (p.dependents !== null) noted.push(vi ? (p.dependents ? `${p.dependents} người sống dựa vào bạn` : 'không ai sống dựa vào thu nhập của bạn') : (p.dependents ? `${p.dependents} relying on you` : 'nobody relying on your income')) // lang-ok
+  if (p.dependents !== null) noted.push(vi ? (p.dependents ? `${p.dependents} người sống dựa vào bạn` : 'không ai sống dựa vào thu nhập của bạn') : (p.dependents ? `${p.dependents} ${p.dependents === 1 ? 'person' : 'people'} relying on you` : 'nobody relying on your income')) // lang-ok
   // "Nợ mẹ" is already a debt's name: no "nợ Nợ mẹ" (Haiku run 2026-10-31).
   for (const d of p.debts) noted.push(`${/^(nợ|debt|loan)\b/iu.test(d.name) ? '' : vi ? 'nợ ' : 'debt '}${d.name} ${debtMoney(d.balance, d.currency)}${d.ratePct === 0 ? (vi ? ', không lãi' : ', no interest') : d.ratePct ? `, ${d.ratePct}%` : ''}${d.monthlyPayment ? (vi ? `, trả ${debtMoney(d.monthlyPayment, d.currency)}/tháng` : `, ${debtMoney(d.monthlyPayment, d.currency)} a month`) : ''}`) // lang-ok
   if (p.debtsComplete && !p.debts.length) noted.push(vi ? 'không nợ' : 'no debt') // lang-ok

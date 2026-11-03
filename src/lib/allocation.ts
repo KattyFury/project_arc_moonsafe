@@ -87,7 +87,9 @@ export interface DebtLine { debt: Debt; usd: number | null; monthlyUsd: number |
 /** Priority debt (spec 5.2). Not told yet: a debt of unknown type or rate counts as priority, so the lock never opens by mistake. */
 export function debtIsPriority(d: Debt): boolean {
   if (d.ratePct === 0) return false
-  if (d.type === 'unknown' || d.ratePct === null) return d.type !== 'family_no_interest'
+  if (d.ratePct === null) return d.type !== 'family_no_interest'
+  // A debt of unknown kind with a known rate (the form asks the rate, not the kind) goes by the rate (real chat 2026-11-03).
+  if (d.type === 'unknown') return d.ratePct >= param('priority_debt_rate_pct')
   return isPriorityDebt({ type: d.type, rate_pct: d.ratePct })
 }
 

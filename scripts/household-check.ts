@@ -90,7 +90,7 @@ export function householdChecks(): number {
   assert.equal(p.age, 34)
   assert.equal(p.dependents, 2)
   assert.equal(p.soleEarner, false)
-  assert.match(buildPlan({ p: family, b, shares: [34, 33, 33], cover: null, vi: false }) ?? '', /Household plan/)
+  assert.match(buildPlan({ p: family, b, shares: [34, 33, 33], cover: null, vi: false }) ?? '', /This plan is for your household/)
   assert.match(buildStanding({ p: family, b, vi: true }) ?? '', /gia đình/) // lang-ok
   checks += 9
   return checks

@@ -1,6 +1,7 @@
 // What the 5M Haiku audit (2026-11-03) fixed, kept fixed without paying for a model. See docs/evals/core-audit-2026-11-03.md.
 import assert from 'node:assert/strict'
-import { quantityEvidence, responseProblems } from '../functions/_lib/agentGuards'
+import { defersOffer, quantityEvidence, responseProblems } from '../functions/_lib/agentGuards'
+import { debtIsPriority } from '../src/lib/allocation'
 import { interestRateEvidence } from '../functions/_lib/mutationEvidence'
 import { buildIntake } from '../functions/_lib/intake'
 import { targetMix } from '../src/kb/kb'
@@ -32,6 +33,22 @@ assert.ok(flagged('Got it. Do you want me to note it in your profile?'))
 assert.ok(flagged('Mình gọi bạn là "bạn" nhé.')) // lang-ok
 // Crypto is one bar; the guide never changes the target.
 assert.equal(targetMix(30).btc + targetMix(30).large_cap + targetMix(30).altcoin, 35)
+// A debt from the form: the kind is unknown, the rate decides (real chat 2026-11-03). No rate yet: still treated as expensive.
+const formDebt = { id: 'd', name: 'Debt', type: 'unknown' as const, balance: 20000, currency: 'USDC' as const, monthlyPayment: 200, updatedAt: 1 }
+assert.equal(debtIsPriority({ ...formDebt, ratePct: 0 }), false)
+assert.equal(debtIsPriority({ ...formDebt, ratePct: 5 }), false)
+assert.equal(debtIsPriority({ ...formDebt, ratePct: 10 }), true)
+assert.equal(debtIsPriority({ ...formDebt, ratePct: null }), true)
+// Putting an offer off is a no; changing it or asking about it is not.
+assert.ok(defersOffer('No. I will consider fullfill it'))
+assert.ok(defersOffer('not yet, let me think'))
+assert.ok(defersOffer('để mình suy nghĩ')) // lang-ok
+assert.ok(!defersOffer('no make it 10'))
+assert.ok(!defersOffer('I think so'))
+assert.ok(!defersOffer("i think i'll do it"))
+assert.ok(defersOffer("i'll think about it"))
+assert.ok(!defersOffer('no I already have savings'))
+assert.ok(!defersOffer('should I consider it?'))
 // What people actually type.
 assert.ok(interestRateEvidence('they charge like 15% a month', 180))
 assert.ok(interestRateEvidence('lãi 30%/năm', 30)) // lang-ok
