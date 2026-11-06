@@ -1,4 +1,16 @@
-# ▶ Handoff — 2026-11-06 (khuya) — V1 GIỮ NGUYÊN, BUILD LẠI V2 THEO KIỂM TOÁN PHÁP LÝ — ĐỌC MỤC NÀY TRƯỚC
+# ▶ Handoff — 2026-11-07 — CORE V2 ĐÃ CHỐT — ĐỌC MỤC NÀY TRƯỚC
+
+**Hiếu chốt CORE V2** (bàn với Claude Chat): `docs/CORE.md` giờ là CORE V2; CORE V1 lưu ở `docs/archive/CORE-v1-2026-11-06.md` (V1 moonsafe.app vẫn chạy theo nó). Điểm đổi lớn:
+- Agent = người **giáo dục**: "quy tắc phổ biến là X, với số của bạn thành Y"; không "bạn nên mua/bán"; bỏ hướng dẫn BTC 7/10 và "top 10"; thẻ mua cirBTC để trống.
+- Tỷ lệ: Safety = tuổi % (app tính), người dùng tự chia phần còn lại, Crypto tối đa 50%.
+- **Vault V2 thay hẳn thiết kế 2-of-2 ví + email:** rút = ví ký + **mật khẩu vault** (app tạo ngẫu nhiên, hiện 1 lần, MoonSafe không lưu). Mất ví → ví khác + Import vault (địa chỉ + mật khẩu) → thành chủ ngay. MoonSafe không giữ khoá, không ký gì. Bỏ guardian, OTP Resend, đường chờ 7 ngày, địa chỉ cứu hộ.
+- V2 private test **trên mainnet**, không testnet.
+
+**Hệ quả:** `contracts/VaultV2.sol` + `VaultFactoryV2.sol` + test (commit `dc0a501`, thiết kế guardian) **đã lỗi thời**, chưa xoá; sẽ viết lại khi Hiếu chốt cách dùng mật khẩu trên hợp đồng. `docs/plan-backup-and-circle.md` và mục 2026-11-06 (đêm) bên dưới chỉ còn là tham khảo.
+
+**Việc tiếp theo:** (1) Hiếu chọn cách hợp đồng dùng mật khẩu mà không lộ lên chuỗi (Claude Code đã đề xuất trong chat 2026-11-07) và dạng mật khẩu; (2) viết lại VaultV2 + test; (3) song song: agent giáo dục, Privacy/Terms/đồng ý, môi trường V2. Các câu "Chưa chốt" ở cuối CORE.
+
+# Handoff — 2026-11-06 (khuya) — V1 GIỮ NGUYÊN, BUILD LẠI V2 THEO KIỂM TOÁN PHÁP LÝ — ĐỌC MỤC NÀY TRƯỚC
 
 **Hiếu chốt:** KHÔNG sửa V1 (moonsafe.app giữ nguyên như đang chạy). Mọi điều chỉnh từ kiểm toán pháp lý làm trong **V2, build lại**. V2 chạy trên link riêng, private để test và kiểm toán, ổn mới merge vào moonsafe.app.
 

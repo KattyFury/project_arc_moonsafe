@@ -1,91 +1,109 @@
-# MoonSafe — CORE
+# MoonSafe — CORE V2
 
-> Nguồn chuẩn cho mọi phiên làm việc (Claude, Codex, người). Đọc trước khi sửa agent, màn hình hay hợp đồng. Hiếu chốt 2026-11-01.
-> Mâu thuẫn giữa file này và spec cũ trong `docs/` → file này đúng. Đổi core = Hiếu chốt trước, rồi sửa file này.
+> Nguồn chuẩn cho V2 (Claude, Codex, người). V1 ở moonsafe.app giữ nguyên, chạy theo `docs/archive/CORE-v1-2026-11-06.md`.
+> Hiếu chốt 2026-11-07. Mâu thuẫn giữa file này và spec cũ trong `docs/` → file này đúng. Đổi core = Hiếu chốt trước, rồi sửa file này.
 
 ## Vai trò của app
 
-MoonSafe là **người giữ quỹ dự phòng**, rồi là **người tư vấn**, không phải người ra lệnh.
+MoonSafe là **người giáo dục tài chính** cho người dùng Web3. Quỹ dự phòng onchain là **công cụ tạo kỷ luật** (Hiếu 2026-11-07: kỷ luật là lý do chính; "agent kiểm được quỹ có thật" là lý do phụ).
+Người dùng tự quyết, tự làm, xong thì báo lại. App không chia tiền hộ, không ra lệnh mua bán, không giữ tiền hộ.
+Bỏ chữ "người giữ quỹ" và "người tư vấn" của V1.
 
-1. Đảm bảo quỹ dự phòng có thật và đủ (onchain, kiểm được).
-2. Quỹ đủ rồi mới tư vấn chia tiền theo tuổi.
-3. Người dùng tự quyết và tự làm, xong thì báo lại; app ghi lại để nắm tình hình. App không chia tiền hộ, không ra lệnh mua bán.
+## 1. Agent: người giáo dục (Hiếu 2026-11-07)
 
-## 1. Quỹ dự phòng nằm onchain
+- **Được nói:** "Quy tắc phổ biến là X; với số của bạn thì thành Y."
+- **Không được nói:** "Bạn nên mua / bán / chuyển…". Không nêu số tiền gắn với BTC hay coin cụ thể. Bỏ "cứ 10 đô Crypto thì ~7 đô BTC". Bỏ câu cổ vũ kiểu "Buy steadily".
+- **Người dùng hỏi "có nên mua BTC / tài sản X không?":** phân tích rủi ro–lợi nhuận và lý do, nêu cả hai phía. Ví dụ: altcoin có thể mất gần hết giá trị; BTC vốn hoá và thanh khoản lớn nhất nhưng cũng từng sụt sâu. Nhắc quỹ dự phòng trước. Kết bằng "bạn tự quyết, đây không phải tư vấn đầu tư". Không kết luận "nên chọn".
+- Quỹ chưa đầy: không bàn đầu tư (như V1).
+- Nhãn "AI" rõ ràng. Câu trả lời có số tiền gắn với crypto kèm một câu "không phải tư vấn đầu tư, bạn tự quyết".
+- Hỏi "có hợp pháp / có giấy phép không": nói thật là chưa có giấy phép, app không giữ tiền hộ, người dùng tự chịu trách nhiệm với luật nơi họ sống.
+- Người khai dưới 18: dừng tư vấn, chỉ giáo dục chung. Tuổi tối thiểu 18+.
+- App chỉ có tiếng Anh; agent trả lời theo ngôn ngữ người dùng nhắn.
 
-- **Vì sao onchain:** an toàn, và agent kiểm được. Người dùng không thể khai láo "tôi có quỹ khẩn cấp rồi" để dồn hết vào coin hay cổ phiếu.
-- Chỉ số dư vault của chính người dùng mới là quỹ. Lời khai ("tôi có quỹ ở ngân hàng") không bao giờ được tính.
-- Mức quỹ = (chi tiêu + trả nợ hằng tháng) × số tháng: 3 tháng (thu nhập đều, không ai phụ thuộc), 6, 9 hoặc 12 tháng (thu nhập không đều và/hoặc có người phụ thuộc). Thiếu thông tin thì hỏi đúng 1 câu.
-- Quỹ chưa đầy: không tư vấn đầu tư, không đưa con số chia; mọi câu "phần nào trước" đều quay về quỹ. Nút mua cirBTC trong app khoá cho tới khi quỹ đầy và hết nợ lãi cao.
+## 2. Quỹ dự phòng nằm onchain
+
+- **Vì sao onchain:** tạo kỷ luật (tiền nằm trong vault thì khó tiêu bậy) và agent kiểm được. Lời khai ("tôi có quỹ ở ngân hàng") không bao giờ được tính.
+- Mức quỹ = (chi tiêu + trả nợ hằng tháng) × số tháng: 3 (thu nhập đều, không ai phụ thuộc), 6, 9 hoặc 12 (thu nhập không đều và/hoặc có người phụ thuộc). Thiếu thông tin thì hỏi đúng 1 câu.
+- Quỹ chưa đầy: không bàn đầu tư, mọi câu "phần nào trước" quay về quỹ. Nút mua cirBTC khoá tới khi quỹ đầy và hết nợ lãi cao.
 - Nợ lãi cao (từ 10%/năm) trả trước: quỹ khởi đầu 1 tháng → trả nợ → hoàn tất quỹ → đầu tư.
-- *Đã có trong code.*
 
-## 2. Bốn ô dữ liệu
+## 3. Bốn ô dữ liệu
 
 | Ô | Gồm | Ghi chú |
 |---|---|---|
 | **Dự phòng** | USDC trong vault | Đọc onchain, không lưu trong hồ sơ |
-| **Safety** | Phần rủi ro thấp: tiền gửi có kỳ hạn, trái phiếu chính phủ / quỹ trái phiếu / quỹ thị trường tiền tệ; tiền mặt, tài khoản ngân hàng hoặc stablecoin **mà người dùng chọn làm Safety** | Safety ≠ quỹ dự phòng: nó giữ cho tổng tài sản ít dao động, không phải tiền rút lúc nào cũng được (tiền gửi có kỳ hạn bị khoá tới ngày đáo hạn) |
-| **Traditional** | Cổ phiếu / quỹ chỉ số (VOO), vàng, trái phiếu lãi cao | |
-| **Crypto** | BTC và mọi coin khác đều tính vào đây. Hướng dẫn: cứ 10 đô Crypto thì khoảng 7 đô BTC, còn lại tự chọn, ưu tiên top 10 vốn hoá, không tính stablecoin (Hiếu 2026-11-03; không viết "7 phần / 3 phần" hay "70/30" cho người dùng vì trùng với "3 phần" và tỷ lệ Traditional/Crypto) | Một thanh duy nhất, không theo dõi 7/3 riêng. Nói 7/3 một lần; lệch là lựa chọn của người dùng, không nhắc lại, không khuyên bán. Agent không tự nêu tên coin ngoài BTC. Nút mua cirBTC đề nghị 7 phần số còn thiếu |
+| **Safety** | Tiền gửi có kỳ hạn, trái phiếu / quỹ trái phiếu / quỹ thị trường tiền tệ; tiền mặt, ngân hàng hoặc stablecoin **mà người dùng chọn làm Safety** | Safety ≠ quỹ dự phòng |
+| **Traditional** | Cổ phiếu / quỹ chỉ số, vàng, trái phiếu lãi cao | |
+| **Crypto** | BTC và mọi coin khác, một thanh duy nhất | **Bỏ** hướng dẫn 7/3, bỏ "ưu tiên top 10". Agent không tự nêu tên coin; khi được hỏi thì giải thích theo mục 1 |
 
-- **Tiền bank / stablecoin KHÔNG BAO GIỜ mặc định là Safety** (Hiếu 2026-11-01): chỉ đúng khoản người dùng tự nói là Safety.
-- **Không theo dõi tiền nhàn rỗi** (Hiếu 2026-11-01: "track vậy không mệt à? biết tiền nhàn rỗi bao nhiêu thì giúp ích gì"). Tiền mặt, ngân hàng không kỳ hạn, stablecoin mà người dùng không chọn làm Safety: không hỏi, không ghi, không hiện. Người dùng tự bổ sung các phần từ thu nhập hay tiền rảnh. Ngoại lệ duy nhất (Hiếu 2026-11-03): nếu người dùng tự kể số tiền đó trong chat và quỹ chưa đầy, kế hoạch được nói một câu rằng tiền đó có thể nạp vào quỹ trước, không nêu số và vẫn không ghi.
-- Safety chỉ là Safety khi người dùng **hiểu vì sao cần** và **tự chọn** tiền nào, dạng nào. Chỉ chọn được dạng ít biến động; vàng, cổ phiếu hay coin làm Safety thì agent giải thích vì sao không nên và không ghi. Tiền gửi có kỳ hạn và trái phiếu đã có thì tính thẳng là Safety, kèm lời giải thích.
-- Nhà ở, xe, bất động sản cho thuê, vốn doanh nghiệp, tiền cho vay nằm ngoài 3 phần (chưa chốt cách xếp, xem cuối file).
-- *Đã code (2026-11-01).*
+- Tiền bank / stablecoin KHÔNG BAO GIỜ mặc định là Safety: chỉ đúng khoản người dùng tự nói là Safety (Hiếu 2026-11-01).
+- Không theo dõi tiền nhàn rỗi (Hiếu 2026-11-01). Ngoại lệ (Hiếu 2026-11-03): người dùng tự kể trong chat và quỹ chưa đầy thì nói một câu rằng tiền đó có thể nạp quỹ trước, không nêu số, không ghi.
+- Safety chỉ được chọn dạng ít biến động; vàng, cổ phiếu, coin làm Safety thì agent giải thích vì sao không nên và không ghi.
+- Nhà ở, xe, bất động sản cho thuê, vốn doanh nghiệp, tiền cho vay nằm ngoài 3 phần (chưa chốt cách xếp).
 
-## 3. Bảng cân đối: phần đi xa nhất làm mốc
+## 4. Bảng cân đối: phần đi xa nhất làm mốc
 
-- **Vì sao:** không theo dõi tổng tiền (đổi liên tục). Theo dõi các phần có cân với nhau theo tuổi không.
-- Tỷ lệ theo tuổi: Safety = tuổi %, phần còn lại chia Traditional / Crypto (MoonSafe mặc định 50/50; agent nói rõ 50/50 là mặc định của app, không phải quy tắc chuẩn). **Người dùng chỉ được giảm Crypto, nghiêng sang Traditional (VD 70/30), không được làm ngược lại (VD 40/60):** Crypto tối đa 50% phần ngoài Safety, vì crypto biến động mạnh, quá 50% thì cân lại các phần rất mệt (Hiếu 2026-11-03).
-- **Luật mốc (Hiếu chốt 2026-11-01):** phần đi xa nhất so với tỷ lệ của nó (tiền / tỷ lệ lớn nhất) là thanh đầy 100%; thanh đầy của các phần khác theo nó. Ví dụ 30 tuổi (30 / 35 / 35), Safety $3.000 đi xa nhất → Traditional đầy ở $3.500, Crypto đầy ở $3.500. Người dùng bổ sung Traditional và Crypto theo Safety, tiền từ thu nhập hay tiền rảnh, thích bổ sung kiểu gì thì bổ sung.
-- **Không lấy tổng 3 phần làm 100%** (làm một phần luôn luôn thiếu), và **không hiện % trên từng phần** (khó hiểu; Hiếu 2026-11-01). Mỗi phần viết: còn thiếu trước, rồi hiện trạng: "$2,500 to go (now $1,000 / $3,500)" (Hiếu 2026-11-06); phần đủ ghi "full", phần làm mốc ghi "furthest ahead, it sets the size". Số lẻ luôn đủ 2 chữ số ($40.70). Phần nào còn thiếu thì nêu HẾT để người dùng chọn, không chỉ một phía.
-- Không phần nào vượt thanh của nó, nên **không bao giờ có chuyện khuyên bán**. Giá giảm không phải lý do để giục mua thêm.
-- Giá trị tài sản tính theo **giá hiện tại** (số lượng × giá), không theo giá vốn; không hỏi "đã mua bao nhiêu tiền".
-- Chưa đầu tư gì: nói tỷ lệ 3 phần (mỗi $100 chia theo tuổi) rồi để người dùng bổ sung từ từ; đã có tài sản: bổ sung các phần sau mốc, thứ tự do người dùng.
-- *Đã code, Hiếu duyệt, đã deploy (2026-11-01).*
+- **Tỷ lệ (Hiếu 2026-11-07):** có tuổi thì app tự tính Safety = tuổi %. Người dùng tự chọn cách chia phần còn lại giữa Traditional và Crypto. **Crypto tối đa 50% phần còn lại**, kèm giải thích: crypto biến động mạnh, thuộc nhóm đầu tư mạo hiểm.
+- Công thức theo tuổi gọi là "quy tắc phổ biến app dùng để minh hoạ", không phải lời khuyên. Màn hình hiện tỷ lệ của người dùng.
+- **Luật mốc (Hiếu 2026-11-01):** phần đi xa nhất so với tỷ lệ của nó (tiền / tỷ lệ lớn nhất) là thanh đầy 100%; các phần khác theo nó. Ví dụ 30 tuổi (30/35/35), Safety $3.000 đi xa nhất → Traditional và Crypto đầy ở $3.500.
+- Không lấy tổng 3 phần làm 100%, không hiện % trên từng phần. Mỗi phần viết: còn thiếu trước, rồi hiện trạng: "$2,500 to go (now $1,000 / $3,500)"; phần đủ ghi "full", phần làm mốc ghi "furthest ahead, it sets the size". Số lẻ luôn đủ 2 chữ số.
+- **Giữ "to go" cho mọi phần, kể cả Crypto (Hiếu 2026-11-07).** Dòng của Crypto chờ luật sư (xem Chưa chốt).
+- Không phần nào vượt thanh của nó nên **không bao giờ khuyên bán**. Giá giảm không phải lý do để giục mua thêm.
+- Giá trị tài sản theo **giá hiện tại** (số lượng × giá), không hỏi giá vốn.
+- Chưa đầu tư gì: nói tỷ lệ 3 phần rồi để người dùng bổ sung từ từ; đã có tài sản: bổ sung các phần sau mốc, thứ tự do người dùng.
 
-## 4. Ghi dữ liệu
+## 5. Ghi dữ liệu (giữ như V1, Hiếu 2026-11-06)
 
-- **Nút tắt trên ô chat (Hiếu 2026-11-06, thay bản 11-03):** đúng 3 nút `Update split` · `Edit cash flow` · `Edit information`. Bỏ `Add money` / `Add to fund` (vô nghĩa; nạp quỹ ở tab Emergency). Update split: Safety, Traditional, Crypto, mỗi phần nhiều món + tổng do app tính (không sửa được); Traditional / Crypto có 3 cột món · số lượng · giá trị (vàng theo oz, cổ phiếu theo ticker, coin theo symbol, giá hôm nay); cirBTC đọc từ ví; tỷ lệ Traditional / Crypto nằm trong đây. Edit cash flow: thu, chi, nợ (dư nợ, lãi %, trả mỗi tháng). Edit information: tuổi, người phụ thuộc, thu nhập đều, người kiếm tiền duy nhất. Chạy bằng code, không gọi model, có bước Confirm (`src/lib/shortcuts.ts`).
-- **Mua thêm là cộng** (Hiếu 2026-11-06): "bought $30 of gold" khi đã có $10 → $40; chỉ "now I have / in total" mới thay số.
-- Mỗi người dùng 1 bản ghi riêng (Cloudflare KV `u:<Privy id>`), trình duyệt giữ bản sao. Tài sản là danh sách món; ô của món suy ra từ loại + lựa chọn Safety của người dùng.
-- Mỗi tin nhắn: agent đọc lời người dùng, đối chiếu với dữ liệu, đề nghị thêm / sửa / chuyển ô / xoá. **Mọi thay đổi tài sản đều qua thẻ xác nhận**, kể cả lần khai đầu.
-- Người dùng kể thay đổi mà không nói số ("bán bớt ETH") → không ghi, hỏi đúng 1 câu. Số khai đã cũ → hỏi lại món cũ nhất, mỗi lần 1 món.
+- Đúng 3 nút tắt trên ô chat: `Update split` · `Edit cash flow` · `Edit information`. Update split: Safety, Traditional, Crypto, mỗi phần nhiều món, tổng do app tính; Traditional/Crypto có 3 cột món · số lượng · giá trị; cirBTC đọc từ ví. Edit cash flow: thu, chi, nợ. Edit information: tuổi, người phụ thuộc, thu nhập đều, người kiếm tiền duy nhất. Chạy bằng code, có bước Confirm.
+- Không có form khai báo; agent hỏi chuyện tự nhiên. **Mọi thay đổi tài sản đều qua thẻ xác nhận**, kể cả lần khai đầu.
+- Mua thêm là cộng ("bought $30 of gold" khi đã có $10 → $40); chỉ "now I have / in total" mới thay số.
+- Người dùng kể thay đổi không nói số → không ghi, hỏi đúng 1 câu. Số khai đã cũ → hỏi lại món cũ nhất, mỗi lần 1 món.
 - Chỉ ghi điều người dùng khẳng định về chính mình; ví dụ giả định, tiền của người khác, khoản đã lỗ thì không ghi.
-- *Đã có trong code.*
+- Mỗi người dùng 1 bản ghi riêng trong Cloudflare KV, trình duyệt giữ bản sao.
 
-## 5. Invest: hôm nay cirBTC, sau này cổ phiếu và vàng onchain
+## 6. Invest
 
-- Hôm nay chỉ mua được cirBTC trong app; Traditional mua qua nhà môi giới của người dùng.
-- Tương lai chắc chắn có cổ phiếu và vàng token hoá trên Arc. Màn Invest và dữ liệu phải thiết kế thành **danh sách tài sản onchain**, mỗi món gắn nhóm Traditional hoặc Crypto, thêm loại mới không phải viết lại.
-- Tài sản có 2 mức tin cậy: **đã kiểm onchain** (đọc số dư từ chuỗi) và **tự khai**. Hiển thị rõ món nào là món nào.
-- *Phải xây khi có tài sản onchain mới.*
+- **Nút mua cirBTC: giữ (Hiếu 2026-11-07).** Khoá tới khi quỹ đầy và hết nợ lãi cao. App **không đề nghị số tiền**, thẻ mua để trống. Nút là công tắc cấu hình, bật/tắt được, tắt theo khu vực được. Có mở cho người dùng VN hay không: chờ luật sư.
+- Tương lai chắc chắn có cổ phiếu và vàng token hoá trên Arc: Màn Invest và dữ liệu thiết kế thành **danh sách tài sản onchain**, mỗi món gắn nhóm Traditional hoặc Crypto, thêm loại mới không phải viết lại.
+- Tài sản có 2 mức tin cậy: **đã kiểm onchain** và **tự khai**. Hiển thị rõ món nào là món nào.
 
-## 6. Bảo mật: đây là tiền thật, bảo vệ cả 2 mặt
+## 7. Vault V2 (Hiếu chốt 2026-11-07, thay hoàn toàn mục "Bảo mật" của V1)
 
-**Mặt 1: bản thân vault an toàn.** Hợp đồng đơn giản, không ai ngoài người dùng chạm được tiền, test kỹ, kiểm toán trước mainnet.
+- Đăng nhập bằng ví web3. Trong tab Vault có 2 nút: **Open vault** / **Import vault**.
+- **Mở vault:** phí 1 USDC. App tạo **mật khẩu vault** ngẫu nhiên ngay trong trình duyệt, hiện đúng một lần, người dùng chép ra giấy. MoonSafe **không lưu, không cấp lại**. Không cho người dùng tự đặt mật khẩu (vault công khai trên chuỗi, mật khẩu tự nghĩ dò được).
+- **Rút tiền = ví ký + nhập mật khẩu vault.** Thiếu một trong hai không rút được. Tiền gửi tới **bất kỳ địa chỉ** nào (Hiếu 2026-11-07).
+- **Yêu cầu cho hợp đồng:** dùng mật khẩu không được làm lộ mật khẩu lên chuỗi (nếu lộ thì chỉ dùng được một lần). Cách làm do Claude Code đề xuất, người kiểm toán duyệt.
+- **Mất ví:** đăng nhập bằng ví khác → Import vault → nhập địa chỉ vault + mật khẩu → ví mới thành chủ, **vào ngay, không chờ**.
+- **Mất mật khẩu = mất quyền rút, kể cả còn ví.** Phải nói rõ lúc mở vault.
+- MoonSafe **không giữ khoá nào, không ký gì**. MoonSafe sập vẫn rút bình thường.
+- **BỎ** so với bản chốt 2026-11-06: vault 2-of-2 ví + email, khoá guardian, OTP qua Resend, link xác nhận qua mail, đường chờ 7 ngày khi MoonSafe sập, địa chỉ cứu hộ, đổi chủ do guardian khởi động.
+- **Rủi ro đã biết, ghi cho kiểm toán:** vì vào ngay bằng mật khẩu, ai cầm tờ giấy kèm địa chỉ vault thì lấy được vault. Tờ giấy là chìa của cả két; nhắc người dùng lúc mở vault.
+- Vault V1 (`VaultProxy`) không nâng cấp được; người dùng tự chuyển tiền sang vault mới.
 
-**Mặt 2: mất ví (bị hack) cũng không bị rút tiền.** Rút tiền cần **2 chìa tách rời: ví + email**, như multisig 2-of-2. Có ví mà không có email thì không rút được; có email mà không có ví cũng không rút được.
+## 8. Phí (Hiếu 2026-11-07)
 
-Sự thật kỹ thuật phải giữ khi xây:
-- Hợp đồng onchain không đọc được email. "Chìa email" thực chất là **khoá của MoonSafe trên server, chỉ ký sau khi người dùng bấm link xác nhận trong mail** (link ghi rõ số tiền và địa chỉ nhận). Khoá này **đứng một mình không rút được gì**: không có chữ ký ví thì hợp đồng từ chối.
-- Server không bao giờ giữ khoá ví của người dùng.
-- **Đường thoát khi MoonSafe sập hoặc đóng cửa:** chỉ dùng ví vẫn rút được nhưng phải **chờ 7 ngày**, trong lúc đó email (và app) báo và **huỷ được**. Tiền không bao giờ bị kẹt vì server; kẻ trộm ví thì bị email chặn trong 7 ngày đó.
-- **Mất ví:** email + ví mới → đổi chủ sau 7 ngày chờ; ví cũ huỷ được trong lúc chờ (spec `docs/vault-recovery-spec.md`).
-- **Mất email:** ví → đổi email sau 7 ngày chờ; email cũ huỷ được trong lúc chờ.
-- Mất cả 2 chìa = mất quyền rút. Phải nói rõ với người dùng lúc mở vault.
+- Mở vault 1 USDC; AI power 1 USDC cho 100 tin nhắn. Mỗi khoản là công tắc cấu hình, bật/tắt được.
+- Nhận USDC từ người dùng VN và sàng lọc địa chỉ bị trừng phạt: chờ luật sư.
 
-Hiện trạng: hợp đồng hiện tại (`VaultProxy`) chỉ có 1 chìa là ví, rút toàn bộ ngay tới bất kỳ địa chỉ nào → lộ khoá ví = mất cả quỹ. **Vault v3 chưa xây: làm SAU hackathon, khi có mini grant (Hiếu chốt 2026-11-01).** Trước đó không đổi hợp đồng. Vault cũ không nâng cấp được, người dùng tự chuyển tiền sang vault mới.
+## 9. Pháp lý (rà soát ban đầu do AI làm, CHƯA phải ý kiến luật sư)
 
-**Luồng đăng nhập + nút khôi phục (Hiếu chốt 2026-11-06, chi tiết ở `docs/plan-backup-and-circle.md`):** giữ Privy, không dùng Circle; mỗi người luôn có đủ ví + email. Đăng nhập bằng email: hiện "email này gắn với ví 0x…" và cho **chọn** xuất khoá (không bắt buộc). Đăng nhập bằng ví: bước nhập email nhận OTP, **MoonSafe tự lưu và tự xác minh email** (không nhờ Privy gắn; lỗi không chặn vào app). Màn đăng nhập có một nút nhỏ "Mất 1 trong 2?" dẫn tới khôi phục vault / support / điều khoản, đầy đủ chức năng ở V2. Hackathon đã xong (Hiếu, 2026-11-06), nên dòng "làm SAU hackathon" ở trên đã đến hạn: vault 2-of-2 làm ngay trong V2.
+- Trang Privacy + Terms; bước đồng ý chủ động (ô không tích sẵn) trước lần chat đầu, theo từng mục đích (lưu hồ sơ; gửi tin nhắn tới OpenAI/Anthropic); lưu thời điểm đồng ý; xoá dữ liệu phải xoá hẳn trên server.
+- Liệt kê bên xử lý ở nước ngoài: Cloudflare, Privy, OpenAI, Anthropic, Telegram (Telegram chỉ báo "có yêu cầu mới", không chuyển nội dung tài chính). Resend chỉ còn nếu còn gửi email.
+- Terms về khoá viết lại cho V2: người dùng giữ ví và mật khẩu, MoonSafe không giữ khoá; mất mật khẩu thì sao; phí; 18+; khu vực phục vụ.
+- Câu agent "MoonSafe không bao giờ giữ khoá hay di chuyển được tiền" chỉ giữ nếu kiểm toán xác nhận đúng với hợp đồng V2.
 
-Việc khác còn mở (từ `docs/audit-mainnet-2026-10-29.md`): giới hạn đăng ký Privy, giới hạn tần suất `/api/*` trên Cloudflare, gói Workers trả phí, Safe 2-of-2 chưa có ví dự phòng.
+## 10. Môi trường và thứ tự
+
+- V2: link riêng, **private test trên mainnet** (tiền thật). Pages, KV, D1 riêng; contract mainnet. Sửa mục 4 phạm vi đợt đầu cũ: bỏ "contract testnet" và "khoá guardian riêng".
+- Phạm vi đợt đầu: (1) agent giáo dục; (2) Privacy + Terms + bước đồng ý dữ liệu; (3) Vault V2 + Import vault; (4) môi trường V2 riêng.
+- **Thứ tự (đề xuất, Hiếu chưa xác nhận):** chốt và làm trước: hợp đồng vault + hỏi luật sư. Song song: agent giáo dục, Privacy/Terms/đồng ý, môi trường V2, màn tỷ lệ. Để sau: tách nội dung theo khu vực, cách xếp bất động sản / bảo hiểm / cho vay / vốn doanh nghiệp / NFT.
 
 ## Chưa chốt
 
-- Rút trong lúc khẩn cấp: mỗi lần rút đều chờ bấm mail (vài phút), hay vẫn cho rút ngay một khoản nhỏ (ví dụ 1 tháng chi tiêu/ngày) chỉ bằng ví?
-- Email nhận link: email đăng nhập Privy, hay một email riêng người dùng tự khai (tách khỏi tài khoản đăng nhập để mất một bên không mất cả hai)?
-- Tiền rút được gửi tới đâu: bất kỳ địa chỉ nào (đã ghi trong link mail), hay chỉ về ví chủ?
-- Bất động sản cho thuê, bảo hiểm tích luỹ, tiền cho vay, vốn doanh nghiệp, NFT xếp ở đâu.
+- **Luật sư:** nhận phí USDC từ người dùng VN; sàng lọc địa chỉ bị trừng phạt; nút mua cirBTC cho người dùng VN; có tách nội dung theo khu vực không (VN chỉ còn giáo dục + quỹ USDC); dòng "to go" của thanh Crypto; việc đổi chủ vault bằng mật khẩu.
+- **Kiểm toán:** việc vào ngay bằng mật khẩu (ai cầm giấy là cầm vault); cách dùng mật khẩu mà không lộ lên chuỗi.
+- **Đăng nhập:** còn đăng nhập email / Google qua Privy không (luồng mới chỉ nói đăng nhập bằng ví); nếu còn thì có "xuất khoá" không; nội dung nút "!" trên màn đăng nhập (nút cũ "Mất 1 trong 2?" không còn đúng).
+- **Tỷ lệ:** chưa chọn tỷ lệ Traditional/Crypto thì có tạm 50/50 không; Safety do app tính theo tuổi, người dùng có sửa được không (đang hiểu: không).
+- **Chữ:** "Giá giảm không phải lý do để giục mua thêm" giữ hay đổi thành câu trung tính hơn.
+- **Giới hạn người dùng** của private test (danh sách mời hay mở).
+- Cách xếp bất động sản cho thuê, bảo hiểm tích luỹ, tiền cho vay, vốn doanh nghiệp, NFT.
