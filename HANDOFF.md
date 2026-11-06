@@ -6,9 +6,16 @@
 - **Vault V2 thay hẳn thiết kế 2-of-2 ví + email:** rút = ví ký + **mật khẩu vault** (app tạo ngẫu nhiên, hiện 1 lần, MoonSafe không lưu). Mất ví → ví khác + Import vault (địa chỉ + mật khẩu) → thành chủ ngay. MoonSafe không giữ khoá, không ký gì. Bỏ guardian, OTP Resend, đường chờ 7 ngày, địa chỉ cứu hộ.
 - V2 private test **trên mainnet**, không testnet.
 
-**Hệ quả:** `contracts/VaultV2.sol` + `VaultFactoryV2.sol` + test (commit `dc0a501`, thiết kế guardian) **đã lỗi thời**, chưa xoá; sẽ viết lại khi Hiếu chốt cách dùng mật khẩu trên hợp đồng. `docs/plan-backup-and-circle.md` và mục 2026-11-06 (đêm) bên dưới chỉ còn là tham khảo.
+**Hợp đồng V2 đã viết lại theo CORE V2 (Hiếu chốt 1a + 2b, 2026-11-07), CHƯA DEPLOY, CHƯA KIỂM TOÁN:**
+- Mật khẩu vault = 24 ký tự, nhóm 4 (`ABCD-EFGH-…`), app tạo trong trình duyệt. Trình duyệt sinh một khoá secp256k1 từ mật khẩu; vault chỉ lưu địa chỉ của khoá đó (`passwordKey`). Mật khẩu không bao giờ lên chuỗi.
+- `withdraw(amount, to, deadline, sig)`: ví chủ gửi + chữ ký EIP-712 của khoá mật khẩu trên (amount, to, nonce, deadline). `importVault(deadline, sig)`: ví mới gửi + chữ ký trên (newOwner = người gửi, nonce, deadline) → thành chủ ngay; factory cập nhật `getVault` (ví mới đã có vault thì import bị từ chối).
+- Factory: không còn guardian; chủ factory chỉ chỉnh phí (0 = tắt), người nhận phí, tạm dừng mở vault mới. `createVault(passwordKey)`.
+- Test: `contracts/test/VaultV2.t.sol` 43 test (replay, sai mật khẩu, khác vault/chain, chữ ký high-s, reentrancy, import bị chép từ mempool, fuzz). Toàn repo 365 pass (forge qua Docker, lệnh ở mục dưới).
+- **Chưa có:** cách sinh khoá từ mật khẩu ở phía app (đề xuất: bảng chữ 32 ký tự không nhầm lẫn `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`, khoá = keccak256("MoonSafe vault password v1" ‖ mật khẩu) mod n), đổi mật khẩu (CORE chưa nói; nếu tờ giấy bị lộ thì hiện chỉ có cách rút hết sang vault mới).
 
-**Việc tiếp theo:** (1) Hiếu chọn cách hợp đồng dùng mật khẩu mà không lộ lên chuỗi (Claude Code đã đề xuất trong chat 2026-11-07) và dạng mật khẩu; (2) viết lại VaultV2 + test; (3) song song: agent giáo dục, Privacy/Terms/đồng ý, môi trường V2. Các câu "Chưa chốt" ở cuối CORE.
+**Arc Studio (Hiếu 2026-11-07):** dùng Arc Studio để viết + kiểm toán hợp đồng, và deploy. CLI `@circle-fin/arc-studio-cli` 1.2.2 đã cài global; `arc-studio skills install --tool claude-code` lỗi "Claude Code not found" (chạy trong VS Code) nên bỏ qua. Đăng nhập: Hiếu tự chạy `arc-studio login --paste` trong terminal thường. Arc Studio không đọc được repo local: gửi file bằng `--file contracts/VaultV2.sol:contracts/VaultV2.sol` (đọc `arc-studio agent-guide`).
+
+**Việc tiếp theo:** (1) Hiếu đăng nhập Arc Studio → gửi VaultV2 + Factory + test cho Arc Studio kiểm toán ("max preset"); (2) song song: agent giáo dục, Privacy/Terms/đồng ý, môi trường V2. Các câu "Chưa chốt" ở cuối CORE.
 
 # Handoff — 2026-11-06 (khuya) — V1 GIỮ NGUYÊN, BUILD LẠI V2 THEO KIỂM TOÁN PHÁP LÝ — ĐỌC MỤC NÀY TRƯỚC
 

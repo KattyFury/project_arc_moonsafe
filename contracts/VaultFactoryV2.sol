@@ -8,12 +8,11 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {VaultV2} from "./VaultV2.sol";
 
 /// @title MoonSafe vault factory, version 2
-/// @notice Creates one wallet-plus-guardian native-USDC vault per caller and reports the guardian key to all of them.
+/// @notice Creates one wallet-plus-password native-USDC vault per wallet and keeps an owner-to-vault index.
 /// @dev Intended for Arc mainnet (chain ID 5042), where native USDC has 18 decimals.
-/// The factory owner (a Safe multisig) can rotate the guardian key for every vault at once. That power cannot move
-/// funds: the guardian alone can only start an ownership change that the vault owner can cancel during the delay,
-/// and every withdrawal still needs the vault owner as the sender.
-/// Same fee model as VaultFactory: native value forced into this factory is not accounted as fees and cannot be withdrawn.
+/// The factory owner can only set the creation fee, its recipient, and pause new creations. It has no power over any
+/// vault: it cannot move funds, change a vault owner or a password key.
+/// Native value forced into this factory is not accounted as fees and cannot be withdrawn.
 /// @custom:upgrade-strategy The factory and vault implementation are NOT upgradeable.
 contract VaultFactoryV2 is Ownable2Step, ReentrancyGuard {
     /// @notice Maximum creation fee: 10 native USDC on Arc (18 decimals).
@@ -21,11 +20,9 @@ contract VaultFactoryV2 is Ownable2Step, ReentrancyGuard {
 
     /// @notice The fixed, separately deployed VaultV2 implementation.
     address public immutable implementation;
-    /// @notice The key whose signature (after the user's email confirmation) completes a withdrawal. Read live by every vault.
-    address public guardian;
     /// @notice Current recipient of all accrued vault-creation fees.
     address payable public feeRecipient;
-    /// @notice Creation fee in native base units.
+    /// @notice Creation fee in native base units. Zero turns the fee off.
     uint256 public fee;
     /// @notice Creation fees retained for withdrawal, excluding forced native value.
     uint256 public accruedFees;
@@ -33,10 +30,10 @@ contract VaultFactoryV2 is Ownable2Step, ReentrancyGuard {
     bool public creationPaused;
 
     mapping(address => address) private _vaults;
+    mapping(address => bool) private _isVault;
 
     error InvalidImplementation(address implementation);
     error ZeroFeeRecipient();
-    error ZeroGuardian();
     error FeeTooHigh(uint256 fee, uint256 max);
     error InsufficientFee(uint256 sent, uint256 required);
     error VaultAlreadyExists(address owner, address vault);
@@ -45,54 +42,39 @@ contract VaultFactoryV2 is Ownable2Step, ReentrancyGuard {
     error NoFeesAccrued();
     error CreationPaused();
     error RenounceDisabled();
-    error GuardianIsCreator();
+    error NotAVault(address caller);
 
     event FeeUpdated(uint256 oldFee, uint256 newFee);
     event FeeRecipientUpdated(address indexed oldRecipient, address indexed newRecipient);
-    event GuardianUpdated(address indexed oldGuardian, address indexed newGuardian);
-    event VaultCreated(address indexed owner, address indexed vault);
+    event VaultCreated(address indexed owner, address indexed vault, address passwordKey);
+    event VaultOwnerChanged(address indexed vault, address indexed oldOwner, address indexed newOwner);
     event FeesWithdrawn(address indexed recipient, uint256 amount);
     event CreationPausedSet(bool paused);
 
     /// @param implementation_ Address of the already-deployed VaultV2 implementation.
-    /// @param guardian_ Nonzero guardian key (MoonSafe's server signing key).
     /// @param feeRecipient_ Nonzero recipient of native creation fees.
     /// @param fee_ Initial fee, at most MAX_FEE.
     /// @param initialOwner Initial owner of factory configuration only, intended to be a Safe multisig.
-    constructor(
-        address implementation_,
-        address guardian_,
-        address payable feeRecipient_,
-        uint256 fee_,
-        address initialOwner
-    ) Ownable(initialOwner) {
+    constructor(address implementation_, address payable feeRecipient_, uint256 fee_, address initialOwner)
+        Ownable(initialOwner)
+    {
         if (implementation_ == address(0) || implementation_.code.length == 0) {
             revert InvalidImplementation(implementation_);
         }
-        if (guardian_ == address(0)) revert ZeroGuardian();
         if (feeRecipient_ == address(0)) revert ZeroFeeRecipient();
         if (fee_ > MAX_FEE) revert FeeTooHigh(fee_, MAX_FEE);
 
         implementation = implementation_;
-        guardian = guardian_;
         feeRecipient = feeRecipient_;
         fee = fee_;
     }
 
-    /// @notice Disabled: the owner must always be able to replace a failing fee recipient or a lost guardian key.
+    /// @notice Disabled: the owner must always be able to replace a failing fee recipient.
     function renounceOwnership() public view override onlyOwner {
         revert RenounceDisabled();
     }
 
-    /// @notice Rotates the guardian key for every vault, existing and new.
-    function setGuardian(address newGuardian) external onlyOwner {
-        if (newGuardian == address(0)) revert ZeroGuardian();
-        address previous = guardian;
-        guardian = newGuardian;
-        emit GuardianUpdated(previous, newGuardian);
-    }
-
-    /// @notice Updates the fee for future vault creations, subject to MAX_FEE.
+    /// @notice Updates the fee for future vault creations, subject to MAX_FEE. Zero turns the fee off.
     function setFee(uint256 newFee) external onlyOwner {
         if (newFee > MAX_FEE) revert FeeTooHigh(newFee, MAX_FEE);
         uint256 previousFee = fee;
@@ -116,27 +98,40 @@ contract VaultFactoryV2 is Ownable2Step, ReentrancyGuard {
 
     /// @notice Creates and initializes the caller's sole vault, accrues the fee and refunds excess.
     /// @dev The creation payment never funds the vault. Deposit separately after creation.
+    /// @param passwordKey Address of the key the browser derived from the freshly generated vault password.
     /// @return vault The newly created minimal-proxy vault address.
-    function createVault() external payable nonReentrant returns (address vault) {
+    function createVault(address passwordKey) external payable nonReentrant returns (address vault) {
         if (creationPaused) revert CreationPaused();
         uint256 creationFee = fee;
         if (msg.value < creationFee) revert InsufficientFee(msg.value, creationFee);
         address existingVault = _vaults[msg.sender];
         if (existingVault != address(0)) revert VaultAlreadyExists(msg.sender, existingVault);
         if (implementation.code.length == 0) revert InvalidImplementation(implementation);
-        if (msg.sender == guardian) revert GuardianIsCreator();
 
         vault = Clones.clone(implementation);
         _vaults[msg.sender] = vault;
+        _isVault[vault] = true;
         accruedFees += creationFee;
-        VaultV2(payable(vault)).initialize(msg.sender, address(this));
+        VaultV2(payable(vault)).initialize(msg.sender, passwordKey, address(this));
 
-        emit VaultCreated(msg.sender, vault);
+        emit VaultCreated(msg.sender, vault, passwordKey);
         uint256 excess = msg.value - creationFee;
         if (excess != 0) {
-            (bool refunded, ) = payable(msg.sender).call{value: excess}("");
+            (bool refunded,) = payable(msg.sender).call{value: excess}("");
             if (!refunded) revert RefundFailed(msg.sender, excess);
         }
+    }
+
+    /// @notice Called by a vault this factory created when its owner changes (import). Keeps getVault accurate.
+    /// @dev Reverts if the new owner already has a vault, so one wallet never maps to two vaults; the import then
+    /// fails as a whole and the user imports from a wallet without a vault.
+    function onOwnerChanged(address oldOwner, address newOwner) external {
+        if (!_isVault[msg.sender]) revert NotAVault(msg.sender);
+        address existingVault = _vaults[newOwner];
+        if (existingVault != address(0)) revert VaultAlreadyExists(newOwner, existingVault);
+        if (_vaults[oldOwner] == msg.sender) delete _vaults[oldOwner];
+        _vaults[newOwner] = msg.sender;
+        emit VaultOwnerChanged(msg.sender, oldOwner, newOwner);
     }
 
     /// @notice Anyone may send all accrued fees to the current fee recipient.
@@ -147,7 +142,7 @@ contract VaultFactoryV2 is Ownable2Step, ReentrancyGuard {
         accruedFees = 0;
         emit FeesWithdrawn(recipient, amount);
 
-        (bool sent, ) = recipient.call{value: amount}("");
+        (bool sent,) = recipient.call{value: amount}("");
         if (!sent) revert WithdrawFeesFailed(recipient, amount);
     }
 
@@ -156,9 +151,14 @@ contract VaultFactoryV2 is Ownable2Step, ReentrancyGuard {
         return _vaults[owner_];
     }
 
-    /// @notice Returns whether the address has already created a vault.
+    /// @notice Returns whether the address currently owns a vault.
     function hasVault(address owner_) external view returns (bool) {
         return _vaults[owner_] != address(0);
+    }
+
+    /// @notice Returns whether the address is a vault created by this factory.
+    function isVault(address vault) external view returns (bool) {
+        return _isVault[vault];
     }
 
     /// @notice Returns false for a missing vault, otherwise compares its native balance.

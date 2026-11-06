@@ -5,11 +5,40 @@ import {Test} from "forge-std/Test.sol";
 import {VaultV2} from "../VaultV2.sol";
 import {VaultFactoryV2} from "../VaultFactoryV2.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @dev Rejects every native transfer.
 contract RejectingRecipient {
     receive() external payable {
         revert("no");
+    }
+}
+
+/// @dev Tries to re-enter withdraw when it receives funds.
+contract ReenteringOwner {
+    VaultV2 public vault;
+    bytes public sig;
+    uint256 public deadline;
+
+    function create(VaultFactoryV2 f, address pwKey) external payable {
+        vault = VaultV2(payable(f.createVault{value: msg.value}(pwKey)));
+    }
+
+    function fund() external payable {
+        vault.deposit{value: msg.value}();
+    }
+
+    function arm(bytes calldata s, uint256 d) external {
+        sig = s;
+        deadline = d;
+    }
+
+    function go(uint256 amount) external {
+        vault.withdraw(amount, payable(address(this)), deadline, sig);
+    }
+
+    receive() external payable {
+        if (address(vault).balance > 0) vault.withdraw(1, payable(address(this)), deadline, sig);
     }
 }
 
@@ -24,21 +53,21 @@ abstract contract VaultV2Base is Test {
     address internal thief = makeAddr("thief");
     address payable internal newWallet = payable(makeAddr("newWallet"));
     address payable internal dest = payable(makeAddr("dest"));
-    address internal guardian;
-    uint256 internal guardianKey;
+    address internal pwKey; // address derived from the vault password
+    uint256 internal pwSecret;
 
     uint256 internal constant FEE = 1 ether;
     uint256 internal constant FUND = 100 ether;
 
     function setUp() public virtual {
-        (guardian, guardianKey) = makeAddrAndKey("guardian");
+        (pwKey, pwSecret) = makeAddrAndKey("vault-password");
         impl = new VaultV2();
-        factory = new VaultFactoryV2(address(impl), guardian, feeRecipient, FEE, safe);
+        factory = new VaultFactoryV2(address(impl), feeRecipient, FEE, safe);
         vm.deal(alice, 1_000 ether);
         vm.deal(thief, 1_000 ether);
-        vm.deal(guardian, 10 ether);
+        vm.deal(newWallet, 10 ether);
         vm.prank(alice);
-        vault = VaultV2(payable(factory.createVault{value: FEE}()));
+        vault = VaultV2(payable(factory.createVault{value: FEE}(pwKey)));
         vm.prank(alice);
         vault.deposit{value: FUND}();
     }
@@ -82,7 +111,7 @@ abstract contract VaultV2Base is Test {
         );
     }
 
-    function _ownerSig(VaultV2 v, uint256 key, address newOwner, uint256 nonce_, uint256 deadline)
+    function _importSig(VaultV2 v, uint256 key, address newOwner, uint256 nonce_, uint256 deadline)
         internal
         view
         returns (bytes memory)
@@ -92,67 +121,77 @@ abstract contract VaultV2Base is Test {
             key,
             keccak256(
                 abi.encode(
-                    keccak256("ChangeOwner(address newOwner,uint256 nonce,uint256 deadline)"),
-                    newOwner,
-                    nonce_,
-                    deadline
+                    keccak256("Import(address newOwner,uint256 nonce,uint256 deadline)"), newOwner, nonce_, deadline
                 )
             )
         );
     }
 
-    function _guardianWithdraw(uint256 amount, address to) internal {
+    function _withdraw(uint256 amount, address to) internal {
         uint256 deadline = block.timestamp + 1 hours;
-        bytes memory sig = _withdrawSig(vault, guardianKey, amount, to, vault.nonce(), deadline);
+        bytes memory sig = _withdrawSig(vault, pwSecret, amount, to, vault.nonce(), deadline);
         vm.prank(alice);
         vault.withdraw(amount, payable(to), deadline, sig);
+    }
+
+    function _import(address who) internal {
+        uint256 deadline = block.timestamp + 1 hours;
+        bytes memory sig = _importSig(vault, pwSecret, who, vault.nonce(), deadline);
+        vm.prank(who);
+        vault.importVault(deadline, sig);
     }
 }
 
 contract VaultV2InitTest is VaultV2Base {
-    function test_Init_OwnerGuardianFactory() public view {
+    function test_Init_OwnerPasswordKeyFactory() public view {
         assertEq(vault.owner(), alice);
-        assertEq(vault.guardian(), guardian);
-        assertEq(factory.getVault(alice), address(vault));
-        assertEq(vault.getBalance(), FUND);
+        assertEq(vault.passwordKey(), pwKey);
+        assertEq(vault.factory(), address(factory));
         assertEq(vault.nonce(), 0);
+        assertEq(vault.getBalance(), FUND);
+        assertEq(factory.getVault(alice), address(vault));
+        assertTrue(factory.isVault(address(vault)));
     }
 
     function test_Init_CannotReinitialize() public {
         vm.expectRevert(VaultV2.AlreadyInitialized.selector);
-        vault.initialize(thief, address(factory));
+        vault.initialize(thief, thief, thief);
     }
 
     function test_Init_ImplementationIsLocked() public {
         vm.expectRevert(VaultV2.AlreadyInitialized.selector);
-        impl.initialize(thief, address(factory));
+        impl.initialize(thief, thief, thief);
     }
 
-    function test_Init_FactoryRefusesGuardianAsCreator() public {
-        vm.deal(guardian, 10 ether);
-        vm.prank(guardian);
-        vm.expectRevert(VaultFactoryV2.GuardianIsCreator.selector);
-        factory.createVault{value: FEE}();
+    function test_Init_ZeroPasswordKeyRejected() public {
+        vm.prank(thief);
+        vm.expectRevert(VaultV2.ZeroPasswordKey.selector);
+        factory.createVault{value: FEE}(address(0));
     }
 
-    function test_Init_RevertsGuardianEqualsOwner() public {
-        VaultV2 raw = VaultV2(payable(Clones.clone(address(impl))));
-        vm.expectRevert(VaultV2.GuardianIsOwner.selector);
-        raw.initialize(guardian, address(factory));
+    function test_Init_RawCloneGuards() public {
+        VaultV2 c = VaultV2(payable(Clones.clone(address(impl))));
+        vm.expectRevert(VaultV2.ZeroOwner.selector);
+        c.initialize(address(0), pwKey, address(factory));
+        vm.expectRevert(VaultV2.ZeroFactory.selector);
+        c.initialize(alice, pwKey, address(0));
     }
 
     function test_Deposit_OwnerAndGift() public {
         vm.prank(alice);
-        vault.deposit{value: 5 ether}();
+        vault.deposit{value: 1 ether}();
         vm.prank(thief);
-        vault.depositFor{value: 3 ether}();
-        assertEq(vault.getBalance(), FUND + 8 ether);
+        vault.depositFor{value: 2 ether}();
+        assertEq(vault.getBalance(), FUND + 3 ether);
     }
 
     function test_Deposit_NonOwnerRevertsAndRawTransferRejected() public {
         vm.prank(thief);
         vm.expectRevert(abi.encodeWithSelector(VaultV2.Unauthorized.selector, thief));
         vault.deposit{value: 1 ether}();
+        vm.prank(alice);
+        vm.expectRevert(VaultV2.ZeroAmount.selector);
+        vault.deposit{value: 0}();
         vm.prank(thief);
         (bool ok,) = address(vault).call{value: 1 ether}("");
         assertFalse(ok);
@@ -160,521 +199,402 @@ contract VaultV2InitTest is VaultV2Base {
 }
 
 contract VaultV2WithdrawTest is VaultV2Base {
-    function test_Withdraw_BothKeys() public {
-        _guardianWithdraw(10 ether, dest);
-        assertEq(dest.balance, 10 ether);
-        assertEq(vault.getBalance(), FUND - 10 ether);
+    function test_Withdraw_WalletPlusPassword() public {
+        _withdraw(40 ether, dest);
+        assertEq(dest.balance, 40 ether);
+        assertEq(vault.getBalance(), FUND - 40 ether);
         assertEq(vault.nonce(), 1);
+    }
+
+    function test_Withdraw_ToAnyAddressIncludingOwner() public {
+        uint256 before = alice.balance;
+        _withdraw(FUND, alice);
+        assertEq(alice.balance, before + FUND);
+        assertEq(vault.getBalance(), 0);
     }
 
     function test_Withdraw_ReplayFails() public {
         uint256 deadline = block.timestamp + 1 hours;
-        bytes memory sig = _withdrawSig(vault, guardianKey, 10 ether, dest, 0, deadline);
-        vm.startPrank(alice);
-        vault.withdraw(10 ether, dest, deadline, sig);
-        vm.expectRevert(VaultV2.InvalidGuardianSignature.selector);
-        vault.withdraw(10 ether, dest, deadline, sig);
-        vm.stopPrank();
+        bytes memory sig = _withdrawSig(vault, pwSecret, 1 ether, dest, 0, deadline);
+        vm.prank(alice);
+        vault.withdraw(1 ether, dest, deadline, sig);
+        vm.prank(alice);
+        vm.expectRevert(VaultV2.InvalidPasswordSignature.selector);
+        vault.withdraw(1 ether, dest, deadline, sig);
     }
 
-    function test_Withdraw_SignatureBoundToAmountAndRecipient() public {
+    function test_Withdraw_SignatureBoundToAmountRecipientDeadline() public {
         uint256 deadline = block.timestamp + 1 hours;
-        bytes memory sig = _withdrawSig(vault, guardianKey, 10 ether, dest, 0, deadline);
+        bytes memory sig = _withdrawSig(vault, pwSecret, 1 ether, dest, 0, deadline);
         vm.startPrank(alice);
-        vm.expectRevert(VaultV2.InvalidGuardianSignature.selector);
-        vault.withdraw(11 ether, dest, deadline, sig);
-        vm.expectRevert(VaultV2.InvalidGuardianSignature.selector);
-        vault.withdraw(10 ether, newWallet, deadline, sig);
-        vm.expectRevert(VaultV2.InvalidGuardianSignature.selector);
-        vault.withdraw(10 ether, dest, deadline + 1, sig);
+        vm.expectRevert(VaultV2.InvalidPasswordSignature.selector);
+        vault.withdraw(2 ether, dest, deadline, sig);
+        vm.expectRevert(VaultV2.InvalidPasswordSignature.selector);
+        vault.withdraw(1 ether, payable(thief), deadline, sig);
+        vm.expectRevert(VaultV2.InvalidPasswordSignature.selector);
+        vault.withdraw(1 ether, dest, deadline + 1, sig);
         vm.stopPrank();
     }
 
     function test_Withdraw_ExpiredSignature() public {
         uint256 deadline = block.timestamp + 1 hours;
-        bytes memory sig = _withdrawSig(vault, guardianKey, 10 ether, dest, 0, deadline);
+        bytes memory sig = _withdrawSig(vault, pwSecret, 1 ether, dest, 0, deadline);
         vm.warp(deadline + 1);
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(VaultV2.SignatureExpired.selector, deadline));
-        vault.withdraw(10 ether, dest, deadline, sig);
+        vault.withdraw(1 ether, dest, deadline, sig);
     }
 
-    function test_Withdraw_WrongSignerFails() public {
-        (, uint256 otherKey) = makeAddrAndKey("other");
+    function test_Withdraw_WrongPasswordFails() public {
+        (, uint256 wrongKey) = makeAddrAndKey("guessed-password");
         uint256 deadline = block.timestamp + 1 hours;
-        bytes memory sig = _withdrawSig(vault, otherKey, 10 ether, dest, 0, deadline);
+        bytes memory sig = _withdrawSig(vault, wrongKey, 1 ether, dest, 0, deadline);
         vm.prank(alice);
-        vm.expectRevert(VaultV2.InvalidGuardianSignature.selector);
-        vault.withdraw(10 ether, dest, deadline, sig);
+        vm.expectRevert(VaultV2.InvalidPasswordSignature.selector);
+        vault.withdraw(1 ether, dest, deadline, sig);
     }
 
-    /// The thief holds the wallet only: no signature, no money.
     function test_Withdraw_WalletAloneCannot() public {
         vm.prank(alice);
-        vm.expectRevert(VaultV2.InvalidGuardianSignature.selector);
-        vault.withdraw(10 ether, dest, block.timestamp + 1 hours, hex"");
+        vm.expectRevert(VaultV2.InvalidPasswordSignature.selector);
+        vault.withdraw(1 ether, dest, block.timestamp + 1, "");
     }
 
-    /// MoonSafe's key alone cannot move money either: the sender must be the owner.
-    function test_Withdraw_GuardianAloneCannot() public {
+    function test_Withdraw_WalletSignatureIsNotPassword() public {
+        (address wallet, uint256 walletKey) = makeAddrAndKey("owner-wallet");
+        vm.deal(wallet, 10 ether);
+        VaultFactoryV2 f = new VaultFactoryV2(address(impl), feeRecipient, 0, safe);
+        vm.prank(wallet);
+        VaultV2 v = VaultV2(payable(f.createVault(pwKey)));
+        vm.prank(wallet);
+        v.deposit{value: 5 ether}();
         uint256 deadline = block.timestamp + 1 hours;
-        bytes memory sig = _withdrawSig(vault, guardianKey, 10 ether, dest, 0, deadline);
-        vm.prank(guardian);
-        vm.expectRevert(abi.encodeWithSelector(VaultV2.Unauthorized.selector, guardian));
-        vault.withdraw(10 ether, dest, deadline, sig);
+        bytes memory sig = _withdrawSig(v, walletKey, 1 ether, dest, 0, deadline);
+        vm.prank(wallet);
+        vm.expectRevert(VaultV2.InvalidPasswordSignature.selector);
+        v.withdraw(1 ether, dest, deadline, sig);
     }
 
-    /// A valid signature in a thief's hands is useless without the owner wallet.
-    function test_Withdraw_StolenSignatureUselessToThief() public {
+    function test_Withdraw_PasswordAloneCannot() public {
         uint256 deadline = block.timestamp + 1 hours;
-        bytes memory sig = _withdrawSig(vault, guardianKey, 10 ether, thief, 0, deadline);
+        bytes memory sig = _withdrawSig(vault, pwSecret, 1 ether, dest, 0, deadline);
         vm.prank(thief);
         vm.expectRevert(abi.encodeWithSelector(VaultV2.Unauthorized.selector, thief));
-        vault.withdraw(10 ether, payable(thief), deadline, sig);
+        vault.withdraw(1 ether, dest, deadline, sig);
+        vm.prank(pwKey);
+        vm.expectRevert(abi.encodeWithSelector(VaultV2.Unauthorized.selector, pwKey));
+        vault.withdraw(1 ether, dest, deadline, sig);
     }
 
     function test_Withdraw_SignatureNotValidOnAnotherVault() public {
         address bob = makeAddr("bob");
-        vm.deal(bob, 10 ether);
+        vm.deal(bob, 100 ether);
         vm.prank(bob);
-        VaultV2 other = VaultV2(payable(factory.createVault{value: FEE}()));
+        VaultV2 other = VaultV2(payable(factory.createVault{value: FEE}(pwKey))); // same password key on purpose
         vm.prank(bob);
-        other.deposit{value: 5 ether}();
+        other.deposit{value: 10 ether}();
         uint256 deadline = block.timestamp + 1 hours;
-        bytes memory sig = _withdrawSig(vault, guardianKey, 1 ether, dest, 0, deadline); // signed for alice's vault
+        bytes memory sigForAlice = _withdrawSig(vault, pwSecret, 1 ether, dest, 0, deadline);
         vm.prank(bob);
-        vm.expectRevert(VaultV2.InvalidGuardianSignature.selector);
-        other.withdraw(1 ether, dest, deadline, sig);
+        vm.expectRevert(VaultV2.InvalidPasswordSignature.selector);
+        other.withdraw(1 ether, dest, deadline, sigForAlice);
+    }
+
+    function test_Withdraw_SignatureNotValidOnAnotherChain() public {
+        uint256 deadline = block.timestamp + 1 hours;
+        bytes memory sig = _withdrawSig(vault, pwSecret, 1 ether, dest, 0, deadline);
+        vm.chainId(block.chainid + 1);
+        vm.prank(alice);
+        vm.expectRevert(VaultV2.InvalidPasswordSignature.selector);
+        vault.withdraw(1 ether, dest, deadline, sig);
+    }
+
+    function test_Withdraw_MalformedSignatures() public {
+        uint256 deadline = block.timestamp + 1 hours;
+        bytes memory sig = _withdrawSig(vault, pwSecret, 1 ether, dest, 0, deadline);
+        // High-s (malleated) form of a valid signature is rejected.
+        bytes32 rr;
+        bytes32 ss;
+        uint8 vv;
+        assembly {
+            rr := mload(add(sig, 32))
+            ss := mload(add(sig, 64))
+            vv := byte(0, mload(add(sig, 96)))
+        }
+        uint256 n = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
+        bytes memory malleated = abi.encodePacked(rr, bytes32(n - uint256(ss)), vv == 27 ? uint8(28) : uint8(27));
+        vm.startPrank(alice);
+        vm.expectRevert(VaultV2.InvalidPasswordSignature.selector);
+        vault.withdraw(1 ether, dest, deadline, malleated);
+        vm.expectRevert(VaultV2.InvalidPasswordSignature.selector);
+        vault.withdraw(1 ether, dest, deadline, new bytes(65));
+        vm.expectRevert(VaultV2.InvalidPasswordSignature.selector);
+        vault.withdraw(1 ether, dest, deadline, hex"1234");
+        vm.stopPrank();
     }
 
     function test_Withdraw_Guards() public {
         uint256 deadline = block.timestamp + 1 hours;
-        // Signatures are made first: vm.sign is itself a call and would swallow expectRevert.
-        bytes memory sigZero = _withdrawSig(vault, guardianKey, 0, dest, 0, deadline);
-        bytes memory sigNoTo = _withdrawSig(vault, guardianKey, 1 ether, address(0), 0, deadline);
-        bytes memory sigOver = _withdrawSig(vault, guardianKey, FUND + 1, dest, 0, deadline);
         vm.startPrank(alice);
+        bytes memory s0 = _withdrawSig(vault, pwSecret, 0, dest, 0, deadline);
         vm.expectRevert(VaultV2.ZeroAmount.selector);
-        vault.withdraw(0, dest, deadline, sigZero);
+        vault.withdraw(0, dest, deadline, s0);
+        bytes memory sz = _withdrawSig(vault, pwSecret, 1 ether, address(0), 0, deadline);
         vm.expectRevert(VaultV2.ZeroRecipient.selector);
-        vault.withdraw(1 ether, payable(address(0)), deadline, sigNoTo);
+        vault.withdraw(1 ether, payable(address(0)), deadline, sz);
+        bytes memory sb = _withdrawSig(vault, pwSecret, FUND + 1, dest, 0, deadline);
         vm.expectRevert(abi.encodeWithSelector(VaultV2.InsufficientBalance.selector, FUND + 1, FUND));
-        vault.withdraw(FUND + 1, dest, deadline, sigOver);
+        vault.withdraw(FUND + 1, dest, deadline, sb);
         vm.stopPrank();
-    }
-
-    function test_Withdraw_RotatedGuardianInvalidatesOldSigsAndNewKeyWorks() public {
-        uint256 deadline = block.timestamp + 1 hours;
-        bytes memory oldSig = _withdrawSig(vault, guardianKey, 1 ether, dest, 0, deadline);
-        (address g2, uint256 key2) = makeAddrAndKey("guardian2");
-        vm.prank(safe);
-        factory.setGuardian(g2);
-        vm.prank(alice);
-        vm.expectRevert(VaultV2.InvalidGuardianSignature.selector);
-        vault.withdraw(1 ether, dest, deadline, oldSig);
-        bytes memory newSig = _withdrawSig(vault, key2, 1 ether, dest, 0, deadline);
-        vm.prank(alice);
-        vault.withdraw(1 ether, dest, deadline, newSig);
-        assertEq(dest.balance, 1 ether);
+        assertEq(vault.nonce(), 0); // failed attempts consume nothing
     }
 
     function test_Withdraw_RecipientRejectsRevertsWholeTx() public {
-        RejectingRecipient bad = new RejectingRecipient();
+        RejectingRecipient r = new RejectingRecipient();
         uint256 deadline = block.timestamp + 1 hours;
-        bytes memory sig = _withdrawSig(vault, guardianKey, 1 ether, address(bad), 0, deadline);
+        bytes memory sig = _withdrawSig(vault, pwSecret, 1 ether, address(r), 0, deadline);
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(VaultV2.NativeTransferFailed.selector, address(bad), 1 ether));
-        vault.withdraw(1 ether, payable(address(bad)), deadline, sig);
-        assertEq(vault.nonce(), 0); // the nonce did not burn
-        assertEq(vault.getBalance(), FUND);
-    }
-}
-
-contract VaultV2SlowWithdrawTest is VaultV2Base {
-    function test_Slow_RequestWaitExecute() public {
-        vm.prank(alice);
-        vault.requestWithdraw(20 ether, dest);
-        (address to, uint256 amount, uint256 eta) = vault.pendingWithdrawal();
-        assertEq(to, dest);
-        assertEq(amount, 20 ether);
-        assertEq(eta, block.timestamp + 7 days);
-
-        vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(VaultV2.NotReady.selector, eta));
-        vault.executeWithdraw();
-
-        vm.warp(eta);
-        vm.prank(alice);
-        vault.executeWithdraw();
-        assertEq(dest.balance, 20 ether);
-        (,, uint256 etaAfter) = vault.pendingWithdrawal();
-        assertEq(etaAfter, 0);
-    }
-
-    function test_Slow_OnlyOwnerRequestsAndExecutes() public {
-        vm.prank(thief);
-        vm.expectRevert(abi.encodeWithSelector(VaultV2.Unauthorized.selector, thief));
-        vault.requestWithdraw(1 ether, payable(thief));
-        vm.prank(guardian);
-        vm.expectRevert(abi.encodeWithSelector(VaultV2.Unauthorized.selector, guardian));
-        vault.requestWithdraw(1 ether, payable(guardian));
-
-        vm.prank(alice);
-        vault.requestWithdraw(1 ether, dest);
-        vm.warp(block.timestamp + 7 days);
-        vm.prank(thief);
-        vm.expectRevert(abi.encodeWithSelector(VaultV2.Unauthorized.selector, thief));
-        vault.executeWithdraw();
-    }
-
-    /// The thief has the wallet. He starts a slow withdrawal; the real user clicks "not me" in the email.
-    function test_Slow_GuardianCancelsThiefsRequest() public {
-        vm.prank(alice); // the thief, acting with the stolen wallet
-        vault.requestWithdraw(FUND, payable(thief));
-        vm.prank(guardian);
-        vault.cancelWithdraw();
-        vm.warp(block.timestamp + 8 days);
-        vm.prank(alice);
-        vm.expectRevert(VaultV2.NothingPending.selector);
-        vault.executeWithdraw();
+        vm.expectRevert(abi.encodeWithSelector(VaultV2.NativeTransferFailed.selector, address(r), 1 ether));
+        vault.withdraw(1 ether, payable(address(r)), deadline, sig);
+        assertEq(vault.nonce(), 0);
         assertEq(vault.getBalance(), FUND);
     }
 
-    function test_Slow_OwnerCanCancelOwnRequest() public {
-        vm.startPrank(alice);
-        vault.requestWithdraw(1 ether, dest);
-        vault.cancelWithdraw();
-        vm.stopPrank();
-        (,, uint256 eta) = vault.pendingWithdrawal();
-        assertEq(eta, 0);
-    }
-
-    function test_Slow_StrangerCannotCancel() public {
-        vm.prank(alice);
-        vault.requestWithdraw(1 ether, dest);
-        vm.prank(thief);
-        vm.expectRevert(abi.encodeWithSelector(VaultV2.Unauthorized.selector, thief));
-        vault.cancelWithdraw();
-    }
-
-    function test_Slow_NothingToCancel() public {
-        vm.prank(guardian);
-        vm.expectRevert(VaultV2.NothingPending.selector);
-        vault.cancelWithdraw();
-    }
-
-    function test_Slow_SecondRequestBlockedWhileLive() public {
-        vm.startPrank(alice);
-        vault.requestWithdraw(1 ether, dest);
-        vm.expectRevert(VaultV2.WithdrawalPending.selector);
-        vault.requestWithdraw(2 ether, dest);
-        vm.stopPrank();
-    }
-
-    function test_Slow_ExpiresAndCanBeReplaced() public {
-        vm.prank(alice);
-        vault.requestWithdraw(1 ether, dest);
-        (,, uint256 eta) = vault.pendingWithdrawal();
-        vm.warp(eta + 14 days + 1);
-        vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(VaultV2.RequestExpired.selector, eta + 14 days));
-        vault.executeWithdraw();
-        vm.prank(alice);
-        vault.requestWithdraw(2 ether, dest); // stale one is replaceable
-        (, uint256 amount,) = vault.pendingWithdrawal();
-        assertEq(amount, 2 ether);
-    }
-
-    function test_Slow_LastSecondOfGraceStillWorks() public {
-        vm.prank(alice);
-        vault.requestWithdraw(1 ether, dest);
-        (,, uint256 eta) = vault.pendingWithdrawal();
-        vm.warp(eta + 14 days);
-        vm.prank(alice);
-        vault.executeWithdraw();
-        assertEq(dest.balance, 1 ether);
-    }
-
-    function test_Slow_ShortfallAtExecuteReverts() public {
-        vm.prank(alice);
-        vault.requestWithdraw(FUND, dest);
-        _guardianWithdraw(10 ether, newWallet); // balance drops meanwhile
-        (,, uint256 eta) = vault.pendingWithdrawal();
-        vm.warp(eta);
-        vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(VaultV2.InsufficientBalance.selector, FUND, FUND - 10 ether));
-        vault.executeWithdraw();
+    function test_Withdraw_ReentrancyBlocked() public {
+        ReenteringOwner ro = new ReenteringOwner();
+        vm.deal(address(ro), 0);
+        ro.create{value: FEE}(factory, pwKey);
+        ro.fund{value: 5 ether}();
+        VaultV2 v = ro.vault();
+        uint256 deadline = block.timestamp + 1 hours;
+        ro.arm(_withdrawSig(v, pwSecret, 1 ether, address(ro), 0, deadline), deadline);
+        vm.expectRevert(); // inner re-entry fails, so the outer transfer fails
+        ro.go(1 ether);
+        assertEq(v.getBalance(), 5 ether);
     }
 }
 
-contract VaultV2OwnerChangeTest is VaultV2Base {
-    /// Lost wallet: the server (guardian key) starts it, nobody cancels, anyone finishes.
-    function test_OwnerChange_LostWalletFlow() public {
-        vm.prank(guardian);
-        vault.requestOwnerChange(newWallet);
-        (address pendingOwner, uint256 eta) = vault.pendingOwnerChange();
-        assertEq(pendingOwner, newWallet);
-        assertEq(eta, block.timestamp + 7 days);
-
-        vm.expectRevert(abi.encodeWithSelector(VaultV2.NotReady.selector, eta));
-        vault.finishOwnerChange();
-
-        vm.warp(eta);
-        vm.prank(makeAddr("anyone"));
-        vault.finishOwnerChange();
+contract VaultV2ImportTest is VaultV2Base {
+    function test_Import_NewWalletBecomesOwnerImmediately() public {
+        _import(newWallet);
         assertEq(vault.owner(), newWallet);
-
-        // The new wallet runs the vault; the old one is out.
-        _guardianWithdrawAs(newWallet, 5 ether, dest);
-        assertEq(dest.balance, 5 ether);
-        vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(VaultV2.Unauthorized.selector, alice));
-        vault.requestWithdraw(1 ether, dest);
+        assertEq(vault.nonce(), 1);
+        assertEq(factory.getVault(newWallet), address(vault));
+        assertEq(factory.getVault(alice), address(0));
+        assertFalse(factory.hasVault(alice));
     }
 
-    function _guardianWithdrawAs(address who, uint256 amount, address to) internal {
+    function test_Import_NewOwnerCanWithdrawOldCannot() public {
+        _import(newWallet);
         uint256 deadline = block.timestamp + 1 hours;
-        bytes memory sig = _withdrawSig(vault, guardianKey, amount, to, vault.nonce(), deadline);
-        vm.prank(who);
-        vault.withdraw(amount, payable(to), deadline, sig);
-    }
-
-    function test_OwnerChange_OnlyGuardianStarts() public {
+        bytes memory sig = _withdrawSig(vault, pwSecret, 10 ether, dest, vault.nonce(), deadline);
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(VaultV2.Unauthorized.selector, alice));
-        vault.requestOwnerChange(newWallet);
-        vm.prank(thief);
-        vm.expectRevert(abi.encodeWithSelector(VaultV2.Unauthorized.selector, thief));
-        vault.requestOwnerChange(thief);
+        vault.withdraw(10 ether, dest, deadline, sig);
+        vm.prank(newWallet);
+        vault.withdraw(10 ether, dest, deadline, sig);
+        assertEq(dest.balance, 10 ether);
     }
 
-    /// Server key leaks: the attacker starts a takeover; the real owner cancels inside the delay.
-    function test_OwnerChange_OwnerCancelsStolenGuardianRequest() public {
-        vm.prank(guardian); // attacker with the guardian key
-        vault.requestOwnerChange(thief);
+    function test_Import_OldWalletCanOpenAFreshVault() public {
+        _import(newWallet);
         vm.prank(alice);
-        vault.cancelOwnerChange();
-        vm.warp(block.timestamp + 8 days);
-        vm.expectRevert(VaultV2.NothingPending.selector);
-        vault.finishOwnerChange();
+        address fresh = factory.createVault{value: FEE}(pwKey);
+        assertEq(factory.getVault(alice), fresh);
+    }
+
+    function test_Import_SignatureBoundToCaller() public {
+        // A thief who copies the import signature from the mempool cannot use it.
+        uint256 deadline = block.timestamp + 1 hours;
+        bytes memory sig = _importSig(vault, pwSecret, newWallet, 0, deadline);
+        vm.prank(thief);
+        vm.expectRevert(VaultV2.InvalidPasswordSignature.selector);
+        vault.importVault(deadline, sig);
         assertEq(vault.owner(), alice);
     }
 
-    function test_OwnerChange_GuardianCanCancelToo() public {
-        vm.startPrank(guardian);
-        vault.requestOwnerChange(newWallet);
-        vault.cancelOwnerChange();
-        vm.stopPrank();
-        (, uint256 eta) = vault.pendingOwnerChange();
-        assertEq(eta, 0);
-    }
-
-    function test_OwnerChange_StrangerCannotCancel() public {
-        vm.prank(guardian);
-        vault.requestOwnerChange(newWallet);
+    function test_Import_WithoutPasswordFails() public {
+        (, uint256 wrongKey) = makeAddrAndKey("guess");
+        uint256 deadline = block.timestamp + 1 hours;
+        bytes memory sig = _importSig(vault, wrongKey, thief, 0, deadline);
         vm.prank(thief);
-        vm.expectRevert(abi.encodeWithSelector(VaultV2.Unauthorized.selector, thief));
-        vault.cancelOwnerChange();
+        vm.expectRevert(VaultV2.InvalidPasswordSignature.selector);
+        vault.importVault(deadline, sig);
     }
 
-    function test_OwnerChange_InvalidTargets() public {
-        vm.startPrank(guardian);
-        vm.expectRevert(VaultV2.ZeroOwner.selector);
-        vault.requestOwnerChange(address(0));
-        vm.expectRevert(abi.encodeWithSelector(VaultV2.InvalidNewOwner.selector, alice));
-        vault.requestOwnerChange(alice);
-        vm.expectRevert(abi.encodeWithSelector(VaultV2.InvalidNewOwner.selector, guardian));
-        vault.requestOwnerChange(guardian);
-        vm.stopPrank();
-    }
-
-    function test_OwnerChange_ExpiresAfterGrace() public {
-        vm.prank(guardian);
-        vault.requestOwnerChange(newWallet);
-        (, uint256 eta) = vault.pendingOwnerChange();
-        vm.warp(eta + 14 days + 1);
-        vm.expectRevert(abi.encodeWithSelector(VaultV2.RequestExpired.selector, eta + 14 days));
-        vault.finishOwnerChange();
-        vm.prank(guardian);
-        vault.requestOwnerChange(newWallet); // can start again
-    }
-
-    function test_OwnerChange_SecondRequestBlockedWhileLive() public {
-        vm.startPrank(guardian);
-        vault.requestOwnerChange(newWallet);
-        vm.expectRevert(VaultV2.OwnerChangePending.selector);
-        vault.requestOwnerChange(makeAddr("another"));
-        vm.stopPrank();
-    }
-
-    function test_OwnerChange_OldOwnerKeepsWorkingDuringWait() public {
-        vm.prank(guardian);
-        vault.requestOwnerChange(newWallet);
-        vm.prank(alice);
-        vault.deposit{value: 1 ether}();
-        _guardianWithdraw(1 ether, dest);
-        assertEq(dest.balance, 1 ether);
-    }
-
-    function test_OwnerChange_ClearsOldOwnersPendingWithdrawal() public {
-        vm.prank(alice);
-        vault.requestWithdraw(50 ether, payable(thief));
-        vm.prank(guardian);
-        vault.requestOwnerChange(newWallet);
-        vm.warp(block.timestamp + 7 days);
-        vault.finishOwnerChange();
-        (,, uint256 eta) = vault.pendingWithdrawal();
-        assertEq(eta, 0);
-    }
-
-    function test_OwnerChange_FinishRefusedIfTargetBecameGuardian() public {
-        vm.prank(guardian);
-        vault.requestOwnerChange(newWallet);
-        vm.prank(safe);
-        factory.setGuardian(newWallet); // the factory rotates the guardian onto the pending owner
-        vm.warp(block.timestamp + 7 days);
-        vm.expectRevert(abi.encodeWithSelector(VaultV2.InvalidNewOwner.selector, newWallet));
-        vault.finishOwnerChange();
-    }
-
-    function test_ChangeOwner_ImmediateWithBothKeys() public {
+    function test_Import_ReplayFails() public {
         uint256 deadline = block.timestamp + 1 hours;
-        bytes memory sig = _ownerSig(vault, guardianKey, newWallet, 0, deadline);
-        vm.prank(alice);
-        vault.changeOwner(newWallet, deadline, sig);
-        assertEq(vault.owner(), newWallet);
-        assertEq(vault.nonce(), 1); // ownership change advances it, so the signature cannot be reused
-    }
-
-    function test_ChangeOwner_WalletAloneCannot() public {
-        vm.prank(alice);
-        vm.expectRevert(VaultV2.InvalidGuardianSignature.selector);
-        vault.changeOwner(thief, block.timestamp + 1 hours, hex"");
-    }
-
-    function test_ChangeOwner_SignatureBoundToTarget() public {
-        uint256 deadline = block.timestamp + 1 hours;
-        bytes memory sig = _ownerSig(vault, guardianKey, newWallet, 0, deadline);
-        vm.prank(alice);
-        vm.expectRevert(VaultV2.InvalidGuardianSignature.selector);
-        vault.changeOwner(thief, deadline, sig);
-    }
-
-    function test_ChangeOwner_UnusedWithdrawSigDiesWithOldOwner() public {
-        uint256 deadline = block.timestamp + 1 hours;
-        bytes memory wSig = _withdrawSig(vault, guardianKey, 10 ether, dest, 0, deadline);
-        bytes memory oSig = _ownerSig(vault, guardianKey, newWallet, 0, deadline);
-        vm.prank(alice);
-        vault.changeOwner(newWallet, deadline, oSig);
+        bytes memory sig = _importSig(vault, pwSecret, newWallet, 0, deadline);
         vm.prank(newWallet);
-        vm.expectRevert(VaultV2.InvalidGuardianSignature.selector);
-        vault.withdraw(10 ether, dest, deadline, wSig);
+        vault.importVault(deadline, sig);
+        // Move back to alice, then the old signature must not let newWallet take it again.
+        _import(alice);
+        vm.prank(newWallet);
+        vm.expectRevert(VaultV2.InvalidPasswordSignature.selector);
+        vault.importVault(deadline, sig);
     }
 
-    function test_ChangeOwner_Guards() public {
+    function test_Import_Expired() public {
         uint256 deadline = block.timestamp + 1 hours;
-        vm.startPrank(alice);
-        vm.expectRevert(VaultV2.ZeroOwner.selector);
-        vault.changeOwner(address(0), deadline, hex"");
-        vm.expectRevert(abi.encodeWithSelector(VaultV2.InvalidNewOwner.selector, guardian));
-        vault.changeOwner(guardian, deadline, hex"");
-        vm.expectRevert(abi.encodeWithSelector(VaultV2.InvalidNewOwner.selector, alice));
-        vault.changeOwner(alice, deadline, hex"");
-        vm.stopPrank();
+        bytes memory sig = _importSig(vault, pwSecret, newWallet, 0, deadline);
+        vm.warp(deadline + 1);
+        vm.prank(newWallet);
+        vm.expectRevert(abi.encodeWithSelector(VaultV2.SignatureExpired.selector, deadline));
+        vault.importVault(deadline, sig);
+    }
+
+    function test_Import_CurrentOwnerRejected() public {
+        uint256 deadline = block.timestamp + 1 hours;
+        bytes memory sig = _importSig(vault, pwSecret, alice, 0, deadline);
+        vm.prank(alice);
+        vm.expectRevert(VaultV2.AlreadyOwner.selector);
+        vault.importVault(deadline, sig);
+    }
+
+    function test_Import_IntoWalletThatHasAVaultReverts() public {
+        address bob = makeAddr("bob");
+        vm.deal(bob, 10 ether);
+        vm.prank(bob);
+        address bobVault = factory.createVault{value: FEE}(pwKey);
+        uint256 deadline = block.timestamp + 1 hours;
+        bytes memory sig = _importSig(vault, pwSecret, bob, 0, deadline);
+        vm.prank(bob);
+        vm.expectRevert(abi.encodeWithSelector(VaultFactoryV2.VaultAlreadyExists.selector, bob, bobVault));
+        vault.importVault(deadline, sig);
+        assertEq(vault.owner(), alice);
+        assertEq(vault.nonce(), 0);
+    }
+
+    function test_Import_InvalidatesUnusedWithdrawSignature() public {
+        uint256 deadline = block.timestamp + 1 hours;
+        bytes memory oldSig = _withdrawSig(vault, pwSecret, 5 ether, dest, 0, deadline);
+        _import(newWallet);
+        vm.prank(newWallet);
+        vm.expectRevert(VaultV2.InvalidPasswordSignature.selector);
+        vault.withdraw(5 ether, dest, deadline, oldSig);
     }
 }
 
 contract VaultV2FactoryTest is VaultV2Base {
-    function test_Factory_GuardianAdminOnlyAndNonzero() public {
-        vm.prank(thief);
-        vm.expectRevert();
-        factory.setGuardian(thief);
-        vm.prank(safe);
-        vm.expectRevert(VaultFactoryV2.ZeroGuardian.selector);
-        factory.setGuardian(address(0));
-    }
-
-    function test_Factory_ConstructorGuards() public {
-        vm.expectRevert(VaultFactoryV2.ZeroGuardian.selector);
-        new VaultFactoryV2(address(impl), address(0), feeRecipient, FEE, safe);
-        vm.expectRevert(abi.encodeWithSelector(VaultFactoryV2.InvalidImplementation.selector, address(0)));
-        new VaultFactoryV2(address(0), guardian, feeRecipient, FEE, safe);
-    }
-
     function test_Factory_OneVaultPerWalletAndFeeAccrues() public {
-        assertEq(factory.accruedFees(), FEE);
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(VaultFactoryV2.VaultAlreadyExists.selector, alice, address(vault)));
-        factory.createVault{value: FEE}();
+        factory.createVault{value: FEE}(pwKey);
+        assertEq(factory.accruedFees(), FEE);
         factory.withdrawFees();
         assertEq(feeRecipient.balance, FEE);
     }
 
-    /// Rotating the guardian is not a way to take funds: the factory admin gains no spending power.
-    function test_Factory_AdminRotationCannotMoveFunds() public {
-        (address g2,) = makeAddrAndKey("guardian2");
+    function test_Factory_FeeOffAndRefund() public {
         vm.prank(safe);
-        factory.setGuardian(g2);
+        factory.setFee(0);
+        address bob = makeAddr("bob");
+        vm.deal(bob, 5 ether);
+        vm.prank(bob);
+        factory.createVault{value: 2 ether}(pwKey);
+        assertEq(bob.balance, 5 ether); // everything refunded
+    }
+
+    function test_Factory_InsufficientFeeAndPause() public {
+        address bob = makeAddr("bob");
+        vm.deal(bob, 5 ether);
+        vm.prank(bob);
+        vm.expectRevert(abi.encodeWithSelector(VaultFactoryV2.InsufficientFee.selector, 0, FEE));
+        factory.createVault(pwKey);
         vm.prank(safe);
+        factory.setCreationPaused(true);
+        vm.prank(bob);
+        vm.expectRevert(VaultFactoryV2.CreationPaused.selector);
+        factory.createVault{value: FEE}(pwKey);
+    }
+
+    function test_Factory_AdminOnlyAndBounded() public {
+        vm.prank(thief);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, thief));
+        factory.setFee(0);
+        vm.prank(safe);
+        vm.expectRevert(abi.encodeWithSelector(VaultFactoryV2.FeeTooHigh.selector, 11 ether, 10 ether));
+        factory.setFee(11 ether);
+        vm.prank(safe);
+        vm.expectRevert(VaultFactoryV2.RenounceDisabled.selector);
+        factory.renounceOwnership();
+    }
+
+    function test_Factory_ConstructorGuards() public {
+        vm.expectRevert(abi.encodeWithSelector(VaultFactoryV2.InvalidImplementation.selector, address(0)));
+        new VaultFactoryV2(address(0), feeRecipient, FEE, safe);
+        vm.expectRevert(VaultFactoryV2.ZeroFeeRecipient.selector);
+        new VaultFactoryV2(address(impl), payable(address(0)), FEE, safe);
+        vm.expectRevert(abi.encodeWithSelector(VaultFactoryV2.FeeTooHigh.selector, 11 ether, 10 ether));
+        new VaultFactoryV2(address(impl), feeRecipient, 11 ether, safe);
+    }
+
+    function test_Factory_OnlyItsVaultsCanReindex() public {
+        vm.prank(thief);
+        vm.expectRevert(abi.encodeWithSelector(VaultFactoryV2.NotAVault.selector, thief));
+        factory.onOwnerChanged(alice, thief);
+        // A vault made by another factory cannot touch this factory's index either.
+        VaultFactoryV2 other = new VaultFactoryV2(address(impl), feeRecipient, 0, thief);
+        vm.prank(thief);
+        address foreign = other.createVault(pwKey);
+        vm.prank(foreign);
+        vm.expectRevert(abi.encodeWithSelector(VaultFactoryV2.NotAVault.selector, foreign));
+        factory.onOwnerChanged(alice, thief);
+        assertEq(factory.getVault(alice), address(vault));
+    }
+
+    function test_Factory_AdminHasNoPowerOverVaults() public {
+        // The factory owner signs nothing the vault accepts and cannot become owner.
+        vm.startPrank(safe);
         vm.expectRevert(abi.encodeWithSelector(VaultV2.Unauthorized.selector, safe));
-        vault.requestWithdraw(1 ether, payable(safe));
+        vault.withdraw(1 ether, dest, block.timestamp + 1, "");
+        vm.expectRevert(VaultV2.InvalidPasswordSignature.selector);
+        vault.importVault(block.timestamp + 1, "");
+        vm.stopPrank();
         assertEq(vault.getBalance(), FUND);
     }
 }
 
-/// Property tests: no sequence of actions by anyone lacking the owner wallet loses money.
 contract VaultV2FuzzTest is VaultV2Base {
-    function testFuzz_GuardianAloneNeverMovesFunds(uint256 amount, address to, uint256 warpBy) public {
-        warpBy = bound(warpBy, 0, 60 days);
-        vm.startPrank(guardian);
-        vm.expectRevert();
-        vault.withdraw(amount, payable(to), block.timestamp + 1 hours, hex"");
-        vm.expectRevert();
-        vault.requestWithdraw(amount, payable(to));
-        vm.expectRevert();
-        vault.executeWithdraw();
-        vm.stopPrank();
-        vm.warp(block.timestamp + warpBy);
-        assertEq(vault.getBalance(), FUND);
-    }
-
-    function testFuzz_OwnerAloneNeverMovesFundsInstantly(uint256 amount, address to, bytes calldata junkSig) public {
+    function testFuzz_NoPasswordNeverMovesFunds(uint256 amount, address to, uint256 wrongSecret) public {
+        wrongSecret = bound(wrongSecret, 1, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364140);
+        vm.assume(wrongSecret != pwSecret);
         amount = bound(amount, 1, FUND);
-        vm.assume(to != address(0));
+        vm.assume(to != address(0) && to.code.length == 0);
+        uint256 deadline = block.timestamp + 1 hours;
+        bytes memory sig = _withdrawSig(vault, wrongSecret, amount, to, 0, deadline);
         vm.prank(alice);
-        vm.expectRevert();
-        vault.withdraw(amount, payable(to), block.timestamp + 1 hours, junkSig);
+        vm.expectRevert(VaultV2.InvalidPasswordSignature.selector);
+        vault.withdraw(amount, payable(to), deadline, sig);
         assertEq(vault.getBalance(), FUND);
     }
 
-    function testFuzz_StrangerCannotTouchAnything(address stranger, uint256 amount) public {
-        vm.assume(stranger != alice && stranger != guardian && stranger != address(factory));
-        vm.startPrank(stranger);
-        vm.expectRevert();
-        vault.requestWithdraw(amount, payable(stranger));
-        vm.expectRevert();
-        vault.executeWithdraw();
-        vm.expectRevert();
-        vault.cancelWithdraw();
-        vm.expectRevert();
-        vault.requestOwnerChange(stranger);
-        vm.expectRevert();
-        vault.cancelOwnerChange();
-        vm.expectRevert();
-        vault.changeOwner(stranger, block.timestamp + 1 hours, hex"");
-        vm.stopPrank();
+    function testFuzz_StrangerWithPasswordSigButNoWalletCannotWithdraw(address stranger, uint256 amount) public {
+        vm.assume(stranger != alice);
+        amount = bound(amount, 1, FUND);
+        uint256 deadline = block.timestamp + 1 hours;
+        bytes memory sig = _withdrawSig(vault, pwSecret, amount, stranger, 0, deadline);
+        vm.prank(stranger);
+        vm.expectRevert(abi.encodeWithSelector(VaultV2.Unauthorized.selector, stranger));
+        vault.withdraw(amount, payable(stranger), deadline, sig);
         assertEq(vault.getBalance(), FUND);
+    }
+
+    function testFuzz_ImportSigForOneWalletUselessToAnother(address intended, address other) public {
+        vm.assume(intended != other && intended != alice && other != alice);
+        vm.assume(intended != address(0) && other != address(0));
+        uint256 deadline = block.timestamp + 1 hours;
+        bytes memory sig = _importSig(vault, pwSecret, intended, 0, deadline);
+        vm.prank(other);
+        vm.expectRevert(VaultV2.InvalidPasswordSignature.selector);
+        vault.importVault(deadline, sig);
         assertEq(vault.owner(), alice);
     }
 
-    function testFuzz_SlowWithdrawNeverEarly(uint256 elapsed) public {
-        elapsed = bound(elapsed, 0, 7 days - 1);
-        vm.prank(alice);
-        vault.requestWithdraw(1 ether, dest);
-        vm.warp(block.timestamp + elapsed);
-        vm.prank(alice);
-        vm.expectRevert();
-        vault.executeWithdraw();
-        assertEq(dest.balance, 0);
+    function testFuzz_WithdrawExactAmounts(uint256 amount) public {
+        amount = bound(amount, 1, FUND);
+        _withdraw(amount, dest);
+        assertEq(dest.balance, amount);
+        assertEq(vault.getBalance(), FUND - amount);
     }
 }
