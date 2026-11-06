@@ -1,6 +1,6 @@
 # ▶ Handoff — 2026-11-06 (tối) — ĐỌC MỤC NÀY TRƯỚC
 
-**3 nút mới đã DEPLOY** (Cloudflare `ccc4b528`, Hiếu duyệt ảnh). Sau đó thử 1M token GPT với 2 người dùng giả lập (Minh 24t freelancer viết tiếng Anh; chị Lan 38t 2 con có nợ xe viết tiếng Việt): `scripts/persona-sim-2026-11-06.ts`, transcript `docs/evals/persona-sim-2026-11-06.txt`. Tìm ra 12 lỗi, đã sửa hết:
+**3 nút mới đã DEPLOY** (Cloudflare `ccc4b528`, Hiếu duyệt ảnh). Sau đó thử 1M token GPT với 2 người dùng giả lập (Minh 24t freelancer viết tiếng Anh; chị Lan 38t 2 con có nợ xe viết tiếng Việt): `scripts/persona-sim-2026-11-06.ts`, transcript `docs/evals/persona-sim-2026-11-06.txt`. Tìm ra 12 lỗi, đã sửa hết và DEPLOY (Cloudflare `126657b2`, commit `4788bc1`):
 - Khai bằng lời ("spend about $900, single, no debt, no big plans, it moves a bit", "chi khoảng 1.000 USD/tháng, thu nhập khá đều") giờ được ghi chắc bằng code (`factProposals` trong `agentGuards.ts`; `STABILITY_WORDS` nhận "moves/varies", "thu nhập … khá đều").
 - Câu tính sẵn cỡ quỹ chỉ trả lời câu hỏi về CỠ QUỸ / CÒN THIẾU (`FUND_SIZE_Q`, loại các câu về nạp, rút, phí, nợ, BTC, bảo hiểm); có số còn thiếu + số USDC trong ví (chưa tính vào quỹ); chỉ ghi VND khi chính người dùng khai bằng VND.
 - Người dùng tự đề xuất số tháng → model giải thích số tháng của app (3 / 6 / 9–12 theo thu nhập đều và người phụ thuộc), không gật theo. Cỡ quỹ chưa tính được thì không nêu số tháng, hỏi đúng điều còn thiếu.
