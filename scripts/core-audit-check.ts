@@ -75,7 +75,7 @@ assert.equal(bareAmount('what do i do with it'), null)
   const answer = (vault: number, amount: number, extra = {}) => { const p = normalizeProfile({ ...person, ...extra }); return buildPlacement({ p, b: computeBalance({ profile: p, walletUsd: 0, vaultUsd: vault, cirBtcUsd: 0, prices: { usd: {}, goldUsdPerOz: null }, vndPerUsd: 25000 }), vi: false, amount }) ?? '' }
   assert.match(answer(37, 3000), /\$37 of \$3,600, so all of this \$3,000 could go in first/)
   assert.match(answer(3000, 1000), /so \$600 of this \$1,000 could fill it\. The other \$400 could go by your age: Safety \$124, Traditional \$138, Crypto \$138/)
-  assert.match(answer(3600, 500), /can go to the parts still short: Safety \(\$1,797 to go\) and Crypto \(\$2,000 to go\)\. Nothing needs selling/)
+  assert.match(answer(3600, 500), /can go to the parts still short: Safety \$1,797 to go \(now \$0 \/ \$1,797\) and Crypto \$2,000 to go \(now \$0 \/ \$2,000\)\. Nothing needs selling/)
   assert.match(answer(3600, 1000, { holdings: [] }), /could go by your age: Safety \$310, Traditional \$345, Crypto \$345/)
   assert.match(answer(0, 500, { debts: [{ id: 'd', name: 'Card', type: 'credit_card', balance: 900, currency: 'USDC', ratePct: 24, monthlyPayment: 50, updatedAt: 1 }] }), /first the starter fund .* then the expensive debt/)
 }

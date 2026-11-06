@@ -35,12 +35,13 @@ import { POWER_PER_PURCHASE } from '../../src/lib/power'
 import { recordStats } from '../_lib/stats'
 import { ASSET_TYPES, ASSETS_MARK, BATCH_MARK, INTAKE_MIN_UNKNOWN, assetsAsk, buildIntake, cashflowAsk, cashflowKeys, unknownBullets } from '../_lib/intake'
 import { getConfig, isBlocked, effectiveEnv } from '../_lib/config'
-import { bareAmount, buildAfterSign, buildDebtPlan, buildPartAnswer, buildPlacement, buildPlan, buildStanding, detectPartChoice, openVaultOffer, spareSource } from '../_lib/plan'
+import { bareAmount, buildAfterSign, buildDebtPlan, buildPartAnswer, buildPlacement, buildPlan, buildStanding, detectPartChoice, openVaultOffer, pickQuestion, spareSource } from '../_lib/plan'
 import { BTC_GUIDE, KB, MAX_CRYPTO_SPLIT, matchPatterns, patternBrief, param } from '../../src/kb/kb'
 import { computeFacts, displayFacts, amountsUsd } from '../../src/kb/facts'
 import { pctText, bucketStanding, computeBalance, holdingUsd, priceKey, symbolOf, toUsd, GOLD_UNITS_TO_OZ, GROUP_LABEL, type Balance, type Prices } from '../../src/lib/allocation'
+import { standingText, usd } from '../../src/lib/money'
 import {
-  appWalletHolding, applyOps, categoryOf, defaultRebalanceable, hasAnyData, isAssetType, newId, normalizeProfile, priceKindOf, BTC_SYMBOLS, DEBT_TYPES, STABLECOINS, TOP10_SYMBOLS,
+  CIRBTC_WHERE, appWalletHolding, applyOps, categoryOf, defaultRebalanceable, hasAnyData, isAssetType, newId, normalizeProfile, priceKindOf, BTC_SYMBOLS, DEBT_TYPES, STABLECOINS, TOP10_SYMBOLS,
   type ProfileOp,
 } from '../../src/lib/profile'
 import { bucketLabel, detectPlacement } from '../../src/lib/record'
@@ -275,6 +276,13 @@ const HOLDING_CHANGE = /(?<!\p{L})(bought|buy more|sold|sell(?:ing)? some|added|
 // The user named Vietnamese dong: vnd, ₫, đồng, triệu / tr, nghìn / ngàn, or "k" after a number in a Vietnamese message.
 const SAYS_VND = /(?<!\p{L})(vnd|đồng|triệu|tr|nghìn|ngàn|củ)(?!\p{L})|₫/iu // lang-ok
 // Part of a holding, not all of it: "sold some", "a bit", "part of", "bán bớt", "một ít".
+// "I just bought $30 of gold" while $10 of gold is listed means $40, not $30 (Hieu, 2026-11-06): a purchase or an addition is added to
+// the item already there; only "now I have / in total" replaces it.
+const ADDS_TO = /(?<!\p{L})(bought|buy|buying|purchased|added|add|more|extra|topped up|top up|mua|thêm|nạp thêm)(?!\p{L})/iu // lang-ok
+const NOW_TOTAL = /(?<!\p{L})(now i (?:have|hold|own)|i now (?:have|hold|own)|in total|total|altogether|all together|tổng|tổng cộng|giờ (?:mình |tôi |em |anh )?(?:có|còn)|hiện (?:có|đang có|còn))(?!\p{L})/iu // lang-ok
+// A BTC purchase already done, said without an amount ("I just buy enough BTC", "I bought it already").
+const BOUGHT_BTC = /(?<!\p{L})(?:just (?:buy|bought)|already (?:buy|bought)|bought|vừa mua|đã mua)(?!\p{L})[^.?!\n]{0,30}(?<!\p{L})(?:btc|bitcoin|cirbtc)(?!\p{L})/iu // lang-ok
+const BOUGHT_IT = /(?<!\p{L})(?:bought it|i bought|already bought|mua rồi|đã mua rồi)(?!\p{L})/iu // lang-ok
 const PART_OF = /(?<!\p{L})(some|a bit|a little|part of|half|a few|bớt|một ít|một phần|một nửa)(?!\p{L})/iu // lang-ok
 // Only low-volatility forms can be Safety; these are recorded in their own part, with the reason (CORE 2).
 const TRADITIONAL_RISKY = new Set<string>(['gold_physical', 'gold_token', 'us_stock', 'vn_stock'])
@@ -368,7 +376,7 @@ Reply in the language of the user's latest message (default English). ${VI_VOICE
 - **Safety** = one of the three parts, OUTSIDE the app: the low-risk part (term deposits, government bonds, or stablecoins, cash or a bank account the user CHOSE to keep as Safety). Plain bank money and stablecoins are spare money, NOT tracked, until the user chooses to keep some as Safety. If they ask you to track their bank account or spare money, say plainly MoonSafe does not track spare money, and stop there: do NOT suggest turning that bank money or those stablecoins into Safety (never Safety by default, Hieu 2026-11-01); only if THEY say a specific amount is their Safety is it recorded. Safety never has months, is never the emergency fund and is not money to take out any time. Never ask how much cash or bank money they have: spare money is not asked about at all (CORE 2).
 - Nothing is ever "over" or "too big" (CORE 3). Asked whether to sell because a part looks too large: say no part is ever over, the others simply follow it, so the plan never calls for selling; selling is only their own decision. Never say trimming or selling would bring them closer to anything.
 - Months of spending belong ONLY to the emergency fund. When the emergency fund is full, say "your emergency fund is full"; never "Safety is full" for it.
-- A part's standing is ONLY its money against its bar: "$10,000 of $13,000, $3,000 to go", or "furthest ahead, it sets the size" (CORE 3). NEVER a % for how far along a part is, NEVER the three parts' total as 100%, NEVER "above" or "below" target; asked for percentages, say the app does not show them and give the money figures. The age shares (Safety 35%, Traditional 32.5%, Crypto 32.5%) are the only percentages. Asked why the part furthest ahead is the full bar and not the total: the total changes all the time, and against the total one part would always look short; what matters is whether the parts keep up with each other for their age, so the others follow the one furthest ahead, and nothing ever has to be sold. If any figure is unknown or pending confirmation, say what is known and what remains undetermined; never fill the gap with zero or an illustrative target.
+- A part's standing is ONLY its money against its bar, what is left first: "$3,000 to go (now $10,000 / $13,000)", or "furthest ahead, so it sets the size" (CORE 3; Hieu, 2026-11-06). Cents always with two digits ($40.70, never $40.7). NEVER a % for how far along a part is, NEVER the three parts' total as 100%, NEVER "above" or "below" target; asked for percentages, say the app does not show them and give the money figures. The age shares (Safety 35%, Traditional 32.5%, Crypto 32.5%) are the only percentages. Asked why the part furthest ahead is the full bar and not the total: the total changes all the time, and against the total one part would always look short; what matters is whether the parts keep up with each other for their age, so the others follow the one furthest ahead, and nothing ever has to be sold. If any figure is unknown or pending confirmation, say what is known and what remains undetermined; never fill the gap with zero or an illustrative target.
 
 ## Security, when they ask (CORE 6): the truth about the vault today
 - Only their wallet can withdraw. MoonSafe never holds their keys and cannot see secrets or move their money. If MoonSafe shut down, the vault stays onchain and their wallet can still withdraw from the contract directly.
@@ -626,9 +634,9 @@ async function vndPerUsd(): Promise<number | null> {
 }
 
 /** The token the user signs for (deposits, cirBTC buys): what the wallet shows. */
-const usdc = (n: number) => `${new Intl.NumberFormat('en-US', { maximumFractionDigits: Math.abs(n) >= 100 ? 0 : 2 }).format(n)} USDC`
+const usdc = (n: number) => `${usd(n).replace('$', '')} USDC`
 /** A value in dollars (Hieu, 2026-10-29): savings, gold, stocks, targets, totals. */
-const dollars = (n: number) => `${n < 0 ? '-' : ''}$${new Intl.NumberFormat('en-US', { maximumFractionDigits: Math.abs(n) >= 100 ? 0 : 2 }).format(Math.abs(n))}`
+const dollars = usd
 const vnd = (n: number) => n >= 1_000_000
   ? `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(n / 1_000_000)}M VND`
   : `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(n)} VND`
@@ -648,7 +656,7 @@ function moneyArg(v: unknown): { amount: number; currency: Currency } | null {
   const o = v as { amount?: unknown; currency?: unknown }
   return typeof o.amount === 'number' && Number.isFinite(o.amount) && o.amount >= 0 ? { amount: o.amount, currency: o.currency === 'VND' ? 'VND' : 'USDC' } : null
 }
-const moneyText = (m: { amount: number; currency: Currency }) => m.currency === 'VND' ? vnd(m.amount) : usdc(m.amount)
+const moneyText = (m: { amount: number; currency: Currency }) => m.currency === 'VND' ? vnd(m.amount) : dollars(m.amount)
 
 // Money kept in the wallet for gas when filling the fund (= GAS_RESERVE_USDC6 in useVault).
 /** From this many items declared at once the app asks to confirm them one by one instead of saving them silently. */
@@ -766,7 +774,7 @@ function figures(b: Balance, p: FinancialProfile, wallet: number | null, cir: nu
     lines.push(`- Target by the MoonSafe framework at age ${b.age}${b.ageIsDefault ? ' (DEFAULT age 30: the user declined; say the split is an estimate)' : ''}: Safety ${ts}%, Traditional ${ttr}%, Crypto ${tcr}% (one bar, every coin counts; guide: of every $10, about $7 Bitcoin and $3 their pick, not tracked). Safety = age is the "age in bonds" rule of thumb. ${p.cryptoSplit === undefined ? 'Traditional / Crypto is MoonSafe\'s default even split, NOT a standard rule: say so, and that they can lower Crypto, for example 70/30, but not go above 50% (record it with update_profile crypto_split); when you first give the split, ask once how they want it.' : `Traditional / Crypto is the split they chose (${100 - p.cryptoSplit}/${p.cryptoSplit}).`}`)
     // Totals, not only what is missing (Hieu, 2026-10-28): "X of Y, Z to go" for each part; Safety carries a near-term goal first.
     const st = bucketStanding(b)
-    if (st && b.fund.met) lines.push(`- Where they stand (Hieu, 2026-11-01): the part furthest ahead of its age share is the full bar and sets the size; the others' full amounts follow it (full = leader value / leader share × their share). Nothing is ever "over": if a part grows (prices up) it simply becomes the one that sets the size and the others' bars rise; never suggest selling. New money goes to the parts still short, in ANY order the user likes: never pick the order for them and never say one part should come first. Name the parts only as Safety, Traditional and Crypto (a term deposit or bonds are Safety, never "investments"). Spare money is NOT tracked. Quote each part exactly as below${b.goalUsd > 0 ? `; Safety includes the near-term goal ${show(b.goalUsd)}: what they hold in Safety counts toward that goal first, and the Safety figure already includes it` : ''}: ${st.map(x => x.share <= 0 ? `${x.name} ${show(x.have)}: not in their split (0%)` : x.anchor ? `${x.name} ${show(x.have)}: furthest ahead, sets the size` : `${x.name} ${show(x.have)} of ${show(x.target)}${x.full ? ': full' : `, ${show(x.left)} to go`}`).join('; ')}`)
+    if (st && b.fund.met) lines.push(`- Where they stand (Hieu, 2026-11-01): the part furthest ahead of its age share is the full bar and sets the size; the others' full amounts follow it (full = leader value / leader share × their share). Nothing is ever "over": if a part grows (prices up) it simply becomes the one that sets the size and the others' bars rise; never suggest selling. New money goes to the parts still short, in ANY order the user likes: never pick the order for them and never say one part should come first. Name the parts only as Safety, Traditional and Crypto (a term deposit or bonds are Safety, never "investments"). Spare money is NOT tracked. Quote each part exactly as below${b.goalUsd > 0 ? `; Safety includes the near-term goal ${show(b.goalUsd)}: what they hold in Safety counts toward that goal first, and the Safety figure already includes it` : ''}: ${st.map(x => `${x.name} ${standingText(x, false, show)}`).join('; ')}`)
     // Nothing in the three parts yet (Hieu, 2026-11-01): the three shares, topped up little by little.
     else if (b.fund.met) lines.push(`- Nothing is in Safety, Traditional or Crypto yet. Tell them to split each amount they put aside by the age shares (of every $100: $${ts} Safety, $${ttr} Traditional, $${tcr} Crypto; quote these exactly, multiply them for the amount they say) and top up little by little; when they say an amount, split THAT amount by these shares. Whichever part gets ahead then sets the size. Spare money is not tracked.`)
   } else if (!b.target) lines.push('- Target: AGE UNKNOWN. Ask the age before talking about any share.')
@@ -1150,6 +1158,21 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       readbackOps.push([op])
     }
   }
+  // A purchase or an addition (not "now I have"), for the add / set holding tools.
+  const addsTo = ADDS_TO.test(lastUserText) && !NOW_TOTAL.test(lastUserText) && !SOLD.test(lastUserText)
+  const userNumbers = (lastUserText.replace(/(\d),(\d{3})/g, '$1$2').match(/\d+(?:\.\d+)?/g) ?? []).map(Number)
+  /** What an item becomes once a purchase is added to it: counts add up, amounts in the same currency add up, else by today's price. */
+  const addedPatch = (same: Holding, h: Holding): Partial<Holding> | null => {
+    if (same.quantity !== undefined && h.quantity !== undefined && (same.unit ?? '') === (h.unit ?? '') && same.priceSource === h.priceSource) return { quantity: same.quantity + h.quantity }
+    if (same.value !== undefined && h.value !== undefined && (same.currency ?? 'USDC') === (h.currency ?? 'USDC') && (same.quantity === undefined || same.priceSource === 'self')) return { value: same.value + h.value }
+    const a = holdingUsd(same, prices, rate), b = holdingUsd(h, prices, rate)
+    if (a === null || b === null) return null
+    if (same.quantity !== undefined && same.priceSource === 'market') {
+      const unitUsd = a / same.quantity
+      return unitUsd > 0 ? { quantity: same.quantity + b / unitUsd } : null
+    }
+    return { value: a + b, currency: 'USDC', priceSource: 'self', quantity: undefined }
+  }
   const describe = (h: Holding) => `${h.name} ${h.quantity !== undefined && h.priceSource === 'market' ? `${qty(h.quantity)}${h.unit ? ` ${h.unit}` : ''}` : h.value !== undefined ? moneyText({ amount: h.value, currency: h.currency ?? 'USDC' }) : ''}`.trim()
 
   /** A holding from add_holding arguments, valued as the spec says (spec 12: value of a market-priced item → quantity at the live price). */
@@ -1309,9 +1332,18 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       if (typeof h === 'string') { console.log(`dropped add_holding ${call.function.arguments}: ${h}`); return h }
       // The same item again (type + symbol + place) replaces it instead of doubling it.
       const same = profile.holdings.find(x => x.type === h.type && (x.symbol ?? '') === (h.symbol ?? '') && (x.where ?? '').toLowerCase() === (h.where ?? '').toLowerCase() && (h.symbol || x.name.toLowerCase() === h.name.toLowerCase()))
-      if (same) record({ op: 'set_holding', id: same.id, patch: { quantity: h.quantity, value: h.value, currency: h.currency, unit: h.unit, priceSource: h.priceSource } }, describe({ ...same, ...h }), same.id)
-      else record({ op: 'add_holding', holding: h }, describe(h), h.id)
-      done.push(`Recorded ${describe(h)}${h.priceSource === 'self' ? ' (self-declared)' : ''}.`)
+      if (same && addsTo) {
+        const patch = addedPatch(same, h)
+        if (!patch) return `Not recorded: ${same.name} is already listed and this amount could not be added to it. Ask ONE short question: how much ${same.name} do they hold now in total?`
+        const before = holdingUsd(same, prices, rate), after = holdingUsd({ ...same, ...patch }, prices, rate)
+        const text = before !== null && after !== null ? `${same.name} ${dollars(before)} → ${dollars(after)} (bought ${dollars(after - before)} more)` : describe({ ...same, ...patch })
+        record({ op: 'set_holding', id: same.id, patch }, text, same.id)
+        done.push(`Added to what was listed: ${text}. Quote the new total, never the amount bought as the total.`)
+      } else {
+        if (same) record({ op: 'set_holding', id: same.id, patch: { quantity: h.quantity, value: h.value, currency: h.currency, unit: h.unit, priceSource: h.priceSource } }, describe({ ...same, ...h }), same.id)
+        else record({ op: 'add_holding', holding: h }, describe(h), h.id)
+        done.push(`Recorded ${describe(h)}${h.priceSource === 'self' ? ' (self-declared)' : ''}.`)
+      }
     } else if (name === 'set_holding') {
       const h = findH(a.id)
       if (!h) return `No item with id ${String(a.id)}.`
@@ -1354,6 +1386,12 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
         patch.rebalanceable = defaultRebalanceable(a.type)
       }
       if (!Object.keys(patch).length) return 'Not changed: the new amount is not in the user\'s words.'
+      // "I bought 30 more" given as the new amount: it is what was bought, so it is added (Hieu, 2026-11-06).
+      if (addsTo && (patch.value !== undefined || patch.quantity !== undefined)) {
+        const said = (n: number | undefined) => n !== undefined && userNumbers.some(x => Math.abs(x - n) < 0.005)
+        if (patch.quantity !== undefined && h.quantity !== undefined && said(typeof a.quantity === 'number' ? a.quantity : w?.amount)) patch.quantity += h.quantity
+        else if (patch.value !== undefined && h.value !== undefined && (patch.currency ?? h.currency) === h.currency && said(patch.value)) patch.value += h.value
+      }
       const boxNote = patch.category === 'safe' ? ' → Safety' : patch.category === 'idle' ? ' → not placed yet' : ''
       record({ op: 'set_holding', id: h.id, patch }, describe({ ...h, ...patch }) + boxNote)
       done.push(`Updated ${describe({ ...h, ...patch })}.`)
@@ -1613,6 +1651,25 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   const appEvent = lastUserText.startsWith('[app event]')
   // The app tells us what the user did with the confirm card for several declared items (saved / skipped).
   const itemsEvent = lastUserText.startsWith('[app event] The user reviewed the items')
+  // "I just buy enough BTC" / "I bought it already" (Hieu, 2026-11-06): cirBTC bought in the app is read from the wallet, so nothing is
+  // asked or typed in. The reply is built here from the wallet and the computed parts: the model once answered "Crypto is $30" while
+  // the wallet plus the BTC already listed made about $40, and asked whether they wanted to buy more.
+  const boughtBtc = !appEvent && !/\d/.test(lastUserText) && !/\?/.test(lastUserText) && cir > 0.005
+    && (BOUGHT_BTC.test(lastUserText) || (BOUGHT_IT.test(lastUserText) && /btc|bitcoin/i.test(prevAssistantText)))
+  if (boughtBtc) {
+    const standing = bucketStanding(startBalance)
+    const crypto = standing?.find(x => x.key === 'crypto')
+    const listed = startBalance.items.filter(i => i.holding && (i.group === 'btc' || i.group === 'large_cap' || i.group === 'altcoin') && i.holding.where !== CIRBTC_WHERE).reduce((s, i) => s + i.usd, 0)
+    const total = crypto?.have ?? cir + listed
+    const sum = listed > 0.005
+      ? (vi ? `, cộng ${usd(listed)} coin bạn đã kể là Crypto ${usd(total)}` : `; with the ${usd(listed)} in coins you told me about, Crypto is ${usd(total)}`) // lang-ok
+      : ''
+    const where = crypto && startBalance.fund.met && standing ? ` ${crypto.anchor ? (vi ? 'Crypto giờ là phần đi xa nhất theo tuổi, làm mốc cho các phần khác.' : 'Crypto is now furthest ahead for your age, so it sets the size.') : `Crypto: ${standingText(crypto, vi)}.`} ${pickQuestion(standing, vi)}` : '' // lang-ok
+    const content = vi
+      ? `App tự đọc cirBTC trong ví của bạn, không cần khai: hiện là ${usd(cir)} theo giá bây giờ${sum}.${where} Nếu bạn còn mua Bitcoin ở ngoài app thì cho mình biết bao nhiêu để mình cộng vào nhé.` // lang-ok
+      : `The app reads the cirBTC in your wallet by itself, so there is nothing to type in: ${usd(cir)} at today's price${sum}.${where} If you also bought Bitcoin outside the app, tell me how much and I will add it.`
+    return json({ content, ops: [], dcaStop: false, actions: [] })
+  }
   // The list of first questions (functions/_lib/intake.ts) has not been sent, and this message carries nothing to record
   // (no number, no fact words, no question, no action): the planner would only answer "no_action", so it is not called.
   const batchAsked = assistantTexts.some(t => BATCH_MARK.test(t))
@@ -1866,6 +1923,9 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       : /^\[app event\] The user signed the card: Added .*emergency fund/i.test(lastUserText) ? buildAfterSign({ b: balance, vi, kind: 'deposit' })
       : /^\[app event\] The user signed the card: Opened/i.test(lastUserText) ? buildAfterSign({ b: balance, vi, kind: 'open', cover, partial })
       : lastUserText.startsWith('[app event] The user confirmed recording') ? buildAfterSign({ b: balance, vi, kind: 'record', summary: lastUserText })
+      // Items saved from the confirm card (Hieu, 2026-11-06: after the gold was saved only Traditional was offered while Crypto had room
+      // too): every part with room, with its figures, built here so the model cannot pick one side for the user.
+      : itemsEvent && !/saved: none/i.test(lastUserText) && !/still to ask/i.test(lastUserText) ? buildAfterSign({ b: balance, vi, kind: 'record', summary: lastUserText })
       : null
     if (next) return json({ content: next, ops, dcaStop, actions })
   }
@@ -1933,7 +1993,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
 ${points.map((x, k) => `${k + 1}. ${x}`).join('\n')}
 ${ending}` })
   }
-  const BUCKETS_RULE = 'Use only the computed "Where they stand" amounts: the part furthest ahead sets the size; quote "$X of $Y, $Z to go" or "Full, it sets the size". Nothing is over; never suggest selling. The user chooses which short part to top up and in what order. A 0% part is not in their split. With no holdings, give the age shares and let them build gradually. Safety and Traditional are done outside the app. Spare money is never tracked.'
+  const BUCKETS_RULE = 'Use only the computed "Where they stand" amounts: the part furthest ahead sets the size; quote "$Z to go (now $X / $Y)" or "furthest ahead, so it sets the size", exactly as given. When more than one part has room, name EVERY one of them with its figures and let the user pick: never point at only one. Nothing is over; never suggest selling. The user chooses which short part to top up and in what order. A 0% part is not in their split. With no holdings, give the age shares and let them build gradually. Safety and Traditional are done outside the app. Spare money is never tracked.'
   // After the plan they fill one bucket at a time, the one they pick (Hieu, 2026-10-27).
   if (!userAsks && phase === 'start' && planGiven && balance.lock.open && fundMissingInputs(profile, balance.cashflow.spending).length === 0 && !appEvent && !placement && !actions.some(x => x.type === 'prepare_buy_cirbtc' || x.type === 'propose_dca')) replyMessages.push({ role: 'system', content: `The plan was given and the emergency fund is full. They fill one bucket at a time, the one THEY pick, no need to split every dollar. If they pick one: Crypto → ${balance.lock.open && cryptoOffer >= 1 ? `the amount that fills the Crypto bucket as far as the wallet allows is ${usdc(cryptoOffer)} (ignore the split in "Suggested use of idle money"); unless they trade by the charts, suggest spreading it over 6 equal monthly buys and offer the first one ("Would you like me to prepare the first cirBTC buy of **${usdc(Math.floor(cryptoOffer / 6))}** for you to sign?"); if they want it all at once, offer **${usdc(cryptoOffer)}**` : 'say what is missing to buy in the app'}; Safety → outside the app, in a low-risk form they choose (term deposit, government bonds, or stablecoins or cash kept apart), with what is missing; Traditional → bought outside the app with a broker (an index fund such as VOO, or gold), with the amount. If they have not picked yet, ask which one they want to fill first. ${BUCKETS_RULE}` })
   const recordEvent = lastUserText.startsWith('[app event] The user confirmed recording')
@@ -1941,9 +2001,9 @@ ${ending}` })
   if (placement && dupBox) replyMessages.push({ role: 'system', content: boxSaved ? `The user repeats ${usdc(placement.amountUsd)} for ${placement.name}, but that amount was saved a moment ago through the box. Nothing more is recorded. Say in ONE short sentence that it is already saved and the Safety figure is unchanged. No question.` : `The user repeats ${usdc(placement.amountUsd)} for ${placement.name}: the box from your previous reply is still waiting, and nothing is saved until they pick the source in it and tap Confirm. Say that in ONE short sentence. Record nothing, no new box, no question.` })
   else if (placement) replyMessages.push({ role: 'system', content: `A confirmation box is under this reply: it saves ${usdc(placement.amountUsd)} in ${placement.name} (${bucketLabel(placement.holdingType, placement.safety)}) once the user picks where the money came from and taps Confirm. Say in ONE short sentence: pick where the money came from in the box and tap Confirm to save it; nothing is saved before. Nothing else: no advice, no talk about buckets, targets or what is outside the app, no question (the box asks the source), no "Noted".` })
   else if (itemsEvent) replyMessages.push({ role: 'system', content: `The latest "user" line is the app telling you the user reviewed the items you prepared in a confirm card (not their words): the saved ones are now in their profile (the figures above already include them), the skipped ones were dropped. Do not say "Noted" and do not list the items again. ${/saved: none/i.test(lastUserText) ? 'Nothing was saved: say so in one short sentence and that they can tell you again any time. No question.' : `Carry on in one or two short sentences: ${/still to ask/i.test(lastUserText) ? 'ask what the line says is still to ask (one question only)' : next ? 'ask the Next question below and nothing else' : 'say what comes next in one sentence'}.`} Numbers only from ASSET & FUND FIGURES.` })
-  else if (recordEvent) replyMessages.push({ role: 'system', content: `The latest "user" line is the app telling you the user CONFIRMED a confirmation box (not their words): the amount is now saved in their balance and the figures above already include it. In two short sentences: confirm what was saved, and what it means for them (how much that bucket holds now against its target, or what is still to fill there). Then ${next ? 'ask the Next question below' : balance.fund.met ? `ask which bucket they want to fill next, each as its share now against its target with the money next to it ("Safety 35% of what the investments need ($210,000), target 100%: below; Traditional 86% of the investments ($300,000), target 50%: above"), from "Where they stand". ${BUCKETS_RULE}` : 'say what still remains for the emergency fund.'} Numbers only from ASSET & FUND FIGURES. Do not say "Noted" and do not explain where the bank is or that it is outside the app.` })
+  else if (recordEvent) replyMessages.push({ role: 'system', content: `The latest "user" line is the app telling you the user CONFIRMED a confirmation box (not their words): the amount is now saved in their balance and the figures above already include it. In two short sentences: confirm what was saved, and what it means for them (how much that bucket holds now against its target, or what is still to fill there). Then ${next ? 'ask the Next question below' : balance.fund.met ? `ask which bucket they want to fill next, naming EVERY part that still has room exactly as in "Where they stand" ("Traditional $7.62 to go (now $32.38 / $40); Crypto $29.28 to go (now $10.72 / $40)"). ${BUCKETS_RULE}` : 'say what still remains for the emergency fund.'} Numbers only from ASSET & FUND FIGURES. Do not say "Noted" and do not explain where the bank is or that it is outside the app.` })
   else if (dcaApproved) replyMessages.push({ role: 'system', content: `The latest "user" line is the app telling you the user APPROVED a DCA plan (not their words). Nothing was bought or signed yet. In ONE or TWO short sentences: the plan is set, the first round is due now and a buy card appears right below this reply (they get a quote and sign it there; later rounds show up in this chat when due). Never say "signed" or "bought". No bucket question, no recap of the plan.` })
-  else if (appEvent) replyMessages.push({ role: 'system', content: `The latest "user" line is the app telling you a card was signed (not their words). Confirm it in one sentence with what it means for them (e.g. their emergency fund now holds N months of spending), then the next step: ${balance.fund.met ? `ask which bucket they want to fill first, each as its share now against its target with the money next to it ("Safety 35% of what the investments need ($210,000), target 100%: below; Traditional 86% of the investments ($300,000), target 50%: above"), from "Where they stand". ${BUCKETS_RULE}` : 'what still remains for the emergency fund.'} Numbers only from ASSET & FUND FIGURES.` })
+  else if (appEvent) replyMessages.push({ role: 'system', content: `The latest "user" line is the app telling you a card was signed (not their words). Confirm it in one sentence with what it means for them (e.g. their emergency fund now holds N months of spending), then the next step: ${balance.fund.met ? `ask which bucket they want to fill first, naming EVERY part that still has room exactly as in "Where they stand" ("Traditional $7.62 to go (now $32.38 / $40); Crypto $29.28 to go (now $10.72 / $40)"). ${BUCKETS_RULE}` : 'what still remains for the emergency fund.'} Numbers only from ASSET & FUND FIGURES.` })
   // "do it" showed the card but the reply went back to the cirBTC lock (real chat 2026-10-27).
   const buyCard = actions.find(x => x.type === 'prepare_buy_cirbtc')
   const dcaCard = actions.find(x => x.type === 'propose_dca')
@@ -2094,6 +2154,12 @@ ${ending}` })
       if (/Safety[^.?!\n]{0,60}months? of spending|months? of spending[^.?!\n]{0,60}\bSafety\b/i.test(plain)) problems.push('months of spending belong to the EMERGENCY FUND only; Safety is the bank-savings part of the money to divide and has no months: do not mix them')
       if (OUTSIDE_IN_APP.test(content)) problems.push('Safety and Traditional (bank savings, gold, index funds, stocks) are done by the user outside the app: the app cannot prepare, move or buy them. Say they do it themselves and can tell you after, so you update the numbers')
       if (PLAN_DONE.test(plain) && (bucketStanding(balance) ?? []).some(x => !x.full)) problems.push(`the plan is NOT complete: ${(bucketStanding(balance) ?? []).filter(x => !x.full).map(x => `${x.name} ${dollars(x.have)} of ${dollars(x.target)}`).join(', ')} still has room; say which part and how much is left`)
+      // "Crypto is $30 of $40.7" while the app had Crypto at $40.70 (Hieu, 2026-11-06): a part's figures are only the computed ones.
+      for (const x of bucketStanding(balance) ?? []) {
+        const allowed = [x.have, x.target, x.left].map(n => Math.round(n * 100) / 100)
+        const quoted = [...plain.matchAll(new RegExp(`(?<!\\p{L})${x.name}(?!\\p{L})[^.;\\n$]{0,24}\\$([\\d,]+(?:\\.\\d+)?)`, 'giu'))].map(m => Number(m[1].replace(/,/g, '')))
+        if (quoted.some(n => !allowed.some(a => Math.abs(a - n) < 0.01 || Math.abs(Math.round(a) - n) < 0.01))) { problems.push(`${x.name} figures must be exactly the computed ones: ${x.name} ${standingText(x)}`); break }
+      }
       if (SAFE_IN_APP.test(content)) problems.push('the app cannot move money to the user\'s bank or exchange and nothing was moved: the user tops up their own savings themselves; never offer or claim a deposit / transfer to savings')
       if (SAFE_AS_FUND.test(content)) problems.push('if you meant the emergency fund, call it "emergency fund" / "quỹ dự phòng" and add no explanation about the safe part; the safe part is the user\'s own savings, NOT the emergency fund, and cannot be deposited in the app') // lang-ok
       if (!DCA_AVAILABLE && /(set up|prepare|start|approve|propose|offer|want)[^.?!\n]{0,30}DCA|DCA (plan|card)/i.test(plain) && !/not available|isn.t available|unavailable|not yet|coming/i.test(plain)) problems.push('DCA is not available yet: do not offer it or set it up; if the user asked, say it is not available yet')

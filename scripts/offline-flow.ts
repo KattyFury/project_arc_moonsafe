@@ -168,7 +168,7 @@ expect(!/cirBTC|prepare a|for you to sign/i.test(fullText), 'fund already full: 
 expect(/Which part would you like to fill first|Only [^.]* still has room/.test(fullText), 'fund already full: it asks which part to fill')
 expect(/by your age, 31/.test(fullText) && /An even Traditional \/ Crypto split is MoonSafe's default, not a standard rule/.test(fullText), 'fund already full: the split by age, the even split said to be MoonSafe\'s default')
 // Hieu, 2026-11-01: the part furthest ahead of its share sets the size (gold $2,000 is Traditional's 34.5%); spare money is not shown.
-for (const [what, re] of [['Safety', /\*\*Safety\*\* \(low-volatility\): \$0 of \$1,797, \$1,797 to go/], ['Traditional', /\*\*Traditional\*\* \(index funds such as VOO, gold\): \$2,000: furthest ahead for your age, so it sets the size/], ['Crypto', /\*\*Crypto\*\* \(about \$7 of every[^\n]*\$0 of \$2,000, \$2,000 to go/]] as const) expect(re.test(fullText), `the plan says where ${what} stands`)
+for (const [what, re] of [['Safety', /\*\*Safety\*\* \(low-volatility\): \$1,797 to go \(now \$0 \/ \$1,797\)/], ['Traditional', /\*\*Traditional\*\* \(index funds such as VOO, gold\): \$2,000: furthest ahead for your age, so it sets the size/], ['Crypto', /\*\*Crypto\*\* \(about \$7 of every[^\n]*\$2,000 to go \(now \$0 \/ \$2,000\)/]] as const) expect(re.test(fullText), `the plan says where ${what} stands`)
 expect(!/not doing anything yet|\$1,900|above its share/.test(fullText), 'spare money is not shown, and nothing is above its bar')
 
 // 3. The user cancels everything: nothing saved, the agent does not run the plan.
@@ -199,7 +199,7 @@ const how = await call([...history, { role: 'user', content: 'how much is in my 
 const howText = how.body.content ?? ''
 console.log('\nstep 5: model calls', how.calls, '\n' + howText)
 expect(how.calls === 0, 'a "how much" question is answered by the server: no model call')
-expect(/\*\*Emergency fund:\*\*[^\n]*months of spending/.test(howText) && /\*\*Safety:\*\* \$[\d,]+ of \$[\d,]+, \$[\d,]+ to go/.test(howText) && /\*\*Traditional:\*\* \$2,000: furthest ahead/.test(howText), 'the emergency fund and Safety are separate lines, Safety as its share against its target with the money')
+expect(/\*\*Emergency fund:\*\*[^\n]*months of spending/.test(howText) && /\*\*Safety:\*\* \$[\d,]+ to go \(now \$[\d,]+ \/ \$[\d,]+\)/.test(howText) && /\*\*Traditional:\*\* \$2,000: furthest ahead/.test(howText), 'the emergency fund and Safety are separate lines, Safety as its share against its target with the money')
 expect(!/Safety[^\n]*months of spending/.test(howText), 'Safety never carries months of spending')
 
 
@@ -259,7 +259,7 @@ expect(!/Safety or Traditional|Which (part|bucket)/i.test(yepText), 'full parts 
 const signed = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: text }, { role: 'user', content: '[app event] The user signed the card: Added 900 USDC to your emergency fund.' }], base, 900)
 const signedText = signed.body.content ?? ''
 console.log('\nstep 6b: model calls', signed.calls, '\n' + signedText)
-expect(signed.calls === 0 && /emergency fund is now \$900 of \$900/.test(signedText) && /Now on to investing/.test(signedText) && /Which part would you like to fill first: Safety \(\$0 of \$[\d,]+\) or Crypto \(\$0 of \$2,000\)/.test(signedText) && !/Traditional \(/.test(signedText), 'after the deposit fills the fund: the investing step, then only the parts below their share (gold $2,000 is above its share, never sold)')
+expect(signed.calls === 0 && /emergency fund is now \$900 of \$900/.test(signedText) && /Now on to investing/.test(signedText) && /Which part would you like to fill first: Safety \$[\d,]+ to go \(now \$0 \/ \$[\d,]+\) or Crypto \$2,000 to go \(now \$0 \/ \$2,000\)/.test(signedText) && !/Traditional \(/.test(signedText), 'after the deposit fills the fund: the investing step, then only the parts below their share (gold $2,000 is above its share, never sold)')
 
 // 6b3. A buy asked a few words later (real chat 2026-10-30: "Create an 11$ order for me" got "I can't create that order from here").
 const buyOffer6 = 'cirBTC is Bitcoin you can buy and hold in this app. Shall I prepare the first buy of **1 USDC** for you to sign? If you prefer all **6 USDC** at once, just say so.'
@@ -282,13 +282,13 @@ expect(small.calls === 0 && /emergency fund is now \$5 of \$[\d,]+/.test(smallTe
 const rec = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: text }, { role: 'user', content: '[app event] The user confirmed recording: Recorded 500 USDC in Term deposit (Safety), from Binance.' }], base, 900)
 const recText = rec.body.content ?? ''
 console.log('\nstep 6c: model calls', rec.calls, '\n' + recText)
-expect(rec.calls === 0 && /^Saved\. Safety is now \$[\d,]+ of \$[\d,]+, \$[\d,]+ to go/.test(recText) && /or Crypto \(\$0 of \$2,000\)/.test(recText) && !/Traditional \(/.test(recText), 'after a saved amount: which part it touched, then only the parts with room')
+expect(rec.calls === 0 && /^Saved\. Which part would you like to fill first: Safety \$[\d,]+ to go \(now \$[\d,]+ \/ \$[\d,]+\) or Crypto \$2,000 to go \(now \$0 \/ \$2,000\)/.test(recText) && !/Traditional \$/.test(recText), 'after a saved amount: every part with room, each with its figures (Hieu, 2026-11-06)')
 
 // 6d. Naming a part answers where it lives and what is left; Safety is outside the app.
 const safe = await call([...history, { role: 'user', content: message }, { role: 'assistant', content: text }, { role: 'user', content: '[app event] The user signed the card: Added 900 USDC to your emergency fund.' }, { role: 'assistant', content: 'Which part would you like to fill first: Safety (300 USDC of 840 USDC) or Crypto (0 USDC of 1,354 USDC)?' }, { role: 'user', content: 'How about the "safe" part' }], { ...base, holdings: base.holdings.map(h => h.id === 'h2' ? { ...h, type: 'term_deposit' as const, name: 'Term deposit', value: 300 } : h.id === 'h1' ? { ...h, value: 0 } : h) }, 900)
 const safeText = safe.body.content ?? ''
 console.log('\nstep 6d: model calls', safe.calls, '\n' + safeText)
-expect(safe.calls === 0 && /Safety is the low-risk part[^\n]*it is not emergency money/.test(safeText) && /You choose where it sits, as long as it is low-volatility/.test(safeText) && /You have \$300 of \$[\d,]+, \$[\d,]+ to go/.test(safeText), 'naming Safety explains why it is needed, that the user chooses its form, with the totals')
+expect(safe.calls === 0 && /Safety is the low-risk part[^\n]*it is not emergency money/.test(safeText) && /You choose where it sits, as long as it is low-volatility/.test(safeText) && /Safety: \$[\d,]+ to go \(now \$300 \/ \$[\d,]+\)/.test(safeText), 'naming Safety explains why it is needed, that the user chooses its form, with the totals')
 
 
 // 7. The admin page's API: who may call it, what it changes, and that it never shows a secret.

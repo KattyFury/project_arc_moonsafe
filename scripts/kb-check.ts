@@ -475,7 +475,7 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   // Fund full (Hieu, 2026-11-01): the part furthest ahead of its share sets the size. Gold $2,000 is Traditional's 34.5%, so the scale
   // is 2,000 / 34.5% and Safety is full at $1,797, Crypto at $2,000. Bank $500 and USDC $1,900 are spare money: not tracked, not shown.
   const fullPlan = buildPlan({ p: base, b: bal(base, 1900, 450), shares, cover: null, vi: false })!
-  for (const [what, re] of [['safety', /\*\*Safety\*\* \(low-volatility\): \$0 of \$1,797, \$1,797 to go\./], ['traditional', /\*\*Traditional\*\* \(index funds such as VOO, gold\): \$2,000: furthest ahead for your age, so it sets the size\./], ['crypto', /\*\*Crypto\*\* \(about \$7 of every \$10 in Bitcoin, the rest your pick; it can halve on the way\): \$0 of \$2,000, \$2,000 to go\./]] as const) if (!re.test(fullPlan)) fail(`plan: ${what} against the part that sets the size\n${fullPlan}`)
+  for (const [what, re] of [['safety', /\*\*Safety\*\* \(low-volatility\): \$1,797 to go \(now \$0 \/ \$1,797\)\./], ['traditional', /\*\*Traditional\*\* \(index funds such as VOO, gold\): \$2,000: furthest ahead for your age, so it sets the size\./], ['crypto', /\*\*Crypto\*\* \(about \$7 of every \$10 in Bitcoin, the rest your pick; it can halve on the way\): \$2,000 to go \(now \$0 \/ \$2,000\)\./]] as const) if (!re.test(fullPlan)) fail(`plan: ${what} against the part that sets the size\n${fullPlan}`)
   if (!/\*\*Safety\*\* is the low-risk part[^\n]*It is not emergency money \(that is the emergency fund\), and a term deposit is usually locked until it matures/.test(fullPlan)) fail('plan: why Safety, before any number')
   if (/not doing anything yet|keep \$150|\$1,900|\$500|above its share|no need to sell/.test(fullPlan)) fail(`plan: spare money is not tracked, and nothing is ever above its bar\n${fullPlan}`)
   if (!/Top up the parts still short from your income or spare money, in any order you like/.test(fullPlan)) fail('plan: the user tops up as they like')
@@ -531,10 +531,10 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
   if (Math.abs(s500.target - (4000 + (s500.rest ?? 0))) > 0.01 || s500.goal !== 4000) fail('Safety target = goal + its share of the rest')
   const plan = buildPlan({ p: goalP(500), b: bal(goalP(500), 600), shares: [21, 45, 34], cover: null, vi: false })!
   if (!/Near-term goal: Marriage \$4,000\*\* stays in Safety/.test(plan)) fail(`plan: the near-term goal is explained\n${plan}`)
-  if (!/\*\*Safety\*\*[^\n]*\$0 of \$5,063, \$5,063 to go/.test(plan)) fail(`plan: Safety shows its target (goal included) and what is missing\n${plan}`)
+  if (!/\*\*Safety\*\*[^\n]*\$5,063 to go \(now \$0 \/ \$5,063\)/.test(plan)) fail(`plan: Safety shows its target (goal included) and what is missing\n${plan}`)
   if (!/6 months of spending, because/.test(plan)) fail('plan: the months are explained (why this number)')
   const st = buildStanding({ p: goalP(1000, 1500), b: bal(goalP(1000, 1500), 600), vi: false })!
-  if (!/Emergency fund:\*\* \$600 of \$600 \(6 months of spending\), full/.test(st) || /not doing anything yet|\$1,500/.test(st) || !/\*\*Safety:\*\* \$0 of \$5,063, \$5,063 to go \(holds the near-term goal \$4,000/.test(st)) fail(`standing: the emergency fund and Safety are separate lines with totals\n${st}`)
+  if (!/Emergency fund:\*\* \$600 of \$600 \(6 months of spending\), full/.test(st) || /not doing anything yet|\$1,500/.test(st) || !/\*\*Safety:\*\* \$5,063 to go \(now \$0 \/ \$5,063\); holds the near-term goal \$4,000/.test(st)) fail(`standing: the emergency fund and Safety are separate lines with totals\n${st}`)
   if (/Safety[^\n]*months of spending/.test(st)) fail('standing: Safety never carries months')
 }
 
@@ -554,10 +554,10 @@ for (const p of KB.patterns) if (!hit.has(p.id)) fail(`pattern ${p.id} is never 
     { key: 'traditional' as const, name: 'Traditional' as const, share: 45, have: 1800, target: 1800, left: 0, full: true, over: false, add: 0, pct: 100, targetPct: 100, anchor: true, drift: 'on' as const },
     { key: 'crypto' as const, name: 'Crypto' as const, share: 34, have: 0, target: 1354, left: 1354, full: false, over: false, add: 0, pct: 0, targetPct: 100, anchor: false, drift: 'under' as const },
   ]
-  if (!/^Only Crypto \(\$0 of \$1,354\) still has room/.test(pickQuestion(rows, false))) fail('pick: only the part with room is named, as its share against its target')
+  if (!/^Only Crypto still has room: \$1,354 to go \(now \$0 \/ \$1,354\)/.test(pickQuestion(rows, false))) fail('pick: only the part with room is named, as its share against its target')
   if (/Safety|Traditional/.test(pickQuestion(rows, false))) fail('pick: full parts are never named')
   if (!/All three parts are at their targets/.test(pickQuestion(rows.map(r => ({ ...r, left: 0, full: true })), false))) fail('pick: all full')
-  if (!/Which part would you like to fill first: Safety \(\$300 of \$840\) or Crypto/.test(pickQuestion([{ ...rows[0], have: 300, left: 540, full: false, pct: 36, drift: 'under' }, rows[1], rows[2]], false))) fail('pick: two parts with room, each as its share against its target')
+  if (!/Which part would you like to fill first: Safety \$540 to go \(now \$300 \/ \$840\) or Crypto/.test(pickQuestion([{ ...rows[0], have: 300, left: 540, full: false, pct: 36, drift: 'under' }, rows[1], rows[2]], false))) fail('pick: two parts with room, each as its share against its target')
 }
 
 // 12. Small plans (real chat 2026-10-29): Crypto 0 of 0.43 USDC was called "full" because "full" meant "less than 0.5 USDC left".
