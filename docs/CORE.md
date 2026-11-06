@@ -79,6 +79,8 @@ Sự thật kỹ thuật phải giữ khi xây:
 
 Hiện trạng: hợp đồng hiện tại (`VaultProxy`) chỉ có 1 chìa là ví, rút toàn bộ ngay tới bất kỳ địa chỉ nào → lộ khoá ví = mất cả quỹ. **Vault v3 chưa xây: làm SAU hackathon, khi có mini grant (Hiếu chốt 2026-11-01).** Trước đó không đổi hợp đồng. Vault cũ không nâng cấp được, người dùng tự chuyển tiền sang vault mới.
 
+**Luồng đăng nhập + nút khôi phục (Hiếu chốt 2026-11-06, chi tiết ở `docs/plan-backup-and-circle.md`):** giữ Privy, không dùng Circle; mỗi người luôn có đủ ví + email. Đăng nhập bằng email: hiện "email này gắn với ví 0x…" và cho **chọn** xuất khoá (không bắt buộc). Đăng nhập bằng ví: bước nhập email nhận OTP, **MoonSafe tự lưu và tự xác minh email** (không nhờ Privy gắn; lỗi không chặn vào app). Màn đăng nhập có một nút nhỏ "Mất 1 trong 2?" dẫn tới khôi phục vault / support / điều khoản, đầy đủ chức năng ở V2. Hackathon đã xong (Hiếu, 2026-11-06), nên dòng "làm SAU hackathon" ở trên đã đến hạn: vault 2-of-2 làm ngay trong V2.
+
 Việc khác còn mở (từ `docs/audit-mainnet-2026-10-29.md`): giới hạn đăng ký Privy, giới hạn tần suất `/api/*` trên Cloudflare, gói Workers trả phí, Safe 2-of-2 chưa có ví dự phòng.
 
 ## Chưa chốt

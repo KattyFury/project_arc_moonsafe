@@ -1,3 +1,16 @@
+# ▶ Handoff — 2026-11-06 (đêm) — VAULT V2 (ví + email, 2-of-2): HỢP ĐỒNG ĐÃ VIẾT, CHƯA DEPLOY
+
+**Hiếu chốt (chi tiết `docs/plan-backup-and-circle.md`, mục CHỐT):** 2-of-2 ví + email; giữ Privy, không dùng Circle; email do MoonSafe tự lưu + tự xác minh (không nhờ Privy gắn); đăng nhập email thì hiện "email này gắn ví 0x…" và cho CHỌN xuất khoá; nút "!" nhỏ ở màn đăng nhập ("Mất 1 trong 2?" → khôi phục vault / support / điều khoản), đầy đủ chức năng trong V2. Hackathon xong nên làm ngay. Desktop chỉ để ẢNH, không copy tài liệu chữ.
+
+**Đã làm:** `contracts/VaultV2.sol` + `contracts/VaultFactoryV2.sol` + `contracts/test/VaultV2.t.sol` (53 test, gồm fuzz). Toàn bộ 375 test của repo pass. Chạy forge bằng Docker (máy chưa có forge): `docker run --rm -v "D:\Files\Claude\project_arc_moonsafe:/work" -w /work --entrypoint forge ghcr.io/foundry-rs/foundry:v1.7.1 test` (cần `npm install --no-save --no-package-lock --legacy-peer-deps @openzeppelin/contracts@5.1.0` vì chưa có node_modules).
+- Rút thường: ví gửi tx + chữ ký EIP-712 của guardian (khoá server, ký sau khi người dùng bấm link mail). Guardian đứng một mình không làm được gì.
+- MoonSafe sập: ví một mình `requestWithdraw` → chờ 7 ngày → `executeWithdraw`; guardian hoặc ví `cancelWithdraw` được.
+- Mất ví: guardian `requestOwnerChange(ví mới)` → 7 ngày → ai cũng `finishOwnerChange`; ví cũ hoặc guardian huỷ được. Chuyển ví khi còn cả hai chìa: `changeOwner` + chữ ký, tức thì.
+- Guardian đọc từ factory (Safe đổi khoá cho mọi vault một lần). Email↔vault nằm ở server, đổi email = chờ 7 ngày ở server, không có gì onchain.
+- Giới hạn chấp nhận: kẻ giữ ví (chưa có email) huỷ được `requestOwnerChange` hợp lệ; tiền vẫn an toàn, chỉ kẹt khôi phục.
+
+**Việc tiếp theo, theo thứ tự:** (1) Hiếu duyệt hợp đồng, rồi kiểm toán lại trước mainnet; (2) server: khoá guardian là secret Cloudflare, OTP email bằng Resend, endpoint xin/duyệt/huỷ, job quét sự kiện + gửi mail cảnh báo, bot Telegram báo support; (3) app: bước email ở đăng nhập, chọn xuất khoá (Privy, đọc `.d.ts` trước), nút "!" ở màn đăng nhập; (4) email support trên moonsafe.app (Hiếu chọn địa chỉ); (5) deploy testnet rồi mainnet, người dùng v1 tự chuyển tiền sang vault mới.
+
 # ▶ Handoff — 2026-11-06 (tối) — ĐỌC MỤC NÀY TRƯỚC
 
 **3 nút mới đã DEPLOY** (Cloudflare `ccc4b528`, Hiếu duyệt ảnh). Sau đó thử 1M token GPT với 2 người dùng giả lập (Minh 24t freelancer viết tiếng Anh; chị Lan 38t 2 con có nợ xe viết tiếng Việt): `scripts/persona-sim-2026-11-06.ts`, transcript `docs/evals/persona-sim-2026-11-06.txt`. Tìm ra 12 lỗi, đã sửa hết và DEPLOY (Cloudflare `126657b2`, commit `4788bc1`):
