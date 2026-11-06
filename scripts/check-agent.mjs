@@ -9,6 +9,7 @@ const tests = [
   ['scripts/part-choice-check.ts'],
   ['scripts/intake-assets-check.ts'],
   ['scripts/offline-flow.ts'],
+  ['scripts/persona-sim-check.ts'],
 ]
 let failed = false
 for (const args of tests) {

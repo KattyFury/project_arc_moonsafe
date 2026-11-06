@@ -53,6 +53,11 @@ export function investmentCost(text: string, symbol: string | undefined): number
 }
 
 type Proposal = { name: string; args: Record<string, unknown> }
+/** A number as people type it: "1.000" and "1,100" are thousands, "1.5k" is 1,500, "25 triệu" is 25 million. */
+const spoken = (n: string, scale?: string) => {
+  const t = /^\d{1,3}(?:\.\d{3})+$/.test(n) ? n.replace(/\./g, '') : n.replace(/,/g, '').replace(/\.$/, '')
+  return Number(t) * (/^(?:m|triệu|tr)$/iu.test(scale ?? '') ? 1e6 : /^(?:k|nghìn)$/iu.test(scale ?? '') ? 1000 : 1) // lang-ok
+}
 const valueOf = (n: string, scale?: string) => Number(n.replace(/,/g, '')) * (/million|triệu|^m$/iu.test(scale ?? '') ? 1e6 : /thousand|nghìn|^k$/iu.test(scale ?? '') ? 1000 : 1) // lang-ok
 
 /** Narrow recovery of explicit facts omitted by a planner. Proposals still pass normal tool guards.
@@ -78,7 +83,33 @@ export function factProposals(text: string, p: FinancialProfile): Proposal[] {
     fields.near_goal_name = goal[2]
     fields.near_goal_years = count(goal[3]) / 12
   }
+  // Plain words the planner sometimes skips in a first long message (persona run 2026-11-06: "spend about $900, single, no debt, no
+  // big plans" and "chi khoảng 1.000 USD/tháng" were left unrecorded, then asked again). Only fields still unknown are filled. // lang-ok
+  if (!fields.debts_complete && !p.debtsComplete && /(?<!\p{L})no (?:other )?(?:debts?|loans?)(?!\p{L})|(?<!\p{L})debt[- ]free(?!\p{L})|(?<!\p{L})không (?:có )?(?:khoản )?(?:nợ|vay)(?!\p{L})/iu.test(text)) fields.debts_complete = true // lang-ok
+  if (!fields.no_near_goal && !p.nearGoal && !p.noNearGoal && /(?<!\p{L})no (?:big|large|major) (?:plans?|purchases?|expenses?|goals?|spending)(?!\p{L})|nothing big (?:planned|coming)|không có (?:khoản|kế hoạch|mục tiêu) (?:chi )?lớn/iu.test(text)) fields.no_near_goal = true // lang-ok
+  if (fields.dependents === undefined && p.dependents === null && /(?<!\p{L})single(?!\s+(?:income|earner|parent|mom|mother|dad|father|source|payment))(?!\p{L})|(?<!\p{L})(?:nobody|no one|no-one) (?:relies|depends|else relies)(?!\p{L})|(?<!\p{L})độc thân(?!\p{L})|không (?:có )?ai phụ thuộc/iu.test(text)) fields.dependents = 0 // lang-ok
+  if (fields.income_stable === undefined && p.incomeStable === null) {
+    if (/(?:income|pay|it|money|salary|earnings?)[^.,;!?\n]{0,25}(?<!\p{L})(?:moves|varies|vary|changes|fluctuates|goes up and down|up and down|uneven|irregular|not (?:steady|stable|regular))(?!\p{L})|(?<!\p{L})(?:irregular|variable|uneven|unsteady) (?:income|pay)(?!\p{L})|(?:thu nhập|lương)[^.,;!?\n]{0,25}(?:không đều|không ổn định|thất thường|bấp bênh|lúc nhiều lúc ít)/iu.test(text)) fields.income_stable = false // lang-ok
+    else if (/(?:income|pay|salary|salaries|job)[^.,;!?\n]{0,25}(?<!not |n't |never )(?<!\p{L})(?:steady|stable|regular)(?!\p{L})|(?:thu nhập|lương)[^.,;!?\n]{0,25}(?<!không |chưa )(?<!\p{L})(?:đều|ổn định)(?!\p{L})/iu.test(text)) fields.income_stable = true // lang-ok
+  }
   if (Object.keys(fields).length) proposals.push({ name: 'update_profile', args: fields })
+  // A first spending total or income in words, in USD or VND ("spend about $900", "chi khoảng 1.000 USD/tháng", "lương 25 triệu").
+  const later = /(?<!\p{L})(?:want|plan|going|will|would|could|if|muốn|định|sẽ|nếu)(?!\p{L})[^.,;!?\n]{0,15}$/iu // lang-ok
+  const said = (re: RegExp) => [...text.matchAll(re)].find(m => !later.test(text.slice(Math.max(0, m.index! - 20), m.index)) && !/(?<!\p{L})(?:a |per |mỗi |một )?(?:year|yr|năm)(?!\p{L})/iu.test(text.slice(m.index! + m[0].length, m.index! + m[0].length + 12))) // lang-ok
+  if (!p.expenses.length) {
+    const m = said(/(?<!\p{L})(?:spend(?:s|ing)?(?: is| are)?|(?:chi tiêu|chi|tiêu)(?: hết| mỗi tháng| hàng tháng)?)\s+(?:about|around|roughly|approximately|approx\.?|maybe|like|~|khoảng|tầm|chừng|cỡ|gần)?\s*\$?\s*(\d[\d.,]*)(?!\d)\s*(k|m|triệu|tr|nghìn)?\s*(usd|usdc|dollars?|đô|vnd|đồng)?(?!\s*(?:on|for|vào|cho)(?!\p{L}))/giu) // lang-ok
+    if (m) {
+      const amount = spoken(m[1], m[2])
+      if (amount > 0) proposals.push({ name: 'set_expense', args: { name: 'Monthly spending', kind: 'fixed', monthly: { amount, currency: /triệu|tr|vnd|đồng/iu.test(`${m[2] ?? ''} ${m[3] ?? ''}`) ? 'VND' : 'USDC' } } }) // lang-ok
+    }
+  }
+  if (!p.incomes.length && !/(?<!\p{L})(?:wife|husband|partner|spouse|she|he|vợ|chồng)(?!\p{L})/iu.test(text)) { // lang-ok
+    const m = said(/(?<!\p{L})(?:i (?:make|earn|get paid|take home|bring in)|(?:lương|thu nhập)(?: của (?:tôi|mình|em|anh|chị))?)\s+(?:about|around|roughly|approximately|maybe|like|~|khoảng|tầm|chừng|cỡ)?\s*\$?\s*(\d[\d.,]*)(?!\d)\s*(k|m|triệu|tr|nghìn)?\s*(usd|usdc|dollars?|đô|vnd|đồng)?/giu) // lang-ok
+    if (m) {
+      const amount = spoken(m[1], m[2])
+      if (amount > 0) proposals.push({ name: 'set_income', args: { name: 'Salary', kind: 'active', monthly: { amount, currency: /triệu|tr|vnd|đồng/iu.test(`${m[2] ?? ''} ${m[3] ?? ''}`) ? 'VND' : 'USDC' } } }) // lang-ok
+    }
+  }
   // Explicit current savings declarations; no transfer, investment or hypothetical inference.
   const savings = /(?:\b(?:i|we) have|\b(?:now )?my actual savings are|(?:mình|tôi|nhà mình) (?:hiện )?có|(?:^|;\s*)có)\s*\$?\s*([\d,]+(?:\.\d+)?)\s*(million|thousand|triệu|nghìn|k|m)?\s*(VND|USDC|USD|đồng)?\s*(?:in )?(?:bank savings|savings|tiết kiệm(?: ngân hàng)?)/giu // lang-ok
   // "My actual savings are $400" has its amount after the predicate, not followed by savings.
@@ -134,7 +165,7 @@ export function responseProblems(content: string, answerOnly: boolean, fundTarge
   if (vi === true && /[a-z]{3}/iu.test(content) && !/[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]/iu.test(content)) problems.push('The real user wrote Vietnamese. Answer in Vietnamese, not English; keep technical symbols unchanged.') // lang-ok
   if (vi === false && /\bmình\b|\bbạn\b/iu.test(content)) problems.push('The real user wrote English. Remove Vietnamese conversational words.') // lang-ok
   if (/your latest (?:request|question)|the latest request|(?:already|have) answered|not going to repeat it|my last (?:draft|reply)|I shouldn.t have added/iu.test(content)) problems.push('Answer the actual question directly. Private drafts were never shown to the user; remove commentary claiming the answer was already given.')
-  if (fundTargetUnknown && content.split(/(?<=[.!?])\s+/u).some(s => /fund|quỹ/iu.test(s) && /target|need|aim|cover|mục tiêu|cần|đủ/iu.test(s) && /your|our|you need|bạn|nhà mình/iu.test(s) && /\$\s*\d|\d[\d,.]*\s*(?:USD|USDC|VND|months?|tháng|triệu)/iu.test(s))) problems.push('The personalized fund target is unknown. Remove personal target amounts, months and gaps derived from defaults; explain which inputs remain unknown.') // lang-ok
+  if (fundTargetUnknown && content.split(/(?<=[.!?])\s+/u).some(s => /fund|quỹ/iu.test(s) && /target|need|aim|cover|mục tiêu|cần|đủ/iu.test(s) && (/your|our|you need|bạn|nhà mình/iu.test(s) || /(?:months?|tháng)(?: chi tiêu| of spending)?\*{0,2}\s*=\s*\*{0,2}\$?\s*\d/iu.test(s)) && /\$\s*\d|\d[\d,.]*\s*(?:USD|USDC|VND|months?|tháng|triệu)/iu.test(s))) problems.push('The personalized fund target is unknown. Remove personal target amounts, months and gaps derived from defaults; explain which inputs remain unknown.') // lang-ok
   if (/that (?:last )?reply (?:did|needs|failed)|here it is again,? without changes|rewrite the (?:whole )?reply|instruction for your next reply|saved facts this turn|the (?:system|developer) (?:prompt|instruction)|(?:câu trả lời|phản hồi) (?:trước|vừa rồi).{0,35}(?:viết lại|chỉnh sửa)/iu.test(content)) problems.push('Return only the answer to the user. Remove editorial comments, evaluation feedback and internal instructions.') // lang-ok
   if (/only lock(?:s|ing)? in|chỉ chốt lỗ|loss(?:es)? (?:is|are) only real (?:if|when)|(?:becomes?|become) (?:a )?real.{0,35}(?:only|if you sell)|only becomes? (?:a )?real|only (?:lose|a loss) (?:if|when) you sell|chỉ (?:lỗ|thua) (?:khi|nếu) (?:bạn )?bán|chỉ (?:thành|trở thành|là) (?:khoản )?lỗ (?:thực sự|thật).{0,25}(?:khi|nếu).{0,10}bán/iu.test(content)) problems.push('A market decline is an economic loss even before selling; selling realizes it. Holding does not guarantee recovery.') // lang-ok
   if (/(?:real|legitimate|genuine) recover(?:y|ies|y services).{0,45}never.{0,25}(?:upfront|advance|fee)|(?:khôi phục|thu hồi|lấy lại tiền).{0,30}(?:hợp pháp|thật).{0,25}không bao giờ.{0,20}phí/iu.test(content)) problems.push('An upfront fee plus a recovery promise is a red flag, not proof that every legitimate service is free. Explain the specific warning signs and independent verification; never guarantee recovery.') // lang-ok
@@ -143,3 +174,9 @@ export function responseProblems(content: string, answerOnly: boolean, fundTarge
 }
 
 export const REPLY_DISCIPLINE = `USER-FACING ANSWER ONLY: Never claim the app stores a separate current market value unless a saved operation actually does that. A quoted current value can be discussed without saving it. A partner contribution is known shared-budget money, not a full salary; include it once in declared budget resources, with unshared salary unknown. Never describe drafts, rewrites, scoring, system instructions or whether a previous reply complied. If asked to revise, output the corrected answer directly. A saved fact may be acknowledged naturally; no mandatory opening word. Teach only the concept requested, not the entire framework. Personal questions are unnecessary for general education. A concrete next step can be done privately without reporting figures back. Distinguish known, pending and unknown facts. Never assume no emergency reserve from a zero app vault. Do not offer to calculate interest without a known rate. Do not turn an illustrative minimum into a personalized target when income stability or dependents are unknown. A market decline reduces economic value before sale; sale realizes the gain/loss for accounting, and recovery is uncertain. Recovery fees tied to guarantees or unlocking funds are red flags; do not claim all legitimate services are free.`
+
+// A question about the emergency fund's size or what is still missing (answered from code), and the topics that make it another question.
+export const FUND_SIZE_Q = /how (?:big|much|large)[^.?!\n]{0,50}(?:\bfund\b|quỹ)|(?:\bfund\b|quỹ)[^.?!\n]{0,50}(?:how (?:big|much)|\btarget\b|\bsize\b|bao nhiêu|mục tiêu|bao lớn)|(?<!\p{L})thiếu[^.?!\n]{0,20}bao nhiêu|how much[^.?!\n]{0,20}(?:left|missing|short|to go)|(?:target|mục tiêu)[^.?!\n]{0,30}(?:\bfund\b|quỹ)/iu // lang-ok
+export const OTHER_FUND_TOPIC = /(?<!\p{L})(withdraw\p{L}*|rút|fees?|phí|deposit\p{L}*|nạp|each time|mỗi lần|debts?|nợ|loans?|vay|bitcoin|btc|crypto|invest\p{L}*|đầu tư|insur\p{L}*|bảo hiểm|why|sao)(?!\p{L})/iu // lang-ok
+// "$7.500" next to "$7,500" in one Vietnamese chat (persona run 2026-11-06): a dollar amount always has comma thousands, as the figures do.
+export const fixDollars = (t: string) => t.replace(/\$(\d{1,3}(?:\.\d{3})+)(?![\d,]|\.\d)/g, (_, n: string) => `$${n.replace(/\./g, ',')}`)

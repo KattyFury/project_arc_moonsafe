@@ -1,0 +1,249 @@
+=================== minh1
+  PLAN: set_income({"name":"Monthly income","monthly":{"amount":1500,"currency":"USDC"},"kind":"active"})
+    tool → Recorded income: Monthly income $1,500 a month (active).
+  PLAN: no_action({})
+STATUS 200
+CONTENT: By the MoonSafe framework, the emergency fund is usually **3 months of spending** for someone with steady income, no dependents, and no debt. With **$900 a month** of spending, that means **$2,700**; it works like a shock absorber if income pauses, so you do not have to borrow or sell under pressure.
+OPS: [{"op":"set_income","income":{"id":"iu94fil","name":"Monthly income","monthly":1500,"currency":"USDC","kind":"active","updatedAt":1793972936116}},{"op":"update_profile","fields":{"dependents":0}},{"op":"update_profile","fields":{"debtsComplete":true}},{"op":"update_profile","fields":{"noNearGoal":true}},{"op":"set_expense","expense":{"id":"eg6o0ye","name":"Monthly spending","monthly":900,"currency":"USDC","kind":"fixed","updatedAt":1793972937210}}]
+ACTIONS: []
+tokens: 20470
+=================== lan-spend2
+  PLAN: no_action({})
+dropped update_profile {"income_stable":true}: not stated or unchanged
+Với chi tiêu đều và hai vợ chồng thu nhập khá ổn, **quỹ dự phòng 3 tháng chi tiêu = $3,000** là mức nền gọn và đủ để che một cú hụt thu nhập ngắn; nếu bạn muốn yên tâm hơn, nhiều người chọn **6 tháng chi tiêu = $6,000** vì có thêm đệm khi việc l
+STATUS 200
+CONTENT: Mình ghi: chi tiêu gia đình của bạn là **$1,000/tháng**. Với khoản vay xe **$6,000 lãi 9%/năm**, đây là **nợ tốn kém**, nên sau khi giữ quỹ dự phòng, bạn có thể cân nhắc trả sớm hơn phần tiền rảnh vì lãi đang ăn vào chi tiêu hằng tháng. Còn **quỹ dự phòng** của bạn hiện **chưa chốt được mức hợp lý** vì còn thiếu thông tin về thu nhập có ổn định không và có người phụ thuộc không; những thông tin đó quyết định nó nên là **3, 6, 9 hay 12 tháng chi tiêu**.
+OPS: [{"op":"set_expense","expense":{"id":"eyxpia5","name":"Monthly spending","monthly":1000,"currency":"USDC","kind":"fixed","updatedAt":1793972939952}}]
+ACTIONS: []
+tokens: 23679
+=================== minh-unknown
+  PLAN: no_action({})
+STATUS 200
+CONTENT: For a freelancer with income that moves a bit, **6 months of spending** is the plain rule of thumb, because slower months can arrive without warning. With your **$900** a month spending, that means **6 × your spending**, so the fund is built from your monthly spending number, not your income. **3 months** is the lighter version for steady pay; **9–12 months** is for income that is more shaky or when someone depends on it. If your income is actually steadier than “variable,” the target can change.
+OPS: []
+ACTIONS: []
+tokens: 14813
+=================== minh-3mo
+  PLAN: no_action({})
+STATUS 200
+CONTENT: For **3 months**, the idea is: if income pauses for a while, you still have a buffer for rent and basics; with **4 months**, you give freelance ups and downs a bit more breathing room. A freelancer’s cash flow can wobble, so the extra month is mainly there to reduce the chance that one slow stretch forces you into bad timing or borrowing. If your income is fairly steady month to month, **3 months** is usually enough; if it swings more, **4 months** feels safer.
+OPS: []
+ACTIONS: []
+tokens: 14740
+=================== minh-open
+  PLAN: no_action({})
+STATUS 200
+CONTENT: **6 months** is the emergency fund size MoonSafe uses when income changes month to month, even if it’s only a bit. The simple logic is: **$900 spending × 6 = $5,400**; if income is steadier and nobody relies on it, **3 months** is the lighter version. If your income were actually steady, the target would be different — but with freelance money that moves around, 6 months is the safer fit. The vault-opening card is ready for you to sign.
+OPS: []
+ACTIONS: [{"type":"prepare_open_vault"}]
+tokens: 15740
+=================== minh-btc
+  PLAN: no_action({})
+Your monthly spending is **$900**, so your emergency fund target is **6 months of spending = $5,400**; the vault is still **$5,400 short**.  
+Because the emergency fund is not full, 
+Where you stand: your **emergency fund target is 6 months of spending = $5,400**, and the app vault is **$0**; Bitcoin is separate from that. Since the emergency fund
+STATUS 200
+CONTENT: Updated: **Bitcoin $700** now includes the extra **$150** you bought on Binance. cirBTC is Bitcoin you can buy and hold in this app.
+Where you stand: your **emergency fund target is 6 months of spending = $5,400**, and the app vault is **$0**; Bitcoin is separate from that. Since the emergency fund is not full, the next step is still the emergency fund, not buying cirBTC here yet.
+OPS: []
+ACTIONS: []
+tokens: 32178
+=================== minh-850
+  PLAN: set_holding({"id":"h0b6q8p","worth":{"amount":850,"currency":"USDC"}})
+    tool → Updated Bitcoin $850.
+  PLAN: show_allocation({})
+    tool → The allocation chart is shown (target by the MoonSafe framework vs now) right under this reply.
+  PLAN: show_cashflow({})
+    tool → The cash-flow card (income, spending, surplus, passive / spending) is shown right under this reply.
+  PLAN: no_action({})
+STATUS 200
+CONTENT: Your Bitcoin should be **$850** if the extra **$150** gets saved into the BTC line. Your emergency fund is still **$0 in the vault**, and the target is **6 months of spending = $5,400** because your monthly spending is **$900**. In MoonSafe, the emergency fund is the money set aside for bad months; the rest of your money can be put to work later, but the app won’t show an investing split yet because the fund is not full.
+I picked up 1 change. Confirm or cancel it below; nothing is saved until you do.
+OPS: []
+ACTIONS: [{"type":"confirm_items","items":[{"text":"Bitcoin $850","ops":[{"op":"set_holding","id":"h0b6q8p","patch":{"value":850,"currency":"USDC"}}]}],"ask":[]}]
+tokens: 44021
+=================== minh-wd
+  PLAN: set_expense({"id":"e6ajh1j","name":"Monthly spending","monthly":{"amount":1100,"currency":"USDC"},"kind":"fixed"})
+    tool → Recorded spending: Monthly spending $1,100 a month (fixed).
+  PLAN: show_cashflow({})
+    tool → The cash-flow card (income, spending, surplus, passive / spending) is shown right under this reply.
+  PLAN: no_action({})
+You can’t withdraw **$50** from the emergency fund right now because there is nothing in the vault.
+STATUS 200
+CONTENT: Your **emergency fund target** is still **$6,600**, because it is **6 months of spending** and your spending is **$1,100/month**. The vault is **$0**, so it is **$6,600 short**.
+You can’t withdraw **$50** from the emergency fund right now because there is nothing in the vault.
+OPS: [{"op":"set_expense","expense":{"id":"e6ajh1j","name":"Monthly spending","monthly":1100,"currency":"USDC","kind":"fixed","updatedAt":1793972968402}}]
+ACTIONS: [{"type":"show_cashflow"}]
+tokens: 35970
+=================== lan-nap
+  PLAN: no_action({})
+STATUS 200
+CONTENT: Nạp từng phần nhỏ như **$50** hoặc **$100** sẽ dễ kiểm tra hơn, vì bạn chỉ ký một số tiền mình nhìn rõ trước khi bấm. Cách này không làm tiền an toàn hơn về mặt kỹ thuật, nhưng giúp bạn ít bị nhầm số và dễ dừng lại nếu thấy lệch. Với quỹ dự phòng, mục tiêu của bạn là nạp đều và kiểm tra đúng số tiền, đúng ví nhận, đúng mục đích trước khi ký.
+OPS: []
+ACTIONS: []
+tokens: 25685
+=================== lan-150
+  PLAN: update_profile({"insured": false}) ; no_action({})
+dropped update_profile {"insured": false}: not stated or unchanged
+    tool → Nothing changed (not stated in the latest message, or already known).
+    tool → Done.
+  PLAN: no_action({})
+STATUS 200
+CONTENT: **Quỹ dự phòng:** $50 trên $7,500 (6 tháng chi tiêu), còn $7,450.
+Safety: $0. Traditional: $2,000. Crypto: $0.
+OPS: []
+ACTIONS: []
+tokens: 12814
+=================== lan-insure
+  PLAN: update_profile({"insured": false}) ; no_action({})
+dropped update_profile {"insured": false}: not stated or unchanged
+    tool → Nothing changed (not stated in the latest message, or already known).
+    tool → Done.
+  PLAN: update_profile({"insured":false})
+dropped update_profile {"insured":false}: not stated or unchanged
+STATUS 200
+CONTENT: **Quỹ dự phòng:** $50 trên $7,500 (6 tháng chi tiêu), còn $7,450.
+Safety: $0. Traditional: $2,000. Crypto: $0.
+OPS: []
+ACTIONS: []
+tokens: 12818
+=================== lan-thieu
+  PLAN: no_action({})
+STATUS 200
+CONTENT: Đã rõ. Bạn có thể giữ nguyên cách ưu tiên trả nợ xe sớm hơn; **quỹ dự phòng** hiện vẫn là **$50 / $7,500**, nên còn thiếu **$7,450**.
+OPS: []
+ACTIONS: []
+tokens: 35300
+=================== lan-phi
+  PLAN: no_action({})
+Về **phí rút**, thường là phí mạng và có thể rất nhỏ hoặc thay đổi theo lúc gửi; rủi ro mất tiền chủ yếu là nếu ký nhầm địa chỉ hoặc lộ ví, còn giao dịch đúng 
+**Rút tiền:** Rút từ quỹ d
+Với khoản vay xe còn **$5,000** và lãi **9%/năm**, ưu tiên an toàn nhấ
+STATUS 200
+CONTENT: Tiền trong quỹ rút ra thường **chỉ tốn phí mạng rất nhỏ**, nhưng vẫn có thể có lúc mạng bận nên chờ lâu hơn; về rủi ro mất tiền, nếu ví của bạn bị lộ khóa thì người khác có thể rút hết, còn MoonSafe không giữ khóa để can thiệp.
+Với khoản vay xe còn **$5,000** và lãi **9%/năm**, ưu tiên an toàn nhất là **giữ lịch trả đều** rồi chỉ trả nhanh hơn nếu sau khi giữ lại phần tiền dự phòng bạn vẫn thấy thoải mái; vì bạn đang còn thiếu **quỹ dự phòng 6 tháng chi tiêu = $7,500**, rút tiền chỉ nên dùng khi thật cần.
+Nếu rút từ quỹ, số trong quỹ sẽ giảm ngay, nên lớp đệm cho lúc thu nhập chậm lại cũng mỏng đi.
+Về câu chị hỏi “trả tiếp nhanh hay giữ tiền mặt”, một cách an toàn là **không dồn hết vào trả nợ** khi quỹ dự phòng chưa đầy, vì lúc có việc gấp bạn sẽ phải xoay tiền với áp lực hơn.
+OPS: []
+ACTIONS: []
+tokens: 34668
+=================== lan-rut150
+  PLAN: no_action({})
+Thường tiền về ví sau khi bạn ký giao dịch là trong **vài phút**, nhanh hay chậm còn tùy mạng lúc đó.  
+Để tránh rủi ro, bạn chỉ nên kiểm tra đúng số tiền và đúng địa chỉ ví trước khi ký, vì giao dị
+Phí thường không lớn; điều cần tránh là **bấm sai địa chỉ** hoặc **lộ seed phrase**, vì giao dịch không thể đảo ngược và chỉ ví của bạn mới rút được.  
+Cách an toàn nhất là kiểm t
+STATUS 200
+CONTENT: Rút **50 USDC** thường về ví sau khi mạng xác nhận, nên hay tính bằng **vài phút**, nhưng lúc mạng bận có thể lâu hơn.
+Phí thường không lớn; điều cần tránh là **bấm sai địa chỉ** hoặc **lộ seed phrase**, vì giao dịch không thể đảo ngược và chỉ ví của bạn mới rút được.
+Cách an toàn nhất là kiểm tra kỹ địa chỉ ví nhận trước khi ký và không chia sẻ khóa hay seed phrase với ai.
+OPS: []
+ACTIONS: []
+tokens: 26597
+=================== minh1
+  PLAN: set_income({"name":"Monthly income","monthly":{"amount":1500,"currency":"USDC"},"kind":"active"})
+    tool → Recorded income: Monthly income $1,500 a month (active).
+  PLAN: set_expense({"name":"Monthly spending","monthly":{"amount":900,"currency":"USDC"},"kind":"fixed"})
+    tool → Recorded spending: Monthly spending $900 a month (fixed).
+  PLAN: no_action({})
+Because your income is **irregular** and you have **no dependents**, that size gives you a bigger cushion if work slows down or stops.  
+Right now, the app vault is **$0 / $5,400**, so the gap is **$5,400**.  
+A simple picture: i
+STATUS 200
+CONTENT: Your **emergency fund target** is **6 months of spending = $5,400**.
+Because your income is **irregular** and you have **no dependents**, that size gives you a bigger cushion if work slows down or stops.
+Right now, the app vault is **$0 / $5,400**, so the gap is **$5,400**.
+A simple picture: if income stopped next month, that fund is meant to cover about **6 months** of your usual **$900** spending.
+OPS: [{"op":"set_income","income":{"id":"ic6pdjs","name":"Monthly income","monthly":1500,"currency":"USDC","kind":"active","updatedAt":1793973100915}},{"op":"set_expense","expense":{"id":"egzcj1u","name":"Monthly spending","monthly":900,"currency":"USDC","kind":"fixed","updatedAt":1793973102351}},{"op":"update_profile","fields":{"incomeStable":false}},{"op":"update_profile","fields":{"dependents":0}},{"op":"update_profile","fields":{"debtsComplete":true}},{"op":"update_profile","fields":{"noNearGoal":true}}]
+ACTIONS: []
+tokens: 26857
+=================== lan-spend2
+  PLAN: no_action({})
+Với chi tiêu đều như vậy, **quỹ dự phòng 3 tháng chi tiêu = $3,000**; mức này thường đủ để có một lớp đệm nếu thu nhập bị gián đoạn ngắn hạn.  
+Nếu bạn muốn yên tâm hơn, **6 tháng chi tiêu = $6,000** sẽ dày hơn, đặc biệt khi gia đìn
+STATUS 200
+CONTENT: Mình ghi: **thu nhập ổn định** và **chi tiêu hằng tháng $1,000**.
+Với chi tiêu đều như vậy, **quỹ dự phòng 3 tháng chi tiêu = $3,000**; mức này thường đủ để có một lớp đệm nếu thu nhập bị gián đoạn ngắn hạn.
+Nếu bạn muốn yên tâm hơn, **6 tháng chi tiêu = $6,000** sẽ dày hơn, đặc biệt khi gia đình muốn ngủ ngon hơn trước các cú sốc lớn.
+Khoản vay xe **9%/năm** là **nợ đắt**, nên thường đáng ưu tiên trả sớm hơn những khoản vay lãi thấp vì lãi phình lên khá nhanh theo thời gian.
+OPS: [{"op":"update_profile","fields":{"incomeStable":true}},{"op":"set_expense","expense":{"id":"eqeaxj0","name":"Monthly spending","monthly":1000,"currency":"USDC","kind":"fixed","updatedAt":1793973106249}}]
+ACTIONS: []
+tokens: 14864
+=================== minh-3mo
+  PLAN: no_action({})
+STATUS 200
+CONTENT: For **your emergency fund**, **3 months** is the basic version for someone with steady income and no one depending on them; **6 months** is the step up when income changes month to month, because a slow month is more likely to happen before the next one arrives. **9 to 12 months** is usually for people who both have variable income and support others. So the reason for **3 or 4 months** is simply that it gives you a cushion for a temporary drop in freelance work without making your money sit too long.
+OPS: []
+ACTIONS: []
+tokens: 23541
+=================== minh-btc
+  PLAN: no_action({})
+With the figures already in the app, your **monthly spending is $900**, so your **emergency fund target** is **6 months = $5,400**.  
+That means the fund is still **$5,400 short**, and cirBTC buying
+STATUS 200
+CONTENT: Your **Bitcoin** is **$700** in the saved figures, and the new **$150** buy is only pending confirmation for now, so it is not counted yet. Your app vault emergency fund is **$0**, and by the MoonSafe framework the emergency fund is the next step before buying through the app. **cirBTC** means Bitcoin you can buy and hold in this app. If you want to use the app, one small cirBTC buy only makes sense after the emergency fund is filled; until then, the buy lock stays on.
+I picked up 1 change. Confirm or cancel it below; nothing is saved until you do.
+OPS: []
+ACTIONS: [{"type":"confirm_items","items":[{"text":"Bitcoin $700 → $850 (bought $150 more)","ops":[{"op":"set_holding","id":"h0b6q8p","patch":{"value":850}}]}],"ask":[]}]
+tokens: 24287
+=================== lan-150
+  PLAN: update_profile({"insured": false}) ; no_action({})
+dropped update_profile {"insured": false}: not stated or unchanged
+    tool → Nothing changed (not stated in the latest message, or already known).
+    tool → Done.
+  PLAN: update_profile({"insured":false})
+dropped update_profile {"insured":false}: not stated or unchanged
+Về quỹ dự phòng, số **$50** là phần **trong ví quỹ dự phòng của app**; còn **$150 USDC** bạn nói ở trước đó là tiền khác, nên **không tự động tính vào quỹ dự phòng**.  
+Mục tiêu quỹ dự phòng là **6 tháng chi tiêu = $7,500**, nên
+**Quỹ dự phòng** hiện có **50 USDC trong vault**, còn mục tiêu là **6 tháng chi tiêu = $7,500**, nên còn thiếu **$7,450**.  
+Số **150 USDC trong ví app** là số riêng, chưa tự động tính vào qu
+STATUS 200
+CONTENT: Mình không lưu được sở thích “ưu tiên trả nợ xe sớm hơn” vào app; app chỉ ghi các khoản và số tiền cụ thể.
+**Quỹ dự phòng** hiện có **50 USDC trong vault**, còn mục tiêu là **6 tháng chi tiêu = $7,500**, nên còn thiếu **$7,450**.
+Số **150 USDC trong ví app** là số riêng, chưa tự động tính vào quỹ dự phòng cho đến khi bạn đưa vào vault.
+Vì vậy, phần thiếu hiện tại của quỹ dự phòng vẫn là **$7,450**.
+OPS: []
+ACTIONS: []
+tokens: 32023
+=================== lan-rut150
+  PLAN: no_action({})
+Thường sau khi bạn ký giao dịch, tiền về ví trong **vài phút** nếu mạng bình thường; chậm hơn thì do mạng đang đông.  
+Phí thường là **phí mạng nhỏ**, còn rủi ro lớn nhất là **bấm nhầm địa chỉ hoặc lộ seed 
+STATUS 200
+CONTENT: Rút **150 USDC** thì tiền thường về **vài phút** sau khi bạn ký giao dịch, nhưng có lúc mạng bận thì có thể lâu hơn một chút. Phí thường là **phí mạng nhỏ**, còn rủi ro mất tiền chủ yếu là **bấm sai địa chỉ hoặc lộ seed phrase/ví**; chỉ ví của bạn mới rút được và giao dịch không đảo ngược. Để an toàn, bạn nên **kiểm tra đúng địa chỉ nhận**, xem kỹ số tiền trước khi ký, và tuyệt đối không đưa seed phrase cho bất kỳ ai.
+OPS: []
+ACTIONS: []
+tokens: 26635
+=================== lan-spend2
+  PLAN: no_action({})
+Với quỹ dự phòng, **3 tháng chi tiêu = $3,000** là mức nền hợp lý cho gia đình có thu nhập đều; nếu muốn yên tâm hơn thì có thể nghĩ tới **6 tháng chi tiêu = $6,000**, vì khi có việc bất ngờ bạn sẽ có thêm thời gian xoay xở mà không phải bán
+STATUS 200
+CONTENT: Mình ghi: **thu nhập đều** và **chi tiêu $1,000/tháng**.
+Với quỹ dự phòng, **3 tháng chi tiêu = $3,000** là mức nền hợp lý cho gia đình có thu nhập đều; nếu muốn yên tâm hơn thì có thể nghĩ tới **6 tháng chi tiêu = $6,000**, vì khi có việc bất ngờ bạn sẽ có thêm thời gian xoay xở mà không phải bán vội thứ khác.
+Khoản vay xe **9%/năm** là **nợ đắt**, nên về nguyên tắc bạn có thể ưu tiên trả sớm hơn các khoản nợ rẻ vì tiền lãi đang “ăn” vào ngân sách hàng tháng.
+Một cách dễ nhớ là: **quỹ dự phòng trước để không bị kẹt tiền mặt, rồi xử lý nợ đắt, rồi mới tính chuyện đầu tư**.
+OPS: [{"op":"update_profile","fields":{"incomeStable":true}},{"op":"set_expense","expense":{"id":"ea9o0e3","name":"Monthly spending","monthly":1000,"currency":"USDC","kind":"fixed","updatedAt":1793973187534}}]
+ACTIONS: []
+tokens: 14902
+=================== lan-rut150
+  PLAN: no_action({})
+Về thời gian, sau khi bạn ký giao dịch thì tiền thường về ví trong **vài phút** khi mạng ổn; nếu mạng bận thì có thể lâu hơn một chút.  
+Để tránh bấm nhầm hay mất tiền, hãy kiểm tra đúng
+Rút thường chỉ mất **vài phút đến khi mạng xác nhận**, vì chỉ cần ký giao dịch bằng ví của bạn; nếu mạng bận thì có thể lâu hơn một chút.  
+Phí thường là **phí mạng nhỏ**, không phải phí lớn; rủi ro chính là
+Phí thường không nhiều, chủ yếu là **phí mạng** chứ không phải mất một khoản lớn.  
+Để tránh bấm nhầm hay mất tiền, chỉ ký giao dịch khi đún
+STATUS 200
+CONTENT: Rút **tối đa $50 USDC** từ quỹ dự phòng thường về ví sau khi giao dịch được mạng xác nhận, nên hay tính bằng **vài phút**; nếu mạng bận thì lâu hơn một chút.
+Phí thường không nhiều, chủ yếu là **phí mạng** chứ không phải mất một khoản lớn.
+Để tránh bấm nhầm hay mất tiền, chỉ ký giao dịch khi đúng số tiền, đúng địa chỉ ví nhận, và giữ kín **seed phrase**; nếu ai có seed phrase thì có thể lấy hết tiền, còn giao dịch rồi thì không đảo lại được.
+OPS: []
+ACTIONS: []
+tokens: 36968
+=================== minh-3mo
+  PLAN: no_action({})
+STATUS 200
+CONTENT: By MoonSafe’s framework, **6 months of spending** is the default for a freelancer with income that changes month to month but not wildly. The idea is simple: steady income with no one relying on it is usually **3 months**; once income moves around, **6 months** gives a bigger buffer so a slow month does not force a bad decision. If your income turns out to be truly steady, the target can move down; if it gets shakier, it can move up toward **9 to 12 months**.
+OPS: []
+ACTIONS: []
+tokens: 32458

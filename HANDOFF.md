@@ -1,4 +1,19 @@
-# ▶ Handoff — 2026-11-06 — ĐỌC MỤC NÀY TRƯỚC
+# ▶ Handoff — 2026-11-06 (tối) — ĐỌC MỤC NÀY TRƯỚC
+
+**3 nút mới đã DEPLOY** (Cloudflare `ccc4b528`, Hiếu duyệt ảnh). Sau đó thử 1M token GPT với 2 người dùng giả lập (Minh 24t freelancer viết tiếng Anh; chị Lan 38t 2 con có nợ xe viết tiếng Việt): `scripts/persona-sim-2026-11-06.ts`, transcript `docs/evals/persona-sim-2026-11-06.txt`. Tìm ra 12 lỗi, đã sửa hết:
+- Khai bằng lời ("spend about $900, single, no debt, no big plans, it moves a bit", "chi khoảng 1.000 USD/tháng, thu nhập khá đều") giờ được ghi chắc bằng code (`factProposals` trong `agentGuards.ts`; `STABILITY_WORDS` nhận "moves/varies", "thu nhập … khá đều").
+- Câu tính sẵn cỡ quỹ chỉ trả lời câu hỏi về CỠ QUỸ / CÒN THIẾU (`FUND_SIZE_Q`, loại các câu về nạp, rút, phí, nợ, BTC, bảo hiểm); có số còn thiếu + số USDC trong ví (chưa tính vào quỹ); chỉ ghi VND khi chính người dùng khai bằng VND.
+- Người dùng tự đề xuất số tháng → model giải thích số tháng của app (3 / 6 / 9–12 theo thu nhập đều và người phụ thuộc), không gật theo. Cỡ quỹ chưa tính được thì không nêu số tháng, hỏi đúng điều còn thiếu.
+- "open the vault" kèm câu hỏi → vẫn ra thẻ mở vault và trả lời câu hỏi.
+- "bought another $150 of bitcoin" → cộng vào món Bitcoin đã có ($700 → $850), kể cả khi món cũ không ghi nơi giữ; planner bỏ sót thì code ghi. "had 700, bought 150, should be 850" = tổng mới, không cộng thêm lần nữa.
+- Rút khi quỹ trống / rút quá số trong quỹ → nói thẳng số trong quỹ; thẻ rút không vượt số trong vault.
+- Không còn hẹn "tin nhắn sau"; không gọi quỹ là "trong ví"; không "Mình ghi / Updated" khi không ghi gì (cả câu bị bỏ); sở thích không lưu được (VD trả nợ sớm) thì nói là app không lưu.
+- Model trả lời hỏng về quỹ → trả câu tính sẵn thay vì "I could not produce a reliable explanation".
+- Số đô luôn "$7,500" (dấu phẩy) kể cả trong câu tiếng Việt (`fixDollars`).
+
+Kiểm: `bun run check:all`, `bun run test:agent` (thêm `scripts/persona-sim-check.ts`). Chạy lại từng lượt đã lỗi trên GPT: `bun scripts/probe-turn.ts <fixture.json> --budget 60000` (in lệnh planner + kết quả guard). Mỗi lượt chat tốn 15–45k token (validator hay bắt viết lại 2 lần): việc nên làm sau là giảm số lần viết lại.
+
+# Handoff — 2026-11-06 (sáng)
 
 **Đã DEPLOY (Cloudflare `7cb14999`, commit `ea70499`) — sửa agent theo chat thật của Hiếu:**
 - Sau khi lưu một món, câu trả lời do code viết, nêu HẾT các phần còn thiếu kèm số ("Traditional $27.62 to go (now $10 / $37.62) or Crypto …"), không để model chỉ một phía.
@@ -7,7 +22,7 @@
 - Cách viết: "$30 to go (now $10 / $40)", số lẻ luôn 2 chữ số, giá trị tài sản bằng $ (không "USDC"). `src/lib/money.ts`.
 - Chạy lại đúng 3 đoạn chat: `bun scripts/replay-hieu-2026-11-06.ts --budget 100000` (gpt-5.4-mini, ~18k token).
 
-**CHƯA DEPLOY, chờ Hiếu duyệt ảnh** (Desktop `MoonSafe-nut-tat-2026-11-06`): 3 nút mới `Update split` · `Edit cash flow` · `Edit information` (`ShortcutBar.tsx`, `src/lib/shortcuts.ts`), màn Invest/Balance ghi "$10 / $40", số trên giao diện đủ 2 chữ số lẻ. Hiếu bảo deploy thì chạy lệnh deploy mainnet (mục ▶ MAINNET), kiểm bundle chứa `A9A5447a`, trang 200, `/api/chat` 401.
+**Đã deploy chiều 11-06 (`ccc4b528`)** (Desktop `MoonSafe-nut-tat-2026-11-06`): 3 nút mới `Update split` · `Edit cash flow` · `Edit information` (`ShortcutBar.tsx`, `src/lib/shortcuts.ts`), màn Invest/Balance ghi "$10 / $40", số trên giao diện đủ 2 chữ số lẻ. Hiếu bảo deploy thì chạy lệnh deploy mainnet (mục ▶ MAINNET), kiểm bundle chứa `A9A5447a`, trang 200, `/api/chat` 401.
 
 **Còn mở:** chưa có ô riêng vợ/chồng/con (đang dùng "số người phụ thuộc"); thử một đợt trên gpt-5.4-mini rộng hơn; việc cũ ở mục dưới.
 

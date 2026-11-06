@@ -23,7 +23,7 @@ import { getPrices } from './prices'
 import { educationAnswer, EDUCATION_POLICY } from '../_lib/education'
 import { salaryRemainder } from '../_lib/educationFigures'
 import { confirmationStatus } from '../_lib/confirmationStatus'
-import { defersOffer, explicitAgeRefusal, isCrisis, factProposals, quantityEvidence, turnPolicy, TURN_POLICY, responseProblems, REPLY_DISCIPLINE, fundMissingInputs } from '../_lib/agentGuards'
+import { defersOffer, explicitAgeRefusal, isCrisis, factProposals, quantityEvidence, turnPolicy, TURN_POLICY, responseProblems, REPLY_DISCIPLINE, fundMissingInputs, FUND_SIZE_Q, OTHER_FUND_TOPIC, fixDollars } from '../_lib/agentGuards'
 import { coachingBrief, recordingEvidence, COACH_POLICY, ALTCOIN_CHECK } from '../_lib/coaching'
 import { assertions, currentValuation, investedBasis, interestRateEvidence, passiveEvidence, zeroInterestEvidence, repaymentEvidence, incompleteExpenses } from '../_lib/mutationEvidence'
 import { dependentEvidence, householdDefault, incomeUpdate, profileAgeAllowed, scopeBrief, scopeChoice, scopeQuestion } from '../../src/lib/planningScope'
@@ -178,7 +178,7 @@ const VI_LETTERS = /[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽ
 
 // incomeStable is kept only when the user talked about how their income comes in (or answered
 // the stability question). gpt-4o-mini filled incomeStable=true from "my salary is $2,000" (eval 2026-10-24).
-const STABILITY_WORDS = /(?<!\p{L})(stable|steady|regular|irregular|fixed|employee|employed|full[- ]time|part[- ]time|salaried|freelanc\p{L}*|self[- ]employed|own (a |my )?business|contract|gig|ổn định|cố định|nhân viên|văn phòng|công chức|biên chế|tự do|kinh doanh|bấp bênh|thất thường)(?!\p{L})|(?:lương|thu nhập|bố mẹ|ba mẹ|trợ cấp)[^,.;\n]{0,20}(?<!\p{L})(?:đều|không đều)(?!\p{L})/iu // lang-ok — "lương 15tr đều" (Haiku run 2026-10-31)
+const STABILITY_WORDS = /(?<!\p{L})(stable|steady|regular|irregular|fixed|employee|employed|full[- ]time|part[- ]time|salaried|freelanc\p{L}*|self[- ]employed|own (a |my )?business|contract|gig|ổn định|cố định|nhân viên|văn phòng|công chức|biên chế|tự do|kinh doanh|bấp bênh|thất thường|uneven|unsteady|lumpy|fluctuat\p{L}*|up and down|lúc nhiều lúc ít)(?!\p{L})|(?:income|pay|it|money|salary|earnings?)[^,.;!?\n]{0,25}(?<!\p{L})(?:moves|varies|vary|changes)(?!\p{L})|(?:lương|thu nhập|bố mẹ|ba mẹ|trợ cấp)[^,.;\n]{0,30}(?<!\p{L})(?:đều|không đều)(?!\p{L})/iu // lang-ok — "lương 15tr đều" (Haiku run 2026-10-31); "it moves a bit", "thu nhập của hai vợ chồng khá đều" (persona run 2026-11-06)
 const ASKS_STABLE = /(stable|steady|regular)[^.!?\n]*\?|ổn định[^.!?\n]*\?|ổn định[^.!?\n]*(không|chưa)\.\s*[^.!?\n]{0,80}\?/i // lang-ok
 // A zero / "none" is recorded only when the user said so (gpt-4o-mini filled 0 from "fixed salary", eval 2026-10-24).
 const SAYS_NONE = /(?<!\p{L})(no|none|zero|nothing|nobody|no one|don'?t have|do not have|debt[- ]free|paid off|không|chưa có|hết nợ|ko có|không có ai)(?!\p{L})|(?<![\d.,])0(?![\d.,])/iu // lang-ok
@@ -203,7 +203,7 @@ function tidyQuestions(text: string, dropStable: boolean): string {
 
 // Phrases that report an app action as done; only allowed when an action actually ran.
 const CLAIMS_ACTION = /\bI(['’]ve| have| just)\s+(opened|filled|created|set up|shown|prepared)\b|(?:deposit|buy|withdrawal) card[^.?!\n]{0,80}\b(?:is |already )?ready\b|here(['’]s| is) (the|your) card|(đã|vừa)\s+(mở|điền|hiện|tạo)(?!\s*kh(?:oá|óa|oa))\s*(sẵn)?|mở sẵn màn .{0,40} (rồi|cho bạn)/i // lang-ok
-const SAYS_NOTED = /^\s*(?:\*\*)?(?:noted|got it saved)\b|\bI (?:have |just )?(?:recorded|saved)\b|(?:mình|tôi) (?:đã |vừa )?(?:ghi(?: nhận)?|lưu)/iu // lang-ok
+const SAYS_NOTED = /^\s*(?:\*\*)?(?:noted|got it saved|updated|đã cập nhật)(?!\p{L})|\bI (?:have |just )?(?:recorded|saved)\b|(?:mình|tôi) (?:đã |vừa )?(?:ghi(?: nhận)?|lưu)/iu // lang-ok
 // "You need to add 2,301 USDC" / "you can add up to 2,301 USDC" while the floor is unknown.
 const NEEDS_AMOUNT = /((need|have|has) to (add|deposit|put)|can (add|deposit|put) up to|to reach (its|the|your) (required )?floor)[^.?!\n]{0,30}\d|(cần|phải|được tối đa) (nạp|thêm)[^.?!\n]{0,30}\d/i // lang-ok
 const ASKS_USE = /idle|what (should|can) i do with|how (should|do) i (split|invest|use)|nhàn rỗi|làm gì với|chia (tiền|thế nào|sao)/i // lang-ok
@@ -992,7 +992,14 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   const vaultFee = typeof ctx.vaultFeeUsdc === 'number' && ctx.vaultFeeUsdc > 0 ? ctx.vaultFeeUsdc : 1
   // The admin's "pause transactions" switch also stops this card; "how do I open a vault?", "I don't want to open one" are not requests.
   const mentionsOpenOnlyAsQuestion = /(?:^|[.!?]\s*)(?:how|what|why|when|where|can|could|should|do|does|is|are|if|i (?:do not|don'?t|never|won'?t|didn'?t)|never|don'?t|not)\b[^.!?\n]*$/i.test(lastUserText.slice(0, (ASKS_OPEN.exec(lastUserText)?.index ?? 0) + 1))
-  if (!policy.answerFirst && !cardsPaused && !hasVault && !lastUserText.startsWith('[app event]') && ((OPEN_OFFERED.test(prevAssistantText) && AGREES.test(lastUserText) && !/\bbut\b|\?/i.test(lastUserText)) || (ASKS_OPEN.test(lastUserText) && !mentionsOpenOnlyAsQuestion && !/\?\s*$/.test(lastUserText)))) {
+  const opensVault = !cardsPaused && !hasVault && !lastUserText.startsWith('[app event]') && ((OPEN_OFFERED.test(prevAssistantText) && AGREES.test(lastUserText) && !/\bbut\b|\?/i.test(lastUserText)) || (ASKS_OPEN.test(lastUserText) && !mentionsOpenOnlyAsQuestion && !/\?\s*$/.test(lastUserText)))
+  // "why 6 months? … but yeah, open the vault" (persona run 2026-11-06): the question is answered AND the opening card comes with it;
+  // before, the question alone was answered and the vault was never opened.
+  if (opensVault && policy.answerFirst) {
+    actions.push({ type: 'prepare_open_vault' })
+    done.push(`They asked to open the vault: the opening card (${vaultFee} USDC, once) is ALREADY shown under this reply. Answer their question, then say in one sentence the card is ready for them to sign; do not offer it again.`)
+  }
+  if (opensVault && !policy.answerFirst) {
     return json({
       content: vi ? 'Đây rồi: ký thẻ bên dưới để mở vault của bạn.' : 'Here it is: sign the card below to open your vault.', // lang-ok
       ops: [], dcaStop: false, actions: [{ type: 'prepare_open_vault' }],
@@ -1161,6 +1168,10 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
   // A purchase or an addition (not "now I have"), for the add / set holding tools.
   const addsTo = ADDS_TO.test(lastUserText) && !NOW_TOTAL.test(lastUserText) && !SOLD.test(lastUserText)
   const userNumbers = (lastUserText.replace(/(\d),(\d{3})/g, '$1$2').match(/\d+(?:\.\d+)?/g) ?? []).map(Number)
+  // "I had about $700, then bought $150, so it should be $850 now" is the new total, said with the old one (persona run 2026-11-06):
+  // it replaces the amount instead of being added to it.
+  const givesTotal = (x: Holding) => (x.value !== undefined && userNumbers.some(n => Math.abs(n - x.value!) < 0.005)) || (x.quantity !== undefined && userNumbers.some(n => Math.abs(n - x.quantity!) < 1e-9))
+    || /(?:should|would|must) be[^.?!\n]{0,20}\d|(?<!\p{L})(?:it'?s|is|at)\s+(?:about |around |roughly )?\$?\s*\d[\d,.]*\s*k?\s+now(?!\p{L})|(?<!\p{L})(?:phải là|giờ là|thành ra)(?!\p{L})/iu.test(lastUserText) // lang-ok
   /** What an item becomes once a purchase is added to it: counts add up, amounts in the same currency add up, else by today's price. */
   const addedPatch = (same: Holding, h: Holding): Partial<Holding> | null => {
     if (same.quantity !== undefined && h.quantity !== undefined && (same.unit ?? '') === (h.unit ?? '') && same.priceSource === h.priceSource) return { quantity: same.quantity + h.quantity }
@@ -1331,8 +1342,12 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       const h = await buildHolding(a)
       if (typeof h === 'string') { console.log(`dropped add_holding ${call.function.arguments}: ${h}`); return h }
       // The same item again (type + symbol + place) replaces it instead of doubling it.
-      const same = profile.holdings.find(x => x.type === h.type && (x.symbol ?? '') === (h.symbol ?? '') && (x.where ?? '').toLowerCase() === (h.where ?? '').toLowerCase() && (h.symbol || x.name.toLowerCase() === h.name.toLowerCase()))
-      if (same && addsTo) {
+      const exact = profile.holdings.find(x => x.type === h.type && (x.symbol ?? '') === (h.symbol ?? '') && (x.where ?? '').toLowerCase() === (h.where ?? '').toLowerCase() && (h.symbol || x.name.toLowerCase() === h.name.toLowerCase()))
+      // "I bought another $150 of bitcoin on Binance" while the form listed "Bitcoin $700" with no place (persona run 2026-11-06): it
+      // became a second Bitcoin line. A purchase goes onto the one listed item of that kind (never the cirBTC read from the wallet).
+      const kin = addsTo && !exact ? profile.holdings.filter(x => x.type === h.type && (x.symbol ?? '') === (h.symbol ?? '') && x.where !== CIRBTC_WHERE && (!x.where || !h.where || x.where.toLowerCase() === h.where.toLowerCase())) : []
+      const same = exact ?? (kin.length === 1 ? kin[0] : undefined)
+      if (same && addsTo && !givesTotal(same)) {
         const patch = addedPatch(same, h)
         if (!patch) return `Not recorded: ${same.name} is already listed and this amount could not be added to it. Ask ONE short question: how much ${same.name} do they hold now in total?`
         const before = holdingUsd(same, prices, rate), after = holdingUsd({ ...same, ...patch }, prices, rate)
@@ -1387,7 +1402,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       }
       if (!Object.keys(patch).length) return 'Not changed: the new amount is not in the user\'s words.'
       // "I bought 30 more" given as the new amount: it is what was bought, so it is added (Hieu, 2026-11-06).
-      if (addsTo && (patch.value !== undefined || patch.quantity !== undefined)) {
+      if (addsTo && !givesTotal(h) &&(patch.value !== undefined || patch.quantity !== undefined)) {
         const said = (n: number | undefined) => n !== undefined && userNumbers.some(x => Math.abs(x - n) < 0.005)
         if (patch.quantity !== undefined && h.quantity !== undefined && said(typeof a.quantity === 'number' ? a.quantity : w?.amount)) patch.quantity += h.quantity
         else if (patch.value !== undefined && h.value !== undefined && (patch.currency ?? h.currency) === h.currency && said(patch.value)) patch.value += h.value
@@ -1625,6 +1640,10 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       if (name === 'prepare_buy_cirbtc' && amtUsd !== null && amtUsd > canSpend + 0.5) {
         return `Not done: the app wallet holds ${usdc(canSpend)}; a card can buy at most that now. Offer ${usdc(canSpend)} and say the rest needs money moved to the wallet first.`
       }
+      // "Can I withdraw $50?" with an empty vault got "your choice", and "withdrawing 150" with $50 in it got "a few minutes" (persona run 2026-11-06).
+      const inVault = startBalance.fundUsd ?? 0
+      if (name === 'prepare_withdraw' && inVault <= 0.005) return 'Not done: the vault is empty ($0), there is nothing to withdraw. Say so plainly; no card.'
+      if (name === 'prepare_withdraw' && amtUsd !== null && amtUsd > inVault + 0.005) return `Not done: the vault holds only ${usdc(inVault)}; at most ${usdc(inVault)} can be withdrawn. Say so and offer ${usdc(inVault)} instead.`
       actions.push({ ...a, type: name })
       const amt = amt0 ? moneyText(amt0) : 'an unclear amount'
       done.push(
@@ -1757,6 +1776,17 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
       await handle({ id: `fallback-${spec.type}`, function: { name: 'add_holding', arguments: JSON.stringify({ ...spec, worth: { amount, currency: 'USDC' } }) } })
     }
   }
+  // "I bought another $150 of bitcoin on Binance" left the planner at no_action, then the reply said "Updated" (persona run
+  // 2026-11-06): a purchase with a dollar amount and the thing bought goes through add_holding here, which adds it to the listed item.
+  if (!appEvent && !placement && !ops.some(o => o.op === 'add_holding' || o.op === 'set_holding') && !readbackOps.flat().some(o => o.op === 'add_holding' || o.op === 'set_holding')) {
+    const m = /(?<!\p{L})(?:bought|purchased|picked up|mua(?: thêm)?)(?!\p{L})\s+(?:another|more|extra|thêm)?\s*\$\s*(\d[\d,]*(?:\.\d+)?)(?!\d)\s*(k)?\s*(?:usd|usdc|dollars?|đô)?\s*(?:more\s+|thêm\s+)?(?:of|worth of|in)?\s*(?:more\s+)?(bitcoin|btc|gold|vàng|eth|ethereum)(?!\p{L})|(?<!\p{L})(?:bought|purchased|mua(?: thêm)?)(?!\p{L})\s+(?:another|more|extra|thêm)?\s*(\d[\d,]*(?:\.\d+)?)(?!\d)\s*(k)?\s*(?:\$|usd|usdc|dollars?|đô)\s*(?:more\s+|thêm\s+)?(?:of|worth of|in)?\s*(?:more\s+)?(bitcoin|btc|gold|vàng|eth|ethereum)(?!\p{L})/iu.exec(lastUserText) // lang-ok
+    if (m && !SOLD.test(lastUserText)) {
+      const amount = Number((m[1] ?? m[4]).replace(/,/g, '')) * ((m[2] ?? m[5]) ? 1000 : 1)
+      const what = (m[3] ?? m[6]).toLowerCase()
+      const spec = /bitcoin|btc/.test(what) ? { type: 'btc', symbol: 'BTC', name: 'Bitcoin' } : /gold|vàng/.test(what) ? { type: 'gold_physical', name: 'Gold', unit: 'oz' } : { type: 'eth', symbol: 'ETH', name: 'ETH' } // lang-ok
+      if (amount > 0) await handle({ id: `fallback-buy-${spec.type}`, function: { name: 'add_holding', arguments: JSON.stringify({ ...spec, worth: { amount, currency: 'USDC' } }) } })
+    }
+  }
   // Reconcile explicit declarations after planning, through the same guarded tool boundary.
   if (!appEvent && !placement) {
     for (const proposal of factProposals(evidence.text, profile)) {
@@ -1796,11 +1826,31 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     profile = applyOps(profile, [op])
   }
   const balance = ops.length ? await balanceOf(profile) : startBalance
+  // "3 months is the sweet spot for me" got "3 months is a good fit, $2,700" while the app's target was 6 months = $5,400 (persona run
+  // 2026-11-06). The months come from the facts; the reply explains them and what would change them, it never takes the user's number.
+  const proposedMonths = appEvent ? [] : [...lastTyped.matchAll(/(?<![\d.])(\d{1,2})(?:\s*(?:-|to|or|hay|hoặc)\s*(\d{1,2}))?\s*(?:months?|tháng)(?!\p{L})/giu)].flatMap(m => [Number(m[1]), ...(m[2] ? [Number(m[2])] : [])]) // lang-ok
+  const monthsAt = balance.fund.floorMonths
+  const monthsWhy = profile.incomeStable === false && (profile.dependents ?? 0) > 0 ? 'income that changes month to month AND people who rely on it'
+    : profile.incomeStable === false ? 'income that changes month to month' : (profile.dependents ?? 0) > 0 ? 'people who rely on their income' : 'steady income with nobody relying on it'
+  const offMonths = proposedMonths.filter(n => n !== monthsAt && n > 0 && n <= 24)
+  // A withdrawal asked about (not only requested) still has to meet what the vault holds; the reply is checked for it below.
+  let withdrawLimit: number | null = null
+  if (!appEvent && /(?<!\p{L})(withdraw\p{L}*|take out|rút)(?!\p{L})/iu.test(lastTyped)) { // lang-ok
+    const inVault = balance.fundUsd ?? 0
+    const asked = [...lastTyped.replace(/(\d),(\d{3})/g, '$1$2').matchAll(/(?<!\p{L})(?:withdraw\p{L}*|take out|rút)(?!\p{L})[^.?!\n\d]{0,20}\$?\s*(\d+(?:\.\d+)?)/giu)].map(m => Number(m[1])).filter(n => n > 0) // lang-ok
+    if (inVault <= 0.005) { withdrawLimit = 0; done.push('The vault is EMPTY ($0): there is nothing to withdraw. Say so plainly first; it is not "their choice" and no card is offered.') }
+    else if (asked.some(n => n > inVault + 0.005)) { withdrawLimit = inVault; done.push(`The vault holds only ${usdc(inVault)}: more than that cannot be withdrawn. Say so plainly before anything else (they could withdraw up to ${usdc(inVault)}).`) }
+  }
+  if (offMonths.length && /fund|quỹ|cushion|buffer|emergency|dự phòng|\bsize\b|months?\b|tháng/iu.test(lastTyped)) { // lang-ok
+    done.push(`They suggested ${offMonths.join(' or ')} months. The app's emergency fund target is ${monthsAt} months of spending${balance.fund.floorUsd !== null ? ` = ${dollars(balance.fund.floorUsd)}` : ''}${profile.incomeStable === null || profile.dependents === null ? ' for now (some facts are still unknown)' : `, because of ${monthsWhy}`}. Never call their number a good fit or compute a target from it. Explain how ${monthsAt} is made (3 months for steady income with nobody relying on it; 6 when income changes month to month OR someone relies on it; 9 to 12 when both), and say that if a fact is different (for example their income is in fact steady) they can tell you and the target changes.`)
+  }
+  // VND only for someone whose own figures are in VND: a Vietnamese user who typed USD got "187.5M VND" (persona run 2026-11-06).
+  const dataInVnd = [...profile.incomes, ...profile.expenses, ...profile.debts, ...profile.holdings].some(x => x.currency === 'VND')
   const declaredMoney = (value: number, currency: Currency | undefined) => currency === 'VND' ? moneyText({ amount: value, currency: 'VND' }) : dollars(value)
   // CORE: current holdings and valuations are supplied in figures; purchase cost is not a stored portfolio value.
   // Deterministic answers for accounting facts: language models explain, code owns the totals.
   if (!pendingNote && !appEvent && policy.question && /income basis|total income|combined income|explain the totals|total income and spending|tổng thu nhập/iu.test(lastUserText) && balance.cashflow.income !== null) { // lang-ok
-    const show = (n: number) => vi && rate ? moneyText({ amount: n * rate, currency: 'VND' }) : dollars(n)
+    const show = (n: number) => dataInVnd && rate ? moneyText({ amount: n * rate, currency: 'VND' }) : dollars(n)
     const contributions = profile.incomes.filter(i => /contribut|đóng góp/iu.test(i.name)) // lang-ok
     const income = show(balance.cashflow.income)
     const spending = balance.cashflow.spending === null ? (vi ? 'chưa xác định' : 'unknown') : show(balance.cashflow.spending) // lang-ok
@@ -1817,8 +1867,11 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     return json({ content, ops, dcaStop, actions })
   }
   // Critical financial targets come from code, never a model's guessed X-of-Y.
-  if (policy.question && !actions.length && !placement && /fund|quỹ/iu.test(lastUserText) && /target|how much|mục tiêu|tính|bao nhiêu/iu.test(lastUserText)) { // lang-ok
-    const show = (n: number) => vi && rate ? moneyText({ amount: n * rate, currency: 'VND' }) : dollars(n)
+  // Only a question about the fund's size or what is missing gets it (persona run 2026-11-06: "how much should I deposit each time",
+  // "is the 150 USDC counted?", "does withdrawing cost a fee?" all got this line instead of an answer).
+  // Also the fallback when a reply about the fund fails its checks (persona run 2026-11-06: "I could not produce a reliable explanation").
+  const fundSizeAnswer = () => {
+    const show = (n: number) => dataInVnd && rate ? moneyText({ amount: n * rate, currency: 'VND' }) : dollars(n)
     const missing = spendingIncomplete ? ['monthly spending'] : fundMissingInputs(profile, balance.cashflow.spending)
     const ask: Record<string, [string, string]> = {
       'monthly spending': ['How much do you spend in a usual month, all in?', 'Một tháng bình thường bạn tiêu khoảng bao nhiêu, tính hết?'], // lang-ok
@@ -1828,11 +1881,15 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     }
     const first = missing[0]
     const vault = balance.fundUsd ?? 0
+    const gap = Math.max(0, (balance.fund.floorUsd ?? 0) - vault)
+    // The app wallet is not the fund (persona run 2026-11-06: "my wallet had 150 USDC, is it missing?"): said apart, in USDC.
+    const walletLine = wallet && wallet > 0.005 && gap > 0.005 ? (vi ? ` Ví app còn ${usdc(wallet)}, chưa tính vào quỹ cho đến khi bạn nạp vào vault.` : ` Your app wallet holds ${usdc(wallet)}; it is not in the fund until you add it to the vault.`) : '' // lang-ok
     const content = balance.fund.floorUsd === null || first
       ? (vi ? `Mức quỹ dự phòng tuỳ vào thu nhập của bạn có đều không và có ai phụ thuộc không: càng khó đoán thì quỹ càng dài (3 đến 12 tháng chi tiêu). Mình còn thiếu một điều: ${ask[first ?? 'monthly spending'][1]}` : `How big the fund should be depends on how steady your income is and whether anyone relies on you: the less certain, the longer it is (3 to 12 months of spending). One thing is missing: ${ask[first ?? 'monthly spending'][0]}`) // lang-ok
-      : (vi ? `Quỹ dự phòng của bạn nên là **${show(balance.fund.floorUsd)}** = ${balance.fund.floorMonths} tháng × ${show(balance.cashflow.spending!)} chi tiêu${balance.cashflow.debtPayments > 0 ? ' (gồm cả tiền trả nợ, vì nó vẫn phải trả khi mất thu nhập)' : ''}. Hiện vault có ${show(vault)}.` : `Your emergency fund should be **${show(balance.fund.floorUsd)}** = ${balance.fund.floorMonths} months × ${show(balance.cashflow.spending!)} of spending${balance.cashflow.debtPayments > 0 ? ' (debt payments included: they go on if income stops)' : ''}. The vault has ${show(vault)} now.`) // lang-ok
-    return json({ content, ops, dcaStop, actions })
+      : (vi ? `Quỹ dự phòng của bạn nên là **${show(balance.fund.floorUsd)}** = ${balance.fund.floorMonths} tháng × ${show(balance.cashflow.spending!)} chi tiêu${balance.cashflow.debtPayments > 0 ? ' (gồm cả tiền trả nợ, vì nó vẫn phải trả khi mất thu nhập)' : ''}. ${gap > 0.005 ? `Vault hiện có ${show(vault)}, nên **còn thiếu ${show(gap)}**.` : `Vault hiện có ${show(vault)}: quỹ đã đủ.`}${walletLine}` : `Your emergency fund should be **${show(balance.fund.floorUsd)}** = ${balance.fund.floorMonths} months × ${show(balance.cashflow.spending!)} of spending${balance.cashflow.debtPayments > 0 ? ' (debt payments included: they go on if income stops)' : ''}. ${gap > 0.005 ? `The vault has ${show(vault)} now, so **${show(gap)} to go**.` : `The vault has ${show(vault)}: the fund is full.`}${walletLine}`) // lang-ok
+    return content
   }
+  if (policy.question && !actions.length && !placement && FUND_SIZE_Q.test(lastUserText) && !OTHER_FUND_TOPIC.test(lastUserText) && !(profile.expenses.length === 0 && FUND_TALK.test(lastUserText))) return json({ content: fundSizeAnswer(), ops, dcaStop, actions })
   if (policy.question && balance.fund.floorUsd === null && /^(?:how much (?:do i need to|should i|can i) deposit|(?:mình|tôi) (?:cần|nên|có thể) nạp bao nhiêu)[?.!]*$/iu.test(lastUserText.trim()) && !actions.length) { // lang-ok
     return json({ content: vi ? 'Nạp tiền sẽ tăng số dư vault. Mục tiêu quỹ và khoản còn thiếu chưa xác định vì chưa biết đầy đủ chi tiêu tháng; mình chưa chuẩn bị giao dịch nào.' : 'A deposit increases the app vault balance. The fund target and amount still needed are unknown until monthly spending is known. No transaction has been prepared.', ops, dcaStop, actions }) // lang-ok
   }
@@ -1911,7 +1968,7 @@ async function handleChat(context: { request: Request; env: Env }, apiKey: Keys,
     }
   }
   // "How much is in my Safety / bank / crypto?": answered from the numbers, with the totals (Hieu, 2026-10-28), never by the model.
-  if (!appEvent && !placement && !ops.length && !readback.length && balance.declared && balance.target && ASKS_AMOUNT.test(lastUserText) && AMOUNT_TOPIC.test(lastUserText) && !ASKS_WHY.test(lastUserText) && !/(?<!\p{L})(should|nên)(?!\p{L})/iu.test(lastUserText)) { // lang-ok
+  if (!appEvent && !placement && !ops.length && !readback.length && balance.declared && balance.target && ASKS_AMOUNT.test(lastUserText) && AMOUNT_TOPIC.test(lastUserText) && !ASKS_WHY.test(lastUserText) && !/(?<!\p{L})(should|nên|wallet|ví)(?!\p{L})/iu.test(lastUserText) && !OTHER_FUND_TOPIC.test(lastUserText)) { // lang-ok — persona run 2026-11-06: "note I have no insurance… my wallet had 150 USDC, is it counted? how much is missing?" got only the totals
     const standingText = buildStanding({ p: profile, b: balance, vi })
     if (standingText) return json({ content: standingText, ops, dcaStop, actions })
   }
@@ -2038,7 +2095,9 @@ ${ending}` })
   const investingLocked = !balance.lock.open || fundTargetUnknown
   let rewrites = 0
   const withPendingNote = (text: string) => text + (pendingNote ? `\n\n${pendingNote}` : '')
-  const unreliableReply = () => (vi
+  const unreliableReply = () => (FUND_TALK.test(lastTyped) || FUND_SIZE_Q.test(lastTyped)) && !actions.length ? fundSizeAnswer() + (pendingNote ? `
+
+${pendingNote}` : '') : (vi
     ? 'Mình chưa tạo được phần giải thích đủ tin cậy. Bạn có thể diễn đạt lại câu hỏi.' // lang-ok
     : 'I could not produce a reliable explanation. You can rephrase the question.') + (pendingNote ? `\n\n${pendingNote}` : '')
   // The first draft that failed a check: if the model cannot be reached for the rewrite, this is sent rather than an error.
@@ -2048,7 +2107,7 @@ ${ending}` })
     // Function tools need reasoning_effort 'none' on chat/completions.
     const reply = await openai(apiKey, { model: MODEL, messages: replyMessages, tools: REPLY_TOOLS, tool_choice: round >= 3 ? 'none' : 'auto', max_completion_tokens: 1200, reasoning_effort: 'none' }, meter)
     if (reply instanceof Response) {
-      if (lastDraft) return json({ content: (responseProblems(lastDraft, policy.answerFirst, fundTargetUnknown, vi, investingLocked).length || (!actions.length && CLAIMS_ACTION.test(lastDraft))) ? unreliableReply() : withPendingNote(lastDraft), ops, dcaStop, actions })
+      if (lastDraft) return json({ content: (responseProblems(lastDraft, policy.answerFirst, fundTargetUnknown, vi, investingLocked).length || (!actions.length && CLAIMS_ACTION.test(lastDraft))) ? unreliableReply() : withPendingNote(fixDollars(lastDraft)), ops, dcaStop, actions })
       return reply
     }
     const msg = reply.choices[0]?.message
@@ -2160,6 +2219,25 @@ ${ending}` })
         const quoted = [...plain.matchAll(new RegExp(`(?<!\\p{L})${x.name}(?!\\p{L})[^.;\\n$]{0,24}\\$([\\d,]+(?:\\.\\d+)?)`, 'giu'))].map(m => Number(m[1].replace(/,/g, '')))
         if (quoted.some(n => !allowed.some(a => Math.abs(a - n) < 0.01 || Math.abs(Math.round(a) - n) < 0.01))) { problems.push(`${x.name} figures must be exactly the computed ones: ${x.name} ${standingText(x)}`); break }
       }
+      // Persona run 2026-11-06: the user's months taken as the target, a number promised "in the next message", the fund placed in the
+      // wallet, and a "Mình ghi: …" recap with nothing saved.
+      for (const m of offMonths) {
+        const theirs = balance.cashflow.spending !== null ? dollars(balance.cashflow.spending * m) : null
+        if (new RegExp(`(?<!\\d)${m}\\s*(?:months?|tháng)[^.?!\\n]{0,80}(?:good fit|fits?|sweet spot|makes sense|right for|works|reasonable|enough|safer|sufficient|hợp lý|phù hợp|ổn|là đủ|an toàn hơn)|(?:good fit|sweet spot|makes sense|enough|safer|hợp lý|phù hợp)[^.?!\\n]{0,60}(?<!\\d)${m}\\s*(?:months?|tháng)`, 'iu').test(plain) || (theirs && plain.includes(theirs))) { // lang-ok
+          problems.push(`do not adopt their ${m} months: the app's target is ${monthsAt} months of spending${balance.fund.floorUsd !== null ? ` = ${dollars(balance.fund.floorUsd)}` : ''}; explain how ${monthsAt} is made and what would change it`)
+          break
+        }
+      }
+      // "3 tháng là mức khởi đầu, 6 tháng yên tâm hơn" while who relies on them was unknown (persona run 2026-11-06). // lang-ok
+      if (fundTargetUnknown && FUND_TALK.test(lastTyped) && !content.includes('?') && /(?<!\d)\d{1,2}(?:\s*[–-]\s*\d{1,2})?\s*(?:months?|tháng)(?!\p{L})/iu.test(plain)) problems.push(`their fund size is not known yet: give no number of months or amount for them; say in one sentence what it depends on, then ask exactly this: "${fundSizeAnswer().split(/: (?=[^:]*$)/).pop()}"`) // lang-ok
+      if (withdrawLimit !== null) {
+        const limitSaid = withdrawLimit === 0 ? /\$0(?![\d.,])|0 USDC|empty|nothing (?:in|to withdraw)|trống|chưa có (?:tiền|gì)|không có (?:tiền|gì)/iu.test(plain) // lang-ok
+          : [usdc(withdrawLimit), dollars(withdrawLimit), `${withdrawLimit} USDC`, `$${withdrawLimit}`].some(t => plain.replace(/\*\*/g, '').includes(t))
+        if (!limitSaid) problems.push(withdrawLimit === 0 ? 'say first, plainly, that the vault is empty ($0) so there is nothing to withdraw' : `say first, plainly, that the vault holds only ${usdc(withdrawLimit)}, so more than that cannot be withdrawn (up to ${usdc(withdrawLimit)})`)
+      }
+      if (/(?:in|trong) (?:my |the |the very )?next (?:message|reply)|(?:ở |trong )?tin nhắn (?:tiếp theo|sau)|(?:if you (?:want|like)|nếu bạn muốn)[^.?!\n]{0,30}(?:I(?:'ll| will)|mình sẽ) (?:give|confirm|calculate|work out|chốt|tính|đưa)/iu.test(plain)) problems.push('give the answer now, in this reply, with the figures you have; never promise it for a later message') // lang-ok
+      if (/quỹ(?: dự phòng)?[^.?!\n]{0,40}trong ví|(?:số|tiền|số dư) trong ví[^.?!\n]{0,30}tăng|(?:emergency )?fund[^.?!\n]{0,30}in (?:your|the) (?:app )?wallet/iu.test(plain)) problems.push(`the emergency fund is in the VAULT (${usdc(balance.fundUsd ?? 0)}), not the wallet; the app wallet${wallet !== null ? ` holds ${usdc(wallet)} and` : ''} is separate until they add it to the vault`) // lang-ok
+      if (!ops.length && /^\s*(?:\*\*)?(?:noted|mình ghi|đã ghi)(?:\*\*)?\s*:/iu.test(plain)) problems.push('nothing was saved this turn: remove the whole "Noted / Mình ghi: …" sentence, do not echo it without the label either. If they asked to record a preference the app does not store (for example to pay a debt early), say plainly the app does not save that, then answer') // lang-ok
       if (SAFE_IN_APP.test(content)) problems.push('the app cannot move money to the user\'s bank or exchange and nothing was moved: the user tops up their own savings themselves; never offer or claim a deposit / transfer to savings')
       if (SAFE_AS_FUND.test(content)) problems.push('if you meant the emergency fund, call it "emergency fund" / "quỹ dự phòng" and add no explanation about the safe part; the safe part is the user\'s own savings, NOT the emergency fund, and cannot be deposited in the app') // lang-ok
       if (!DCA_AVAILABLE && /(set up|prepare|start|approve|propose|offer|want)[^.?!\n]{0,30}DCA|DCA (plan|card)/i.test(plain) && !/not available|isn.t available|unavailable|not yet|coming/i.test(plain)) problems.push('DCA is not available yet: do not offer it or set it up; if the user asked, say it is not available yet')
@@ -2182,9 +2260,14 @@ ${ending}` })
       // Still asking twice after the rewrites: drop the extra questions rather than send them.
       // A read-back with nothing recorded survived the rewrites once ("Mình ghi: Bạn muốn mua…"): drop it. // lang-ok
       if (responseProblems(content, policy.answerFirst, fundTargetUnknown, vi, investingLocked).length || (!actions.length && CLAIMS_ACTION.test(content))) return json({ content: unreliableReply(), ops, dcaStop, actions })
-      const noFalseNote = ops.length ? content : content.replace(/^\s*(\*\*)?(Noted|Mình ghi)(\*\*)?:\s*/i, '').replace(/\s*(Right\?|Đúng chưa\?)\s*$/i, '') // lang-ok
+      // The whole "Mình ghi: chưa có bảo hiểm." sentence goes, not only its label: the bare echo was left at the top of 3 replies (persona run 2026-11-06). // lang-ok
+      const echoGone = content.replace(/^\s*(\*\*)?(Noted|Mình ghi|Đã ghi)(\*\*)?:[^\n]*?(?:[.!](?=\s|$)|\n|$)\s*/iu, '') // lang-ok
+      const noFalseNote = ops.length ? content : (echoGone.trim() ? echoGone : content.replace(/^\s*(\*\*)?(Noted|Mình ghi)(\*\*)?:\s*/i, '')).replace(/\s*(Right\?|Đúng chưa\?)\s*$/i, '') // lang-ok
       const oneAsk = (noFalseNote.match(/\?/g) ?? []).length > 1 ? noFalseNote.replace(/\s*(Right\?|Đúng chưa\?)\s*$/i, '') : noFalseNote // lang-ok
-      const tidy = tidyQuestions(oneAsk, ASKS_STABLE.test(prevAssistant) && !recordedStable)
+      const tidied = fixDollars(tidyQuestions(oneAsk, ASKS_STABLE.test(prevAssistant) && !recordedStable))
+      // "how big should our fund be?" answered only with "Noted: steady income, $1,000 a month" while who relies on them was still
+      // unknown (persona run 2026-11-06): the one missing fact is asked, so the answer can follow.
+      const tidy = fundTargetUnknown && FUND_TALK.test(lastTyped) && !tidied.includes('?') && !actions.length ? `${tidied}\n\n${fundSizeAnswer()}` : tidied
       return json({ content: withPendingNote(tidy), ops, dcaStop, actions, ...(body.debug ? { facts: figs, notes: done, patterns: matched.map(p => p.id), next, readback, profile } : {}) })
     }
     replyMessages.push({ role: 'assistant', content: msg.content ?? '', ...{ tool_calls: msg.tool_calls } } as Message)
