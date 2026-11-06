@@ -1,3 +1,21 @@
+# ▶ Handoff — 2026-11-06 (khuya) — V1 GIỮ NGUYÊN, BUILD LẠI V2 THEO KIỂM TOÁN PHÁP LÝ — ĐỌC MỤC NÀY TRƯỚC
+
+**Hiếu chốt:** KHÔNG sửa V1 (moonsafe.app giữ nguyên như đang chạy). Mọi điều chỉnh từ kiểm toán pháp lý làm trong **V2, build lại**. V2 chạy trên link riêng, private để test và kiểm toán, ổn mới merge vào moonsafe.app.
+
+**Kiểm toán pháp lý 2026-11-06:** làm bằng bộ luật `D:\Files\Claude	ool_personal_law-audit`. Báo cáo đầy đủ chỉ nằm trên máy: `docs/private/legal-audit-v2-2026-11-06.md` (thư mục này nằm trong `.git/info/exclude`, repo public, **không commit**). Đây là rà soát ban đầu do AI làm, không phải tư vấn pháp lý.
+
+**V2 phải đáp ứng (yêu cầu sản phẩm rút từ báo cáo):**
+1. Agent là người **giáo dục**, không phải "advisor": không tự đề xuất số tiền mua BTC/cirBTC (bỏ "$7 trên mỗi $10" khi điền thẻ), % crypto theo tuổi chỉ là quy tắc minh hoạ để người dùng tự chọn, bỏ câu cổ vũ kiểu "Buy steadily".
+2. Nhãn "AI" rõ ràng; khi nói về crypto kèm số tiền thì có một câu "không phải tư vấn đầu tư, bạn tự quyết".
+3. Trang Privacy + Terms; bước đồng ý chủ động trước lần chat đầu (lưu hồ sơ; gửi tin nhắn tới nhà cung cấp AI), lưu thời điểm đồng ý; xoá dữ liệu phải xoá hẳn trên server (hiện `/api/userdata` chỉ có GET/PUT). Terms nêu ai giữ khoá nào, mất khoá thì sao, thời gian chờ, tuổi tối thiểu 18+.
+4. Khoá MoonSafe trong V2 không được có quyền tự đổi chủ vault rồi rút. `contracts/VaultV2.sol` hiện có `requestOwnerChange` do guardian khởi động và tự hoàn tất sau 7 ngày: **phải thiết kế lại** trước khi đi tiếp. Hiếu chọn một trong: (a) ví mới ký onchain + thêm một xác nhận của người dùng; (b) bỏ đường đó, thay bằng địa chỉ cứu hộ chủ tự đặt trước; (c) giữ nhưng công khai rõ. Lời agent về bảo mật phải đúng với thiết kế chốt.
+5. Phí bằng USDC (mở vault, AI power) với người dùng VN, mua cirBTC trong app với người dùng VN, sàng lọc địa chỉ trừng phạt khi nhận phí: chờ ý kiến luật sư; có thể tách nội dung theo khu vực.
+6. Gỡ dependency không dùng `@circle-fin/developer-controlled-wallets`.
+
+**Câu hỏi cho luật sư:** 5 câu cuối báo cáo, quan trọng nhất là agent gợi ý crypto (EU "tư vấn", VN "tiếp thị") và quyền của khoá MoonSafe trong V2.
+
+**Việc tiếp theo:** (1) Hiếu chọn (a)/(b)/(c) cho mục 4; (2) chốt phạm vi V2 (core + nguyên tắc đầu tư, Hiếu muốn quy định lại); (3) dựng môi trường V2 riêng: Pages project riêng, KV + D1 riêng, contract trên Arc testnet, khoá guardian riêng, private (link khó đoán hoặc Cloudflare Access); (4) build. Ảnh demo khôi phục (chưa duyệt) ở Desktop `MoonSafe-khoi-phuc-2026-11-06`.
+
 # ▶ Handoff — 2026-11-06 (đêm) — VAULT V2 (ví + email, 2-of-2): HỢP ĐỒNG ĐÃ VIẾT, CHƯA DEPLOY
 
 **Hiếu chốt (chi tiết `docs/plan-backup-and-circle.md`, mục CHỐT):** 2-of-2 ví + email; giữ Privy, không dùng Circle; email do MoonSafe tự lưu + tự xác minh (không nhờ Privy gắn); đăng nhập email thì hiện "email này gắn ví 0x…" và cho CHỌN xuất khoá; nút "!" nhỏ ở màn đăng nhập ("Mất 1 trong 2?" → khôi phục vault / support / điều khoản), đầy đủ chức năng trong V2. Hackathon xong nên làm ngay. Desktop chỉ để ẢNH, không copy tài liệu chữ.
