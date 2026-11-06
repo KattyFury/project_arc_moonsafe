@@ -3,15 +3,12 @@ import assert from 'node:assert/strict'
 import { groupOf } from '../src/lib/allocation'
 import { applyOps, normalizeProfile } from '../src/lib/profile'
 import {
-  ASSET_CHOICES, SPLIT_CHOICES, addHoldingOp, addLineOp, btcPart, editHoldingOp, editLineOp, editableHoldings, monthLines, partOf, removeLineOp, shortcutsFor, splitAmount, splitOp, type Part,
+  ASSET_CHOICES, SPLIT_CHOICES, addDebtOp, addHoldingOp, addLineOp, btcPart, coinType, editDebtOp, editHoldingOp, editLineOp, editableHoldings, infoOp, monthLines, partOf, removeLineOp, shortcutsFor, splitAmount, splitOp, type Part,
 } from '../src/lib/shortcuts'
 import type { Holding } from '../src/types'
 
-// As few as possible: the main job of the stage, the portfolio, the month. No fund button without a vault.
-const ids = (unlocked: boolean, hasVault: boolean) => shortcutsFor({ unlocked, hasVault }).map(c => c.id)
-assert.deepEqual(ids(false, true), ['fund', 'hold', 'month'])
-assert.deepEqual(ids(false, false), ['hold', 'month'])
-assert.deepEqual(ids(true, true), ['add', 'hold', 'month'])
+// Three buttons, always (Hieu, 2026-11-06): no "Add money" or "Add to fund" (the chat and the Emergency tab do that).
+assert.deepEqual(shortcutsFor().map(c => c.label), ['Update split', 'Edit cash flow', 'Edit information'])
 
 // The Crypto cap: no choice above 50%, even if asked.
 assert.ok(SPLIT_CHOICES.length > 1 && SPLIT_CHOICES.every(c => c <= 50))
@@ -24,7 +21,8 @@ for (const part of ['safe', 'traditional', 'crypto'] as Part[]) {
     const p = applyOps(base, [addHoldingOp(choice, 100, 'X')])
     const h = p.holdings[0]
     assert.equal(partOf(h), part, `${choice.label} belongs in ${part}`)
-    assert.equal(h.value, 100)
+    if (choice.by === 'qty') { assert.equal(h.quantity, 100); assert.equal(h.priceSource, 'market'); assert.equal(h.value, undefined) }
+    else assert.equal(h.value, 100)
     assert.equal(editableHoldings(p, part).length, 1)
     assert.equal(normalizeProfile(JSON.parse(JSON.stringify(p))).holdings[0].category, h.category, `${choice.label} survives a save`)
   }
@@ -64,3 +62,24 @@ assert.deepEqual(s, { safe: 350, traditional: 325, crypto: 325 })
 const odd = splitAmount(100.01, { safe: 31, traditional: 34.5, crypto: 34.5 })
 assert.ok(Math.abs(odd.safe + odd.traditional + odd.crypto - 100.01) < 0.001)
 console.log('shortcuts checks passed')
+
+// Counts, valued by the app at today's price (Hieu, 2026-11-06): gold in ounces, shares by ticker, coins by symbol.
+const coinChoice = ASSET_CHOICES.crypto.find(c => c.type === 'altcoin')!
+const eth = applyOps(base, [addHoldingOp(coinChoice, 0.5, ' eth ')]).holdings[0]
+assert.equal(eth.type, 'eth'); assert.equal(eth.symbol, 'ETH'); assert.equal(eth.quantity, 0.5); assert.equal(eth.name, 'ETH')
+assert.equal(coinType('SOL'), 'top10'); assert.equal(coinType('PEPE'), 'altcoin'); assert.equal(coinType('BTC'), 'btc')
+const voo = applyOps(base, [addHoldingOp(ASSET_CHOICES.traditional.find(c => c.type === 'us_stock')!, 2, 'voo')]).holdings[0]
+assert.equal(voo.symbol, 'VOO'); assert.equal(voo.unit, 'shares'); assert.equal(partOf(voo), 'traditional')
+const gold = applyOps(base, [addHoldingOp(ASSET_CHOICES.traditional.find(c => c.type === 'gold_physical')!, 0.25)]).holdings[0]
+assert.equal(gold.unit, 'oz'); assert.equal(gold.quantity, 0.25)
+
+// Cash flow: a debt with its rate and monthly payment, added and edited.
+let flow = applyOps(base, [addDebtOp('Card', { balance: 1000, ratePct: 24, monthlyPayment: 50 })])
+assert.equal(flow.debts[0].ratePct, 24)
+flow = applyOps(flow, [editDebtOp(flow.debts[0], { balance: 800, ratePct: 18, monthlyPayment: null })])
+assert.deepEqual([flow.debts[0].balance, flow.debts[0].ratePct, flow.debts[0].monthlyPayment], [800, 18, null])
+
+// Information: age and the household.
+const info = applyOps(base, [infoOp({ age: 35, ageDeclined: false }), infoOp({ dependents: 2 }), infoOp({ incomeStable: false }), infoOp({ soleEarner: true })])
+assert.deepEqual([info.age, info.dependents, info.incomeStable, info.soleEarner], [35, 2, false, true])
+console.log('shortcuts OK')

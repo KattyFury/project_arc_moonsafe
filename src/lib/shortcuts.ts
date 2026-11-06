@@ -1,4 +1,4 @@
-// The shortcuts above the message box (Hieu, 2026-11-03, 6a): add to or edit the portfolio without typing. They run on the app's
+// The shortcuts above the message box (Hieu, 2026-11-03, 6a; reworked 2026-11-06): the split, the cash flow and the household, without typing. They run on the app's
 // own numbers and save through the same operations as the agent's cards, with no model call, so nothing has to be guessed.
 //
 // Pure module with relative imports only (shared by the app and scripts).
@@ -6,29 +6,31 @@
 import { BTC_GUIDE, MAX_CRYPTO_SPLIT } from '../kb/kb'
 import type { AssetType, Category, Debt, Expense, FinancialProfile, Holding, Income } from '../types'
 import { groupOf } from './allocation'
-import { defaultRebalanceable, newId, type ProfileOp } from './profile'
+import { BTC_SYMBOLS, TOP10_SYMBOLS, defaultRebalanceable, newId, type ProfileFields, type ProfileOp } from './profile'
 
 export type Part = 'safe' | 'traditional' | 'crypto'
-export type ShortcutId = 'fund' | 'add' | 'hold' | 'month'
+export type ShortcutId = 'split' | 'flow' | 'info'
 
 export const PART_LABEL: Record<Part, string> = { safe: 'Safety', traditional: 'Traditional', crypto: 'Crypto' }
 
 /**
- * As few as possible (Hieu, 2026-11-03: 7b): the main job of the stage, the portfolio, the month. Before investing opens the main job is
- * the fund, and there is no fund button without a vault. The three parts and the split live inside "Edit portfolio".
+ * Three, always (Hieu, 2026-11-06): "Add money" and "Add to fund" did nothing the chat and the Emergency tab do not already do.
+ * Update split = what sits in Safety, Traditional and Crypto, item by item, with totals the app works out; Edit cash flow = income,
+ * spending and debts; Edit information = age and the people who rely on the user.
  */
-export function shortcutsFor({ unlocked, hasVault }: { unlocked: boolean; hasVault: boolean }): { id: ShortcutId; label: string }[] {
+export function shortcutsFor(): { id: ShortcutId; label: string }[] {
   return [
-    ...(unlocked ? [{ id: 'add' as const, label: 'Add money' }] : hasVault ? [{ id: 'fund' as const, label: 'Add to fund' }] : []),
-    { id: 'hold', label: 'Edit portfolio' },
-    { id: 'month', label: 'Edit month' },
+    { id: 'split', label: 'Update split' },
+    { id: 'flow', label: 'Edit cash flow' },
+    { id: 'info', label: 'Edit information' },
   ]
 }
 
 /** % of the money outside Safety in Crypto, never above the cap (Hieu, 2026-11-03). */
 export const SPLIT_CHOICES = [50, 40, 30, 20, 0].filter(c => c <= MAX_CRYPTO_SPLIT)
 
-export interface AssetChoice { type: AssetType; label: string; name: string; category?: Category; symbol?: string; hint?: string; asksName?: boolean }
+/** by 'qty': a count (ounces, shares, coins) the app values at today's price; otherwise a value in USD. */
+export interface AssetChoice { type: AssetType; label: string; name: string; category?: Category; symbol?: string; hint?: string; asksName?: boolean; by?: 'qty'; unit?: string }
 
 /** What can be added to each part. Safety offers low-volatility forms only (CORE 2): gold, stocks or coins are not on the list. */
 export const ASSET_CHOICES: Record<Part, AssetChoice[]> = {
@@ -40,14 +42,14 @@ export const ASSET_CHOICES: Record<Part, AssetChoice[]> = {
     { type: 'cash', label: 'Cash', name: 'Cash kept as Safety', category: 'safe', hint: 'Only the amount you choose to keep as Safety.' },
   ],
   traditional: [
-    { type: 'fund_bond', label: 'Stocks or index funds', name: 'Stocks and index funds', asksName: true },
-    { type: 'gold_physical', label: 'Gold', name: 'Gold' },
+    { type: 'gold_physical', label: 'Gold', name: 'Gold', by: 'qty', unit: 'oz' },
+    { type: 'us_stock', label: 'A US stock or ETF', name: 'Stock', asksName: true, by: 'qty', unit: 'shares', hint: 'By ticker, for example VOO.' },
+    { type: 'fund_bond', label: 'Another fund, by value', name: 'Fund', asksName: true },
     { type: 'junk_bond', label: 'High-yield bonds', name: 'High-yield bonds' },
   ],
   crypto: [
-    { type: 'btc', label: 'Bitcoin', name: 'Bitcoin', symbol: 'BTC' },
-    { type: 'top10', label: 'A top-10 coin', name: 'Top-10 coin', asksName: true },
-    { type: 'altcoin', label: 'Another coin', name: 'Other coin', asksName: true },
+    { type: 'btc', label: 'Bitcoin', name: 'BTC', symbol: 'BTC', by: 'qty', unit: 'coins' },
+    { type: 'altcoin', label: 'Another coin', name: 'Coin', asksName: true, by: 'qty', unit: 'coins', hint: 'By its symbol, for example ETH.' },
   ],
 }
 
@@ -60,7 +62,25 @@ export function partOf(h: Holding): Part | null {
 export const editableHoldings = (p: FinancialProfile | null, part: Part | 'all'): Holding[] =>
   (p?.holdings ?? []).filter(h => h.symbol !== 'cirBTC' && (part === 'all' || partOf(h) === part))
 
-export function addHoldingOp(choice: AssetChoice, amountUsd: number, typedName = '', now = Date.now()): ProfileOp {
+/** A coin's type from its symbol: Bitcoin, ETH, a top-10 coin or another coin. */
+export const coinType = (symbol: string): AssetType =>
+  BTC_SYMBOLS.has(symbol) ? 'btc' : symbol === 'ETH' ? 'eth' : TOP10_SYMBOLS.has(symbol) ? 'top10' : 'altcoin'
+
+/** A ticker or coin symbol as typed: letters, digits and dots, upper case. */
+export const cleanSymbol = (typed: string) => typed.trim().toUpperCase().replace(/[^A-Z0-9.]/g, '').slice(0, 12)
+
+/** `n` is a count for a choice by quantity, else a value in USD. */
+export function addHoldingOp(choice: AssetChoice, n: number, typedName = '', now = Date.now()): ProfileOp {
+  if (choice.by === 'qty') {
+    const symbol = choice.symbol ?? cleanSymbol(typedName)
+    const type = choice.type === 'altcoin' ? coinType(symbol) : choice.type
+    const holding: Holding = {
+      id: newId('h'), type, name: choice.asksName ? symbol : choice.name, quantity: n, unit: choice.unit, priceSource: 'market',
+      rebalanceable: defaultRebalanceable(type), updatedAt: now, ...(symbol ? { symbol } : {}),
+    }
+    return { op: 'add_holding', holding }
+  }
+  const amountUsd = n
   const name = typedName.trim() || choice.name
   const holding: Holding = {
     id: newId('h'), type: choice.type, name, value: amountUsd, currency: 'USDC', priceSource: 'self',
@@ -119,3 +139,15 @@ export function splitAmount(amount: number, shares: { safe: number; traditional:
   const traditional = cents(amount * shares.traditional / total)
   return { safe, traditional, crypto: cents(amount - safe - traditional) }
 }
+
+/** A debt line: what is still owed, the yearly rate, what is paid a month (null = not told). */
+export interface DebtFields { balance: number; ratePct: number | null; monthlyPayment: number | null }
+export const editDebtOp = (d: Debt, f: DebtFields): ProfileOp => ({ op: 'update_debt', id: d.id, patch: { balance: f.balance, ratePct: f.ratePct, monthlyPayment: f.monthlyPayment } })
+export function addDebtOp(name: string, f: DebtFields, now = Date.now()): ProfileOp {
+  return { op: 'add_debt', debt: { id: newId('d'), name: name.trim() || 'Debt', type: 'unknown', balance: f.balance, currency: 'USDC', ratePct: f.ratePct, monthlyPayment: f.monthlyPayment, updatedAt: now } }
+}
+
+/** About the household (Hieu, 2026-11-06): what sets the emergency fund's months and the age shares. */
+export type InfoKey = 'age' | 'dependents' | 'incomeStable' | 'soleEarner'
+export const INFO_LABEL: Record<InfoKey, string> = { age: 'Age', dependents: 'People who rely on your income', incomeStable: 'Steady income', soleEarner: 'Only earner at home' }
+export const infoOp = (fields: ProfileFields): ProfileOp => ({ op: 'update_profile', fields })

@@ -19,7 +19,9 @@ export function formatUsdcNumber(units: bigint, maxFrac = 2): string {
   const abs = neg ? -units : units
   const whole = abs / 1_000_000n
   const frac = Number(abs % 1_000_000n) / 1_000_000
-  const s = nf(maxFrac).format(Number(whole) + frac)
+  // Cents always with both digits ($40.70, never $40.7; Hieu, 2026-11-06); whole amounts stay whole.
+  const cents = maxFrac >= 2 && Math.round(frac * 100) % 100 !== 0
+  const s = nf(maxFrac, cents ? 2 : 0).format(Number(whole) + frac)
   return neg ? `-${s}` : s
 }
 

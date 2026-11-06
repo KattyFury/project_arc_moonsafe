@@ -74,7 +74,7 @@ function PartRow({ icon: Icon, color, part, note, action }: {
       <div className="flex items-center gap-2">
         <span className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ border: '1px solid var(--line)', color }}><Icon size={16} /></span>
         <span className="flex-1 text-[18px] leading-6 font-semibold" style={{ color: 'var(--ink)' }}>{part.name}</span>
-        <span className="text-[16px] leading-6 tabular-nums whitespace-nowrap"><strong style={{ color: 'var(--ink)' }}>{moneyUsd(part.have)}</strong>{!part.anchor && <span style={{ color: 'var(--subtle)' }}> of {moneyUsd(part.target)}</span>}</span>
+        <span className="text-[16px] leading-6 tabular-nums whitespace-nowrap"><strong style={{ color: 'var(--ink)' }}>{moneyUsd(part.have)}</strong>{!part.anchor && <span style={{ color: 'var(--subtle)' }}> / {moneyUsd(part.target)}</span>}</span>
       </div>
       <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--surface-muted)' }}>
         <div className="fill-in h-full rounded-full" style={{ width: `${part.pct}%`, background: color }} />

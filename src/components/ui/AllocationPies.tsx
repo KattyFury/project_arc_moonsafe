@@ -107,7 +107,7 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
   )
 
   // Each part as money against its full bar (Hieu, 2026-11-01, CORE §3): the part furthest ahead of its age share is full and sets the
-  // size, the others follow it ("$1,000 of $3,500, $2,500 to go"). Nothing is above its bar, so nothing is ever to sell. Spare money is
+  // size, the others follow it ("$2,500 to go (now $1,000 / $3,500)"). Nothing is above its bar, so nothing is ever to sell. Spare money is
   // not tracked, so there is no "not placed" row. Same figures as the agent's (bucketStanding).
   const standing = bucketStanding(b)
   const color: Record<string, string> = { safe: SEG_COLOR.safe, traditional: SEG_COLOR.traditional, crypto: SEG_COLOR.crypto }
@@ -115,9 +115,9 @@ export function AllocationPies({ compact = false }: { compact?: boolean }) {
     <li key={x.key} className="py-2 flex flex-col gap-2 border-b border-[var(--line)]">
       <div className="flex items-baseline justify-between gap-4">
         <span className="text-[16px] leading-6 font-semibold" style={{ color: 'var(--ink)' }}>{x.name}</span>
-        <span className="text-[16px] leading-6 tabular-nums"><strong style={{ color: 'var(--ink)' }}>{moneyUsd(x.have)}</strong>{!x.anchor && <span style={{ color: 'var(--subtle)' }}> of {moneyUsd(x.target)}</span>}</span>
+        <span className="text-[16px] leading-6 tabular-nums"><strong style={{ color: 'var(--ink)' }}>{moneyUsd(x.have)}</strong>{!x.anchor && <span style={{ color: 'var(--subtle)' }}> / {moneyUsd(x.target)}</span>}</span>
       </div>
-      <div className="relative h-7 rounded-lg" style={{ background: `${color[x.key]}1f` }} role="img" aria-label={`${x.name}: ${moneyUsd(x.have)} of ${moneyUsd(x.target)}`}>
+      <div className="relative h-7 rounded-lg" style={{ background: `${color[x.key]}1f` }} role="img" aria-label={`${x.name}: ${moneyUsd(x.left)} to go (now ${moneyUsd(x.have)} / ${moneyUsd(x.target)})`}>
         <div className="fill-in absolute top-1 bottom-1 left-0 rounded-md" style={{ width: `${x.pct}%`, background: color[x.key] }} />
       </div>
       <div className="text-[14px] leading-5" style={{ color: 'var(--subtle)' }}>

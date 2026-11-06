@@ -1,3 +1,16 @@
+# ▶ Handoff — 2026-11-06 — ĐỌC MỤC NÀY TRƯỚC
+
+**Đã DEPLOY (Cloudflare `7cb14999`, commit `ea70499`) — sửa agent theo chat thật của Hiếu:**
+- Sau khi lưu một món, câu trả lời do code viết, nêu HẾT các phần còn thiếu kèm số ("Traditional $27.62 to go (now $10 / $37.62) or Crypto …"), không để model chỉ một phía.
+- "I just buy 30$ of gold" khi đã có $10 → lưu $40 (add_holding cộng vào món cũ; set_holding cộng số vừa mua). "now I have / in total" mới thay.
+- "I just buy (enough) BTC" không số: app đọc cirBTC trong ví, nói tổng Crypto theo số app tính, không hỏi lại. Câu trả lời ghi số của một phần khác số app tính → bị bắt viết lại.
+- Cách viết: "$30 to go (now $10 / $40)", số lẻ luôn 2 chữ số, giá trị tài sản bằng $ (không "USDC"). `src/lib/money.ts`.
+- Chạy lại đúng 3 đoạn chat: `bun scripts/replay-hieu-2026-11-06.ts --budget 100000` (gpt-5.4-mini, ~18k token).
+
+**CHƯA DEPLOY, chờ Hiếu duyệt ảnh** (Desktop `MoonSafe-nut-tat-2026-11-06`): 3 nút mới `Update split` · `Edit cash flow` · `Edit information` (`ShortcutBar.tsx`, `src/lib/shortcuts.ts`), màn Invest/Balance ghi "$10 / $40", số trên giao diện đủ 2 chữ số lẻ. Hiếu bảo deploy thì chạy lệnh deploy mainnet (mục ▶ MAINNET), kiểm bundle chứa `A9A5447a`, trang 200, `/api/chat` 401.
+
+**Còn mở:** chưa có ô riêng vợ/chồng/con (đang dùng "số người phụ thuộc"); thử một đợt trên gpt-5.4-mini rộng hơn; việc cũ ở mục dưới.
+
 # ▶ Handoff — 2026-11-03 (cuối ngày) — ĐỌC MỤC NÀY TRƯỚC
 
 **Trạng thái:** mọi thứ đã push và deploy, live = commit mới nhất trên `main`. Lần chạy thử cuối dùng Haiku, chưa thử trên OpenAI gpt-5.4-mini là model chính, và chưa thử bằng ví thật.

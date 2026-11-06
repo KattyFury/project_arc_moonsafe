@@ -260,11 +260,7 @@ export function ChatScreen({ onError, onActions, ask = null, onAsked }: { onErro
         {power && <PowerMeter power={power} onOpen={() => setPowerOpen(true)} />}
         {powerOpen && power && <PowerSheet power={power} verifyOwner={verifyOwner} buy={buy} onClose={() => setPowerOpen(false)} />}
 
-        <ShortcutBar disabled={loading} onSaved={note => { addNote(note) }}
-          onCard={(kind, amountUsd) => {
-            const at = addNote(kind === 'deposit' ? 'Here is the deposit into your emergency fund: check it and sign below.' : 'Here is the cirBTC buy: get a quote, check it and sign below.')
-            setExtras(x => ({ ...x, cards: [...x.cards, { id: at, at, kind, amount: BigInt(Math.round(amountUsd * 1_000_000)).toString() }].slice(-40) }))
-          }} />
+        <ShortcutBar disabled={loading} onSaved={note => { addNote(note) }} />
 
         {/* Composer */}
         <div className="flex-shrink-0 flex px-4 pt-2 pb-4 lg:px-6 lg:pb-6" style={{ background: 'var(--chat-bg)' }}>
