@@ -46,7 +46,8 @@ contract VaultFactoryV2 is Ownable2Step, ReentrancyGuard {
 
     event FeeUpdated(uint256 oldFee, uint256 newFee);
     event FeeRecipientUpdated(address indexed oldRecipient, address indexed newRecipient);
-    event VaultCreated(address indexed owner, address indexed vault, address passwordKey);
+    /// @dev passwordKey is indexed so the app can find a vault from the password alone (Import vault).
+    event VaultCreated(address indexed owner, address indexed vault, address indexed passwordKey);
     event VaultOwnerChanged(address indexed vault, address indexed oldOwner, address indexed newOwner);
     event FeesWithdrawn(address indexed recipient, uint256 amount);
     event CreationPausedSet(bool paused);

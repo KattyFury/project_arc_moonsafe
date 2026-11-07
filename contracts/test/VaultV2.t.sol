@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {Test} from "forge-std/Test.sol";
+import {Test, Vm} from "forge-std/Test.sol";
 import {VaultV2} from "../VaultV2.sol";
 import {VaultFactoryV2} from "../VaultFactoryV2.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
@@ -503,6 +503,28 @@ contract VaultV2ImportTest is VaultV2Base {
 }
 
 contract VaultV2FactoryTest is VaultV2Base {
+    /// Import finds a vault from the password alone: VaultCreated must carry passwordKey as topic 3.
+    function test_Factory_VaultCreatedIndexesPasswordKey() public {
+        address bob = makeAddr("bob");
+        (address bobKey,) = makeAddrAndKey("bob-vault-password");
+        vm.deal(bob, 5 ether);
+        vm.recordLogs();
+        vm.prank(bob);
+        address bobVault = factory.createVault{value: FEE}(bobKey);
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        bytes32 sig = keccak256("VaultCreated(address,address,address)");
+        uint256 found;
+        for (uint256 i; i < logs.length; i++) {
+            if (logs[i].emitter != address(factory) || logs[i].topics[0] != sig) continue;
+            found++;
+            assertEq(logs[i].topics.length, 4, "owner, vault and passwordKey are all indexed");
+            assertEq(address(uint160(uint256(logs[i].topics[1]))), bob);
+            assertEq(address(uint160(uint256(logs[i].topics[2]))), bobVault);
+            assertEq(address(uint160(uint256(logs[i].topics[3]))), bobKey);
+        }
+        assertEq(found, 1, "exactly one VaultCreated");
+    }
+
     function test_Factory_OneVaultPerWalletAndFeeAccrues() public {
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(VaultFactoryV2.VaultAlreadyExists.selector, alice, address(vault)));

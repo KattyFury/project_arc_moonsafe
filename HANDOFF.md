@@ -54,7 +54,7 @@ Không KDF chậm (Hiếu chốt 1a). Phải có test vector cố định trong 
 
 ## S3. Hợp đồng và cách app gọi
 
-Đã viết + 395 test pass + Arc Studio kiểm toán: `contracts/VaultV2.sol`, `contracts/VaultFactoryV2.sol`. Chưa deploy; **Hiếu deploy bằng ví của mình qua Arc Studio**.
+Đã viết + 396 test pass + Arc Studio kiểm toán: `contracts/VaultV2.sol`, `contracts/VaultFactoryV2.sol`. Chưa deploy; **Hiếu deploy bằng ví của mình qua Arc Studio**.
 
 | Việc | Gọi | Ghi chú |
 |---|---|---|
@@ -67,7 +67,7 @@ Không KDF chậm (Hiếu chốt 1a). Phải có test vector cố định trong 
 
 Lỗi → câu báo: `InvalidPasswordSignature` sai passkey/mật khẩu · `SignatureExpired` / `DeadlineTooFar` thử lại · `InsufficientBalance` · `NativeTransferFailed` địa chỉ nhận bị Circle chặn · `VaultAlreadyExists` ví này đã có vault.
 
-**Import tìm vault từ mật khẩu** (người dùng không nhập địa chỉ vault): app tính `passwordKey` rồi tìm vault có key đó. Event `VaultCreated(owner indexed, vault indexed, passwordKey)` **chưa index `passwordKey`** nên phải quét mọi event. **Đề xuất, chờ Hiếu duyệt, sửa trước khi deploy:** thêm `indexed` cho `passwordKey` để lọc thẳng. Đổi 1 chữ, chạy lại test.
+**Import tìm vault từ mật khẩu** (người dùng không nhập địa chỉ vault): app tính `passwordKey` rồi tìm vault có key đó. Event `VaultCreated(owner indexed, vault indexed, passwordKey indexed)`: **đã index `passwordKey`** (Hiếu duyệt 2026-11-07), app lọc log thẳng theo topic 3. Test `test_Factory_VaultCreatedIndexesPasswordKey`; toàn repo 396 pass.
 
 Rủi ro đã chấp nhận (CORE 7): ai có password là lấy được vault; mất cả passkey lẫn giấy = mất quyền rút; không có đổi mật khẩu.
 
@@ -106,7 +106,7 @@ Rủi ro đã chấp nhận (CORE 7): ai có password là lấy được vault; 
 | # | Việc | Xong khi |
 |---|---|---|
 | 1 | Trang thử passkey PRF trên các trình duyệt | Có bảng trình duyệt nào chạy, Hiếu xem |
-| 2 | Chốt `indexed passwordKey`; Hiếu deploy implementation + factory V2 | Có địa chỉ, verify trên explorer |
+| 2 | Hiếu deploy implementation + factory V2 (`indexed passwordKey` đã xong) | Có địa chỉ, verify trên explorer |
 | 3 | Môi trường V2 (Pages, KV, D1, subdomain) | Mở link V2 thấy app, không bị index |
 | 4 | Màn Vault: Open (A/B), Deposit, Withdraw, Import | Chạy thật trên mainnet số tiền nhỏ, cả passkey lẫn giấy, cả Import |
 | 5 | Agent S4 + bảng 3 phần + tiền tệ | `test:agent` + eval pass; hết 7/10, top 10, Buy steadily |
