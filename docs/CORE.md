@@ -51,8 +51,8 @@ Bỏ chữ "người giữ quỹ" và "người tư vấn" của V1.
 - Công thức theo tuổi gọi là "quy tắc phổ biến app dùng để minh hoạ", không phải lời khuyên. Màn hình hiện tỷ lệ của người dùng.
 - **Luật mốc (Hiếu 2026-11-01):** phần đi xa nhất so với tỷ lệ của nó (tiền / tỷ lệ lớn nhất) là thanh đầy 100%; các phần khác theo nó. Ví dụ 30 tuổi (30/35/35), Safety $3.000 đi xa nhất → Traditional và Crypto đầy ở $3.500.
 - Không lấy tổng 3 phần làm 100%, không hiện % trên từng phần. Mỗi phần viết: còn thiếu trước, rồi hiện trạng: "$2,500 to go (now $1,000 / $3,500)"; phần đủ ghi "full", phần làm mốc ghi "furthest ahead, it sets the size". Số lẻ luôn đủ 2 chữ số.
-- **Giữ "to go" cho mọi phần, kể cả Crypto (Hiếu 2026-11-07).** Dòng của Crypto chờ luật sư (xem Chưa chốt).
-- Không phần nào vượt thanh của nó nên **không bao giờ khuyên bán**. Giá giảm không phải lý do để giục mua thêm.
+- **Giữ "to go" cho mọi phần, kể cả Crypto (Hiếu 2026-11-07).**
+- Không phần nào vượt thanh của nó nên **không bao giờ khuyên bán**. Agent không bình luận giá lên hay xuống (Hiếu 2026-11-07).
 - Giá trị tài sản theo **giá hiện tại** (số lượng × giá), không hỏi giá vốn.
 - Chưa đầu tư gì: nói tỷ lệ 3 phần rồi để người dùng bổ sung từ từ; đã có tài sản: bổ sung các phần sau mốc, thứ tự do người dùng.
 
@@ -67,13 +67,14 @@ Bỏ chữ "người giữ quỹ" và "người tư vấn" của V1.
 
 ## 6. Invest
 
-- **Nút mua cirBTC: giữ (Hiếu 2026-11-07).** Khoá tới khi quỹ đầy và hết nợ lãi cao. App **không đề nghị số tiền**, thẻ mua để trống. Nút là công tắc cấu hình, bật/tắt được, tắt theo khu vực được. Có mở cho người dùng VN hay không: chờ luật sư.
+- **Nút mua cirBTC: giữ (Hiếu 2026-11-07).** Khoá tới khi quỹ đầy và hết nợ lãi cao. App **không đề nghị số tiền**, thẻ mua để trống. Nút là công tắc cấu hình, bật/tắt được, tắt theo khu vực được. Mở cho mọi nước như nhau.
 - Tương lai chắc chắn có cổ phiếu và vàng token hoá trên Arc: Màn Invest và dữ liệu thiết kế thành **danh sách tài sản onchain**, mỗi món gắn nhóm Traditional hoặc Crypto, thêm loại mới không phải viết lại.
 - Tài sản có 2 mức tin cậy: **đã kiểm onchain** và **tự khai**. Hiển thị rõ món nào là món nào.
 
 ## 7. Vault V2 (Hiếu chốt 2026-11-07, thay hoàn toàn mục "Bảo mật" của V1)
 
 - Đăng nhập bằng ví web3 **hoặc email/Google** (Privy tạo ví hộ, **có nút xuất khoá**; Hiếu 2026-11-07). Trong tab Vault có 2 nút: **Open vault** / **Import vault**.
+- **Nút "!" trên màn đăng nhập = trợ giúp chung** cho mọi vấn đề (Hiếu 2026-11-07): Contact support (email + Telegram, làm sau) · Lost your wallet? · Lost your vault password? · Terms & Privacy.
 - **Mở vault:** phí 1 USDC. Có **2 lựa chọn bảo vệ** (Hiếu 2026-11-07):
   - **Passkey** (laptop, iPhone, Samsung/Android): người dùng bấm Face ID / vân tay; mật khẩu vault sinh ra từ passkey ngay trên máy (WebAuthn PRF), người dùng không cần thấy. Passkey tự sao lưu theo iCloud / Google. Kèm **tuỳ chọn "hiện mật khẩu dự phòng"** để chép ra giấy, phòng mất tài khoản iCloud/Google. Passkey bị khoá theo tên miền nên trang giả không dùng được: chống lừa đảo.
   - **Mật khẩu truyền thống** (PC không có passkey): app tạo mật khẩu ngẫu nhiên trong trình duyệt, hiện đúng một lần, người dùng chép ra giấy.
@@ -94,9 +95,9 @@ Bỏ chữ "người giữ quỹ" và "người tư vấn" của V1.
 ## 8. Phí (Hiếu 2026-11-07)
 
 - Mở vault 1 USDC; AI power 1 USDC cho 100 tin nhắn. Mỗi khoản là công tắc cấu hình, bật/tắt được. AI power là chỗ app có lãi.
-- Nhận USDC từ người dùng VN và sàng lọc địa chỉ bị trừng phạt: chờ luật sư.
+- Thu phí như nhau với mọi nước.
 
-## 9. Pháp lý (rà soát ban đầu do AI làm, CHƯA phải ý kiến luật sư)
+## 9. Pháp lý (rà soát do AI làm; Hiếu 2026-11-07: không chờ luật sư)
 
 - Trang Privacy + Terms; bước đồng ý chủ động (ô không tích sẵn) trước lần chat đầu, theo từng mục đích (lưu hồ sơ; gửi tin nhắn tới OpenAI/Anthropic); lưu thời điểm đồng ý; xoá dữ liệu phải xoá hẳn trên server.
 - Liệt kê bên xử lý ở nước ngoài: Cloudflare, Privy, OpenAI, Anthropic, Telegram (Telegram chỉ báo "có yêu cầu mới", không chuyển nội dung tài chính). Resend chỉ còn nếu còn gửi email.
@@ -106,15 +107,11 @@ Bỏ chữ "người giữ quỹ" và "người tư vấn" của V1.
 
 ## 10. Môi trường và thứ tự
 
-- V2: link riêng, **private test trên mainnet** (tiền thật). Pages, KV, D1 riêng; contract mainnet. Sửa mục 4 phạm vi đợt đầu cũ: bỏ "contract testnet" và "khoá guardian riêng".
+- V2: link riêng, **test trên mainnet** (tiền thật), **mở cho mọi người có link nhưng không công khai website** (không quảng bá, không đưa lên moonsafe.app) (Hiếu 2026-11-07). Pages, KV, D1 riêng; contract mainnet. Sửa mục 4 phạm vi đợt đầu cũ: bỏ "contract testnet" và "khoá guardian riêng".
 - Phạm vi đợt đầu: (1) agent giáo dục; (2) Privacy + Terms + bước đồng ý dữ liệu; (3) Vault V2 + Import vault; (4) môi trường V2 riêng.
-- **Thứ tự (đề xuất, Hiếu chưa xác nhận):** chốt và làm trước: hợp đồng vault + hỏi luật sư. Song song: agent giáo dục, Privacy/Terms/đồng ý, môi trường V2, màn tỷ lệ. Để sau: tách nội dung theo khu vực, cách xếp bất động sản / bảo hiểm / cho vay / vốn doanh nghiệp / NFT.
+- **Thứ tự (Hiếu 2026-11-07: thứ tự nào cũng được):** làm trước: hợp đồng vault + thử passkey. Song song: agent giáo dục, Privacy/Terms/đồng ý, môi trường V2, màn tỷ lệ. Để sau: cách xếp bất động sản / bảo hiểm / cho vay / vốn doanh nghiệp / NFT.
 
 ## Chưa chốt
 
-- **Luật sư:** nhận phí USDC từ người dùng VN; sàng lọc địa chỉ bị trừng phạt; nút mua cirBTC cho người dùng VN; có tách nội dung theo khu vực không (VN chỉ còn giáo dục + quỹ USDC); dòng "to go" của thanh Crypto; việc đổi chủ vault bằng mật khẩu.
-- **Kiểm toán:** việc vào ngay bằng mật khẩu (ai cầm giấy là cầm vault); cách dùng mật khẩu mà không lộ lên chuỗi.
-- **Nút "!" = trợ giúp chung** cho mọi vấn đề, không riêng khôi phục (Hiếu 2026-11-07). Đề xuất: Contact support (email + Telegram, làm sau) · Lost your wallet? · Lost your vault password? · Terms & Privacy. Chờ Hiếu duyệt danh sách.
-- **Chữ:** "Giá giảm không phải lý do để giục mua thêm" giữ hay đổi thành câu trung tính hơn.
-- **Giới hạn người dùng** của private test (danh sách mời hay mở).
-- Cách xếp bất động sản cho thuê, bảo hiểm tích luỹ, tiền cho vay, vốn doanh nghiệp, NFT.
+- Cách xếp bất động sản cho thuê, bảo hiểm tích luỹ, tiền cho vay, vốn doanh nghiệp, NFT (để sau).
+- Đã bỏ (Hiếu 2026-11-07): mọi câu chờ luật sư; tách nội dung theo khu vực. Kiểm toán hợp đồng đã xong (Arc Studio 0 lỗi nặng, `docs/audit-vault-v2-arc-studio-2026-11-07.md`).
