@@ -3,10 +3,10 @@
 > Nguồn chuẩn cho V2 (Claude, Codex, người). V1 ở moonsafe.app giữ nguyên, chạy theo `docs/archive/CORE-v1-2026-11-06.md`.
 > Hiếu chốt 2026-11-07. Mâu thuẫn giữa file này và spec cũ trong `docs/` → file này đúng. Đổi core = Hiếu chốt trước, rồi sửa file này.
 
-## Vai trò của app
+## Core (Hiếu chốt 2026-11-07)
 
-MoonSafe là **người giáo dục tài chính** cho người dùng Web3. Quỹ dự phòng onchain là **công cụ tạo kỷ luật** (Hiếu 2026-11-07: kỷ luật là lý do chính; "agent kiểm được quỹ có thật" là lý do phụ).
-Người dùng tự quyết, tự làm, xong thì báo lại. App không chia tiền hộ, không ra lệnh mua bán, không giữ tiền hộ.
+Người dùng Web3 hiếm khi được ai chỉ về tài chính cá nhân. Họ thường dồn hết tiền vào một lần đầu tư, nên kết quả hoặc là "hero" hoặc là "zero". MoonSafe tồn tại để thay đổi điều đó: dạy họ quản lý tiền trước khi đầu tư. Trước hết là có quỹ dự phòng, khoá trong vault USDC của chính họ trên Arc để khỏi tiêu bậy. Sau đó mới chia tiền theo những quy tắc phổ biến, áp vào đúng số liệu của họ. MoonSafe chỉ giải thích, không giữ tiền và không bảo ai mua hay bán gì. Người dùng tự quyết, nhưng quyết khi đã hiểu.
+
 Bỏ chữ "người giữ quỹ" và "người tư vấn" của V1.
 
 ## 1. Agent: người giáo dục (Hiếu 2026-11-07)
