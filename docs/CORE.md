@@ -74,11 +74,15 @@ Bỏ chữ "người giữ quỹ" và "người tư vấn" của V1.
 ## 7. Vault V2 (Hiếu chốt 2026-11-07, thay hoàn toàn mục "Bảo mật" của V1)
 
 - Đăng nhập bằng ví web3 **hoặc email/Google** (Privy tạo ví hộ, **có nút xuất khoá**; Hiếu 2026-11-07). Trong tab Vault có 2 nút: **Open vault** / **Import vault**.
-- **Mở vault:** phí 1 USDC. App tạo **mật khẩu vault** ngẫu nhiên ngay trong trình duyệt, hiện đúng một lần, người dùng chép ra giấy. MoonSafe **không lưu, không cấp lại**. Không cho người dùng tự đặt mật khẩu (vault công khai trên chuỗi, mật khẩu tự nghĩ dò được).
-- **Rút tiền = ví ký + nhập mật khẩu vault.** Thiếu một trong hai không rút được. Tiền gửi tới **bất kỳ địa chỉ** nào (Hiếu 2026-11-07).
+- **Mở vault:** phí 1 USDC. Có **2 lựa chọn bảo vệ** (Hiếu 2026-11-07):
+  - **Passkey** (laptop, iPhone, Samsung/Android): người dùng bấm Face ID / vân tay; mật khẩu vault sinh ra từ passkey ngay trên máy (WebAuthn PRF), người dùng không cần thấy. Passkey tự sao lưu theo iCloud / Google. Kèm **tuỳ chọn "hiện mật khẩu dự phòng"** để chép ra giấy, phòng mất tài khoản iCloud/Google. Passkey bị khoá theo tên miền nên trang giả không dùng được: chống lừa đảo.
+  - **Mật khẩu truyền thống** (PC không có passkey): app tạo mật khẩu ngẫu nhiên trong trình duyệt, hiện đúng một lần, người dùng chép ra giấy.
+  - Hai cách cho ra cùng một loại khoá, hợp đồng không phân biệt. MoonSafe **không lưu, không cấp lại**. Không cho người dùng tự đặt mật khẩu (vault công khai trên chuỗi, mật khẩu tự nghĩ dò được).
+  - Trước khi chốt code: thử thật WebAuthn PRF trên Safari/iPhone, Chrome/Android, Chrome/Windows, Firefox.
+- **Rút tiền = ví ký + passkey (hoặc nhập mật khẩu vault).** Thiếu một trong hai không rút được. Tiền gửi tới **bất kỳ địa chỉ** nào (Hiếu 2026-11-07).
 - **Yêu cầu cho hợp đồng:** dùng mật khẩu không được làm lộ mật khẩu lên chuỗi (nếu lộ thì chỉ dùng được một lần). Cách làm do Claude Code đề xuất, người kiểm toán duyệt.
-- **Mất ví:** đăng nhập bằng ví khác → Import vault → nhập địa chỉ vault + mật khẩu → ví mới thành chủ, **vào ngay, không chờ**.
-- **Mất mật khẩu = mất quyền rút, kể cả còn ví.** Phải nói rõ lúc mở vault.
+- **Mất ví:** đăng nhập bằng ví khác → Import vault → passkey (hoặc nhập mật khẩu) → ví mới thành chủ, **vào ngay, không chờ**.
+- **Mất cả passkey lẫn mật khẩu dự phòng = mất quyền rút, kể cả còn ví.** Phải nói rõ lúc mở vault.
 - MoonSafe **không giữ khoá nào, không ký gì**. MoonSafe sập vẫn rút bình thường.
 - **BỎ** so với bản chốt 2026-11-06: vault 2-of-2 ví + email, khoá guardian, OTP qua Resend, link xác nhận qua mail, đường chờ 7 ngày khi MoonSafe sập, địa chỉ cứu hộ, đổi chủ do guardian khởi động.
 - **Rủi ro đã biết, ghi cho kiểm toán:** vì vào ngay bằng mật khẩu, ai cầm tờ giấy kèm địa chỉ vault thì lấy được vault. Tờ giấy là chìa của cả két; nhắc người dùng lúc mở vault.
@@ -97,6 +101,7 @@ Bỏ chữ "người giữ quỹ" và "người tư vấn" của V1.
 - Trang Privacy + Terms; bước đồng ý chủ động (ô không tích sẵn) trước lần chat đầu, theo từng mục đích (lưu hồ sơ; gửi tin nhắn tới OpenAI/Anthropic); lưu thời điểm đồng ý; xoá dữ liệu phải xoá hẳn trên server.
 - Liệt kê bên xử lý ở nước ngoài: Cloudflare, Privy, OpenAI, Anthropic, Telegram (Telegram chỉ báo "có yêu cầu mới", không chuyển nội dung tài chính). Resend chỉ còn nếu còn gửi email.
 - Terms về khoá viết lại cho V2: người dùng giữ ví và mật khẩu, MoonSafe không giữ khoá; mất mật khẩu thì sao; phí; 18+; khu vực phục vụ.
+- **Dữ liệu tài chính (Hiếu 2026-11-07), làm cả 3:** (1) mã hoá hồ sơ khi lưu trên server; (2) không gửi danh tính cho AI (chỉ gửi số, không email, không địa chỉ ví); (3) xoá là xoá hẳn. Trang Privacy nói rõ: AI đọc được số liệu để tư vấn.
 - Câu agent "MoonSafe không bao giờ giữ khoá hay di chuyển được tiền" chỉ giữ nếu kiểm toán xác nhận đúng với hợp đồng V2.
 
 ## 10. Môi trường và thứ tự
@@ -110,8 +115,6 @@ Bỏ chữ "người giữ quỹ" và "người tư vấn" của V1.
 - **Luật sư:** nhận phí USDC từ người dùng VN; sàng lọc địa chỉ bị trừng phạt; nút mua cirBTC cho người dùng VN; có tách nội dung theo khu vực không (VN chỉ còn giáo dục + quỹ USDC); dòng "to go" của thanh Crypto; việc đổi chủ vault bằng mật khẩu.
 - **Kiểm toán:** việc vào ngay bằng mật khẩu (ai cầm giấy là cầm vault); cách dùng mật khẩu mà không lộ lên chuỗi.
 - **Nút "!" = trợ giúp chung** cho mọi vấn đề, không riêng khôi phục (Hiếu 2026-11-07). Đề xuất: Contact support (email + Telegram, làm sau) · Lost your wallet? · Lost your vault password? · Terms & Privacy. Chờ Hiếu duyệt danh sách.
-- **Sao lưu mật khẩu vault giúp người dùng** (Hiếu muốn: mã hoá rồi sao lưu iCloud, có thể giấu luôn mật khẩu khỏi người dùng để chống lừa đảo). Đang bàn cách làm.
-- **Mã hoá hồ sơ tài chính** lưu trên server và gửi cho AI: cần tư vấn thêm.
 - **Chữ:** "Giá giảm không phải lý do để giục mua thêm" giữ hay đổi thành câu trung tính hơn.
 - **Giới hạn người dùng** của private test (danh sách mời hay mở).
 - Cách xếp bất động sản cho thuê, bảo hiểm tích luỹ, tiền cho vay, vốn doanh nghiệp, NFT.
