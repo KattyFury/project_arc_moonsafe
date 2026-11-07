@@ -114,4 +114,5 @@ Bỏ chữ "người giữ quỹ" và "người tư vấn" của V1.
 ## Chưa chốt
 
 - Cách xếp bất động sản cho thuê, bảo hiểm tích luỹ, tiền cho vay, vốn doanh nghiệp, NFT (để sau).
+- **Để sau, làm từ từ (Hiếu 2026-11-07):** cải thiện prompt agent để bao quát nhiều loại tài sản hơn và agent đa năng hơn. Không chặn đợt đầu V2.
 - Đã bỏ (Hiếu 2026-11-07): mọi câu chờ luật sư; tách nội dung theo khu vực. Kiểm toán hợp đồng đã xong (Arc Studio 0 lỗi nặng, `docs/audit-vault-v2-arc-studio-2026-11-07.md`).
