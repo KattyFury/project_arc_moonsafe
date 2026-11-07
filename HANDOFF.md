@@ -15,7 +15,9 @@
 
 **Arc Studio (Hiếu 2026-11-07):** dùng Arc Studio để viết + kiểm toán hợp đồng, và deploy. CLI `@circle-fin/arc-studio-cli` 1.2.2 đã cài global; `arc-studio skills install --tool claude-code` lỗi "Claude Code not found" (chạy trong VS Code) nên bỏ qua. Đăng nhập: Hiếu tự chạy `arc-studio login --paste` trong terminal thường. Arc Studio không đọc được repo local: gửi file bằng `--file contracts/VaultV2.sol:contracts/VaultV2.sol` (đọc `arc-studio agent-guide`).
 
-**Việc tiếp theo:** (1) Hiếu đăng nhập Arc Studio → gửi VaultV2 + Factory + test cho Arc Studio kiểm toán ("max preset"); (2) song song: agent giáo dục, Privacy/Terms/đồng ý, môi trường V2. Các câu "Chưa chốt" ở cuối CORE.
+**Kiểm toán Arc Studio 2026-11-07 (max preset, session `vault-v2-audit`, app `b8892037-cb06-4709-b3cf-fee63281ebfc`):** 0 critical/high/medium; 5 low + 7 info. Báo cáo: `docs/audit-vault-v2-arc-studio-2026-11-07.md`. Thêm `contracts/test/VaultV2Audit.t.sol` (28 test, có invariant chỉ mục factory). Đã sửa L-5 (ghim `pragma solidity 0.8.28`). Toàn repo 393 test pass. Các mục L-1/L-2/L-3 + 9 việc phía app (mục "What the web app must do") phải làm khi viết màn Vault. **Chờ Hiếu chốt:** KDF chậm (Argon2id/scrypt) trước keccak256 — phải chốt trước khi ra mắt, đổi sau là mồ côi vault; giữ hay bỏ `depositFor` (L-4); giới hạn deadline onchain (L-1).
+
+**Việc tiếp theo:** (1) Hiếu chốt 3 điểm trên; (2) song song: agent giáo dục, Privacy/Terms/đồng ý, môi trường V2. Các câu "Chưa chốt" ở cuối CORE.
 
 # Handoff — 2026-11-06 (khuya) — V1 GIỮ NGUYÊN, BUILD LẠI V2 THEO KIỂM TOÁN PHÁP LÝ — ĐỌC MỤC NÀY TRƯỚC
 
