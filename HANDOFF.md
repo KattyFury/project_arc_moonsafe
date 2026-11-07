@@ -118,6 +118,13 @@ Rủi ro đã chấp nhận (CORE 7): ai có password là lấy được vault; 
 
 # ▶ Handoff — 2026-11-07 — CORE V2 ĐÃ CHỐT — ĐỌC MỤC NÀY TRƯỚC
 
+**Cuối phiên 2026-11-07 (Hiếu cho nghỉ):**
+- CORE V2 chốt xong (đoạn "Core" ở đầu `docs/CORE.md` + 15 câu phản biện). Chỉ còn để sau: xếp bất động sản/bảo hiểm/cho vay/NFT; prompt đa năng hơn.
+- SPEC V2 nằm ở đầu file này (S0–S8). Hợp đồng V2 sẵn sàng deploy: 396 test pass, `passwordKey` đã indexed (chưa cho Arc Studio kiểm lại thay đổi này, chỉ đụng event).
+- **Bước tiếp theo:** S8 #1 — trang thử passkey PRF trên các trình duyệt; song song Hiếu deploy implementation + factory V2 qua Arc Studio.
+- Ảnh bìa Arc House: Figma `WcPHEwY8xh33OvCFrxgLcQ` node `187:207`, PNG ở Desktop `MoonSafe_ArcHouse_cover.png`.
+- `.arc-studio/` (thư mục của CLI Arc Studio) đang untracked: chưa quyết commit hay gitignore.
+
 **Hiếu chốt CORE V2** (bàn với Claude Chat): `docs/CORE.md` giờ là CORE V2; CORE V1 lưu ở `docs/archive/CORE-v1-2026-11-06.md` (V1 moonsafe.app vẫn chạy theo nó). Điểm đổi lớn:
 - Agent = người **giáo dục**: "quy tắc phổ biến là X, với số của bạn thành Y"; không "bạn nên mua/bán"; bỏ hướng dẫn BTC 7/10 và "top 10"; thẻ mua cirBTC để trống.
 - Tỷ lệ: Safety = tuổi % (app tính), người dùng tự chia phần còn lại, Crypto tối đa 50%.
@@ -135,7 +142,7 @@ Rủi ro đã chấp nhận (CORE 7): ai có password là lấy được vault; 
 
 **Kiểm toán Arc Studio 2026-11-07 (max preset, session `vault-v2-audit`, app `b8892037-cb06-4709-b3cf-fee63281ebfc`):** 0 critical/high/medium; 5 low + 7 info. Báo cáo: `docs/audit-vault-v2-arc-studio-2026-11-07.md`. Thêm `contracts/test/VaultV2Audit.t.sol` (28 test, có invariant chỉ mục factory). Đã sửa L-5 (ghim `pragma solidity 0.8.28`) và L-1 (chữ ký hết hạn tối đa 1 ngày, `MAX_SIGNATURE_WINDOW`). Toàn repo 393 test pass. Các mục L-1/L-2/L-3 + 9 việc phía app (mục "What the web app must do") phải làm khi viết màn Vault. **Hiếu chốt 2026-11-07:** (1a) KHÔNG dùng KDF chậm — khoá = keccak256("MoonSafe vault password v1" ‖ mật khẩu) mod n, đóng băng từ giờ (đổi sau là vault cũ không mở được); 24 ký tự ngẫu nhiên = 120 bit, KDF chỉ giúp khi lộ gần hết tờ giấy. (2a) Giữ nạp như hiện tại: `deposit` (chủ), `depositFor` (ai cũng được, qua nút trong app), `receive()` từ chối gửi thẳng. Lưu ý: chuyển USDC kiểu ERC-20 (0x3600…) vào vault có thể không bị chặn — chưa thử trên Arc; app nên hiển thị số dư theo `getBalance()`, không cộng dồn từ event. L-4 chấp nhận.
 
-**Việc tiếp theo:** (1) hợp đồng V2 xong phần thiết kế — chờ Hiếu deploy qua Arc Studio khi sẵn sàng; (2) song song: agent giáo dục, Privacy/Terms/đồng ý, môi trường V2. Các câu "Chưa chốt" ở cuối CORE.
+**Việc tiếp theo:** xem SPEC V2 mục S8 ở đầu file.
 
 # Handoff — 2026-11-06 (khuya) — V1 GIỮ NGUYÊN, BUILD LẠI V2 THEO KIỂM TOÁN PHÁP LÝ — ĐỌC MỤC NÀY TRƯỚC
 
