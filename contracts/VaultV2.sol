@@ -29,6 +29,9 @@ interface IVaultIndex {
 /// - Native transfers to zero or to/from Circle-blocklisted addresses can revert even with sufficient funds.
 /// @custom:upgrade-strategy Clones permanently delegate to the fixed implementation with no upgrade path.
 contract VaultV2 is ReentrancyGuard, EIP712 {
+    /// @notice A password signature may not be valid for longer than this from the moment it is used.
+    uint256 public constant MAX_SIGNATURE_WINDOW = 1 days;
+
     bytes32 private constant WITHDRAW_TYPEHASH =
         keccak256("Withdraw(uint256 amount,address to,uint256 nonce,uint256 deadline)");
     bytes32 private constant IMPORT_TYPEHASH = keccak256("Import(address newOwner,uint256 nonce,uint256 deadline)");
@@ -53,6 +56,7 @@ contract VaultV2 is ReentrancyGuard, EIP712 {
     error DirectDepositDisabled();
     error InvalidPasswordSignature();
     error SignatureExpired(uint256 deadline);
+    error DeadlineTooFar(uint256 deadline, uint256 latestAllowed);
     error AlreadyOwner();
 
     event Deposited(address indexed from, uint256 amount);
@@ -115,7 +119,7 @@ contract VaultV2 is ReentrancyGuard, EIP712 {
         onlyOwner
         nonReentrant
     {
-        if (block.timestamp > deadline) revert SignatureExpired(deadline);
+        _requireDeadline(deadline);
         _requirePasswordSig(keccak256(abi.encode(WITHDRAW_TYPEHASH, amount, to, nonce, deadline)), passwordSig);
         nonce++;
         _send(amount, to);
@@ -128,7 +132,7 @@ contract VaultV2 is ReentrancyGuard, EIP712 {
     /// @param deadline Last second the signature is valid.
     /// @param passwordSig 65-byte ECDSA signature by the password key.
     function importVault(uint256 deadline, bytes calldata passwordSig) external {
-        if (block.timestamp > deadline) revert SignatureExpired(deadline);
+        _requireDeadline(deadline);
         address previous = _owner;
         if (msg.sender == previous) revert AlreadyOwner();
         _requirePasswordSig(keccak256(abi.encode(IMPORT_TYPEHASH, msg.sender, nonce, deadline)), passwordSig);
@@ -166,6 +170,13 @@ contract VaultV2 is ReentrancyGuard, EIP712 {
     }
 
     // ───────────── Internals ─────────────
+
+    /// @dev Expired, or so far ahead that a lost or leaked signature would stay usable for long (audit L-1).
+    function _requireDeadline(uint256 deadline) private view {
+        if (block.timestamp > deadline) revert SignatureExpired(deadline);
+        uint256 latest = block.timestamp + MAX_SIGNATURE_WINDOW;
+        if (deadline > latest) revert DeadlineTooFar(deadline, latest);
+    }
 
     /// @dev OpenZeppelin ECDSA rejects malleable (high-s) signatures and never returns the zero address.
     function _requirePasswordSig(bytes32 structHash, bytes calldata sig) private view {

@@ -245,6 +245,33 @@ contract VaultV2WithdrawTest is VaultV2Base {
         vault.withdraw(1 ether, dest, deadline, sig);
     }
 
+    function test_Withdraw_DeadlineTooFarRejected() public {
+        uint256 tooFar = block.timestamp + vault.MAX_SIGNATURE_WINDOW() + 1;
+        bytes memory sig = _withdrawSig(vault, pwSecret, 1 ether, dest, 0, tooFar);
+        vm.prank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(VaultV2.DeadlineTooFar.selector, tooFar, block.timestamp + 1 days)
+        );
+        vault.withdraw(1 ether, dest, tooFar, sig);
+        // Exactly at the limit is fine.
+        uint256 edge = block.timestamp + vault.MAX_SIGNATURE_WINDOW();
+        bytes memory ok = _withdrawSig(vault, pwSecret, 1 ether, dest, 0, edge);
+        vm.prank(alice);
+        vault.withdraw(1 ether, dest, edge, ok);
+        assertEq(dest.balance, 1 ether);
+    }
+
+    function test_Import_DeadlineTooFarRejected() public {
+        uint256 tooFar = type(uint256).max;
+        bytes memory sig = _importSig(vault, pwSecret, newWallet, 0, tooFar);
+        vm.prank(newWallet);
+        vm.expectRevert(
+            abi.encodeWithSelector(VaultV2.DeadlineTooFar.selector, tooFar, block.timestamp + 1 days)
+        );
+        vault.importVault(tooFar, sig);
+        assertEq(vault.owner(), alice);
+    }
+
     function test_Withdraw_WrongPasswordFails() public {
         (, uint256 wrongKey) = makeAddrAndKey("guessed-password");
         uint256 deadline = block.timestamp + 1 hours;
