@@ -43,7 +43,7 @@ Bỏ chữ "người giữ quỹ" và "người tư vấn" của V1.
 
 ## 4. Bảng cân đối: phần đi xa nhất làm mốc
 
-- **Tỷ lệ (Hiếu 2026-11-07):** có tuổi thì app tự tính Safety = tuổi %. Người dùng tự chọn cách chia phần còn lại giữa Traditional và Crypto. **Crypto tối đa 50% phần còn lại**, kèm giải thích: crypto biến động mạnh, thuộc nhóm đầu tư mạo hiểm.
+- **Tỷ lệ (Hiếu 2026-11-07):** có tuổi thì app tự tính Safety = tuổi %; người dùng **không sửa** con số này. App tự tăng 1 tuổi mỗi năm kể từ ngày khai (không bắt khai lại). Người dùng tự chọn cách chia phần còn lại giữa Traditional và Crypto; **chưa chọn thì 2 thanh này chưa hiện**, agent hỏi đúng 1 câu (không có mặc định 50/50). **Crypto tối đa 50% phần còn lại**, kèm giải thích: crypto biến động mạnh, thuộc nhóm đầu tư mạo hiểm.
 - Công thức theo tuổi gọi là "quy tắc phổ biến app dùng để minh hoạ", không phải lời khuyên. Màn hình hiện tỷ lệ của người dùng.
 - **Luật mốc (Hiếu 2026-11-01):** phần đi xa nhất so với tỷ lệ của nó (tiền / tỷ lệ lớn nhất) là thanh đầy 100%; các phần khác theo nó. Ví dụ 30 tuổi (30/35/35), Safety $3.000 đi xa nhất → Traditional và Crypto đầy ở $3.500.
 - Không lấy tổng 3 phần làm 100%, không hiện % trên từng phần. Mỗi phần viết: còn thiếu trước, rồi hiện trạng: "$2,500 to go (now $1,000 / $3,500)"; phần đủ ghi "full", phần làm mốc ghi "furthest ahead, it sets the size". Số lẻ luôn đủ 2 chữ số.
@@ -69,7 +69,7 @@ Bỏ chữ "người giữ quỹ" và "người tư vấn" của V1.
 
 ## 7. Vault V2 (Hiếu chốt 2026-11-07, thay hoàn toàn mục "Bảo mật" của V1)
 
-- Đăng nhập bằng ví web3. Trong tab Vault có 2 nút: **Open vault** / **Import vault**.
+- Đăng nhập bằng ví web3 **hoặc email/Google** (Privy tạo ví hộ; Hiếu 2026-11-07). Trong tab Vault có 2 nút: **Open vault** / **Import vault**.
 - **Mở vault:** phí 1 USDC. App tạo **mật khẩu vault** ngẫu nhiên ngay trong trình duyệt, hiện đúng một lần, người dùng chép ra giấy. MoonSafe **không lưu, không cấp lại**. Không cho người dùng tự đặt mật khẩu (vault công khai trên chuỗi, mật khẩu tự nghĩ dò được).
 - **Rút tiền = ví ký + nhập mật khẩu vault.** Thiếu một trong hai không rút được. Tiền gửi tới **bất kỳ địa chỉ** nào (Hiếu 2026-11-07).
 - **Yêu cầu cho hợp đồng:** dùng mật khẩu không được làm lộ mật khẩu lên chuỗi (nếu lộ thì chỉ dùng được một lần). Cách làm do Claude Code đề xuất, người kiểm toán duyệt.
@@ -78,6 +78,7 @@ Bỏ chữ "người giữ quỹ" và "người tư vấn" của V1.
 - MoonSafe **không giữ khoá nào, không ký gì**. MoonSafe sập vẫn rút bình thường.
 - **BỎ** so với bản chốt 2026-11-06: vault 2-of-2 ví + email, khoá guardian, OTP qua Resend, link xác nhận qua mail, đường chờ 7 ngày khi MoonSafe sập, địa chỉ cứu hộ, đổi chủ do guardian khởi động.
 - **Rủi ro đã biết, ghi cho kiểm toán:** vì vào ngay bằng mật khẩu, ai cầm tờ giấy kèm địa chỉ vault thì lấy được vault. Tờ giấy là chìa của cả két; nhắc người dùng lúc mở vault.
+- **Không có đổi mật khẩu vault** (Hiếu 2026-11-07). Lộ tờ giấy thì rút hết sang vault mới.
 - Vault V1 (`VaultProxy`) không nâng cấp được; người dùng tự chuyển tiền sang vault mới.
 
 ## 8. Phí (Hiếu 2026-11-07)
@@ -102,8 +103,7 @@ Bỏ chữ "người giữ quỹ" và "người tư vấn" của V1.
 
 - **Luật sư:** nhận phí USDC từ người dùng VN; sàng lọc địa chỉ bị trừng phạt; nút mua cirBTC cho người dùng VN; có tách nội dung theo khu vực không (VN chỉ còn giáo dục + quỹ USDC); dòng "to go" của thanh Crypto; việc đổi chủ vault bằng mật khẩu.
 - **Kiểm toán:** việc vào ngay bằng mật khẩu (ai cầm giấy là cầm vault); cách dùng mật khẩu mà không lộ lên chuỗi.
-- **Đăng nhập:** còn đăng nhập email / Google qua Privy không (luồng mới chỉ nói đăng nhập bằng ví); nếu còn thì có "xuất khoá" không; nội dung nút "!" trên màn đăng nhập (nút cũ "Mất 1 trong 2?" không còn đúng).
-- **Tỷ lệ:** chưa chọn tỷ lệ Traditional/Crypto thì có tạm 50/50 không; Safety do app tính theo tuổi, người dùng có sửa được không (đang hiểu: không).
+- **Đăng nhập:** ví Privy tạo hộ (email/Google) có nút "xuất khoá" không; nội dung nút "!" trên màn đăng nhập (nút cũ "Mất 1 trong 2?" không còn đúng).
 - **Chữ:** "Giá giảm không phải lý do để giục mua thêm" giữ hay đổi thành câu trung tính hơn.
 - **Giới hạn người dùng** của private test (danh sách mời hay mở).
 - Cách xếp bất động sản cho thuê, bảo hiểm tích luỹ, tiền cho vay, vốn doanh nghiệp, NFT.
