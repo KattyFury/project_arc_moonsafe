@@ -1,6 +1,6 @@
 # MoonSafe — notes for agents
 
-Read first: [`docs/CORE.md`](docs/CORE.md) (the rules, settled 2026-11-01), then the newest **▶** section of [`HANDOFF.md`](HANDOFF.md). Working rules for Claude are in [`CLAUDE.md`](CLAUDE.md).
+Read first: [`docs/CORE.md`](docs/CORE.md) (the rules, settled 2026-11-01), then [`HANDOFF.md`](HANDOFF.md). Working rules for Claude are in [`CLAUDE.md`](CLAUDE.md).
 
 ## Live
 
