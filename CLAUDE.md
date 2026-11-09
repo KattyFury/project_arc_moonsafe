@@ -47,7 +47,7 @@ I'm a **Vietnamese vibecoder** – I have ideas, not a programming background. I
 
 ## How to Talk to Me
 
-- Respond in **Vietnamese**. Use English for code, technical terms, and proper nouns.
+- Chat with me in **English**, short. This covers only our chat: the agent inside the app still replies in the user's language (see the rules above).
 - **No filler**. **Answer directly**. Short task = short answer.
 - **Don't assume I know jargon** – explain inline.
 - **Multiple approaches → show options, don't pick silently.**
