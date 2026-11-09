@@ -1,0 +1,15 @@
+# Cloudflare Pages project "moonsafe-v2" (v2.moonsafe.app): separate KV and D1 from moonsafe.app.
+# Used only by scripts/deploy-v2.mjs, which copies this file as wrangler.toml into a throwaway folder.
+name = "moonsafe-v2"
+pages_build_output_dir = "dist"
+compatibility_date = "2025-01-01"
+
+[[kv_namespaces]]
+binding = "USERDATA"
+id = "840bfa16496b4f70bc50f7cb3501a25c"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "moonsafe-ledger-v2"
+database_id = "2a0216e6-fab0-476a-9575-fae3ae355383"
+migrations_dir = "migrations"

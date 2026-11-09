@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Passkey check</title>
+<style>
+  :root { --ink: #000; --grey: #5B6472; --line: #E3E7EE; --blue: #1E6DF7; --mist: #F4F6FA; --green: #12864B; --red: #C9281F; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px 16px; background: #fff; color: var(--ink); font: 400 16px/24px -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  h1 { margin: 0; font-size: 24px; line-height: 32px; font-weight: 700; }
+  p { margin: 0; color: var(--grey); font-size: 14px; line-height: 20px; }
+  .panel { background: var(--mist); border-radius: 16px; padding: 8px 16px; }
+  .row { display: flex; justify-content: space-between; gap: 16px; padding: 8px 0; font-size: 14px; line-height: 20px; }
+  .row + .row { border-top: 1px solid var(--line); }
+  .row span:first-child { color: var(--grey); }
+  .row span:last-child { font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+  .ok { color: var(--green); } .bad { color: var(--red); }
+  #verdict { font-size: 16px; line-height: 24px; font-weight: 700; color: var(--ink); min-height: 24px; }
+  button { width: 100%; height: 48px; border: 0; border-radius: 16px; font: 600 16px/24px inherit; font-family: inherit; cursor: pointer; }
+  #go { background: var(--blue); color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.32); }
+  #go:disabled { background: var(--line); color: var(--grey); box-shadow: none; cursor: default; }
+  #copy { background: var(--mist); color: var(--ink); }
+  #copy[hidden] { display: none; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Passkey check</h1>
+  <p>Tests whether this device can make the key MoonSafe V2 needs. It creates a test passkey you can delete afterwards. Nothing is sent anywhere.</p>
+  <div class="panel">
+    <div class="row"><span>Passkeys supported</span><span id="r-webauthn">...</span></div>
+    <div class="row"><span>Built-in passkey</span><span id="r-platform">...</span></div>
+    <div class="row"><span>Browser reports PRF</span><span id="r-cap">...</span></div>
+    <div class="row"><span>1. Create</span><span id="r-create">-</span></div>
+    <div class="row"><span>2. Sign in</span><span id="r-get1">-</span></div>
+    <div class="row"><span>3. Same key again</span><span id="r-get2">-</span></div>
+  </div>
+  <div id="verdict"></div>
+  <button id="go">1. Create test passkey</button>
+  <button id="copy" hidden>Copy result</button>
+</main>
+<script>
+// Each WebAuthn call gets its own tap: Safari refuses a second call without a fresh user gesture.
+const RP_ID = 'moonsafe.app'
+// keccak256("MoonSafe vault passkey v1"), SPEC V2 section S2.
+const SALT_HEX = '36960ed577f0188387862f796eb218e2a4f7dcc32a0469a83ca9b49fc83dc62e'
+const salt = Uint8Array.from(SALT_HEX.match(/../g), h => parseInt(h, 16))
+const $ = id => document.getElementById(id)
+const report = { create: '-', get1: '-', get2: '-' }
+let credential = null, firstOutput = null, step = 1
+
+function set(id, text, cls) {
+  const el = $(id)
+  el.textContent = text
+  el.className = cls || ''
+}
+const toHex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('')
+const random = n => crypto.getRandomValues(new Uint8Array(n))
+
+function finish(pass, text) {
+  $('verdict').textContent = text
+  $('verdict').className = pass ? 'ok' : 'bad'
+  $('go').disabled = true
+  $('copy').hidden = false
+}
+function fail(key, id, e) {
+  const msg = e.name || 'Error'
+  report[key] = msg + ': ' + (e.message || '').slice(0, 120)
+  set(id, msg, 'bad')
+  $('verdict').textContent = msg === 'NotAllowedError'
+    ? 'Cancelled or not allowed. Tap the button to try again.'
+    : 'Failed: ' + msg
+  $('verdict').className = 'bad'
+  $('copy').hidden = false
+}
+
+async function detect() {
+  const has = !!window.PublicKeyCredential
+  report.webauthn = has
+  set('r-webauthn', has ? 'Yes' : 'No', has ? 'ok' : 'bad')
+  if (!has) { set('r-platform', '-'); set('r-cap', '-'); return finish(false, 'FAIL: passkeys are not available in this browser.') }
+  const host = location.hostname
+  if (host !== RP_ID && !host.endsWith('.' + RP_ID)) { $('go').disabled = true; $('verdict').textContent = 'Open this page on v2.moonsafe.app.'; }
+  try {
+    const p = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+    report.platform = p
+    set('r-platform', p ? 'Yes' : 'No')
+  } catch { set('r-platform', '?') }
+  try {
+    const caps = PublicKeyCredential.getClientCapabilities ? await PublicKeyCredential.getClientCapabilities() : null
+    const prf = caps ? caps['extension:prf'] : undefined
+    report.capPrf = prf === undefined ? 'unknown' : prf
+    set('r-cap', prf === undefined ? 'Unknown' : prf ? 'Yes' : 'No')
+  } catch { set('r-cap', '?') }
+}
+
+async function create() {
+  set('r-create', 'Waiting...')
+  try {
+    const cred = await navigator.credentials.create({ publicKey: {
+      rp: { id: RP_ID, name: 'MoonSafe test' },
+      // Fixed id: running the test again replaces this test passkey instead of adding another.
+      user: { id: new TextEncoder().encode('moonsafe-prf-test'), name: 'moonsafe-passkey-test', displayName: 'MoonSafe passkey test (safe to delete)' },
+      challenge: random(32),
+      pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+      authenticatorSelection: { residentKey: 'required', userVerification: 'required' },
+      timeout: 120000,
+      extensions: { prf: { eval: { first: salt } } },
+    } })
+    const ext = cred.getClientExtensionResults().prf
+    report.create = 'ok'
+    report.prfEnabled = ext ? ext.enabled : 'missing'
+    report.attachment = cred.authenticatorAttachment || 'unknown'
+    if (!ext || ext.enabled === false) {
+      report.create = 'no PRF'
+      set('r-create', 'No PRF', 'bad')
+      return finish(false, 'FAIL: this passkey has no PRF. V2 must offer the paper password here.')
+    }
+    credential = cred
+    set('r-create', 'Done', 'ok')
+    step = 2
+    $('go').textContent = '2. Sign in with it'
+  } catch (e) { fail('create', 'r-create', e) }
+}
+
+async function signIn(id, key) {
+  set(id, 'Waiting...')
+  try {
+    const got = await navigator.credentials.get({ publicKey: {
+      rpId: RP_ID,
+      challenge: random(32),
+      userVerification: 'required',
+      timeout: 120000,
+      allowCredentials: [{ type: 'public-key', id: credential.rawId, transports: credential.response.getTransports ? credential.response.getTransports() : undefined }],
+      extensions: { prf: { eval: { first: salt } } },
+    } })
+    const results = got.getClientExtensionResults().prf
+    const first = results && results.results && results.results.first
+    if (!first) {
+      report[key] = 'no PRF output'
+      set(id, 'No output', 'bad')
+      return finish(false, 'FAIL: no PRF output at sign-in. V2 must offer the paper password here.')
+    }
+    report[key] = first.byteLength + ' bytes'
+    return toHex(first)
+  } catch (e) { fail(key, id, e) }
+}
+
+$('go').addEventListener('click', async () => {
+  $('go').disabled = true
+  $('verdict').textContent = ''
+  if (step === 1) await create()
+  else if (step === 2) {
+    const out = await signIn('r-get1', 'get1')
+    if (out) { firstOutput = out; set('r-get1', 'Done', 'ok'); step = 3; $('go').textContent = '3. Sign in once more' }
+  } else {
+    const out = await signIn('r-get2', 'get2')
+    if (out) {
+      const same = out === firstOutput
+      report.stable = same
+      set('r-get2', same ? 'Same key' : 'Different key', same ? 'ok' : 'bad')
+      firstOutput = null
+      return finish(same, same ? 'PASS: this device can use a passkey vault.' : 'FAIL: the key changed between sign-ins.')
+    }
+  }
+  if (!$('copy').hidden && step === 1 && report.create === 'no PRF') return
+  $('go').disabled = false
+})
+
+// The result carries pass/fail details only, never the key itself.
+$('copy').addEventListener('click', async () => {
+  const text = 'Passkey check | ' + JSON.stringify(report) + ' | ' + navigator.userAgent
+  try { await navigator.clipboard.writeText(text); $('copy').textContent = 'Copied' }
+  catch { window.prompt('Copy this:', text) }
+})
+
+detect()
+</script>
+</body>
+</html>

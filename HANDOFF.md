@@ -3,6 +3,12 @@
 Current state as of 2026-11-07. Read `docs/CORE.md` first (the settled core, above any old spec).
 SPEC V2 (S0–S8): [docs/SPEC-V2.md](docs/SPEC-V2.md). Deploy and contracts: `AGENTS.md`, `README.md`. History: [docs/archive/handoff-through-2026-11-07.md](docs/archive/handoff-through-2026-11-07.md).
 
+## V2 environment (2026-11-09)
+
+- https://v2.moonsafe.app = Pages project `moonsafe-v2`, own KV `USERDATA_V2` and D1 `moonsafe-ledger-v2`, noindex, not linked. Deploy: `node scripts/deploy-v2.mjs` (`--migrate` for D1; `V2_FACTORY` once deployed). It never touches moonsafe.app.
+- The app there is still V1 code on the V1 factory, with no AI keys, so chat doesn't work yet.
+- Passkey PRF test (S8 #1): https://v2.moonsafe.app/passkey-test/. Results so far: Chrome on Windows 10 (Dell), built-in passkey: **no PRF** at create.
+
 ## Status
 
 - **V1 keeps running** at moonsafe.app under CORE V1 (`docs/archive/CORE-v1-2026-11-06.md`).
