@@ -27,7 +27,7 @@ When I say "login dự án" (log in to the project): read this file → `git pul
 - **Big UI change → screenshot each screen (393×852) to the Desktop for my approval BEFORE deploying.** Don't finish the whole set and only then show it.
 
 ### Deploy
-- Edit directly on `main` + deploy production moonsafe.app (no branch/preview). A GitHub push does **not** deploy; run the command in `AGENTS.md`.
+- Edit directly on `main` + deploy Pages project `moonsafe` = test.moonsafe.app (the TEST version, not main; moonsafe.app redirects to it). No branch/preview. A GitHub push does **not** deploy; run the command in `AGENTS.md`.
 - Wallet `0xEb2D…52F6` is the factory owner and fee recipient. Do not use any other wallet/DID/account for real actions on your own.
 
 ---

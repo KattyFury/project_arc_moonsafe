@@ -2,7 +2,7 @@
 // every reply. Run after any prompt change (AGENTS.md Part 3):
 //   bun scripts/agent-eval.mjs [baseUrl] [--only name] [--runs 3]
 // Bun, not node: it replays the agent's operations with the app's own applyOps (src/lib/profile.ts).
-// Default baseUrl https://moonsafe.app (or http://localhost:8788 with `wrangler pages dev dist`).
+// Default baseUrl https://test.moonsafe.app (or http://localhost:8788 with `wrangler pages dev dist`).
 // Writes the full transcript to scripts/agent-eval-last.txt.
 // Profiles are v2 (src/types.ts, 2026-10-25). Spec 14.6 lists the cases that must be here; they
 // are tagged "14.6". Vietnamese test phrases are marked lang-ok.
@@ -12,7 +12,7 @@ import { applyOps, readOps } from '../src/lib/profile.ts'
 import { EMPTY_PROFILE } from '../src/types.ts'
 
 const args = process.argv.slice(2)
-const BASE = args.find(a => a.startsWith('http')) ?? 'https://moonsafe.app'
+const BASE = args.find(a => a.startsWith('http')) ?? 'https://test.moonsafe.app'
 const ONLY = args.includes('--only') ? args[args.indexOf('--only') + 1] : null
 const RUNS = args.includes('--runs') ? Number(args[args.indexOf('--runs') + 1]) : 1
 

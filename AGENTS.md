@@ -4,7 +4,7 @@ Read first: [`docs/CORE.md`](docs/CORE.md) (the rules, settled 2026-11-01), then
 
 ## Live
 
-- https://moonsafe.app = Arc **mainnet** (chain 5042). Cloudflare Pages project `moonsafe`, direct upload (a push does NOT deploy).
+- https://test.moonsafe.app = the current app, a **test** version on Arc **mainnet** (chain 5042). Cloudflare Pages project `moonsafe`, direct upload (a push does NOT deploy). moonsafe.app + www 302-redirect to test.moonsafe.app (CF Redirect Rule on zone moonsafe.app) until a main version exists.
 - Deploy: `VITE_NETWORK=mainnet VITE_FACTORY_ADDRESS=0xA9A5447a1Dd9874c25238d69E285249Fa1c9E10A bun run cf:deploy` (with `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`); `scripts/check-deploy-env.mjs` refuses a build that points at the wrong network. After deploy: page 200, unauthenticated `POST /api/chat` 401, bundle contains `A9A5447a`.
 - Contracts, the Safe owner and the testnet history: see `README.md` and `HANDOFF.md`.
 

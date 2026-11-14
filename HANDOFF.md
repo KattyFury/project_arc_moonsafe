@@ -11,7 +11,7 @@ SPEC V2 (S0–S8): [docs/SPEC-V2.md](docs/SPEC-V2.md). Deploy and contracts: `AG
 
 ## Status
 
-- **V1 keeps running** at moonsafe.app under CORE V1 (`docs/archive/CORE-v1-2026-11-06.md`).
+- **V1 keeps running** at **test.moonsafe.app** (since 2026-11-14 the current app is the test version; moonsafe.app + www 302-redirect there via a CF Redirect Rule until a main version exists) under CORE V1 (`docs/archive/CORE-v1-2026-11-06.md`). Privy allowed origins must include https://test.moonsafe.app.
 - **CORE V2 is settled** in `docs/CORE.md` (the "Core" part + 15 counter-arguments). Left for later: placing real estate/insurance/lending/NFT; a more general prompt.
 - **V2 contract is rewritten, not deployed.** 396 tests pass. `passwordKey` is indexed (Arc Studio has not re-checked this event-only change).
 - **Next:** SPEC V2 S8 #1, the passkey PRF test page across browsers. In parallel, Hieu deploys the V2 implementation + factory through Arc Studio.

@@ -2,7 +2,7 @@
 
 **Your personal finance agent for Web3.** MoonSafe keeps your emergency fund safe in your own USDC vault on Arc, then advises how to balance the rest of your money by age. You decide and do; it records and keeps track.
 
-Live on Arc mainnet: **https://moonsafe.app**
+Test version live on Arc mainnet: **https://test.moonsafe.app** (moonsafe.app redirects there for now)
 
 <p align="center">
   <img src="docs/images/balance-mobile.png" alt="Balance screen on mobile" width="260" />
